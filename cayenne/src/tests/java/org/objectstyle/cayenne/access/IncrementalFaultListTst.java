@@ -56,11 +56,16 @@
 package org.objectstyle.cayenne.access;
 
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import org.objectstyle.art.Artist;
 import org.objectstyle.cayenne.DataObject;
+import org.objectstyle.cayenne.exp.Expression;
+import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.query.GenericSelectQuery;
+import org.objectstyle.cayenne.query.Ordering;
 import org.objectstyle.cayenne.query.SelectQuery;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
@@ -77,14 +82,14 @@ public class IncrementalFaultListTst extends CayenneTestCase {
     protected void setUp() throws Exception {
         super.setUp();
         getDatabaseSetup().cleanTableData();
-        new DataContextTst().populateTables();
+        new DataContextTst().populateTables(true);
 
         SelectQuery q = new SelectQuery("Artist");
-        
+
         // make sure total number of objects is not divisable
         // by the page size, to test the last smaller page
         q.setPageSize(6);
-        // q.setLoggingLevel(Level.WARN);
+        q.addOrdering("artistName", Ordering.ASC);
         query = q;
         list = new IncrementalFaultList(super.createDataContext(), query);
     }
@@ -95,13 +100,46 @@ public class IncrementalFaultListTst extends CayenneTestCase {
 
     public void testIterator() throws Exception {
         Iterator it = list.iterator();
-        while(it.hasNext()) {
-        	Object obj = it.next();
-        	assertNotNull(obj);
-        	assertTrue(obj instanceof DataObject);
+        int counter = 0;
+        while (it.hasNext()) {
+            Object obj = it.next();
+            assertNotNull(obj);
+            assertTrue(obj instanceof DataObject);
+
+            // iterator must be resolved page by page
+            int expectedResolved =
+                list.pageIndex(counter) * list.getPageSize() + list.getPageSize();
+            if (expectedResolved > list.size()) {
+                expectedResolved = list.size();
+            }
+
+            assertEquals(list.size() - expectedResolved, list.getUnfetchedObjects());
+
+            counter++;
         }
     }
-    
+
+    public void testListIterator() throws Exception {
+        ListIterator it = list.listIterator();
+        int counter = 0;
+        while (it.hasNext()) {
+            Object obj = it.next();
+            assertNotNull(obj);
+            assertTrue(obj instanceof DataObject);
+
+            // iterator must be resolved page by page
+            int expectedResolved =
+                list.pageIndex(counter) * list.getPageSize() + list.getPageSize();
+            if (expectedResolved > list.size()) {
+                expectedResolved = list.size();
+            }
+
+            assertEquals(list.size() - expectedResolved, list.getUnfetchedObjects());
+
+            counter++;
+        }
+    }
+
     public void testUnfetchedObjects() throws Exception {
         assertEquals(DataContextTst.artistCount - 6, list.getUnfetchedObjects());
         list.get(7);
@@ -109,12 +147,18 @@ public class IncrementalFaultListTst extends CayenneTestCase {
         list.resolveAll();
         assertEquals(0, list.getUnfetchedObjects());
     }
-    
+
     public void testPageIndex() throws Exception {
         assertEquals(0, list.pageIndex(0));
         assertEquals(0, list.pageIndex(1));
         assertEquals(1, list.pageIndex(6));
-        assertEquals(13, list.pageIndex(82));
+
+        try {
+            assertEquals(13, list.pageIndex(82));
+            fail("Element index beyound array size must throw an IndexOutOfBoundsException.");
+        } catch (IndexOutOfBoundsException ex) {
+            // exception expercted
+        }
     }
 
     public void testPagesRead1() throws Exception {
@@ -148,5 +192,35 @@ public class IncrementalFaultListTst extends CayenneTestCase {
 
         assertNotNull(a);
         assertTrue(list.elements.get(8) instanceof Artist);
+    }
+
+    public void testIndexOf() throws Exception {
+
+        Expression qual = ExpressionFactory.matchExp("artistName", "artist20");
+        SelectQuery query = new SelectQuery(Artist.class, qual);
+        List artists = list.dataContext.performQuery(query);
+
+        assertEquals(1, artists.size());
+
+        Artist row = (Artist) artists.get(0);
+        assertEquals(19, list.indexOf(row));
+        assertEquals(
+            -1,
+            list.indexOf(list.dataContext.createAndRegisterNewObject("Artist")));
+    }
+
+    public void testLastIndexOf() throws Exception {
+
+        Expression qual = ExpressionFactory.matchExp("artistName", "artist20");
+        SelectQuery query = new SelectQuery(Artist.class, qual);
+        List artists = list.dataContext.performQuery(query);
+
+        assertEquals(1, artists.size());
+
+        Artist row = (Artist) artists.get(0);
+        assertEquals(19, list.lastIndexOf(row));
+        assertEquals(
+            -1,
+            list.lastIndexOf(list.dataContext.createAndRegisterNewObject("Artist")));
     }
 }

@@ -1,0 +1,13 @@
+            Cayenne Examples Release Notes 1.0.3 
+                 Date: Nov. 16, 2003
+         ============================================
+
+For the latest information go to the project web site at
+http://objectstyle.org/cayenne/
+
+
+1. This Examples release uses the new examples format, when examples source is 
+distributed separately, with build files, and documentation is distributed with
+the main cayenne download (and is therefore present on the website).
+
+2. Cayenne Aggregate Functions Example is added.

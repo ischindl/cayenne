@@ -186,6 +186,8 @@ public class SelectTranslatorTst extends CayenneTestCase {
             q.setParentObjEntityName("Painting");
             q.setParentQualifier(
                 ExpressionFactory.matchExp("toArtist.artistName", "abc"));
+			q.andParentQualifier(
+			    ExpressionFactory.greaterOrEqualExp("estimatedPrice", new BigDecimal(1)));
             q.setQualifier(
                 ExpressionFactory.matchExp("estimatedPrice", new BigDecimal(3)));
 
@@ -198,6 +200,7 @@ public class SelectTranslatorTst extends CayenneTestCase {
 
             // no WHERE clause
             assertTrue("WHERE clause is expected: " + sql, sql.indexOf(" WHERE ") > 0);
+			assertTrue("WHERE clause must have estimated price: " + sql, sql.indexOf("ESTIMATED_PRICE >=") > 0);
 
             assertTrue(
                 "GROUP BY clause is expected:" + sql,
@@ -216,6 +219,9 @@ public class SelectTranslatorTst extends CayenneTestCase {
             assertTrue(
                 "Qualifier for related entity must be in WHERE: " + sql,
                 sql.indexOf("ARTIST_NAME") < sql.indexOf(" GROUP BY "));
+			assertTrue(
+				 "WHERE clause must have estimated price: " + sql,
+				 sql.indexOf("ESTIMATED_PRICE >=") < sql.indexOf(" GROUP BY "));
         } finally {
             con.close();
         }

@@ -73,7 +73,6 @@ import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneException;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataObject;
-import org.objectstyle.cayenne.FlattenedObjectId;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
 import org.objectstyle.cayenne.TempObjectId;
@@ -470,6 +469,55 @@ public class DataContext implements QueryEngine, Serializable {
         // change state to HOLLOW
         dataObj.setPersistenceState(PersistenceState.HOLLOW);
     }
+    
+    /**
+     * Creates a list of DataObjects local to this DataContext from a list 
+     * of DataObjects coming from a different DataContext. Note that all objects
+     * in the source list must be either in COMMITTED or in HOLLOW state.
+     * 
+     * @since 1.0.3
+     */
+    public List localObjects(List objects) {
+        
+        List localObjects = new ArrayList(objects.size());
+        Class objectClass = null;
+        ObjEntity entity = null;
+        
+        Iterator it = objects.iterator();
+        while (it.hasNext()) {
+            DataObject object = (DataObject) it.next();
+            
+            // sanity check
+            if (object.getPersistenceState() != PersistenceState.COMMITTED
+                && object.getPersistenceState() != PersistenceState.HOLLOW) {
+                throw new CayenneRuntimeException(
+                    "Only COMMITTED and HOLLOW objects can be transferred between contexts. "
+                        + "Invalid object state '"
+                        + PersistenceState.persistenceStateName(
+                            object.getPersistenceState())
+                        + "', ObjectId: "
+                        + object.getObjectId());
+            }      
+              
+            DataObject localObject;
+
+            if (object.getDataContext() != this) {
+                Class currentClass = object.getObjectId().getObjClass();
+                if (entity == null || currentClass != objectClass) {
+                    entity = getEntityResolver().lookupObjEntity(currentClass);
+                    objectClass = currentClass;
+                }
+                
+                localObject = objectFromDataRow(entity, object.getCommittedSnapshot(), true);
+            } else {
+                localObject = object;
+            }
+
+            localObjects.add(localObject);
+        }
+
+        return localObjects;
+    }
 
     /**
      * Notifies data context that a registered object need to be deleted on
@@ -549,17 +597,10 @@ public class DataContext implements QueryEngine, Serializable {
                         Iterator iterator = relatedObjects.iterator();
                         while (iterator.hasNext()) {
                             DataObject relatedObject = (DataObject) iterator.next();
-                            if (inverseRelationship.isToDependentEntity()) {
-                                relatedObject.setToOneDependentTarget(
-                                    inverseRelationshipName,
-                                    null);
-                            }
-                            else {
-                                relatedObject.setToOneTarget(
-                                    inverseRelationshipName,
-                                    null,
-                                    true);
-                            }
+                            relatedObject.setToOneTarget(
+                                inverseRelationshipName,
+                                null,
+                                true);
                         }
                     }
                     break;
@@ -623,19 +664,8 @@ public class DataContext implements QueryEngine, Serializable {
             }
         }
 
-        SelectQuery sel;
-        List results;
-        if (oid instanceof FlattenedObjectId) {
-            FlattenedObjectId foid = (FlattenedObjectId) oid;
-            sel = QueryUtils.selectObjectForFlattenedObjectId(this, foid);
-            FlattenedSelectObserver observer = new FlattenedSelectObserver(foid);
-            this.performQuery(sel, observer);
-            results = observer.getResults(sel);
-        }
-        else {
-            sel = QueryUtils.selectObjectForId(oid);
-            results = this.performQuery(sel);
-        }
+        SelectQuery sel = QueryUtils.selectObjectForId(oid);
+        List results = this.performQuery(sel);
 
         if (results.size() != 1) {
             String msg =
@@ -1313,40 +1343,5 @@ public class DataContext implements QueryEngine, Serializable {
             return source;
         }
 
-    }
-
-    private class FlattenedSelectObserver extends SelectObserver {
-        FlattenedObjectId oid;
-
-        public FlattenedSelectObserver(FlattenedObjectId anOid) {
-            super();
-            this.oid = anOid;
-        }
-
-        public void nextDataRows(Query query, List dataRows) {
-            List result = new ArrayList();
-            if (dataRows != null && dataRows.size() > 0) {
-                //Really, we're only expecting one row, but lets be complete
-                ObjEntity ent =
-                    DataContext.this.getEntityResolver().lookupObjEntity(query);
-                Iterator it = dataRows.iterator();
-                while (it.hasNext()) {
-                    //The next few lines are basically a cut down/modified 
-                    // version of objectFromDataRow that handles the oid swapping
-                    // properly 
-                    Map dataRow = (Map) it.next();
-                    DataObject obj = registeredObject(this.oid);
-                    snapshotManager.mergeObjectWithSnapshot(ent, obj, dataRow);
-                    obj.fetchFinished();
-                    //Swizzle object ids as the old "flattened" one isn't suitable for later
-                    // identification of this object
-                    ObjectId newOid = ent.objectIdFromSnapshot(dataRow);
-                    obj.setObjectId(newOid);
-                    DataContext.this.objectStore.changeObjectKey(this.oid, newOid);
-                    result.add(obj);
-                }
-            }
-            super.nextDataRows(query, result);
-        }
     }
 }

@@ -1,0 +1,33 @@
+            Cayenne Release Notes 1.0.4 
+                 Date: Dec. 14, 2003
+         ============================================
+
+For the latest information go to the project web site at
+http://objectstyle.org/cayenne/
+
+Issues Resolved:
+see http://objectstyle.org/jira/secure/BrowseProject.jspa?id=10000 for issue details
+
+CAY-10	Validate Project doesn't report missing reverse dbRelationsh
+CAY-55	Postgres Exception when using Boolean and BIT column
+CAY-37	ClassCastException on taking snapshot with unresolved to-one RelationshipFault
+CAY-39	DataMap dependencies are not loaded properly in some cases
+CAY-49	Compound PK ObjectIds generate inconsistent hash code
+CAY-58	Postgres Reverse Engineering Issues
+CAY-44	Invocation class doesn't work for non-public classes that have public methods declared bythe interface
+CAY-40	org.objectstyle.cayenne.util.Invocation.hashCode() is broken
+CAY-59	MySQL [C|B]LOB support lacking
+CAY-57	[C|B]LOB problem on Postgres
+CAY-46	Modeler-generated SQL needs semicolons
+
+Known Unresolved Issues:
+see http://objectstyle.org/jira/secure/BrowseProject.jspa?id=10000 for issue details
+
+CAY-14	PrefetchHelper doesn't work with compound keys
+CAY-12	Prefetching on entity used in qualifier
+CAY-13	Import EOModel: reverse DbRelationship must be created
+CAY-2	Renamed entities not ordered properly
+CAY-17	CM doesn't handle custom data types when importing an EOMode
+CAY-32	Issues in build.xml distributed with Cayenne
+CAY-1	Prefetching does not respect fetch limit
+CAY-8	importing related EOModel files fails

@@ -104,4 +104,23 @@ public class PkGeneratorTst extends CayenneTestCase {
 			pkList.add(pk);
 		}
 	}
+    
+    public void testBinaryPK1() throws Exception {
+        if (!(pkGen instanceof JdbcPkGenerator)) {
+            return;
+        }
+
+        DbEntity artistEntity = getDomain().getEntityResolver().lookupDbEntity("Artist");
+        assertNull(((JdbcPkGenerator) pkGen).binaryPK(artistEntity));
+    }
+
+    public void testBinaryPK2() throws Exception {
+        if (!(pkGen instanceof JdbcPkGenerator)) {
+            return;
+        }
+
+        DbEntity binPKEntity =
+            getDomain().getEntityResolver().lookupDbEntity("BinaryPKTest1");
+        assertNotNull(((JdbcPkGenerator) pkGen).binaryPK(binPKEntity));
+    }
 }

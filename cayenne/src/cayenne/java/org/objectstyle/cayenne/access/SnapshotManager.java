@@ -65,9 +65,9 @@ import org.apache.commons.collections.Factory;
 import org.apache.commons.collections.MapUtils;
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.DataObject;
-import org.objectstyle.cayenne.FlattenedObjectId;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
+import org.objectstyle.cayenne.access.util.RelationshipFault;
 import org.objectstyle.cayenne.map.DbAttributePair;
 import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.ObjAttribute;
@@ -151,24 +151,24 @@ public class SnapshotManager {
 
             // handle toOne flattened relationship
             if (rel.isFlattened()) {
-                //A flattened toOne relationship must be a series of
-                // toOne dbRelationships.  Record the relationship name
-                // and the source idsnapshot in order for later code 
-                // to be able to perform an appropriate fetch
-                FlattenedObjectId objectid =
-                    new FlattenedObjectId(targetClass, anObject, rel.getName());
-                Object newObject = context.registeredObject(objectid);
-                anObject.writePropertyDirectly(rel.getName(), newObject);
-                continue;
+				// A flattened toOne relationship must be a series of
+				 // toOne dbRelationships.  Initialize fault for it, since 
+				 // creating a hollow object won't be right...
+				 RelationshipFault fault = new RelationshipFault(anObject, rel.getName());
+				 anObject.writePropertyDirectly(rel.getName(), fault);
+				 continue;
             }
 
             DbRelationship dbRel =
                 (DbRelationship) rel.getDbRelationships().get(0);
 
-            // dependent to one relationship is optional... lets not create a fault for it just yet
-            if (dbRel.isToDependentPK()) {
-                continue;
-            }
+			// dependent to one relationship is optional 
+			// use fault, since we do not know whether it is null or not...
+			if (dbRel.isToDependentPK()) {
+				RelationshipFault fault = new RelationshipFault(anObject, rel.getName());
+				anObject.writePropertyDirectly(rel.getName(), fault);
+				continue;
+			}
 
             Map destMap = dbRel.targetPkSnapshotWithSrcSnapshot(snapshot);
             if (destMap == null) {
@@ -310,10 +310,13 @@ public class SnapshotManager {
             return false;
         }
 
-        DataObject toOneTarget =
-            (DataObject) object.readPropertyDirectly(relationship.getName());
-        ObjectId currentId =
-            (toOneTarget != null) ? toOneTarget.getObjectId() : null;
+        Object targetObject = object.readPropertyDirectly(relationship.getName());
+        if (targetObject instanceof RelationshipFault) {
+            return false;
+        }
+
+        DataObject toOneTarget = (DataObject) targetObject;
+        ObjectId currentId = (toOneTarget != null) ? toOneTarget.getObjectId() : null;
 
         // check if ObjectId map is a subset of a stored snapshot;
         // this is an equality condition
@@ -398,12 +401,12 @@ public class SnapshotManager {
                 continue;
             }
 
-            DataObject target =
-                (DataObject) anObject.readPropertyDirectly(relName);
-            if (target == null) {
+            Object targetObject = anObject.readPropertyDirectly(relName);
+            if (targetObject == null || (targetObject instanceof RelationshipFault)) {
                 continue;
             }
 
+            DataObject target = (DataObject) targetObject;
             Map idParts = target.getObjectId().getIdSnapshot();
 
             // this may happen in uncommitted objects
@@ -411,8 +414,7 @@ public class SnapshotManager {
                 continue;
             }
 
-            DbRelationship dbRel =
-                (DbRelationship) rel.getDbRelationships().get(0);
+            DbRelationship dbRel = (DbRelationship) rel.getDbRelationships().get(0);
             Map fk = dbRel.srcFkSnapshotWithTargetSnapshot(idParts);
             map.putAll(fk);
         }

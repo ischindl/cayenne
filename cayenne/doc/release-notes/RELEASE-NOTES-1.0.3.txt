@@ -1,0 +1,35 @@
+            Cayenne Release Notes 1.0.3 
+                 Date: Nov. 16, 2003
+         ============================================
+
+For the latest information go to the project web site at
+http://objectstyle.org/cayenne/
+
+Issues Resolved:
+see http://objectstyle.org/jira/secure/BrowseProject.jspa?id=10000 for details
+
+CAY-37	ClassCastException on taking snapshot with unresolved to-one RelationshipFault
+CAY-22	Add the names of ObjAttribues to class generation template
+CAY-34	Implement API transferring objects from one context to another
+CAY-4	Connection Pool: better synchronization
+CAY-26	IncrementalFaultList's iterator is not "lazy"
+CAY-21	Select relationship path bug
+CAY-6	Combining "data rows" and paged queries problem
+CAY-5	typo: userguide/deploy/cdeploy.html "ultipmate"
+CAY-20	Documentation: Orderings as EOSortOrdering
+CAY-35	Integrate Examples with the main website
+CAY-25	IncrementalFaultList has "lastIndexOf" broken
+
+Known Unresolved Issues:
+see http://objectstyle.org/jira/secure/BrowseProject.jspa?id=10000 for details
+
+CAY-14	PrefetchHelper doesn't work with compound keys
+CAY-12	Prefetching on entity used in qualifier
+CAY-10	Validate Project doesn't report missing reverse dbRelationsh
+CAY-7	Error in query translation hangs connection
+CAY-13	Import EOModel: reverse DbRelationship must be created
+CAY-2	Renamed entities not ordered properly
+CAY-17	CM doesn't handle custom data types when importing an EOMode
+CAY-32	Issues in build.xml distributed with Cayenne
+CAY-1	Prefetching does not respect fetch limit
+CAY-8	importing related EOModel files fails

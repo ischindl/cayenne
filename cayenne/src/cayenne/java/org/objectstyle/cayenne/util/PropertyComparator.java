@@ -55,6 +55,7 @@
  */
 package org.objectstyle.cayenne.util;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Comparator;
 
@@ -96,6 +97,28 @@ public class PropertyComparator implements Comparator {
 			// ran out of options
 			return null;
 		}
+	}
+	
+	/**
+	 * Method to read a simple one-step property of a JavaBean. 
+	 */
+	public static Object readProperty(String propertyName, Object bean)
+		throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+		if (bean == null) {
+			throw new NullPointerException("Null bean. Property: " + propertyName);
+		}
+
+		Method getter = findReadMethod(propertyName, bean.getClass());
+
+		if (getter == null) {
+			throw new NoSuchMethodException(
+				"No such property '"
+					+ propertyName
+					+ "' in class "
+					+ bean.getClass().getName());
+		}
+
+		return getter.invoke(bean, null);
 	}
 
 	public PropertyComparator(String propertyName, Class beanClass) {
