@@ -638,7 +638,7 @@ public class DataNode implements QueryEngine {
             // stored procedure may contain a mixture of update counts and result sets,
             // and out parameters. Read out parameters first, then
             // iterate until we exhaust all results
-            boolean hasResultSet = statement.execute();
+            statement.execute();
 
             // read out parameters
             readStoredProcedureOutParameters(statement, transl
@@ -646,14 +646,23 @@ public class DataNode implements QueryEngine {
 
             // read the rest of the query
             while (true) {
-                if (hasResultSet) {
+                if (statement.getMoreResults()) {
                     ResultSet rs = statement.getResultSet();
 
-                    readResultSet(
-                            rs,
-                            transl.getResultDescriptor(rs),
-                            (GenericSelectQuery) query,
-                            delegate);
+                    try {
+                        readResultSet(
+                                rs,
+                                transl.getResultDescriptor(rs),
+                                (GenericSelectQuery) query,
+                                delegate);
+                    }
+                    finally {
+                        try {
+                            rs.close();
+                        }
+                        catch (SQLException ex) {
+                        }
+                    }
                 }
                 else {
                     int updateCount = statement.getUpdateCount();
@@ -663,8 +672,6 @@ public class DataNode implements QueryEngine {
                     QueryLogger.logUpdateCount(query.getLoggingLevel(), updateCount);
                     delegate.nextCount(query, updateCount);
                 }
-
-                hasResultSet = statement.getMoreResults();
             }
         }
         finally {
