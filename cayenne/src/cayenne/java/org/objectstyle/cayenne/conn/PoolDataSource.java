@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,8 +63,6 @@ import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
 import javax.sql.PooledConnection;
 
-import org.apache.log4j.Logger;
-
 /**
  * <p>PoolDataSource allows to generate pooled connections.</p>
  *
@@ -76,13 +74,10 @@ import org.apache.log4j.Logger;
  * @author Andrei Adamchik
  */
 public class PoolDataSource implements ConnectionPoolDataSource {
-	private static Logger logObj = Logger.getLogger(PoolDataSource.class);
-
 	private DataSource nonPooledDatasource;
 
 	/** Creates new PoolDataSource */
 	public PoolDataSource(DataSource nonPooledDatasource) {
-		logObj.debug("Init new datasource");
 		this.nonPooledDatasource = nonPooledDatasource;
 	}
 
@@ -90,27 +85,27 @@ public class PoolDataSource implements ConnectionPoolDataSource {
 		nonPooledDatasource = new DriverDataSource(jdbcDriver, connectionUrl);
 	}
 
-	public int getLoginTimeout() throws java.sql.SQLException {
+	public int getLoginTimeout() throws SQLException {
 		return nonPooledDatasource.getLoginTimeout();
 	}
 
-	public void setLoginTimeout(int seconds) throws java.sql.SQLException {
+	public void setLoginTimeout(int seconds) throws SQLException {
 		nonPooledDatasource.setLoginTimeout(seconds);
 	}
 
-	public PrintWriter getLogWriter() throws java.sql.SQLException {
+	public PrintWriter getLogWriter() throws SQLException {
 		return nonPooledDatasource.getLogWriter();
 	}
 
-	public void setLogWriter(PrintWriter out) throws java.sql.SQLException {
+	public void setLogWriter(PrintWriter out) throws SQLException {
 		nonPooledDatasource.setLogWriter(out);
 	}
 
-	public PooledConnection getPooledConnection() throws java.sql.SQLException {
-		return new PooledConnectionImpl(nonPooledDatasource.getConnection());
+	public PooledConnection getPooledConnection() throws SQLException {
+		return new PooledConnectionImpl(nonPooledDatasource, null, null);
 	}
 
-	public PooledConnection getPooledConnection(String user, String password) throws java.sql.SQLException {
-		return new PooledConnectionImpl(nonPooledDatasource.getConnection(user, password));
+	public PooledConnection getPooledConnection(String user, String password) throws SQLException {
+		return new PooledConnectionImpl(nonPooledDatasource, user, password);
 	}
 }

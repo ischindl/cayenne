@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,11 +57,15 @@ package org.objectstyle.cayenne.modeler.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
-import org.objectstyle.cayenne.access.types.DefaultType;
-import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.access.DataDomain;
+import org.objectstyle.cayenne.access.DataNode;
+import org.objectstyle.cayenne.access.types.ExtendedTypeMap;
+import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.modeler.ModelerConstants;
 import org.objectstyle.cayenne.modeler.control.EventController;
@@ -83,46 +87,43 @@ public class ModelerUtil {
      * Returns array of db attribute names for DbEntity mapped to 
      * current ObjEntity. 
      */
-    public static String[] getDbAttributeNames(EventController mediator, DbEntity entity) {
-        List list = entity.getAttributeList();
-        int list_size = list.size() + 1;
-        String[] arr = new String[list_size];
-        arr[0] = "";
-        for (int i = 1; i < list_size; i++) {
-            DbAttribute attribute = (DbAttribute) list.get(i - 1);
-            arr[i] = attribute.getName();
-        }
+    public static Collection getDbAttributeNames(
+        EventController mediator,
+        DbEntity entity) {
 
-        Arrays.sort(arr);
-        return arr;
+        Set keys = entity.getAttributeMap().keySet();
+        List list = new ArrayList(keys.size());
+        list.add("");
+        list.addAll(keys);
+        return list;
     }
 
     public static String[] getRegisteredTypeNames() {
-        Iterator it = DefaultType.defaultTypes();
-        List list = new ArrayList();
-        while (it.hasNext()) {
-            list.add(it.next());
+        String[] srcList = new ExtendedTypeMap().getRegisteredTypeNames();
+        Arrays.sort(srcList);
+
+        String[] finalList = new String[srcList.length + 1];
+        System.arraycopy(srcList, 0, finalList, 1, srcList.length);
+        finalList[0] = "";
+
+        return finalList;
+    }
+
+    public static DataNode getNodeLinkedToMap(DataDomain domain, DataMap map) {
+        Collection nodes = domain.getDataNodes();
+
+        // go via an iterator in an indexed loop, since
+        // we already obtained the size 
+        // (and index is required to initialize array)
+        Iterator nodesIt = nodes.iterator();
+        while (nodesIt.hasNext()) {
+            DataNode node = (DataNode) nodesIt.next();
+
+            if (node.getDataMaps().contains(map)) {
+                return node;
+            }
         }
 
-        // can't use this anymore, ExtendedTypes are no longer a singleton
-        // String [] arr = ExtendedTypeMap.sharedInstance().getRegisteredTypeNames();
-
-        String[] ret_arr = new String[list.size() + 1];
-        ret_arr[0] = "";
-        for (int i = 0; i < list.size(); i++)
-            ret_arr[i + 1] = (String) list.get(i);
-        return ret_arr;
+        return null;
     }
-
-    public static String[] getDatabaseTypes() {
-        // FIXME!!! Need to have a reference TypesMapping instance
-        //String [] arr;
-        //arr = TypesMapping.getDatabaseTypes();
-        //String[] ret_arr = new String[arr.length + 1];
-        String[] ret_arr = new String[1];
-        ret_arr[0] = "";
-        //for (int i = 0; i < arr.length; i++) ret_arr[i+1] = arr[i];
-        return ret_arr;
-    }
-
 }

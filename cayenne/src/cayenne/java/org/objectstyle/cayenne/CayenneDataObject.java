@@ -1,8 +1,8 @@
 /* ====================================================================
- * 
- * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * The ObjectStyle Group Software License, Version 1.0
+ *
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,7 +10,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -18,15 +18,15 @@
  *    distribution.
  *
  * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
+ *    any, must include the following acknowlegement:
+ *       "This product includes software developed by the
  *        ObjectStyle Group (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
  *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
+ * 4. The names "ObjectStyle Group" and "Cayenne"
  *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
+ *    from this software without prior written permission. For written
  *    permission, please contact andrus@objectstyle.org.
  *
  * 5. Products derived from this software may not be called "ObjectStyle"
@@ -58,6 +58,7 @@ package org.objectstyle.cayenne;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -66,31 +67,20 @@ import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.access.DataContext;
+import org.objectstyle.cayenne.access.EntityResolver;
+import org.objectstyle.cayenne.access.util.RelationshipFault;
+import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
-import org.objectstyle.cayenne.query.SelectQuery;
+import org.objectstyle.cayenne.util.PropertyComparator;
 
 /**
  * A CayenneDataObject is a default implementation of DataObject interface.
- * It is normally used as a superclass of Cayenne persistent objects. 
- * 
+ * It is normally used as a superclass of Cayenne persistent objects.
+ *
  * @author Andrei Adamchik
  */
 public class CayenneDataObject implements DataObject {
     private static Logger logObj = Logger.getLogger(CayenneDataObject.class);
-
-    // used for dependent to one relationships
-    // to indicate that destination relationship was fetched and is null
-    private static final CayenneDataObject nullValue = new CayenneDataObject();
-
-    /** 
-     * Returns String label for persistence state. 
-     * Used for debugging.
-     *
-     * @deprecated use PersistenceState.persistenceStateName() instead.
-     */
-    public static String persistenceStateString(int persistenceStateValue) {
-			return PersistenceState.persistenceStateName(persistenceStateValue);
-    }
 
     protected ObjectId objectId;
     protected transient int persistenceState = PersistenceState.TRANSIENT;
@@ -124,34 +114,34 @@ public class CayenneDataObject implements DataObject {
     }
 
     /**
-     * Convenience method to read a "nested" property. 
+     * Convenience method to read a "nested" property.
      * Dot-separated path is used to traverse object relationships
      * until the final object is found. If a null object found
      * while traversing path, null is returned. If a list is encountered
      * in the middle of the path, CayenneRuntimeException is thrown.
-     * 
+     *
      * <p>Examples:</p>
      * <ul>
      *    <li>Read this object property:<br>
      *    <code>String name = (String)artist.readNestedProperty("name");</code><br><br></li>
-     * 
-     *    <li>Read an object related to this object:<br> 
+     *
+     *    <li>Read an object related to this object:<br>
      *    <code>Gallery g = (Gallery)paintingInfo.readNestedProperty("toPainting.toGallery");</code>
      *    <br><br></li>
-     * 
+     *
      *    <li>Read a property of an object related to this object: <br>
      *    <code>String name = (String)painting.readNestedProperty("toArtist.artistName");</code>
      *    <br><br></li>
-     * 
-     *    <li>Read to-many relationship list:<br> 
+     *
+     *    <li>Read to-many relationship list:<br>
      *    <code>List exhibits = (List)painting.readNestedProperty("toGallery.exhibitArray");</code>
      *    <br><br></li>
-     * 
-     *    <li>Read to-many relationship in the middle of the path <b>(throws exception)</b>:<br> 
+     *
+     *    <li>Read to-many relationship in the middle of the path <b>(throws exception)</b>:<br>
      *    <code>String name = (String)artist.readNestedProperty("paintingArray.paintingName");</code>
      *   <br><br></li>
      * </ul>
-     * 
+     *
      */
     public Object readNestedProperty(String path) {
         StringTokenizer toks = new StringTokenizer(path, ".");
@@ -166,11 +156,35 @@ public class CayenneDataObject implements DataObject {
             String pathComp = toks.nextToken();
             obj = dataObj.readProperty(pathComp);
 
+            // if a null value is returned, 
+            // there is still a chance to find a non-persistent property
+            // via reflection
+            if (obj == null && !props.containsKey(pathComp)) {
+                try {
+					obj = PropertyComparator.readProperty(pathComp, dataObj);
+                }
+                catch (IllegalAccessException e) {
+                    throw new CayenneRuntimeException(
+                        "Error reading property '" + pathComp + "'.",
+                        e);
+                }
+                catch (InvocationTargetException e) {
+                    throw new CayenneRuntimeException(
+                        "Error reading property '" + pathComp + "'.",
+                        e);
+                }
+                catch (NoSuchMethodException e) {
+                    // ignoring, no such property exists
+                }
+            }
+
             if (obj == null) {
                 return null;
-            } else if (obj instanceof CayenneDataObject) {
+            }
+            else if (obj instanceof CayenneDataObject) {
                 dataObj = (CayenneDataObject) obj;
-            } else {
+            }
+            else {
                 terminal = true;
             }
         }
@@ -180,10 +194,28 @@ public class CayenneDataObject implements DataObject {
 
     protected Object readProperty(String propName) {
         if (persistenceState == PersistenceState.HOLLOW) {
-            dataContext.refetchObject(objectId);
+            try {
+                dataContext.refetchObject(objectId);
+            }
+            catch (Exception ex) {
+                // TODO: add some sort of delegate method here. Quietly
+                // making object TRANSIENT doesn't seem right
+                logObj.info("Error refetching object, making transient.", ex);
+                setPersistenceState(PersistenceState.TRANSIENT);
+            }
         }
 
-        return readPropertyDirectly(propName);
+        Object object = readPropertyDirectly(propName);
+
+        // must resolve faults immediately
+        if (object instanceof RelationshipFault) {
+            // for now assume we just have to-one faults...
+            // after all to-many are represented by ToManyList
+            object = ((RelationshipFault) object).resolveToOne();
+            writePropertyDirectly(propName, object);
+        }
+
+        return object;
     }
 
     public Object readPropertyDirectly(String propName) {
@@ -191,7 +223,19 @@ public class CayenneDataObject implements DataObject {
     }
 
     protected void writeProperty(String propName, Object val) {
-        if (persistenceState == PersistenceState.COMMITTED) {
+        if (persistenceState == PersistenceState.HOLLOW) {
+            try {
+                dataContext.refetchObject(objectId);
+                persistenceState = PersistenceState.MODIFIED;
+            }
+            catch (Exception ex) {
+                // TODO: add some sort of delegate method here. Quietly
+                // making object TRANSIENT doesn't seem right
+                logObj.info("Error refetching object, making transient.", ex);
+                setPersistenceState(PersistenceState.TRANSIENT);
+            }
+        }
+        else if (persistenceState == PersistenceState.COMMITTED) {
             persistenceState = PersistenceState.MODIFIED;
         }
 
@@ -202,55 +246,28 @@ public class CayenneDataObject implements DataObject {
         props.put(propName, val);
     }
 
-    public DataObject readToOneDependentTarget(String relName) {
-        Object toOneTarget = readProperty(relName);
-
-        // known to be NULL
-        if (toOneTarget == nullValue) {
-            return null;
-        }
-
-        // known to be NOT NULL
-        if (toOneTarget != null) {
-            return (DataObject) toOneTarget;
-        }
-
-        // need to fetch
-		SelectQuery sel = QueryHelper.selectRelationshipObjects(dataContext, this, relName);
-        List results = dataContext.performQuery(sel);
-
-        // unexpected
-        if (results.size() > 1) {
-            throw new CayenneRuntimeException(
-                "error retrieving 'to one' target, found " + results.size());
-        }
-
-        // null target
-        if (results.size() == 0) {
-            writePropertyDirectly(relName, nullValue);
-            return null;
-        }
-
-        // found a valid object
-
-        DataObject dobj = (DataObject) results.get(0);
-        writePropertyDirectly(relName, dobj);
-        return dobj;
-    }
+	/**
+	 * @deprecated Since 1.0.1 this method is no longer needed, since "readProperty(String)" 
+	 * supports to-one dependent targets.
+	 */
+	public DataObject readToOneDependentTarget(String relName) {
+		return (DataObject) readProperty(relName);
+	}
 
     public void removeToManyTarget(String relName, DataObject val, boolean setReverse) {
-		ObjRelationship relationship = this.getRelationshipNamed(relName);
-		//Only delete the internal object if we should "setReverse" (or rather, if we aren't not setting the reverse).
-		//This kind of doubles up the meaning of that flag, so we may need to add another?
-		if (relationship.isFlattened() && setReverse) {
-			if (relationship.isReadOnly()) {
-				throw new CayenneRuntimeException("Cannot modify (remove from) the read-only relationship " + relName);
-			}
-			//Handle removing from a flattened relationship
-			dataContext.registerFlattenedRelationshipDelete(this, relName, val);
-		}
-		
-		//Now do the rest of the normal handling (regardless of whether it was flattened or not)
+        ObjRelationship relationship = this.getRelationshipNamed(relName);
+        //Only delete the internal object if we should "setReverse" (or rather, if we aren't not setting the reverse).
+        //This kind of doubles up the meaning of that flag, so we may need to add another?
+        if (relationship.isFlattened() && setReverse) {
+            if (relationship.isReadOnly()) {
+                throw new CayenneRuntimeException(
+                    "Cannot modify (remove from) the read-only relationship " + relName);
+            }
+            //Handle removing from a flattened relationship
+            dataContext.registerFlattenedRelationshipDelete(this, relationship, val);
+        }
+
+        //Now do the rest of the normal handling (regardless of whether it was flattened or not)
         List relList = (List) readProperty(relName);
         relList.remove(val);
         if (persistenceState == PersistenceState.COMMITTED) {
@@ -263,30 +280,31 @@ public class CayenneDataObject implements DataObject {
     }
 
     public void addToManyTarget(String relName, DataObject val, boolean setReverse) {
-		if ((val!=null) && (dataContext != val.getDataContext())) {
-			throw new CayenneRuntimeException(
-				"Cannot add object to relationship "
-					+ relName
-					+ " because it is in a different DataContext");
-		}
-		ObjRelationship relationship = this.getRelationshipNamed(relName);
-		if (relationship == null) {
-			throw new CayenneRuntimeException(
-				"Cannot add object to relationship "
-					+ relName
-					+ " because there is no relationship by that name");
-		}
-		//Only create the internal object if we should "setReverse" (or rather, if we aren't not setting the reverse).
-		//This kind of doubles up the meaning of that flag, so we may need to add another?
-		if (relationship.isFlattened() && setReverse) {
-			if (relationship.isReadOnly()) {
-				throw new CayenneRuntimeException("Cannot modify (add to) the read-only relationship " + relName);
-			}
-			//Handle adding to a flattened relationship
-			dataContext.registerFlattenedRelationshipInsert(this, relName, val);
-		}
-		
-		//Now do the rest of the normal handling (regardless of whether it was flattened or not)
+        if ((val != null) && (dataContext != val.getDataContext())) {
+            throw new CayenneRuntimeException(
+                "Cannot add object to relationship "
+                    + relName
+                    + " because it is in a different DataContext");
+        }
+        ObjRelationship relationship = this.getRelationshipNamed(relName);
+        if (relationship == null) {
+            throw new CayenneRuntimeException(
+                "Cannot add object to relationship "
+                    + relName
+                    + " because there is no relationship by that name");
+        }
+        //Only create the internal object if we should "setReverse" (or rather, if we aren't not setting the reverse).
+        //This kind of doubles up the meaning of that flag, so we may need to add another?
+        if (relationship.isFlattened() && setReverse) {
+            if (relationship.isReadOnly()) {
+                throw new CayenneRuntimeException(
+                    "Cannot modify (add to) the read-only relationship " + relName);
+            }
+            //Handle adding to a flattened relationship
+            dataContext.registerFlattenedRelationshipInsert(this, relationship, val);
+        }
+
+        //Now do the rest of the normal handling (regardless of whether it was flattened or not)
         List relList = (List) readProperty(relName);
         relList.add(val);
         if (persistenceState == PersistenceState.COMMITTED) {
@@ -297,39 +315,34 @@ public class CayenneDataObject implements DataObject {
             setReverseRelationship(relName, val);
     }
 
-    public void setToOneDependentTarget(String relName, DataObject val) {
-        if (val == null)
-            val = nullValue;
-
-        setToOneTarget(relName, val, true);
-    }
+	/**
+	 * @deprecated Since 1.0.1 this method is no longer needed, since 
+	 * "setToOneTarget(String, DataObject, boolean)" supports dependent targets 
+	 * as well.
+	 */
+	public void setToOneDependentTarget(String relName, DataObject val) {
+		setToOneTarget(relName, val, true);
+	}
 
     public void setToOneTarget(String relName, DataObject val, boolean setReverse) {
-    	//Three reasons that may mean a check is not needed:
-    	// 1: val==null... dataContext of value is unobtainable, and hence irrelevant
-    	// 2: val==nullValue... the relationship is a toOneDependent, this is functionally 
-    	//		equivalent to the first condition
-    	// 3: this==nullValue... when setting the reverse direction of a toOneDependent 
-    	// 		that is being set to null, this will be nullValue.
-		if ((val != null)
-			&& (val != nullValue)
-			&& (this != nullValue)
-			&& (dataContext != val.getDataContext())) {
-			throw new CayenneRuntimeException(
-				"Cannot set object as destination of relationship "
-					+ relName
-					+ " because it is in a different DataContext");
-		}
+        // 1: val==null... dataContext of value is unobtainable, and hence irrelevant
+        if ((val != null)
+            && (dataContext != val.getDataContext())) {
+            throw new CayenneRuntimeException(
+                "Cannot set object as destination of relationship "
+                    + relName
+                    + " because it is in a different DataContext");
+        }
 
-        DataObject oldTarget = (DataObject) readPropertyDirectly(relName);
+        Object oldTarget = readPropertyDirectly(relName);
         if (oldTarget == val) {
             return;
         }
 
         if (setReverse) {
             // unset old reverse relationship
-            if (oldTarget != null)
-                unsetReverseRelationship(relName, oldTarget);
+            if (oldTarget instanceof DataObject)
+                unsetReverseRelationship(relName, (DataObject) oldTarget);
 
             // set new reverse relationship
             if (val != null)
@@ -338,20 +351,27 @@ public class CayenneDataObject implements DataObject {
 
         writeProperty(relName, val);
     }
-    
-	private ObjRelationship getRelationshipNamed(String relName) {
-		return (ObjRelationship) dataContext.getEntityResolver().lookupObjEntity(this).getRelationship(relName);
-	}
 
-    /** 
-     * Initializes reverse relationship from object <code>val</code> 
+    private ObjRelationship getRelationshipNamed(String relName) {
+        return (ObjRelationship) dataContext
+            .getEntityResolver()
+            .lookupObjEntity(this)
+            .getRelationship(relName);
+    }
+
+    /**
+     * Initializes reverse relationship from object <code>val</code>
      * to this object.
-     * 
-     * @param relName name of relationship from this object 
-     * to <code>val</code>. 
+     *
+     * @param relName name of relationship from this object
+     * to <code>val</code>.
      */
     protected void setReverseRelationship(String relName, DataObject val) {
-        ObjRelationship rel=(ObjRelationship) dataContext.getEntityResolver().lookupObjEntity(objectId.getObjClass()).getRelationship(relName);
+        ObjRelationship rel =
+            (ObjRelationship) dataContext
+                .getEntityResolver()
+                .lookupObjEntity(objectId.getObjClass())
+                .getRelationship(relName);
         ObjRelationship revRel = rel.getReverseRelationship();
         if (revRel != null) {
             if (revRel.isToMany())
@@ -361,16 +381,26 @@ public class CayenneDataObject implements DataObject {
         }
     }
 
-    /** Remove current object from reverse relationship of object <code>val</code> to this object.
-      * @param relName name of relationship from this object to <code>val</code>. */
+    /** 
+     * Removes current object from reverse relationship of object
+     * <code>val</code> to this object.
+     */
     protected void unsetReverseRelationship(String relName, DataObject val) {
-        ObjRelationship rel=(ObjRelationship) dataContext.getEntityResolver().lookupObjEntity(objectId.getObjClass()).getRelationship(relName);
+        Class aClass = objectId.getObjClass();
+        EntityResolver resolver = dataContext.getEntityResolver();
+        ObjEntity entity = resolver.lookupObjEntity(aClass);
+
+        if (entity == null) {
+            String className = (aClass != null) ? aClass.getName() : "<null>";
+            throw new IllegalStateException(
+                "DataObject's class is unmapped: " + className);
+        }
+
+        ObjRelationship rel = (ObjRelationship) entity.getRelationship(relName);
         ObjRelationship revRel = rel.getReverseRelationship();
         if (revRel != null) {
             if (revRel.isToMany())
                 val.removeToManyTarget(revRel.getName(), this, false);
-            else if (revRel.isToDependentEntity())
-                val.setToOneTarget(revRel.getName(), nullValue, false);
             else
                 val.setToOneTarget(revRel.getName(), null, false);
         }
@@ -412,9 +442,11 @@ public class CayenneDataObject implements DataObject {
 
             if (val instanceof CayenneDataObject) {
                 ((CayenneDataObject) val).toStringBuffer(buf, false);
-            } else if (val instanceof List) {
+            }
+            else if (val instanceof List) {
                 buf.append('(').append(val.getClass().getName()).append(')');
-            } else
+            }
+            else
                 buf.append(val);
 
             buf.append('\n');
@@ -429,10 +461,11 @@ public class CayenneDataObject implements DataObject {
 
     /**
      * Default implementation does nothing.
-     * 
+     *
      * @see org.objectstyle.cayenne.DataObject#fetchFinished()
      */
-    public void fetchFinished() {}
+    public void fetchFinished() {
+    }
 
     private void writeObject(ObjectOutputStream out) throws IOException {
         out.writeInt(persistenceState);

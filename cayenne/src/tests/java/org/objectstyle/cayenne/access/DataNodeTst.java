@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,6 +62,7 @@ import java.util.List;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneRuntimeException;
+import org.objectstyle.cayenne.access.util.DefaultOperationObserver;
 import org.objectstyle.cayenne.access.util.SelectObserver;
 import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.query.SelectQuery;
@@ -74,22 +75,16 @@ import org.objectstyle.cayenne.query.SelectQuery;
 public class DataNodeTst extends IteratorTestBase {
 	protected DataNode sharedNode;
 
-	public DataNodeTst(String name) {
-		super(name);
-	}
-
 	public void testRunSelect() throws Exception {
 		SelectObserver observer = new SelectObserver();
 
 		try {
 			init();
-			sharedNode.runSelect(observer, st, transl);
+			sharedNode.runSelect(conn, query, observer);
 			assertEquals(
 				DataContextTst.artistCount,
 				observer.getResults(transl.getQuery()).size());
 		} finally {
-			// avoid double closing of the statement
-			st = null;
 			cleanup();
 		}
 	}
@@ -98,7 +93,11 @@ public class DataNodeTst extends IteratorTestBase {
 		IteratedObserver observer = new IteratedObserver();
 
 		init();
-		sharedNode.runIteratedSelect(observer, st, transl);
+		
+		// first assert that created node is valid
+		assertNotNull(sharedNode.getEntityResolver().lookupObjEntity(query));
+		
+		sharedNode.runSelect(conn, query, observer);
 		assertEquals(DataContextTst.artistCount, observer.getResultCount());
 
 		// no cleanup is needed, since observer will close the iterator
@@ -129,8 +128,8 @@ public class DataNodeTst extends IteratorTestBase {
 	}
 
 	protected DataNode newDataNode() {
-		DataNode node = new DataNode("dummy");
-		node.setAdapter(getNode().getAdapter());
+		DataNode node = getNode().getAdapter().createDataNode("dummy");
+		node.setDataMaps(getNode().getDataMaps());
 		return node;
 	}
 

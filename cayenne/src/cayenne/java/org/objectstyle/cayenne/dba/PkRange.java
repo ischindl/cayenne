@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,26 +59,32 @@ package org.objectstyle.cayenne.dba;
 /** 
  * Represents data structure to maintain a range of cached
  * primary keys.
+ * 
+ * @author Andrei Adamchik
  */
 public final class PkRange {
-    private int curValue;
-    private int maxValue;
+	private int curValue;
+	private int maxValue;
 
-    public PkRange(int curValue, int maxValue) {
-        this.curValue = curValue;
-        this.maxValue = maxValue;
-    }
+	public PkRange(int curValue, int maxValue) {
+		reset(curValue, maxValue);
+	}
 
-    public boolean isExhausted() {
-        return curValue > maxValue;
-    }
+	public void reset(int curValue, int maxValue) {
+		this.curValue = curValue;
+		this.maxValue = maxValue;
+	}
 
-    public Integer getNextPrimaryKey() {
-        // do bound checking
-        if (isExhausted()) {
-            throw new RuntimeException("PkRange is exhausted and can not be used anymore.");
-        }
-        
-        return new Integer(curValue++);
-    }
+	public boolean isExhausted() {
+		return curValue > maxValue;
+	}
+
+	public Integer getNextPrimaryKey() {
+		// do bound checking
+		if (isExhausted()) {
+			throw new RuntimeException("PkRange is exhausted and can not be used anymore.");
+		}
+
+		return new Integer(curValue++);
+	}
 }

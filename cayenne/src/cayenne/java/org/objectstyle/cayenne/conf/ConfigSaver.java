@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002 The ObjectStyle Group
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,7 +59,7 @@ package org.objectstyle.cayenne.conf;
 import java.io.PrintWriter;
 import java.util.Iterator;
 
-import org.objectstyle.cayenne.access.DataSourceInfo;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.project.Project;
 import org.objectstyle.cayenne.util.Util;
 
@@ -170,6 +170,7 @@ public class ConfigSaver {
      * <code>info</code> object may contain full or partial information.
      */
     public void storeDataNode(PrintWriter out, DataSourceInfo info) {
+		out.println("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
         out.print(
             "<driver project-version=\""
                 + Project.CURRENT_PROJECT_VERSION

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -137,8 +137,6 @@ public class TypesMapping {
      *  Values:  SQL int type definitions from java.sql.Types */
     private static final Map javaSqlEnum = new HashMap();
 
-    private static final String[] emptyArray = new String[0];
-
     static {
         sqlStringType.put(SQL_ARRAY, new Integer(Types.ARRAY));
         sqlStringType.put(SQL_BIGINT, new Integer(Types.BIGINT));
@@ -187,14 +185,14 @@ public class TypesMapping {
         sqlEnumType.put(new Integer(Types.VARBINARY), SQL_VARBINARY);
         sqlEnumType.put(new Integer(Types.VARCHAR), SQL_VARCHAR);
         sqlEnumType.put(new Integer(Types.OTHER), SQL_OTHER);
-        
+
         sqlEnumJava.put(new Integer(Types.BIGINT), JAVA_LONG);
         sqlEnumJava.put(new Integer(Types.BINARY), JAVA_BYTES);
         sqlEnumJava.put(new Integer(Types.BIT), JAVA_BOOLEAN);
         sqlEnumJava.put(new Integer(Types.BLOB), JAVA_BYTES);
         sqlEnumJava.put(new Integer(Types.CLOB), JAVA_STRING);
         sqlEnumJava.put(new Integer(Types.CHAR), JAVA_STRING);
-        sqlEnumJava.put(new Integer(Types.DATE), JAVA_SQLDATE);
+        sqlEnumJava.put(new Integer(Types.DATE), JAVA_UTILDATE);
         sqlEnumJava.put(new Integer(Types.DECIMAL), JAVA_BIGDECIMAL);
         sqlEnumJava.put(new Integer(Types.DOUBLE), JAVA_DOUBLE);
         sqlEnumJava.put(new Integer(Types.FLOAT), JAVA_FLOAT);
@@ -205,8 +203,8 @@ public class TypesMapping {
         sqlEnumJava.put(new Integer(Types.REAL), JAVA_FLOAT);
         sqlEnumJava.put(new Integer(Types.SMALLINT), JAVA_SHORT);
         sqlEnumJava.put(new Integer(Types.TINYINT), JAVA_BYTE);
-        sqlEnumJava.put(new Integer(Types.TIME), JAVA_TIME);
-        sqlEnumJava.put(new Integer(Types.TIMESTAMP), JAVA_TIMESTAMP);
+        sqlEnumJava.put(new Integer(Types.TIME), JAVA_UTILDATE);
+        sqlEnumJava.put(new Integer(Types.TIMESTAMP), JAVA_UTILDATE);
         sqlEnumJava.put(new Integer(Types.VARBINARY), JAVA_BYTES);
         sqlEnumJava.put(new Integer(Types.VARCHAR), JAVA_STRING);
 
@@ -215,7 +213,7 @@ public class TypesMapping {
         javaSqlEnum.put(JAVA_BOOLEAN, new Integer(Types.BIT));
         javaSqlEnum.put(JAVA_STRING, new Integer(Types.VARCHAR));
         javaSqlEnum.put(JAVA_SQLDATE, new Integer(Types.DATE));
-        javaSqlEnum.put(JAVA_UTILDATE, new Integer(Types.TIMESTAMP));
+        javaSqlEnum.put(JAVA_TIMESTAMP, new Integer(Types.TIMESTAMP));
         javaSqlEnum.put(JAVA_BIGDECIMAL, new Integer(Types.DECIMAL));
         javaSqlEnum.put(JAVA_DOUBLE, new Integer(Types.DOUBLE));
         javaSqlEnum.put(JAVA_FLOAT, new Integer(Types.FLOAT));
@@ -231,7 +229,7 @@ public class TypesMapping {
      * as a part of column definition. 
      */
     public static boolean supportsLength(int type) {
-       return type == Types.BINARY
+        return type == Types.BINARY
             || type == Types.CHAR
             || type == Types.DECIMAL
             || type == Types.DOUBLE
@@ -241,7 +239,6 @@ public class TypesMapping {
             || type == Types.VARBINARY
             || type == Types.VARCHAR;
     }
-    
 
     /** 
      * Returns true if supplied type is a numeric type.
@@ -268,6 +265,7 @@ public class TypesMapping {
             || type == Types.FLOAT
             || type == Types.REAL;
     }
+    
 
     /** Returns an array of string names of the default JDBC data types.*/
     public static String[] getDatabaseTypes() {
@@ -343,13 +341,17 @@ public class TypesMapping {
         return ((TypeInfo) list.get(0)).name;
     }
 
-    /** Gets the JDBC code for SQL type by its name.*/
+    /** 
+     * Returns a JDBC int type for SQL typem name.
+     */
     public static int getSqlTypeByName(String typeName) {
         Integer tmp = (Integer) sqlStringType.get(typeName);
         return (null == tmp) ? NOT_DEFINED : tmp.intValue();
     }
 
-    /** Gets the String representation of the SQL type from its JDBC code.*/
+    /** 
+     * Returns a String representation of the SQL type from its JDBC code.
+     */
     public static String getSqlNameByType(int type) {
         return (String) sqlEnumType.get(new Integer(type));
     }
@@ -362,11 +364,31 @@ public class TypesMapping {
         return (null == temp) ? NOT_DEFINED : temp.intValue();
     }
 
-    /** Get the corresponding Java type by its java.sql.Types counterpart.
-    *  @return Fully qualified Java type name or null if not found. */
+    /** 
+     * Get the corresponding Java type by its java.sql.Types counterpart.
+     * 
+     *  @return Fully qualified Java type name or null if not found. 
+     */
     public static String getJavaBySqlType(int type) {
         return (String) sqlEnumJava.get(new Integer(type));
     }
+
+    /** 
+      * Get the corresponding Java type by its java.sql.Types counterpart.
+      * 
+      *  @return Fully qualified Java type name or null if not found. 
+      */
+    public static String getJavaBySqlType(
+        int type,
+        int length,
+        int precision) {
+
+        if (type == Types.NUMERIC && precision == 0) {
+            type = Types.INTEGER;
+        }
+        return (String) sqlEnumJava.get(new Integer(type));
+    }
+    
 
     // *************************************************************
     // non-static code
@@ -395,8 +417,7 @@ public class TypesMapping {
 
                 infos.add(info);
             }
-        }
-        finally {
+        } finally {
             rs.close();
         }
 
@@ -439,36 +460,6 @@ public class TypesMapping {
             databaseTypes.put(blob, lvbInfo);
     }
 
-    /** Returns name of data type in a database described by this object corresponding
-     *  to a standard JDBC data type defined in java.sql.Types */
-    public String[] getDatabaseTypes(int jdbcType) {
-        List infos = (List) databaseTypes.get(new Integer(jdbcType));
-        if (infos == null || infos.size() == 0)
-            return emptyArray;
-
-        int len = infos.size();
-        String[] types = new String[len];
-        for (int i = 0; i < len; i++) {
-            types[i] = ((TypeInfo) infos.get(i)).name;
-        }
-
-        return types;
-    }
-
-    /** Database might have more then 1 type mapping to a single JDBC type.
-     *  try to guess the one that matches the best. */
-    public String getFuzzyDataType(int jdbcType) {
-        if (jdbcType == NOT_DEFINED)
-            return null;
-
-        List alts = (List) databaseTypes.get(new Integer(jdbcType));
-        if (alts == null)
-            return null;
-
-        TypeInfo[] altArray = (TypeInfo[]) alts.toArray(new TypeInfo[alts.size()]);
-        return pickDataType(jdbcType, altArray);
-    }
-
     /** Stores (incomplete) information about database data type */
     static class TypeInfo {
         String name;
@@ -478,7 +469,8 @@ public class TypesMapping {
         public String toString() {
             StringBuffer buf = new StringBuffer();
             buf.append("[   TypeInfo: ").append(name);
-            buf.append("\n    JDBC Type: ").append(TypesMapping.getSqlNameByType(jdbcType));
+            buf.append("\n    JDBC Type: ").append(
+                TypesMapping.getSqlNameByType(jdbcType));
             buf.append("\n    Precision: ").append(precision);
             buf.append("\n]");
             return buf.toString();

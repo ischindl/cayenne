@@ -1,12 +1,8 @@
-package org.objectstyle.cayenne;
-
-import org.objectstyle.art.ArtGroup;
-
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,26 +53,21 @@ import org.objectstyle.art.ArtGroup;
  * <http://objectstyle.org/>.
  *
  */
- 
+package org.objectstyle.cayenne;
+
+import org.objectstyle.art.ArtGroup;
+
 /**
  * Some more tests regarding reflexive relationships, especially related to delete rules
  * etc.  The implementation is hairy, and so needs a really good workout.
  */
 public class CDOReflexiveRelTst extends CayenneDOTestBase {
 
-	/**
-	 * Constructor for CDOReflexiveRelTst.
-	 * @param name
-	 */
-	public CDOReflexiveRelTst(String name) {
-		super(name);
-	}
-
 	private void failWithException(Exception e) {
 			e.printStackTrace();
 			fail("Should not have thrown an exception :"+e.getMessage());
 	}
-	
+
 	public void testAddDeleteNoCommit() {
 		ArtGroup parentGroup=(ArtGroup)ctxt.createAndRegisterNewObject("ArtGroup");
 		parentGroup.setName("parent");

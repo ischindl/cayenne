@@ -1,13 +1,8 @@
-package org.objectstyle.cayenne.query;
-
-import org.objectstyle.cayenne.map.DbEntity;
-import org.objectstyle.cayenne.map.ObjEntity;
-
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,14 +53,18 @@ import org.objectstyle.cayenne.map.ObjEntity;
  * <http://objectstyle.org/>.
  *
  */ 
+package org.objectstyle.cayenne.query;
 
+import org.objectstyle.cayenne.map.DbEntity;
+import org.objectstyle.cayenne.map.ObjEntity;
 
-
-
-/** Allows to send "raw" SQL INSERT, UPDATE, DELETE statements or stored procedure calls 
- * to the database using Cayenne connection layer. It is intended to allow programmers to access
- * database-specific features not covered by Cayenne. Queries created
- * using SqlModifyQuery are very likely not portable accross database engines. */
+/**
+ * Allows to send "raw" SQL INSERT, UPDATE, DELETE statements or
+ * stored procedure calls  to the database using Cayenne connection layer.
+ * It is intended to allow programmers to access database-specific features
+ * not covered by Cayenne. Queries created using SqlModifyQuery are very
+ * likely not portable accross database engines.
+ */
 public class SqlModifyQuery extends AbstractQuery {
     protected String sqlString;
     

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,9 @@
  */
 package org.objectstyle.cayenne.project.validator;
 
+import java.util.Iterator;
+
+import org.objectstyle.cayenne.map.DbAttributePair;
 import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.project.ProjectPath;
 import org.objectstyle.cayenne.util.Util;
@@ -74,13 +77,42 @@ public class DbRelationshipValidator extends TreeNodeValidator {
     public void validateObject(ProjectPath path, Validator validator) {
         DbRelationship rel = (DbRelationship) path.getObject();
         if (rel.getTargetEntity() == null) {
-        	validator.registerError("DbRelationship has no target entity.", path);
-        } else if (rel.getJoins().size() == 0) {
-        	validator.registerWarning("DbRelationship has no joins.", path);
+            validator.registerError("DbRelationship has no target entity.", path);
+        }
+        else if (rel.getJoins().size() == 0) {
+            validator.registerWarning("DbRelationship has no joins.", path);
+        }
+        else {
+            // validate joins
+            Iterator joins = rel.getJoins().iterator();
+            while (joins.hasNext()) {
+                DbAttributePair join = (DbAttributePair) joins.next();
+                if (join.getSource() == null && join.getTarget() == null) {
+                    validator.registerWarning(
+                        "DbRelationship join has no source and target attributes selected.",
+                        path);
+                }
+                else if (join.getSource() == null) {
+                    validator.registerWarning(
+                        "DbRelationship join has no source attribute selected.",
+                        path);
+                }
+                else if (join.getTarget() == null) {
+                    validator.registerWarning(
+                        "DbRelationship join has no target attribute selected.",
+                        path);
+                }
+            }
         }
 
         if (Util.isEmptyString(rel.getName())) {
-        	validator.registerError("Unnamed DbRelationship.", path);
+            validator.registerError("Unnamed DbRelationship.", path);
+        }
+        // check if there are attributes having the same name
+        else if (rel.getSourceEntity().getAttribute(rel.getName()) != null) {
+            validator.registerWarning(
+                "DbRelationship has the same name as one of DbAttributes",
+                path);
         }
     }
 }

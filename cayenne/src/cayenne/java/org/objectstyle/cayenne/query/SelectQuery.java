@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,11 +56,16 @@
 package org.objectstyle.cayenne.query;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.exp.Expression;
+import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.ObjEntity;
 
 /**
@@ -75,11 +80,10 @@ import org.objectstyle.cayenne.map.ObjEntity;
  * @author Andrei Adamchik
  */
 public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
-    private static Logger logObj = Logger.getLogger(SelectQuery.class);
 
-    protected List custDbAttributes = new ArrayList();
+    protected List customDbAttributes = new ArrayList();
     protected List orderings = new ArrayList();
-    protected List prefetches = new ArrayList();
+    protected Set prefetches = new HashSet();
     protected boolean distinct;
     protected boolean fetchingDataRows;
     protected int fetchLimit;
@@ -89,11 +93,12 @@ public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
 
     /** Creates empty SelectQuery. */
     public SelectQuery() {
+        super();
     }
 
     private void init(Object root, Expression qualifier) {
-        setRoot(root);
-        setQualifier(qualifier);
+        this.setRoot(root);
+        this.setQualifier(qualifier);
     }
 
     /**
@@ -110,7 +115,8 @@ public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
     * @param qualifier an Expression indicating which objects should be fetched
     */
     public SelectQuery(ObjEntity root, Expression qualifier) {
-        init(root, qualifier);
+        this();
+        this.init(root, qualifier);
     }
 
     /**
@@ -143,18 +149,20 @@ public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
     /**
      * A shortcut for <code>queryWithParams(params, true)</code>.
      */
-    public SelectQuery queryWithParams(Map params) {
-        return queryWithParams(params, true);
+    public SelectQuery queryWithParameters(Map parameters) {
+        return queryWithParameters(parameters, true);
     }
 
     /**
      * Returns a query built using this query as a prototype, using a set of
      * parameters to build the qualifier. 
      * 
-     * @see org.objectstyle.cayenne.exp.Expression#expWithParams(java.util.Map,
+     * @see org.objectstyle.cayenne.exp.Expression#expWithParameters(java.util.Map,
      * boolean) Explanation on parameter substitution.
      */
-    public SelectQuery queryWithParams(Map params, boolean pruneMissing) {
+    public SelectQuery queryWithParameters(
+        Map parameters,
+        boolean pruneMissing) {
         // create a query replica
         SelectQuery query = new SelectQuery();
         query.setDistinct(distinct);
@@ -168,11 +176,12 @@ public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
 
         query.addPrefetches(prefetches);
         query.addOrderings(orderings);
-        query.addCustDbAttributes(custDbAttributes);
+        query.addCustomDbAttributes(customDbAttributes);
 
         // substitute qualifier parameters
         if (qualifier != null) {
-            query.setQualifier(qualifier.expWithParams(params, pruneMissing));
+            query.setQualifier(
+                qualifier.expWithParameters(parameters, pruneMissing));
         }
 
         return query;
@@ -199,7 +208,7 @@ public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
 
     /** Adds ordering specification to this query orderings. */
     public void addOrdering(String sortPathSpec, boolean isAscending) {
-        addOrdering(new Ordering(sortPathSpec, isAscending));
+        this.addOrdering(new Ordering(sortPathSpec, isAscending));
     }
 
     /** Adds ordering specification to this query orderings. */
@@ -207,12 +216,18 @@ public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
         String sortPathSpec,
         boolean isAscending,
         boolean ignoreCase) {
-        addOrdering(new Ordering(sortPathSpec, isAscending, ignoreCase));
+        this.addOrdering(new Ordering(sortPathSpec, isAscending, ignoreCase));
     }
 
-    /** Returns a list of orderings used by this query. */
-    public List getOrderingList() {
+    /**
+     * Returns a list of orderings used by this query.
+     */
+    public List getOrderings() {
         return orderings;
+    }
+
+    public void clearOrderings() {
+        orderings.clear();
     }
 
     /** Returns true if this query returns distinct rows. */
@@ -229,8 +244,22 @@ public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
      * Returns a list of attributes that will be included
      * in the results of this query.
      */
-    public List getCustDbAttributes() {
-        return custDbAttributes;
+    public List getCustomDbAttributes() {
+    	// if query root is DbEntity, and no custom attributes
+    	// are defined, return DbEntity attributes.
+    	if(customDbAttributes.size() == 0 && (getRoot() instanceof DbEntity)) {
+    		Collection attributes = ((DbEntity)getRoot()).getAttributes();
+    		List attributeNames = new ArrayList(attributes.size());
+    		Iterator it = attributes.iterator();
+    		while(it.hasNext()) {
+    			DbAttribute attribute = (DbAttribute)it.next();
+			    attributeNames.add(attribute.getName());
+    		}
+    		return attributeNames;
+    	}
+    	else {
+		  return customDbAttributes;
+    	}
     }
 
     /**
@@ -239,12 +268,12 @@ public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
      * <code>ARTIST_NAME</code>, <code>PAINTING_ARRAY.PAINTING_ID</code>,
      * etc.
      */
-    public void addCustDbAttribute(String attributePath) {
-        custDbAttributes.add(attributePath);
+    public void addCustomDbAttribute(String attributePath) {
+        customDbAttributes.add(attributePath);
     }
-    
-    public void addCustDbAttributes(List attrPaths) {
-        custDbAttributes.addAll(attrPaths);
+
+    public void addCustomDbAttributes(List attrPaths) {
+        customDbAttributes.addAll(attrPaths);
     }
 
     /**
@@ -257,15 +286,15 @@ public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
      * always return data rows instead of DataObjects.
      * </p>
      */
-    public boolean isFetchingCustAttributes() {
-        return custDbAttributes.size() > 0;
+    public boolean isFetchingCustomAttributes() {
+        return (getRoot() instanceof DbEntity) || customDbAttributes.size() > 0;
     }
 
     /**
      * Returns a list of relationships that must be prefetched 
      * as a part of this query.
      */
-    public List getPrefetchList() {
+    public Collection getPrefetches() {
         return prefetches;
     }
 
@@ -278,8 +307,12 @@ public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
         prefetches.add(relPath);
     }
 
-    public void addPrefetches(List relPaths) {
+    public void addPrefetches(Collection relPaths) {
         prefetches.addAll(relPaths);
+    }
+
+    public void clearPrefetches() {
+        prefetches.clear();
     }
 
     /**
@@ -289,7 +322,7 @@ public class SelectQuery extends QualifiedQuery implements GenericSelectQuery {
      * This is a hint to QueryEngine executing this query.
      */
     public boolean isFetchingDataRows() {
-        return isFetchingCustAttributes() || fetchingDataRows;
+        return this.isFetchingCustomAttributes() || fetchingDataRows;
     }
 
     /**	

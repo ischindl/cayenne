@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -104,7 +104,7 @@ public class ObjEntityValidator extends TreeNodeValidator {
         }
         
         // check for duplicate class names in the parent context
-        Iterator it = map.getObjEntitiesAsList().iterator();
+        Iterator it = map.getObjEntities().iterator();
         while (it.hasNext()) {
             ObjEntity otherEnt = (ObjEntity) it.next();
             if (otherEnt == ent) {
@@ -135,7 +135,7 @@ public class ObjEntityValidator extends TreeNodeValidator {
         }
 
         // check for duplicate names in the parent context
-        Iterator it = map.getObjEntitiesAsList().iterator();
+        Iterator it = map.getObjEntities().iterator();
         while (it.hasNext()) {
             ObjEntity otherEnt = (ObjEntity) it.next();
             if (otherEnt == ent) {

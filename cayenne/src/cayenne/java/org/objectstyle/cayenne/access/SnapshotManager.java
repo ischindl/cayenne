@@ -1,8 +1,8 @@
 /* ====================================================================
- * 
- * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * The ObjectStyle Group Software License, Version 1.0
+ *
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,7 +10,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -18,15 +18,15 @@
  *    distribution.
  *
  * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
+ *    any, must include the following acknowlegement:
+ *       "This product includes software developed by the
  *        ObjectStyle Group (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
  *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
+ * 4. The names "ObjectStyle Group" and "Cayenne"
  *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
+ *    from this software without prior written permission. For written
  *    permission, please contact andrus@objectstyle.org.
  *
  * 5. Products derived from this software may not be called "ObjectStyle"
@@ -55,15 +55,20 @@
  */
 package org.objectstyle.cayenne.access;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
-import org.objectstyle.cayenne.CayenneRuntimeException;
+import org.apache.commons.collections.Factory;
+import org.apache.commons.collections.MapUtils;
+import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
-import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.access.util.RelationshipFault;
+import org.objectstyle.cayenne.map.DbAttributePair;
 import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.ObjAttribute;
 import org.objectstyle.cayenne.map.ObjEntity;
@@ -74,9 +79,16 @@ import org.objectstyle.cayenne.util.Util;
  * SnapshotManager handles snapshot (data row) operations on objects.
  * This is a helper class that works in conjunction with DataContext.
  * 
+ * <p>
+ * TODO: SnapshotManager is really stateless. All its state information
+ * (including relDataSource) does not span mthod calls and is really beloning
+ * to the DataContext, so switching to a singleton instance should be easy.
+ * </p>
+ *
  * @author Andrei Adamchik
  */
 public class SnapshotManager {
+    private static Logger logObj = Logger.getLogger(SnapshotManager.class);
 
     protected ToManyListDataSource relDataSource;
 
@@ -89,7 +101,8 @@ public class SnapshotManager {
 
     /** 
      * Replaces all object attribute values with snapshot values. 
-     * Sets object state to COMMITTED.
+     * Sets object state to COMMITTED, unless the snapshot is partial
+     * in which case the state is set to HOLLOW
      */
     public void refreshObjectWithSnapshot(
         ObjEntity ent,
@@ -97,18 +110,26 @@ public class SnapshotManager {
         Map snapshot) {
 
         DataContext context = anObject.getDataContext();
-        
         Map attrMap = ent.getAttributeMap();
         Iterator it = attrMap.keySet().iterator();
+        boolean isPartialSnapshot = false;
         while (it.hasNext()) {
             String attrName = (String) it.next();
             ObjAttribute attr = (ObjAttribute) attrMap.get(attrName);
-            anObject.writePropertyDirectly(
-                attrName,
-                snapshot.get(attr.getDbAttribute().getName()));
+            String dbAttrPath = attr.getDbAttributePath();
+            anObject.writePropertyDirectly(attrName, snapshot.get(dbAttrPath));
+            if (!snapshot.containsKey(dbAttrPath)) {
+                //Note the distinction between
+                // 1) the map returning null because there was no mapping
+                // for that key and
+                // 2) returning null because 'null' was the value mapped
+                // for that key.
+                // If the first case (this clause) then snapshot is only partial
+                isPartialSnapshot = true;
+            }
         }
 
-        Iterator rit = ent.getRelationshipList().iterator();
+        Iterator rit = ent.getRelationships().iterator();
         while (rit.hasNext()) {
             ObjRelationship rel = (ObjRelationship) rit.next();
             if (rel.isToMany()) {
@@ -117,69 +138,213 @@ public class SnapshotManager {
                 // create an empty one.
 
                 ToManyList relList =
-                    new ToManyList(relDataSource, anObject.getObjectId(), rel.getName());
+                    new ToManyList(
+                        relDataSource,
+                        anObject.getObjectId(),
+                        rel.getName());
                 anObject.writePropertyDirectly(rel.getName(), relList);
                 continue;
             }
 
-            DbRelationship dbRel = (DbRelationship) rel.getDbRelationshipList().get(0);
+            ObjEntity targetEntity = (ObjEntity) rel.getTargetEntity();
+            Class targetClass = targetEntity.getJavaClass();
 
-            // dependent to one relationship is optional and can be null.
-            if (dbRel.isToDependentPK()) {
-                continue;
+            // handle toOne flattened relationship
+            if (rel.isFlattened()) {
+				// A flattened toOne relationship must be a series of
+				 // toOne dbRelationships.  Initialize fault for it, since 
+				 // creating a hollow object won't be right...
+				 RelationshipFault fault = new RelationshipFault(anObject, rel.getName());
+				 anObject.writePropertyDirectly(rel.getName(), fault);
+				 continue;
             }
+
+            DbRelationship dbRel =
+                (DbRelationship) rel.getDbRelationships().get(0);
+
+			// dependent to one relationship is optional 
+			// use fault, since we do not know whether it is null or not...
+			if (dbRel.isToDependentPK()) {
+				RelationshipFault fault = new RelationshipFault(anObject, rel.getName());
+				anObject.writePropertyDirectly(rel.getName(), fault);
+				continue;
+			}
 
             Map destMap = dbRel.targetPkSnapshotWithSrcSnapshot(snapshot);
             if (destMap == null) {
+                // nullify any old relationship targets
+                anObject.writePropertyDirectly(rel.getName(), null);
                 continue;
+            } else {
+                ObjectId destId = new ObjectId(targetClass, destMap);
+                anObject.writePropertyDirectly(
+                    rel.getName(),
+                    context.registeredObject(destId));
             }
-
-			ObjEntity targetEntity=(ObjEntity)rel.getTargetEntity();
-			Class targetClass;
-			try {
-				targetClass = Class.forName(targetEntity.getClassName());
-			} catch (ClassNotFoundException e) {
-				throw new CayenneRuntimeException("Failed to load class for name "+targetEntity.getClassName()+" because "+e.getMessage());
-			}
-            ObjectId destId = new ObjectId(targetClass, destMap);
-            anObject.writePropertyDirectly(
-                rel.getName(),
-                context.registeredObject(destId));
         }
-        anObject.setPersistenceState(PersistenceState.COMMITTED);
+        if (isPartialSnapshot) {
+            anObject.setPersistenceState(PersistenceState.HOLLOW);
+        } else {
+            anObject.setPersistenceState(PersistenceState.COMMITTED);
+        }
+
     }
 
+    /**
+     * Merges changes reflected in snapshot map to the object. Changes
+     * made to attributes and to-one relationships will be merged. 
+     * In case an object is already modified, modified properties will
+     * not be overwritten.
+     */
     public void mergeObjectWithSnapshot(
-        ObjEntity ent,
+        ObjEntity entity,
         DataObject anObject,
         Map snapshot) {
 
         if (anObject.getPersistenceState() == PersistenceState.HOLLOW) {
-            refreshObjectWithSnapshot(ent, anObject, snapshot);
+            refreshObjectWithSnapshot(entity, anObject, snapshot);
             return;
         }
 
         DataContext context = anObject.getDataContext();
-        Map oldSnap = context.getObjectStore().getSnapshot(anObject.getObjectId());
+        Map oldSnap =
+            context.getObjectStore().getSnapshot(anObject.getObjectId());
 
-        Map attrMap = ent.getAttributeMap();
+        // attributes
+        Map attrMap = entity.getAttributeMap();
         Iterator it = attrMap.keySet().iterator();
         while (it.hasNext()) {
             String attrName = (String) it.next();
             ObjAttribute attr = (ObjAttribute) attrMap.get(attrName);
-            String dbAttrName = attr.getDbAttribute().getName();
 
+            //processing compound attributes correctly
+            String dbAttrPath = attr.getDbAttributePath();
             Object curVal = anObject.readPropertyDirectly(attrName);
-            Object oldVal = oldSnap.get(dbAttrName);
-            Object newVal = snapshot.get(dbAttrName);
+            Object oldVal = oldSnap.get(dbAttrPath);
+            Object newVal = snapshot.get(dbAttrPath);
 
-            // if value not modified, update it from snapshot, 
+            // if value not modified, update it from snapshot,
             // otherwise leave it alone
             if (Util.nullSafeEquals(curVal, oldVal)
                 && !Util.nullSafeEquals(newVal, curVal)) {
                 anObject.writePropertyDirectly(attrName, newVal);
             }
         }
+
+        // merge to-one relationships
+        Iterator rit = entity.getRelationships().iterator();
+        while (rit.hasNext()) {
+            ObjRelationship rel = (ObjRelationship) rit.next();
+            if (rel.isToMany()) {
+                continue;
+            }
+
+            // TODO: will this work for flattened, how do we save snapshots for them?
+
+            // if value not modified, update it from snapshot,
+            // otherwise leave it alone
+            if (!isToOneTargetModified(rel, anObject, oldSnap)
+                && isJoinAttributesModified(rel, snapshot, oldSnap)) {
+
+                DbRelationship dbRelationship =
+                    (DbRelationship) rel.getDbRelationships().get(0);
+                Map destMap =
+                    dbRelationship.targetPkSnapshotWithSrcSnapshot(snapshot);
+
+                if (destMap == null) {
+                    // nullify any old relationship targets
+                    anObject.writePropertyDirectly(rel.getName(), null);
+                    continue;
+                } else {
+                    ObjectId destId =
+                        new ObjectId(
+                            ((ObjEntity) rel.getTargetEntity()).getJavaClass(),
+                            destMap);
+                    anObject.writePropertyDirectly(
+                        rel.getName(),
+                        context.registeredObject(destId));
+                }
+
+            }
+        }
+    }
+
+    /**
+     * Checks if a new snapshot has a modified to-one relationship compared to
+     * the cached snapshot.
+     */
+    protected boolean isJoinAttributesModified(
+        ObjRelationship relationship,
+        Map newSnapshot,
+        Map storedSnapshot) {
+
+        Iterator it =
+            ((DbRelationship) relationship.getDbRelationships().get(0))
+                .getJoins()
+                .iterator();
+        while (it.hasNext()) {
+            DbAttributePair join = (DbAttributePair) it.next();
+            String propertyName = join.getSource().getName();
+
+            // for equality to be true, snapshot must contain all matching pk values
+            if (!Util
+                .nullSafeEquals(
+                    newSnapshot.get(propertyName),
+                    storedSnapshot.get(propertyName))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks if an object has its to-one relationship target modified in memory.
+     */
+    protected boolean isToOneTargetModified(
+        ObjRelationship relationship,
+        DataObject object,
+        Map storedSnapshot) {
+
+        if (object.getPersistenceState() != PersistenceState.MODIFIED) {
+            return false;
+        }
+
+        DataObject toOneTarget =
+            (DataObject) object.readPropertyDirectly(relationship.getName());
+        ObjectId currentId =
+            (toOneTarget != null) ? toOneTarget.getObjectId() : null;
+
+        // check if ObjectId map is a subset of a stored snapshot;
+        // this is an equality condition
+        Iterator it =
+            ((DbRelationship) relationship.getDbRelationships().get(0))
+                .getJoins()
+                .iterator();
+
+        while (it.hasNext()) {
+            DbAttributePair join = (DbAttributePair) it.next();
+            String propertyName = join.getSource().getName();
+
+            if (currentId == null) {
+                // for equality to be true, snapshot must contain no pk values
+                if (storedSnapshot.get(propertyName) != null) {
+                    return true;
+                }
+            } else {
+                // for equality to be true, snapshot must contain all matching pk values
+                // note that we must use target entity names to extract id values.
+                if (!Util
+                    .nullSafeEquals(
+                        currentId.getValueForAttribute(
+                            join.getTarget().getName()),
+                        storedSnapshot.get(propertyName))) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -187,19 +352,22 @@ public class SnapshotManager {
      * with empty lists.
      */
     public void prepareForInsert(ObjEntity ent, DataObject anObject) {
-        Iterator it = ent.getRelationshipList().iterator();
+        Iterator it = ent.getRelationships().iterator();
         while (it.hasNext()) {
             ObjRelationship rel = (ObjRelationship) it.next();
             if (rel.isToMany()) {
                 ToManyList relList =
-                    new ToManyList(relDataSource, anObject.getObjectId(), rel.getName());
+                    new ToManyList(
+                        relDataSource,
+                        anObject.getObjectId(),
+                        rel.getName());
                 anObject.writePropertyDirectly(rel.getName(), relList);
             }
         }
     }
-    
-    /** 
-     * Takes a snapshot of current object state. 
+
+    /**
+     * Takes a snapshot of current object state.
      */
     public Map takeObjectSnapshot(ObjEntity ent, DataObject anObject) {
         Map map = new HashMap();
@@ -208,8 +376,11 @@ public class SnapshotManager {
         Iterator it = attrMap.keySet().iterator();
         while (it.hasNext()) {
             String attrName = (String) it.next();
-            DbAttribute dbAttr = ((ObjAttribute) attrMap.get(attrName)).getDbAttribute();
-            map.put(dbAttr.getName(), anObject.readPropertyDirectly(attrName));
+            ObjAttribute objAttr = (ObjAttribute) attrMap.get(attrName);
+            //processing compound attributes correctly
+            map.put(
+                objAttr.getDbAttributePath(),
+                anObject.readPropertyDirectly(attrName));
         }
 
         Map relMap = ent.getRelationshipMap();
@@ -227,37 +398,117 @@ public class SnapshotManager {
                 continue;
             }
 
-            DataObject target = (DataObject) anObject.readPropertyDirectly(relName);
+            DataObject target =
+                (DataObject) anObject.readPropertyDirectly(relName);
             if (target == null) {
                 continue;
             }
 
-            DbRelationship dbRel = (DbRelationship) rel.getDbRelationshipList().get(0);
             Map idParts = target.getObjectId().getIdSnapshot();
 
             // this may happen in uncommitted objects
-            if (idParts == null) {
+            if (idParts.isEmpty()) {
                 continue;
             }
 
+            DbRelationship dbRel =
+                (DbRelationship) rel.getDbRelationships().get(0);
             Map fk = dbRel.srcFkSnapshotWithTargetSnapshot(idParts);
             map.putAll(fk);
         }
 
         // process object id map
         // we should ignore any object id values if a corresponding attribute
-        // is a part of relationship "toMasterPK", since those values have been 
-        // set above when db relationships where processed.                
+        // is a part of relationship "toMasterPK", since those values have been
+        // set above when db relationships where processed.
         Map thisIdParts = anObject.getObjectId().getIdSnapshot();
         if (thisIdParts != null) {
             // put only thise that do not exist in the map
             Iterator itm = thisIdParts.keySet().iterator();
             while (itm.hasNext()) {
                 Object nextKey = itm.next();
-                if (!map.containsKey(nextKey))
+                if (!map.containsKey(nextKey)) {
                     map.put(nextKey, thisIdParts.get(nextKey));
+                }
             }
         }
         return map;
     }
+
+    /**
+     * Takes a list of "root" (or "source") objects,
+     * a list of destination objects, and the relationship which relates them
+     * (from root to destination).  It then merges the destination objects
+     * into the toMany relationships of the relevant root objects, thus clearing
+     * the toMany fault.  This method is typically only used internally by Cayenne
+     * and is not intended for client use.
+     * @param rootObjects
+     * @param theRelationship
+     * @param destinationObjects
+     */
+    public void mergePrefetchResultsRelationships(
+        List rootObjects,
+        ObjRelationship relationship,
+        List destinationObjects) {
+
+        if (rootObjects.size() == 0) {
+            // nothing to do
+            return;
+        }
+
+        Class sourceObjectClass = ((DataObject) rootObjects.get(0)).getClass();
+        ObjRelationship reverseRelationship =
+            relationship.getReverseRelationship();
+        //Might be used later on... obtain and cast only once
+        DbRelationship dbRelationship =
+            (DbRelationship) relationship.getDbRelationships().get(0);
+
+        Factory listFactory = new Factory() {
+            public Object create() {
+                return new ArrayList();
+            }
+        };
+
+        Map toManyLists = MapUtils.lazyMap(new HashMap(), listFactory);
+
+        Iterator destIterator = destinationObjects.iterator();
+        while (destIterator.hasNext()) {
+            DataObject thisDestinationObject = (DataObject) destIterator.next();
+            DataObject sourceObject = null;
+            if (reverseRelationship != null) {
+                sourceObject =
+                    (DataObject) thisDestinationObject.readPropertyDirectly(
+                        reverseRelationship.getName());
+            } else {
+                //Reverse relationship doesn't exist... match objects manually
+                DataContext context = thisDestinationObject.getDataContext();
+                Map sourcePk =
+                    dbRelationship.srcPkSnapshotWithTargetSnapshot(
+                        context.getObjectStore().getSnapshot(
+                            thisDestinationObject.getObjectId()));
+                sourceObject =
+                    context.registeredObject(
+                        new ObjectId(sourceObjectClass, sourcePk));
+            }
+            //Find the list so far for this sourceObject
+            List thisList = (List) toManyLists.get(sourceObject);
+            thisList.add(thisDestinationObject);
+
+        }
+
+        //destinationObjects has now been partitioned into a list per
+        //source object...
+        //Iterate over the source objects and fix up the relationship on
+        //each
+        Iterator rootIterator = rootObjects.iterator();
+        while (rootIterator.hasNext()) {
+            DataObject thisRoot = (DataObject) rootIterator.next();
+            ToManyList toManyList =
+                (ToManyList) thisRoot.readPropertyDirectly(
+                    relationship.getName());
+
+            toManyList.setObjectList((List) toManyLists.get(thisRoot));
+        }
+    }
+
 }

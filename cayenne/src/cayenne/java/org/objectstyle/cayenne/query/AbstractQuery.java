@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,6 +59,7 @@ package org.objectstyle.cayenne.query;
 import org.apache.log4j.Level;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.Procedure;
 
 /** 
  * Superclass of all query classes. 
@@ -66,33 +67,11 @@ import org.objectstyle.cayenne.map.ObjEntity;
  * @author Andrei Adamchik
  */
 public abstract class AbstractQuery implements Query {
-    /** The root object this query is bsaed on - maybe an entity name , class, ObjEntity or 
+    /** The root object this query is based on - maybe an entity name , class, ObjEntity or 
      * DbEntity, depending on the specific query and how it was constructed */
     protected Object root;
 
     protected Level logLevel = DEFAULT_LOG_LEVEL;
-
-    /**
-     * @deprecated use setRoot instead
-     */
-    public void setObjEntityName(String objEntityName) {
-        this.root = objEntityName;
-    }
-
-    /** Returns the name of root ObjEntity associated with the query.   Will return null if the query root
-     * is a DbEntity or a Class
-     * @deprecated will only work on queries created with an ObjEntity or entityName as the root.<BR>
-     * use getRoot and QueryEngine.getEntityResolver().lookupObjEntity() instead*/
-    public String getObjEntityName() {
-        //Handle the various cases... DbEntity is not able to be handled, and Class is dubious (we have no resolver here).
-        //However, code which uses this method should still be able to function ok because it'll be using entity names anyway
-        if (root instanceof String) {
-            return (String) root;
-        } else if (root instanceof ObjEntity) {
-            return ((ObjEntity) root).getName();
-        }
-        return null;
-    }
 
     /**
      * Returns the <code>logLevel</code> property of this query.
@@ -121,20 +100,26 @@ public abstract class AbstractQuery implements Query {
     /**
      * Sets the root of the query
      * @param value The new root
-     * @throws IllegalArgumentException if value is not a String, ObjEntity, DbEntity or Class
+     * @throws IllegalArgumentException if value is not a String, ObjEntity, DbEntity,
+     * Procedure, or Class
      */
     public void setRoot(Object value) {
+        // sanity check
         if (!((value instanceof String)
             || (value instanceof ObjEntity)
             || (value instanceof DbEntity)
-            || (value instanceof Class))) {
+            || (value instanceof Class)
+            || (value instanceof Procedure))) {
             String rootClass =
                 (value != null) ? value.getClass().getName() : "null";
+
             throw new IllegalArgumentException(
                 getClass().getName()
-                    + ".setRoot takes a String, ObjEntity, DbEntity or Class only. It was passed a "
+                    + ".setRoot takes a String, ObjEntity, DbEntity, Procedure, "
+                    + "or Class only. It was passed a "
                     + rootClass);
         }
+        
         this.root = value;
     }
 

@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002 The ObjectStyle Group
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,7 @@
  */
 package org.objectstyle.cayenne.access;
 
-import java.sql.Time;
+import java.sql.Date;
 
 import org.apache.log4j.Level;
 import org.objectstyle.art.oneway.Artist;
@@ -65,27 +65,19 @@ import org.objectstyle.cayenne.unittest.CayenneTestDatabaseSetup;
 import org.objectstyle.cayenne.unittest.OneWayMappingTestCase;
 
 /**
- * @author Holger Hoffstätte
+ * @author Holger Hoffstaette
  * @author Andrei Adamchik
  */
 public class DataContextEventsTst extends OneWayMappingTestCase {
     protected DataContext context;
     protected Artist artist;
 
-    /**
-     * Constructor for DataContextEventsTst.
-     * @param name
-     */
-    public DataContextEventsTst(String name) {
-        super(name);
-    }
-
     public void setUp() throws Exception {
         CayenneTestDatabaseSetup setup = getDatabaseSetup();
         setup.cleanTableData();
 
         DataDomain dom = getDomain();
-        setup.createPkSupportForMapEntities(dom.getDataNodes()[0]);
+        setup.createPkSupportForMapEntities((DataNode)dom.getDataNodes().iterator().next());
 
         context = dom.createDataContext();
         context.setTransactionEventsEnabled(true);
@@ -96,12 +88,12 @@ public class DataContextEventsTst extends OneWayMappingTestCase {
     }
 
     public void testDataContext() throws Exception {
-        assertTrue(!context.hasChanges());
-        assertTrue(!artist.receivedWillCommit());
-        assertTrue(!artist.receivedDidCommit());
+        assertFalse(context.hasChanges());
+        assertFalse(artist.receivedWillCommit());
+        assertFalse(artist.receivedDidCommit());
 
         // modify artist
-        artist.setDateOfBirth(new Time(System.currentTimeMillis()));
+        artist.setDateOfBirth(new Date(System.currentTimeMillis()));
 
         // commit the pending changes
         context.commitChanges(Level.WARN);
@@ -111,17 +103,19 @@ public class DataContextEventsTst extends OneWayMappingTestCase {
     }
 
     public void testDataContextRolledBackTransaction() throws Exception {
-    	// This doesn't work on MySQL, since transaction support
-    	// is either non-existent or dubious...
-    	if(getDomain().getDataNodes()[0].getAdapter().getClass() == MySQLAdapter.class) {
+    	// This test will not work on MySQL, since transaction support
+    	// is either non-existent or dubious (depending on your view).
+    	// See: http://www.mysql.com/doc/en/Design_Limitations.html
+    	if(((DataNode)getDomain().getDataNodes().iterator().next())
+    			.getAdapter().getClass() == MySQLAdapter.class) {
     		return;
     	}
     	
-        assertTrue(!context.hasChanges());
-        assertTrue(!artist.receivedWillCommit());
-        assertTrue(!artist.receivedDidCommit());
+        assertFalse(context.hasChanges());
+        assertFalse(artist.receivedWillCommit());
+        assertFalse(artist.receivedDidCommit());
 
-        // modify artist
+        // modify artist so that it cannot be saved correctly anymore
         artist.setArtistName(null); // name is mandatory
 
         try {
@@ -133,19 +127,19 @@ public class DataContextEventsTst extends OneWayMappingTestCase {
         }
 
         assertTrue(artist.receivedWillCommit());
-        assertTrue(!artist.receivedDidCommit());
+        assertFalse(artist.receivedDidCommit());
     }
 
     // tests that no notifications are sent to objects that won't be updated/inserted into database
     public void testDataContextNoModifications() {
-        assertTrue(!context.hasChanges());
-        assertTrue(!artist.receivedWillCommit());
-        assertTrue(!artist.receivedDidCommit());
+        assertFalse(context.hasChanges());
+        assertFalse(artist.receivedWillCommit());
+        assertFalse(artist.receivedDidCommit());
         
         // commit without any pending changes
         context.commitChanges(Level.WARN);
 
-        assertTrue(!artist.receivedDidCommit());
-        assertTrue(!artist.receivedWillCommit());
+        assertFalse(artist.receivedDidCommit());
+        assertFalse(artist.receivedWillCommit());
     }
 }

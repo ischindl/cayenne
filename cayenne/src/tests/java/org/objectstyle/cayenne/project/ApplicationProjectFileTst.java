@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,7 @@ package org.objectstyle.cayenne.project;
 
 import java.io.File;
 
+import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 /**
@@ -66,15 +67,6 @@ public class ApplicationProjectFileTst extends CayenneTestCase {
     protected ApplicationProjectFile rpf;
     protected ProjectConfiguration conf;
     protected Project pr;
-    
-    
-    /**
-     * Constructor for RootProjectFileTst.
-     * @param arg0
-     */
-    public ApplicationProjectFileTst(String arg0) {
-        super(arg0);
-    }
 
     /**
      * @see junit.framework.TestCase#setUp()
@@ -95,6 +87,6 @@ public class ApplicationProjectFileTst extends CayenneTestCase {
     }
     
     public void testGetFileName() throws Exception {
-    	assertEquals("cayenne.xml", rpf.getLocation());
+    	assertEquals(Configuration.DEFAULT_DOMAIN_FILE, rpf.getLocation());
     }
 }

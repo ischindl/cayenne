@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,14 +63,6 @@ import org.objectstyle.cayenne.project.ProjectPath;
  */
 public class DomainValidatorTst extends ValidatorTestBase {
 
-    /**
-     * Constructor for DomainValidatorTst.
-     * @param arg0
-     */
-    public DomainValidatorTst(String arg0) {
-        super(arg0);
-    }
-
     public void testValidateDomains() throws Exception {
         // should succeed
         validator.reset();
@@ -86,8 +78,8 @@ public class DomainValidatorTst extends ValidatorTestBase {
 
         // should complain about duplicate name
         DataDomain d3 = new DataDomain("xyz");
-        project.getConfig().addDomain(d3);
-        project.getConfig().addDomain(d1);
+        project.getConfiguration().addDomain(d3);
+        project.getConfiguration().addDomain(d1);
         d3.setName(d1.getName());
         validator.reset();
         new DomainValidator().validateObject(new ProjectPath(new Object[] { project, d3 }), validator);

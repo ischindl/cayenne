@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,10 +60,13 @@ public abstract class Relationship extends MapObject {
 	protected String targetEntityName;
 	protected boolean toMany;
 
-	public Relationship() {}
+	public Relationship() {
+		super();
+	}
 
 	public Relationship(String name) {
-		setName(name);
+		this();
+		this.setName(name);
 	}
 
 	/** Returns relationship source entity. */
@@ -85,21 +88,10 @@ public abstract class Relationship extends MapObject {
 	 */
 	public void setTargetEntity(Entity targetEntity) {
 		if (targetEntity != null) {
-			setTargetEntityName(targetEntity.getName());
+			this.setTargetEntityName(targetEntity.getName());
 		} else {
-			setTargetEntityName(null);
+			this.setTargetEntityName(null);
 		}
-	}
-
-	/** Is relationship from source to target to-one or to-many.
-	  * If one-to-many, getxxx() method of the data object class would return a list. */
-	public boolean isToMany() {
-		return toMany;
-	}
-
-	/** Set relationship multiplicity. */
-	public void setToMany(boolean toMany) {
-		this.toMany = toMany;
 	}
 
 	/**
@@ -129,15 +121,15 @@ public abstract class Relationship extends MapObject {
 		}
 
 		sb.append("Source entity: ");
-		Entity src = getSourceEntity();
+		Entity src = this.getSourceEntity();
 		if (src == null) {
 			sb.append("<null>");
 		} else {
 			sb.append(src.getName());
 		}
 
-		sb.append("Target entity: ");
-		Entity target = getTargetEntity();
+		sb.append(" Target entity: ");
+		Entity target = this.getTargetEntity();
 		if (target == null)
 			sb.append("<null>");
 		else
@@ -146,4 +138,15 @@ public abstract class Relationship extends MapObject {
 		sb.append("\n------------------\n");
 		return sb.toString();
 	}
+	
+	/** Is relationship from source to target to-one or to-many.
+	  * If one-to-many, getxxx() method of the data object class would 
+	  * return a list, otherwise it returns a single DataObject
+	  * There is explicitly no setToMany on Relationship.. only DbRelationship
+	  * supports such a notion, and ObjRelationship derives it's value from the
+	  * underlying DbRelationship(s) */
+	public boolean isToMany() {
+		return toMany;
+	}
+	
 }

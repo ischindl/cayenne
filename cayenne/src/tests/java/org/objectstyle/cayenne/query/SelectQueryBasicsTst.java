@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,15 +64,11 @@ import java.util.Map;
 import org.objectstyle.art.Artist;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
-import org.objectstyle.cayenne.exp.ExpressionParam;
+import org.objectstyle.cayenne.exp.ExpressionParameter;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class SelectQueryBasicsTst extends CayenneTestCase {
     protected SelectQuery q;
-
-    public SelectQueryBasicsTst(String name) {
-        super(name);
-    }
 
     public void setUp() throws java.lang.Exception {
         q = new SelectQuery();
@@ -91,42 +87,42 @@ public class SelectQueryBasicsTst extends CayenneTestCase {
     public void testAddOrdering1() throws Exception {
         Ordering ord = new Ordering();
         q.addOrdering(ord);
-        assertEquals(1, q.getOrderingList().size());
-        assertSame(ord, q.getOrderingList().get(0));
+        assertEquals(1, q.getOrderings().size());
+        assertSame(ord, q.getOrderings().get(0));
     }
 
     public void testAddPrefetching() throws Exception {
         String path = "a.b.c";
         q.addPrefetch(path);
-        assertEquals(1, q.getPrefetchList().size());
-        assertSame(path, q.getPrefetchList().get(0));
+        assertEquals(1, q.getPrefetches().size());
+        assertSame(path, q.getPrefetches().iterator().next());
     }
 
     public void testAddOrdering2() throws Exception {
         String path = "a.b.c";
         q.addOrdering(path, Ordering.DESC);
-        assertEquals(1, q.getOrderingList().size());
+        assertEquals(1, q.getOrderings().size());
 
-        Ordering ord = (Ordering) q.getOrderingList().get(0);
+        Ordering ord = (Ordering) q.getOrderings().get(0);
         assertEquals(path, ord.getSortSpec().getOperand(0));
         assertEquals(Ordering.DESC, ord.isAscending());
     }
 
     public void testDistinct() throws Exception {
-        assertTrue(!q.isDistinct());
+        assertFalse(q.isDistinct());
         q.setDistinct(true);
         assertTrue(q.isDistinct());
     }
 
     public void testFetchingDataRows1() {
-        assertTrue(!q.isFetchingDataRows());
+        assertFalse(q.isFetchingDataRows());
         q.setFetchingDataRows(true);
         assertTrue(q.isFetchingDataRows());
     }
 
     public void testFetchingDataRows2() {
-        assertTrue(!q.isFetchingDataRows());
-        q.addCustDbAttribute("ARTIST_ID");
+        assertFalse(q.isFetchingDataRows());
+        q.addCustomDbAttribute("ARTIST_ID");
         assertTrue(q.isFetchingDataRows());
 
         // this shouldn't have any effect, since custom attributes are fetched
@@ -135,18 +131,18 @@ public class SelectQueryBasicsTst extends CayenneTestCase {
     }
 
     public void testQueryAttributes() throws Exception {
-        assertEquals(0, q.getCustDbAttributes().size());
+        assertEquals(0, q.getCustomDbAttributes().size());
 
-        q.addCustDbAttribute("ARTIST_ID");
-        assertEquals(1, q.getCustDbAttributes().size());
-        assertEquals("ARTIST_ID", q.getCustDbAttributes().get(0));
+        q.addCustomDbAttribute("ARTIST_ID");
+        assertEquals(1, q.getCustomDbAttributes().size());
+        assertEquals("ARTIST_ID", q.getCustomDbAttributes().get(0));
     }
 
     public void testUsingRootEntityAttributes() throws Exception {
-        assertTrue(!q.isFetchingCustAttributes());
+        assertFalse(q.isFetchingCustomAttributes());
 
-        q.addCustDbAttribute("ARTIST_ID");
-        assertTrue(q.isFetchingCustAttributes());
+        q.addCustomDbAttribute("ARTIST_ID");
+        assertTrue(q.isFetchingCustomAttributes());
     }
 
     public void testSetParentQualifier() throws Exception {
@@ -195,7 +191,7 @@ public class SelectQueryBasicsTst extends CayenneTestCase {
     	q.setRoot(Artist.class);
         q.setDistinct(true);
 
-        SelectQuery q1 = q.queryWithParams(new HashMap(), true);
+        SelectQuery q1 = q.queryWithParameters(new HashMap(), true);
         assertSame(q.getRoot(), q1.getRoot());
         assertEquals(q.isDistinct(), q1.isDistinct());
         assertNull(q1.getQualifier());
@@ -206,20 +202,20 @@ public class SelectQueryBasicsTst extends CayenneTestCase {
         
         List list = new ArrayList();
         list.add(
-            ExpressionFactory.matchExp("k1", new ExpressionParam("test1")));
+            ExpressionFactory.matchExp("k1", new ExpressionParameter("test1")));
         list.add(
-            ExpressionFactory.matchExp("k2", new ExpressionParam("test2")));
+            ExpressionFactory.matchExp("k2", new ExpressionParameter("test2")));
         list.add(
-            ExpressionFactory.matchExp("k3", new ExpressionParam("test3")));
+            ExpressionFactory.matchExp("k3", new ExpressionParameter("test3")));
         list.add(
-            ExpressionFactory.matchExp("k4", new ExpressionParam("test4")));
+            ExpressionFactory.matchExp("k4", new ExpressionParameter("test4")));
         q.setQualifier(ExpressionFactory.joinExp(Expression.OR, list));
         
 
         Map params = new HashMap();
         params.put("test2", "abc");
         params.put("test3", "xyz");
-        SelectQuery q1 = q.queryWithParams(params, true);
+        SelectQuery q1 = q.queryWithParameters(params, true);
         assertSame(q.getRoot(), q1.getRoot());
         assertNotNull(q1.getQualifier());
         assertTrue(q1.getQualifier() != q.getQualifier());

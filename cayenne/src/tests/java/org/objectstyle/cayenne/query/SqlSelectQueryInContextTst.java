@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,11 +67,7 @@ public class SqlSelectQueryInContextTst extends SelectQueryBase {
 
 	protected SqlSelectQuery q;
 
-	public SqlSelectQueryInContextTst(String name) {
-		super(name);
-	}
-
-	public void setUp() throws java.lang.Exception {
+	public void setUp() throws Exception {
 		super.setUp();
 		q = new SqlSelectQuery();
 	}
@@ -80,7 +76,7 @@ public class SqlSelectQueryInContextTst extends SelectQueryBase {
 		return q;
 	}
 
-	public void testSelect1() throws java.lang.Exception {
+	public void testSelect1() throws Exception {
 
         q.setRoot(Artist.class);
 		q.setSqlString("select count(*)  from ARTIST");

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -102,6 +102,13 @@ public class ToManyList implements List, Serializable {
     
     public boolean needsFetch() {
         return objectList == null;
+    }
+    
+    /**
+     * Will force refresh on the next access.
+     */
+    public void invalidateObjectList() {
+		setObjectList(null);
     }
     
     public void setObjectList(List objectList) {

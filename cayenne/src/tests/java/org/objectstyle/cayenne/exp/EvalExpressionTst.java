@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,14 +63,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
  */
 public class EvalExpressionTst extends CayenneTestCase {
 
-	/**
-	 * Constructor for EvalExpressionTst.
-	 * @param arg0
-	 */
-	public EvalExpressionTst(String arg0) {
-		super(arg0);
-	}
-
 	public void testEvaluateEqualTo() throws Exception {
 		Expression e = ExpressionFactory.matchExp("artistName", "abc");
 		EvalExpression eval = new EvalExpression(e);
@@ -81,7 +73,7 @@ public class EvalExpressionTst extends CayenneTestCase {
 
 		Artist noMatch = new Artist();
 		noMatch.setArtistName("123");
-		assertTrue(!eval.evaluate(noMatch));
+		assertFalse(eval.evaluate(noMatch));
 	}
 
 	public void testEvaluateAnd() throws Exception {
@@ -95,7 +87,7 @@ public class EvalExpressionTst extends CayenneTestCase {
 
 		Artist noMatch = new Artist();
 		noMatch.setArtistName("123");
-		assertTrue(!eval.evaluate(noMatch));
+		assertFalse(eval.evaluate(noMatch));
 	}
 
 	public void testEvaluateOr() throws Exception {

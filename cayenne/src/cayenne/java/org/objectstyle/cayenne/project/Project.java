@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,9 +92,10 @@ public abstract class Project {
      * Factory method to create the right project type given project file.
      */
     public static Project createProject(File projectFile) {
+		logObj.debug("createProject: " + projectFile);
         String fileName = projectFile.getName();
 
-        if (Configuration.DOMAIN_FILE.equals(fileName)) {
+        if (fileName.endsWith(Configuration.DEFAULT_DOMAIN_FILE)) {
             return new ApplicationProject(projectFile);
         } else if (fileName.endsWith(DataMapFile.LOCATION_SUFFIX)) {
             return new DataMapProject(projectFile);
@@ -130,7 +131,7 @@ public abstract class Project {
             }
         }
 
-        postInit(projectFile);
+        postInitialize(projectFile);
     }
 
     /** 
@@ -138,10 +139,10 @@ public abstract class Project {
      * from constructor. Default implementation builds a file list
      * and checks for upgrades.
      */
-    protected void postInit(File projectFile) {
+    protected void postInitialize(File projectFile) {
+		logObj.debug("postInitialize with: " + projectFile);
         // take a snapshot of files used by the project
         files = Collections.synchronizedList(buildFileList());
-
         upgradeMessages = Collections.synchronizedList(new ArrayList());
         checkForUpgrades();
     }
@@ -299,11 +300,11 @@ public abstract class Project {
      * Returns project directory. This is a directory where
      * project file is located.
      */
-    public File getProjectDir() {
+    public File getProjectDirectory() {
         return projectDir;
     }
 
-    public void setProjectDir(File dir) {
+    public void setProjectDirectory(File dir) {
         this.projectDir = dir;
     }
 

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,24 +57,27 @@ package org.objectstyle.cayenne.modeler.action;
 
 import java.awt.event.ActionEvent;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.event.EntityEvent;
 import org.objectstyle.cayenne.modeler.control.EventController;
-import org.objectstyle.cayenne.modeler.event.EntityEvent;
 import org.objectstyle.cayenne.project.ProjectPath;
 import org.objectstyle.cayenne.util.EntityMergeSupport;
 
 /**
+ * Action that synchronizes a given ObjEntity with the current state of the
+ * underlying DbEntity.
+ * 
  * @author Andrei Adamchik
  */
 public class ObjEntitySyncAction extends CayenneAction {
-	private static Logger logObj = Logger.getLogger(ObjEntitySyncAction.class);
-	
-	public static final String ACTION_NAME = "Sync ObjEntity with DbEntity";
+
+	public static String getActionName() {
+		return "Sync ObjEntity with DbEntity";
+	}
 
 	public ObjEntitySyncAction() {
-		super(ACTION_NAME);
+		super(getActionName());
 	}
 
 	/**

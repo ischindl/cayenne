@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,8 @@
 package org.objectstyle.cayenne.map;
 
 import org.objectstyle.cayenne.dba.TypesMapping;
+import org.objectstyle.cayenne.map.event.AttributeEvent;
+import org.objectstyle.cayenne.map.event.DbAttributeListener;
 
 /** 
  * A DbAttribute defines a descriptor for a single database table column.
@@ -89,6 +91,7 @@ public class DbAttribute extends Attribute {
 	protected int precision = -1;
 
 	public DbAttribute() {
+		super();
 	}
 	
 	public DbAttribute(String name) {
@@ -96,9 +99,9 @@ public class DbAttribute extends Attribute {
 	}
 
 	public DbAttribute(String name, int type, DbEntity entity) {
-		setName(name);
-		setType(type);
-		setEntity(entity);
+		this.setName(name);
+		this.setType(type);
+		this.setEntity(entity);
 	}
 
 	public String getAliasedName(String alias) {
@@ -129,6 +132,10 @@ public class DbAttribute extends Attribute {
 
 	public void setPrimaryKey(boolean primaryKey) {
 		this.primaryKey = primaryKey;
+		Entity e = this.getEntity();
+		if (e instanceof DbAttributeListener) {
+			((DbAttributeListener)e).dbAttributeChanged(new AttributeEvent(this, this, e));
+		}
 	}
 
 	public boolean isMandatory() {

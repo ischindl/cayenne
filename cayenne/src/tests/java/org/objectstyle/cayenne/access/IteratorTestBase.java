@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,6 +59,8 @@ package org.objectstyle.cayenne.access;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
+import org.objectstyle.art.Artist;
+import org.objectstyle.cayenne.access.util.DefaultOperationObserver;
 import org.objectstyle.cayenne.query.SelectQuery;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
@@ -69,22 +71,16 @@ public class IteratorTestBase extends CayenneTestCase {
 	protected Connection conn;
 	protected PreparedStatement st;
 	protected QueryTranslator transl;
-
-	/**
-	 * Constructor for IteratorTestBase.
-	 * @param name TestCase name
-	 */
-	public IteratorTestBase(String name) {
-		super(name);
-	}
+	protected SelectQuery query;
 
 	public void setUp() throws Exception {
 		conn = null;
 		st = null;
 		transl = null;
+		query = null;
 
 		getDatabaseSetup().cleanTableData();
-		new DataContextTst("Helper").populateTables();
+		new DataContextTst().populateTables();
 	}
 
 
@@ -94,10 +90,10 @@ public class IteratorTestBase extends CayenneTestCase {
 	protected void init() throws Exception {
 		conn = getConnection();
 
-		SelectQuery q = new SelectQuery("Artist");
-		q.addOrdering("artistName", true);
+		query = new SelectQuery(Artist.class);
+		query.addOrdering("artistName", true);
 
-		transl = getNode().getAdapter().getQueryTranslator(q);
+		transl = getNode().getAdapter().getQueryTranslator(query);
 		transl.setEngine(getNode());
 		transl.setCon(conn);
 

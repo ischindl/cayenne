@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,21 +56,25 @@
 package org.objectstyle.cayenne.modeler.datamap;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 
+import org.objectstyle.cayenne.access.DbLoader;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.modeler.CayenneDialog;
 import org.objectstyle.cayenne.modeler.Editor;
 import org.objectstyle.cayenne.modeler.PanelFactory;
+import org.objectstyle.cayenne.modeler.util.CayenneWidgetFactory;
 
 /** 
  * Dialog that allows to select schema of the database. 
@@ -79,88 +83,133 @@ import org.objectstyle.cayenne.modeler.PanelFactory;
  * @author Andrei Adamchik
  */
 public class ChooseSchemaDialog extends CayenneDialog implements ActionListener {
-	public static final int SELECT = 0;
-	public static final int CANCEL = 1;
+    public static final int SELECT = 0;
+    public static final int CANCEL = 1;
 
-	private List schemaList = new ArrayList();
-	private String schemaName = null;
+    protected List schemaList;
 
-	JComboBox schemaSelect;
-	JButton select = new JButton("Continue");
-	JButton cancel = new JButton("Cancel");
-	private int choice = CANCEL;
+    protected JComboBox schemaSelect;
+    protected JTextField tabeNamePatternField;
+    protected JButton select = new JButton("Continue");
+    protected JButton cancel = new JButton("Cancel");
+    protected int choice = CANCEL;
 
     /** 
      * Creates and initializes new ChooseSchemaDialog.
      */
-	public ChooseSchemaDialog(List schemaList) {
-		super(Editor.getFrame(), "Schema Selector", true);
-		setResizable(false);
-		
-		this.schemaList = schemaList;
-		
-		init();
-		
-		select.addActionListener(this);
-		cancel.addActionListener(this);
+    public ChooseSchemaDialog(List schemaList, DataSourceInfo dsi) {
+        super(Editor.getFrame(), "Schema Selector", true);
+        setResizable(false);
+
+        this.schemaList = schemaList;
+
+        init(dsi.getUserName());
+
+        select.addActionListener(this);
+        cancel.addActionListener(this);
 
         this.pack();
-        
-		// display dialog in the center
-		this.centerWindow();
-	}
 
-	/** Sets up the graphical components. */
-	private void init() {
-		getContentPane().setLayout(new BorderLayout());
-		
-        // create schema selector
-        schemaSelect = new JComboBox(schemaList.toArray(new Object[schemaList.size()]));
-        schemaSelect.setBackground(Color.WHITE);
-        
-        // add buttons
-		JPanel buttons = PanelFactory.createButtonPanel(new JButton[] {select, cancel});
-		
-		Component[] left = new Component[] {
-			new JLabel("Schemas: "), new JLabel()
-		};
+        // display dialog in the center
+        this.centerWindow();
+    }
 
-		Component[] right = new Component[] {
-			schemaSelect, buttons
-		};
-		
-		JPanel panel = PanelFactory.createForm(left, right, 5, 5, 5, 5);
-		getContentPane().add(panel, BorderLayout.CENTER);
-	}
-	
-	public String getSchemaName() {
-		if (getChoice() != SELECT)
-			return null;
-		return schemaName;
-	}
+    /** Sets up the graphical components. */
+    protected void init(String userName) {
+        getContentPane().setLayout(new BorderLayout());
 
-	public void actionPerformed(ActionEvent e) {
-		Object src = e.getSource();
-		if (src == select) {
-			processSelect();
-		} else if (src == cancel) {
-			processCancel();
-		}
-	}
+        tabeNamePatternField = CayenneWidgetFactory.createTextField();
+        tabeNamePatternField.setText(DbLoader.WILDCARD);
 
-	public int getChoice() {
-		return choice;
-	}
+        Component[] left = null;
+        Component[] right = null;
+        JPanel buttons = PanelFactory.createButtonPanel(new JButton[] { select, cancel });
 
-	private void processSelect() {
-		schemaName = (String) schemaSelect.getSelectedItem();
-		choice = SELECT;
-		hide();
-	}
+        // optionally create schema selector
+        if (schemaList != null && schemaList.size() > 0) {
+            schemaSelect = CayenneWidgetFactory.createComboBox();
+            schemaSelect.setModel(new DefaultComboBoxModel(schemaList.toArray()));
 
-	private void processCancel() {
-		schemaName = null;
-		choice = CANCEL;
-		hide();
-	}
+            // select schema belonging to the user
+            if (userName != null) {
+                Iterator schemas = schemaList.iterator();
+                while (schemas.hasNext()) {
+                    String schema = (String) schemas.next();
+                    if (userName.equalsIgnoreCase(schema)) {
+                        schemaSelect.setSelectedItem(schema);
+                        break;
+                    }
+                }
+            }
+
+            left =
+                new Component[] {
+					CayenneWidgetFactory.createLabel("Table Name Pattern: "),
+					CayenneWidgetFactory.createLabel("Schemas: "),
+                    new JLabel()};
+
+            right = new Component[] { tabeNamePatternField, schemaSelect, buttons };
+        }
+        else {
+            left = new Component[] { CayenneWidgetFactory.createLabel("Table Name Pattern: "), new JLabel()};
+
+            right = new Component[] { tabeNamePatternField, buttons };
+        }
+
+        JPanel panel = PanelFactory.createForm(left, right, 5, 5, 5, 5);
+        getContentPane().add(panel, BorderLayout.CENTER);
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        Object src = e.getSource();
+        if (src == select) {
+            processSelect();
+        }
+        else if (src == cancel) {
+            processCancel();
+        }
+    }
+
+    public int getChoice() {
+        return choice;
+    }
+
+    private void processSelect() {
+        choice = SELECT;
+        hide();
+    }
+
+    private void processCancel() {
+        choice = CANCEL;
+        hide();
+    }
+
+    public String getSchemaName() {
+        if (getChoice() != SELECT || schemaSelect == null) {
+            return null;
+        }
+
+        String schema = (String) schemaSelect.getSelectedItem();
+        if ("".equals(schema)) {
+            schema = null;
+        }
+
+        return schema;
+    }
+
+    /**
+     * Returns the tableNamePattern.
+     */
+    public String getTableNamePattern() {
+        if (getChoice() != SELECT) {
+            return null;
+        }
+
+        String pattern = tabeNamePatternField.getText();
+        if ("".equals(pattern)) {
+            pattern = null;
+        }
+
+        return pattern;
+    }
 }

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,11 +56,18 @@
 package org.objectstyle.cayenne.modeler.util;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
+import org.objectstyle.cayenne.access.DataDomain;
+import org.objectstyle.cayenne.access.DataNode;
+import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.map.Attribute;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.map.DbAttributePair;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.Entity;
@@ -68,148 +75,339 @@ import org.objectstyle.cayenne.map.MapLoader;
 import org.objectstyle.cayenne.map.ObjAttribute;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
+import org.objectstyle.cayenne.map.Procedure;
+import org.objectstyle.cayenne.map.ProcedureParameter;
 import org.objectstyle.cayenne.map.Relationship;
+import org.objectstyle.cayenne.util.Util;
 
 /** 
- * Provides utility methods to access DataMap, Entities, etc.
- * For example, setName() in Attribute requires changing
- * the keys in attribute Maps in Entities. 
+ * Provides utility methods to perform complex actions on objects
+ * in the org.objectstyle.cayenne.map package.
+ * 
+ * <p>TODO: this class is a good candidate to be included in the map package.</p> 
  * 
  * @author Misha Sengaout
  * @author Andrei Adamchik
  */
 public class MapUtil {
 
-	public static void setObjEntityName(DataMap map, ObjEntity entity, String new_name) {
-		String old_name = entity.getName();
-		// If name hasnt change, just return
-		if (old_name != null && old_name.equals(new_name)) {
-			return;
-		}
-		entity.setName(new_name);
-		map.removeObjEntity(old_name);
-		map.addObjEntity(entity);
-	}
+    public static void setProcedureParameterName(
+        ProcedureParameter parameter,
+        String newName) {
 
-	public static void setDbEntityName(DataMap map, DbEntity entity, String new_name) {
-		String old_name = entity.getName();
-		// If name hasnt change, just return
-		if (old_name != null && old_name.equals(new_name)) {
-			return;
-		}
-		entity.setName(new_name);
-		map.removeDbEntity(old_name);
-		map.addDbEntity(entity);
-	}
+        String oldName = parameter.getName();
 
-	/** Changes the name of the attribute in all places in DataMap. */
-	public static void setAttributeName(Attribute attrib, String newName) {
+        // If name hasn't changed, just return
+        if (Util.nullSafeEquals(oldName, newName)) {
+            return;
+        }
 
-		Entity entity = attrib.getEntity();
-		entity.removeAttribute(attrib.getName());
-		attrib.setName(newName);
-		entity.addAttribute(attrib);
-	}
+        Procedure procedure = parameter.getEntity();
+        procedure.removeCallParameter(parameter.getName());
+        parameter.setName(newName);
+        procedure.addCallParameter(parameter);
+    }
 
-	/** Changes the name of the attribute in all places in DataMap. */
-	public static void setRelationshipName(
-		Entity entity,
-		Relationship rel,
-		String newName) {
+    public static void setDataMapName(DataDomain domain, DataMap map, String newName) {
+        String oldName = map.getName();
 
-		if (rel == null || rel != entity.getRelationship(rel.getName())) {
-			return;
-		}
+        // If name hasn't changed, just return
+        if (Util.nullSafeEquals(oldName, newName)) {
+            return;
+        }
 
-		entity.removeRelationship(rel.getName());
-		rel.setName(newName);
-		entity.addRelationship(rel);
-	}
+        // must fully relink renamed map
+        List nodes = new ArrayList();
+        Iterator allNodes = domain.getDataNodes().iterator();
+        while (allNodes.hasNext()) {
+            DataNode node = (DataNode) allNodes.next();
+            if (node.getDataMaps().contains(map)) {
+                nodes.add(node);
+            }
+        }
 
-	/**
-	 * Cleans any mappings of ObjEntities, ObjAttributes, 
-	 * ObjRelationship to the corresponding Db* objects that not longer
-	 * exist.
-	 */
-	public static void cleanObjMappings(DataMap map) {
-		Iterator ents = map.getObjEntitiesAsList().iterator();
-		while (ents.hasNext()) {
-			ObjEntity ent = (ObjEntity) ents.next();
-			DbEntity dbEnt = ent.getDbEntity();
+        domain.removeMap(oldName);
+        map.setName(newName);
+        domain.addMap(map);
 
-			// the whole entity mapping is invalid
-			if (dbEnt != null && map.getDbEntity(dbEnt.getName()) != dbEnt) {
-				clearDbMapping(ent);
-				continue;
-			}
+        Iterator relinkNodes = nodes.iterator();
+        while (relinkNodes.hasNext()) {
+            DataNode node = (DataNode) relinkNodes.next();
+            node.removeDataMap(oldName);
+            node.addDataMap(map);
+        }
+    }
 
-			// check indiv. attributes
-			Iterator atts = ent.getAttributeList().iterator();
-			while (atts.hasNext()) {
-				ObjAttribute att = (ObjAttribute) atts.next();
-				DbAttribute dbAtt = att.getDbAttribute();
-				if (dbAtt != null) {
-					if (dbEnt.getAttribute(dbAtt.getName()) != dbAtt) {
-						att.setDbAttribute(null);
-					}
-				}
-			}
+    public static void setDataDomainName(
+        Configuration configuration,
+        DataDomain domain,
+        String newName) {
 
-			// check indiv. relationships
-			Iterator rels = ent.getRelationshipList().iterator();
-			while (rels.hasNext()) {
-				ObjRelationship rel = (ObjRelationship) rels.next();
+        String oldName = domain.getName();
+        // If name hasn't changed, just return
+        if (Util.nullSafeEquals(oldName, newName)) {
+            return;
+        }
 
-				Iterator dbRels = new ArrayList(rel.getDbRelationshipList()).iterator();
-				while (dbRels.hasNext()) {
-					DbRelationship dbRel = (DbRelationship) dbRels.next();
-					Entity srcEnt = dbRel.getSourceEntity();
-					if (srcEnt == null
-						|| map.getDbEntity(srcEnt.getName()) != srcEnt
-						|| srcEnt.getRelationship(dbRel.getName()) != dbRel) {
-						rel.removeDbRelationship(dbRel);
-					}
-				}
-			}
+        domain.setName(newName);
+        configuration.removeDomain(oldName);
+        configuration.addDomain(domain);
+    }
 
-		}
-	}
+    public static void setProcedureName(
+        DataMap map,
+        Procedure procedure,
+        String newName) {
 
-	/** 
-	 * Clears all the mapping between this obj entity and 
-	 * its current db entity. Clears mapping between 
-	 * entities, attributes and relationships. 
-	 */
-	public static void clearDbMapping(ObjEntity entity) {
-		DbEntity db_entity = entity.getDbEntity();
-		if (db_entity == null) {
-			return;
-		}
+        String oldName = procedure.getName();
 
-		Iterator it = entity.getAttributeMap().values().iterator();
-		while (it.hasNext()) {
-			ObjAttribute objAttr = (ObjAttribute) it.next();
-			DbAttribute dbAttr = objAttr.getDbAttribute();
-			if (null != dbAttr) {
-				objAttr.setDbAttribute(null);
-			}
-		}
+        // If name hasn't changed, just return
+        if (Util.nullSafeEquals(oldName, newName)) {
+            return;
+        }
 
-		Iterator rel_it = entity.getRelationshipList().iterator();
-		while (rel_it.hasNext()) {
-			ObjRelationship obj_rel = (ObjRelationship) rel_it.next();
-			obj_rel.clearDbRelationships();
-		}
-		entity.setDbEntity(null);
-	}
+        procedure.setName(newName);
+        map.removeProcedure(oldName);
+        map.addProcedure(procedure);
+    }
 
-	/**
-	 * Returns <code>true</code> if this relationship's <code>toDependentPk</code>
-	 * property can be potentially set to <code>true</code>. 
-	 * This means that destination and
-	 * source attributes are primary keys of their corresponding entities.
-	 */
-	public static boolean isValidForDepPk(DbRelationship rel) {
+    public static void setObjEntityName(DataMap map, ObjEntity entity, String newName) {
+        String oldName = entity.getName();
+
+        // If name hasn't changed, just return
+        if (Util.nullSafeEquals(oldName, newName)) {
+            return;
+        }
+
+        entity.setName(newName);
+        map.removeObjEntity(oldName);
+        map.addObjEntity(entity);
+    }
+
+    public static void setDbEntityName(DataMap map, DbEntity entity, String newName) {
+        String oldName = entity.getName();
+
+        // If name hasn't changed, just return
+        if (Util.nullSafeEquals(oldName, newName)) {
+            return;
+        }
+
+        entity.setName(newName);
+        map.removeDbEntity(oldName);
+        map.addDbEntity(entity);
+    }
+
+    /** Changes the name of the attribute in all places in DataMap. */
+    public static void setAttributeName(Attribute attrib, String newName) {
+        Entity entity = attrib.getEntity();
+        entity.removeAttribute(attrib.getName());
+        attrib.setName(newName);
+        entity.addAttribute(attrib);
+    }
+
+    /** Changes the name of the attribute in all places in DataMap. */
+    public static void setRelationshipName(
+        Entity entity,
+        Relationship rel,
+        String newName) {
+
+        if (rel == null || rel != entity.getRelationship(rel.getName())) {
+            return;
+        }
+
+        entity.removeRelationship(rel.getName());
+        rel.setName(newName);
+        entity.addRelationship(rel);
+    }
+
+    /**
+     * Cleans any mappings of ObjEntities, ObjAttributes, 
+     * ObjRelationship to the corresponding Db* objects that not longer
+     * exist.
+     */
+    public static void cleanObjMappings(DataMap map) {
+        Iterator ents = map.getObjEntities().iterator();
+        while (ents.hasNext()) {
+            ObjEntity ent = (ObjEntity) ents.next();
+            DbEntity dbEnt = ent.getDbEntity();
+
+            // the whole entity mapping is invalid
+            if (dbEnt != null && map.getDbEntity(dbEnt.getName()) != dbEnt) {
+                clearDbMapping(ent);
+                continue;
+            }
+
+            // check indiv. attributes
+            Iterator atts = ent.getAttributes().iterator();
+            while (atts.hasNext()) {
+                ObjAttribute att = (ObjAttribute) atts.next();
+                DbAttribute dbAtt = att.getDbAttribute();
+                if (dbAtt != null) {
+                    if (dbEnt.getAttribute(dbAtt.getName()) != dbAtt) {
+                        att.setDbAttribute(null);
+                    }
+                }
+            }
+
+            // check indiv. relationships
+            Iterator rels = ent.getRelationships().iterator();
+            while (rels.hasNext()) {
+                ObjRelationship rel = (ObjRelationship) rels.next();
+
+                Iterator dbRels = new ArrayList(rel.getDbRelationships()).iterator();
+                while (dbRels.hasNext()) {
+                    DbRelationship dbRel = (DbRelationship) dbRels.next();
+                    Entity srcEnt = dbRel.getSourceEntity();
+                    if (srcEnt == null
+                        || map.getDbEntity(srcEnt.getName()) != srcEnt
+                        || srcEnt.getRelationship(dbRel.getName()) != dbRel) {
+                        rel.removeDbRelationship(dbRel);
+                    }
+                }
+            }
+
+        }
+    }
+
+    /** 
+     * Clears all the mapping between this obj entity and 
+     * its current db entity. Clears mapping between 
+     * entities, attributes and relationships. 
+     */
+    public static void clearDbMapping(ObjEntity entity) {
+        DbEntity db_entity = entity.getDbEntity();
+        if (db_entity == null) {
+            return;
+        }
+
+        Iterator it = entity.getAttributeMap().values().iterator();
+        while (it.hasNext()) {
+            ObjAttribute objAttr = (ObjAttribute) it.next();
+            DbAttribute dbAttr = objAttr.getDbAttribute();
+            if (null != dbAttr) {
+                objAttr.setDbAttribute(null);
+            }
+        }
+
+        Iterator rel_it = entity.getRelationships().iterator();
+        while (rel_it.hasNext()) {
+            ObjRelationship obj_rel = (ObjRelationship) rel_it.next();
+            obj_rel.clearDbRelationships();
+        }
+        entity.setDbEntity(null);
+    }
+
+    /**
+     * Returns <code>true</code> if this relationship's <code>toDependentPk</code>
+     * property can be potentially set to <code>true</code>. 
+     * This means that destination and
+     * source attributes are primary keys of their corresponding entities.
+     */
+    public static boolean isValidForDepPk(DbRelationship rel) {
         return MapLoader.isValidForDepPk(rel);
-	}
+    }
+
+    /**
+      * Returns true if one of relationship joins uses a given attribute
+      * as a source.
+      */
+    public static boolean containsSourceAttribute(
+        DbRelationship relationship,
+        DbAttribute attribute) {
+        if (attribute.getEntity() != relationship.getSourceEntity()) {
+            return false;
+        }
+
+        Iterator it = relationship.getJoins().iterator();
+        while (it.hasNext()) {
+            DbAttributePair join = (DbAttributePair) it.next();
+            if (join.getSource() == attribute) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true if one of relationship joins uses a given attribute
+     * as a target.
+     */
+    public static boolean containsTargetAttribute(
+        DbRelationship relationship,
+        DbAttribute attribute) {
+        if (attribute.getEntity() != relationship.getTargetEntity()) {
+            return false;
+        }
+
+        Iterator it = relationship.getJoins().iterator();
+        while (it.hasNext()) {
+            DbAttributePair join = (DbAttributePair) it.next();
+            if (join.getTarget() == attribute) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns a collection of DbRelationships that use
+     * this attribute as a source.
+     */
+    public static Collection getRelationshipsUsingAttributeAsSource(DbAttribute attribute) {
+        Entity parent = attribute.getEntity();
+
+        if (parent == null) {
+            return Collections.EMPTY_LIST;
+        }
+
+        Collection parentRelationships = parent.getRelationships();
+        Collection relationships = new ArrayList(parentRelationships.size());
+        Iterator it = parentRelationships.iterator();
+        while (it.hasNext()) {
+            DbRelationship relationship = (DbRelationship) it.next();
+            if (MapUtil.containsSourceAttribute(relationship, attribute)) {
+                relationships.add(relationship);
+            }
+        }
+        return relationships;
+    }
+
+    /**
+     * Returns a collection of DbRelationships that use
+     * this attribute as a source.
+     */
+    public static Collection getRelationshipsUsingAttributeAsTarget(DbAttribute attribute) {
+        Entity parent = attribute.getEntity();
+
+        if (parent == null) {
+            return Collections.EMPTY_LIST;
+        }
+
+        DataMap map = parent.getDataMap();
+        if (map == null) {
+            return Collections.EMPTY_LIST;
+        }
+
+        Collection relationships = new ArrayList();
+
+        Iterator it = map.getDbEntities().iterator();
+        while (it.hasNext()) {
+            Entity entity = (Entity) it.next();
+            if (entity == parent) {
+                continue;
+            }
+
+            Collection entityRelationships = entity.getRelationships();
+            Iterator relationshipsIt = entityRelationships.iterator();
+            while (relationshipsIt.hasNext()) {
+                DbRelationship relationship = (DbRelationship) relationshipsIt.next();
+                if (MapUtil.containsTargetAttribute(relationship, attribute)) {
+                    relationships.add(relationship);
+                }
+            }
+        }
+        return relationships;
+    }
 }

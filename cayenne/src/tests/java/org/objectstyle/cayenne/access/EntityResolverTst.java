@@ -1,6 +1,7 @@
 package org.objectstyle.cayenne.access;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.objectstyle.art.Artist;
@@ -12,15 +13,9 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class EntityResolverTst extends CayenneTestCase {
     protected EntityResolver sharedResolver;
-    private List allMaps = new ArrayList();
-
-    public EntityResolverTst(String name) {
-        super(name);
-        allMaps.addAll(getDomain().getMapList());
-    }
 
     protected void setUp() throws Exception {
-        sharedResolver = new EntityResolver(allMaps);
+        sharedResolver = new EntityResolver(getDomain().getDataMaps());
     }
 
     ////Private conveniences
@@ -94,7 +89,7 @@ public class EntityResolverTst extends CayenneTestCase {
         list.add(m2);
 
         EntityResolver resolver = new EntityResolver(list);
-        List maps = resolver.getDataMapsList();
+        Collection maps = resolver.getDataMaps();
         assertNotNull(maps);
         assertEquals(2, maps.size());
         assertTrue(maps.containsAll(list));
@@ -104,7 +99,7 @@ public class EntityResolverTst extends CayenneTestCase {
 
         // create empty resolver
         EntityResolver resolver = new EntityResolver();
-        assertEquals(0, resolver.getDataMapsList().size());
+        assertEquals(0, resolver.getDataMaps().size());
         assertNull(resolver.lookupObjEntity(Object.class));
 
         DataMap m1 = new DataMap();
@@ -114,7 +109,7 @@ public class EntityResolverTst extends CayenneTestCase {
 
         resolver.addDataMap(m1);
 
-        assertEquals(1, resolver.getDataMapsList().size());
+        assertEquals(1, resolver.getDataMaps().size());
         assertSame(oe1, resolver.lookupObjEntity(Object.class));
     }
 
@@ -128,12 +123,12 @@ public class EntityResolverTst extends CayenneTestCase {
         list.add(m1);
         EntityResolver resolver = new EntityResolver(list);
 
-        assertEquals(1, resolver.getDataMapsList().size());
+        assertEquals(1, resolver.getDataMaps().size());
         assertSame(oe1, resolver.lookupObjEntity(Object.class));
 
         resolver.removeDataMap(m1);
 
-        assertEquals(0, resolver.getDataMapsList().size());
+        assertEquals(0, resolver.getDataMaps().size());
         assertNull(resolver.lookupObjEntity(Object.class));
     }
 

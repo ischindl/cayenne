@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,15 +58,10 @@ package org.objectstyle.cayenne;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.objectstyle.art.Artist;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class ObjectIdTst extends CayenneTestCase {
-	private static Logger logObj = Logger.getLogger(ObjectIdTst.class);
-
-	public ObjectIdTst(String name) {
-		super(name);
-	}
 
 	public void testObjEntityName() throws Exception {
 		Class class1=Number.class;
@@ -138,7 +133,29 @@ public class ObjectIdTst extends CayenneTestCase {
 
 		ObjectId ref = new ObjectId(class1, hm1);
 		ObjectId oid = new ObjectId(class1, hm2);
-		assertTrue(!ref.equals(oid));
+		assertFalse(ref.equals(oid));
+	}
+	
+
+	public void testEqualsBinaryKey() throws Exception {
+		Class class1 = Artist.class;
+
+		Map hm1 = new HashMap();
+		hm1.put("key1",  new byte[] {3, 4, 10, -1});
+
+		Map hm2 = new HashMap();
+		hm2.put("key1", new byte[] {3, 4, 10, -1});
+
+		ObjectId ref = new ObjectId(class1, hm1);
+		ObjectId oid = new ObjectId(class1, hm2);
+		assertEquals(ref.hashCode(), oid.hashCode());
+		assertTrue(ref.equals(oid));
+	}
+
+
+	public void testEqualsNull() {
+		ObjectId o = new ObjectId(Artist.class, "ARTIST_ID", 42);
+		assertFalse(o.equals(null));
 	}
 
 	public void testIdAsMapKey() throws Exception {
@@ -167,7 +184,7 @@ public class ObjectIdTst extends CayenneTestCase {
 
 		ObjectId oid1 = new ObjectId(class1, null);
 		ObjectId oid2 = new ObjectId(class2, null);
-		assertTrue(!oid1.equals(oid2));
+		assertFalse(oid1.equals(oid2));
 	}
 
 	public void testNotEqual2() throws Exception {
@@ -181,6 +198,6 @@ public class ObjectIdTst extends CayenneTestCase {
 
 		ObjectId oid1 = new ObjectId(class1, hm1);
 		ObjectId oid2 = new ObjectId(class1, hm2);
-		assertTrue(!oid1.equals(oid2));
+		assertFalse(oid1.equals(oid2));
 	}
 }

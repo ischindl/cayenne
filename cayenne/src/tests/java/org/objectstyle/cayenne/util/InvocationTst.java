@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,16 +59,12 @@ package org.objectstyle.cayenne.util;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.objectstyle.cayenne.unittest.CayenneTestCase;
-
 import junit.framework.Assert;
+
+import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class InvocationTst extends CayenneTestCase {
 	private String _methodName = "myListenerMethod";
-
-	public InvocationTst(String arg0) {
-		super(arg0);
-	}
 
 	public void testEqualsReflexive() throws NoSuchMethodException {
 		Invocation inv0 = new Invocation(this, _methodName);		
@@ -222,7 +218,7 @@ public class InvocationTst extends CayenneTestCase {
 		Invocation inv1 = new Invocation(this, _methodName, new Class[]{Object.class});
 
 		try {
-			inv1.fire((Object[])null);
+			inv1.fire(null);
 			Assert.fail();
 		}
 
@@ -239,7 +235,7 @@ public class InvocationTst extends CayenneTestCase {
 		System.gc();
 		System.gc();
 
-		Assert.assertEquals(false, inv0.fire());
+		Assert.assertFalse(inv0.fire());
 	}
 
 	

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,11 +56,15 @@
 package org.objectstyle.cayenne.modeler.util;
 
 import java.awt.Component;
+import java.awt.Rectangle;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.util.EventObject;
 
 import javax.swing.DefaultCellEditor;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.JViewport;
 import javax.swing.event.ChangeEvent;
 import javax.swing.table.TableCellEditor;
 import javax.swing.text.JTextComponent;
@@ -75,96 +79,164 @@ import org.apache.log4j.Logger;
  * @author Andrei Adamchik
  */
 public class CayenneTable extends JTable {
-	private static Logger logObj = Logger.getLogger(CayenneTable.class);
+    private static Logger logObj = Logger.getLogger(CayenneTable.class);
 
-	protected void createDefaultEditors() {
-		super.createDefaultEditors();
-		DefaultCellEditor temp = new DefaultCellEditor(new JTextField());
-		setDefaultEditor(Object.class, temp);
-		setDefaultEditor(String.class, temp);
-	}
+    public CayenneTable() {
+        super();
+        this.setRowHeight(25);
+        this.setRowMargin(3);
+    }
 
-	public CayenneTableModel getCayenneModel() {
-		return (CayenneTableModel) getModel();
-	}
+    protected void createDefaultEditors() {
+        super.createDefaultEditors();
+        
+        JTextField textField = CayenneWidgetFactory.createTextField(0);
+        final DefaultCellEditor editor = new DefaultCellEditor(textField);
+        
+        // this takes care of cases like handling of "delete" button clicks
+        // that delete a row being currently edited....
+        textField.addFocusListener(new FocusAdapter() {
+            public void focusLost(FocusEvent e) {
+                if (!e.isTemporary()) {
+                    editor.cancelCellEditing();
+                }
+            }
+        });
 
-	public void select(Object row) {
-		if (row == null) {
-			return;
-		}
+        setDefaultEditor(Object.class, editor);
+        setDefaultEditor(String.class, editor);
+    }
 
-		CayenneTableModel model = getCayenneModel();
-		int ind = model.getObjectList().indexOf(row);
+    public CayenneTableModel getCayenneModel() {
+        return (CayenneTableModel) getModel();
+    }
+    
+    /**
+     * Cancels editing of any cells that maybe currently edited.
+     * This method should be called before updating any selections.
+     */
+    protected void cancelEditing() {
+    	editingCanceled(new ChangeEvent(this));
+    }
 
-		if (ind >= 0) {
-			getSelectionModel().setSelectionInterval(ind, ind);
-		}
-	}
+    public void select(Object row) {
+        if (row == null) {
+            return;
+        }
+		cancelEditing();
+		
+        CayenneTableModel model = getCayenneModel();
+        int ind = model.getObjectList().indexOf(row);
 
-	public void select(int index) {
-		CayenneTableModel model = getCayenneModel();
-		if (index >= model.getObjectList().size()) {
-			index = model.getObjectList().size() - 1;
-		}
+        if (ind >= 0) {
+            getSelectionModel().setSelectionInterval(ind, ind);
+        }
+    }
 
-		if (index >= 0) {
-			getSelectionModel().setSelectionInterval(index, index);
-		}
-	}
+    public void select(int index) {
+		cancelEditing();
+		
+        CayenneTableModel model = getCayenneModel();
+        if (index >= model.getObjectList().size()) {
+            index = model.getObjectList().size() - 1;
+        }
 
-	/**
-	 * @see javax.swing.event.CellEditorListener#editingStopped(ChangeEvent)
-	 */
-	public void editingStopped(ChangeEvent e) {
-		super.editingStopped(e);
+        if (index >= 0) {
+            getSelectionModel().setSelectionInterval(index, index);
+        }
+    }
 
-		// only go down one row if we are editing text
-		int row = getSelectedRow();
-		if (row >= 0
-			&& this.getRowCount() > 0
-			&& getSelectedTextComponent() != null) {
-			row++;
+    /**
+     * @see javax.swing.event.CellEditorListener#editingStopped(ChangeEvent)
+     */
+    public void editingStopped(ChangeEvent e) {
+        super.editingStopped(e);
 
-			if (row >= this.getRowCount()) {
-				row = 0;
-			}
-			select(row);
-		}
-	}
+        // only go down one row if we are editing text
+        int row = getSelectedRow();
+        if (row >= 0 && this.getRowCount() > 0 && getSelectedTextComponent() != null) {
+            row++;
 
-	public JTextComponent getSelectedTextComponent() {
-		int row = getSelectedRow();
-		int column = getSelectedColumn();
-		if (row < 0 || column < 0) {
-			return null;
-		}
+            if (row >= this.getRowCount()) {
+                row = 0;
+            }
+            select(row);
+        }
+    }
 
-		TableCellEditor editor =
-			this.getCellEditor(row, column);
-		if (editor instanceof DefaultCellEditor) {
-			Component comp = ((DefaultCellEditor) editor).getComponent();
-			if (comp instanceof JTextComponent) {
-				return (JTextComponent) comp;
-			}
-		}
-		return null;
-	}
+    public JTextComponent getSelectedTextComponent() {
+        int row = getSelectedRow();
+        int column = getSelectedColumn();
+        if (row < 0 || column < 0) {
+            return null;
+        }
 
-	/**
-	 * @see javax.swing.JTable#editCellAt(int, int, EventObject)
-	 */
-	public boolean editCellAt(int row, int column, EventObject e) {
-		boolean edit = super.editCellAt(row, column, e);
+        TableCellEditor editor = this.getCellEditor(row, column);
+        if (editor instanceof DefaultCellEditor) {
+            Component comp = ((DefaultCellEditor) editor).getComponent();
+            if (comp instanceof JTextComponent) {
+                return (JTextComponent) comp;
+            }
+        }
+        return null;
+    }
 
-		if (edit) {
-			JTextComponent t = getSelectedTextComponent();
-			if (t != null) {
-				if (!t.isFocusOwner()) {
-					t.requestFocus();
-				}
-				t.setCaretPosition(t.getDocument().getLength());
-			}
-		}
-		return edit;
-	}
+    /**
+     * @see javax.swing.JTable#editCellAt(int, int, EventObject)
+     */
+    public boolean editCellAt(int row, int column, EventObject e) {
+        boolean edit = super.editCellAt(row, column, e);
+
+        if (edit) {
+            JTextComponent t = getSelectedTextComponent();
+            if (t != null) {
+                if (!t.isFocusOwner()) {
+                    t.requestFocus();
+                }
+
+                t.setCaretPosition(t.getDocument().getLength());
+            }
+        }
+        return edit;
+    }
+
+    /**
+     * Scrolls view if it is located in a JViewport, so that the specified cell
+     * is displayed in the center.
+     */
+    public void scroll(int rowIndex, int vColIndex) {
+        if (!(getParent() instanceof JViewport)) {
+            return;
+        }
+
+        JViewport viewport = (JViewport) getParent();
+        Rectangle rect = getCellRect(rowIndex, vColIndex, true);
+        Rectangle viewRect = viewport.getViewRect();
+
+        if (viewRect.intersects(rect)) {
+            return;
+        }
+
+        // Translate the cell location so that it is relative
+        // to the view, assuming the northwest corner of the
+        // view is (0,0).
+        rect.setLocation(rect.x - viewRect.x, rect.y - viewRect.y);
+
+        // Calculate location of rect if it were at the center of view
+        int centerX = (viewRect.width - rect.width) / 2;
+        int centerY = (viewRect.height - rect.height) / 2;
+
+        // Fake the location of the cell so that scrollRectToVisible
+        // will move the cell to the center
+        if (rect.x < centerX) {
+            centerX = -centerX;
+        }
+        if (rect.y < centerY) {
+            centerY = -centerY;
+        }
+        rect.translate(centerX, centerY);
+
+        // Scroll the area into view.
+        viewport.scrollRectToVisible(rect);
+    }
 }

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,10 +60,13 @@ import java.util.List;
 
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.log4j.Logger;
+import org.objectstyle.cayenne.DataObject;
+import org.objectstyle.cayenne.access.util.QueryUtils;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionTraversal;
 import org.objectstyle.cayenne.exp.TraversalHandler;
 import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.query.QualifiedQuery;
 import org.objectstyle.cayenne.query.Query;
@@ -77,12 +80,15 @@ import org.objectstyle.cayenne.query.SelectQuery;
 public class QualifierTranslator
     extends QueryAssemblerHelper
     implements TraversalHandler {
-    private static Logger logObj = Logger.getLogger(QualifierTranslator.class);
+
+    private static Logger logObj = Logger.getLogger(QueryUtils.class);
 
     private ExpressionTraversal treeWalker = new ExpressionTraversal();
     private StringBuffer qualBuf = new StringBuffer();
 
     protected boolean translateParentQual;
+    protected DataObjectMatchTranslator objectMatchTranslator;
+    protected boolean matchingObject;
 
     public QualifierTranslator() {
         this(null);
@@ -120,66 +126,166 @@ public class QualifierTranslator
         }
     }
 
+    /**
+     * Called before processing an expression to initialize
+     * objectMatchTranslator if needed. 
+     */
+    protected void detectObjectMatch(Expression exp) {
+        // On demand initialization of
+        // objectMatchTranslator is not possible since there may be null
+        // object values that would not allow to detect the need for 
+        // such translator in the right time (e.g.: null = dbpath)
+
+        matchingObject = false;
+
+        if (exp.getOperandCount() != 2) {
+            // only binary expressions are supported
+            return;
+        }
+
+        // check if there are DataObjects among direct children of the Expression
+        for (int i = 0; i < 2; i++) {
+            Object op = exp.getOperand(i);
+            if (op instanceof DataObject) {
+                matchingObject = true;
+
+                if (objectMatchTranslator == null) {
+                    objectMatchTranslator = new DataObjectMatchTranslator();
+                } else {
+                    objectMatchTranslator.reset();
+                }
+                break;
+            }
+        }
+    }
+
+    protected void appendObjectMatch() {
+        if (!matchingObject || objectMatchTranslator == null) {
+            throw new IllegalStateException("An invalid attempt to append object match.");
+        }
+
+        // turn off special handling, so that all the methods behave as a superclass's impl.
+        matchingObject = false;
+
+        boolean first = true;
+        Iterator it = objectMatchTranslator.keys();
+        while (it.hasNext()) {
+            if (first) {
+                first = false;
+            } else {
+                qualBuf.append(" AND ");
+            }
+
+            String key = (String) it.next();
+            DbAttribute attr = objectMatchTranslator.getAttribute(key);
+            Object val = objectMatchTranslator.getValue(key);
+
+            processColumn(qualBuf, attr);
+            qualBuf.append(objectMatchTranslator.getOperation());
+            appendLiteral(qualBuf, val, attr, objectMatchTranslator.getExpression());
+        }
+
+        objectMatchTranslator.reset();
+    }
+
     /** Opportunity to insert an operation */
     public void finishedChild(
         Expression node,
         int childIndex,
         boolean hasMoreChildren) {
-        if (!hasMoreChildren)
+
+        if (!hasMoreChildren) {
             return;
+        }
+
+        StringBuffer buf = (matchingObject) ? new StringBuffer() : qualBuf;
 
         switch (node.getType()) {
             case Expression.AND :
-                qualBuf.append(" AND ");
+                buf.append(" AND ");
                 break;
             case Expression.OR :
-                qualBuf.append(" OR ");
+                buf.append(" OR ");
                 break;
             case Expression.EQUAL_TO :
-                qualBuf.append(" = ");
+                // translate NULL as IS NULL
+                if (childIndex == 0
+                    && node.getOperandCount() == 2
+                    && node.getOperand(1) == null) {
+                    buf.append(" IS ");
+                } else {
+                    buf.append(" = ");
+                }
                 break;
             case Expression.NOT_EQUAL_TO :
-                qualBuf.append(" <> ");
+                // translate NULL as IS NOT NULL
+                if (childIndex == 0
+                    && node.getOperandCount() == 2
+                    && node.getOperand(1) == null) {
+                    buf.append(" IS NOT ");
+                } else {
+                    buf.append(" <> ");
+                }
                 break;
             case Expression.LESS_THAN :
-                qualBuf.append(" < ");
+                buf.append(" < ");
                 break;
             case Expression.GREATER_THAN :
-                qualBuf.append(" > ");
+                buf.append(" > ");
                 break;
             case Expression.LESS_THAN_EQUAL_TO :
-                qualBuf.append(" <= ");
+                buf.append(" <= ");
                 break;
             case Expression.GREATER_THAN_EQUAL_TO :
-                qualBuf.append(" >= ");
+                buf.append(" >= ");
                 break;
             case Expression.IN :
-                qualBuf.append(" IN ");
+                buf.append(" IN ");
+                break;
+            case Expression.NOT_IN :
+                buf.append(" NOT IN ");
                 break;
             case Expression.LIKE :
-                qualBuf.append(" LIKE ");
+                buf.append(" LIKE ");
+                break;
+            case Expression.NOT_LIKE :
+                buf.append(" NOT LIKE ");
                 break;
             case Expression.LIKE_IGNORE_CASE :
-                qualBuf.append(") LIKE UPPER(");
+                buf.append(") LIKE UPPER(");
+                break;
+            case Expression.NOT_LIKE_IGNORE_CASE :
+                buf.append(") NOT LIKE UPPER(");
                 break;
             case Expression.ADD :
-                qualBuf.append(" + ");
+                buf.append(" + ");
                 break;
             case Expression.SUBTRACT :
-                qualBuf.append(" - ");
+                buf.append(" - ");
                 break;
             case Expression.MULTIPLY :
-                qualBuf.append(" * ");
+                buf.append(" * ");
                 break;
             case Expression.DIVIDE :
-                qualBuf.append(" / ");
+                buf.append(" / ");
                 break;
             case Expression.BETWEEN :
                 if (childIndex == 0)
-                    qualBuf.append(" BETWEEN ");
+                    buf.append(" BETWEEN ");
                 else if (childIndex == 1)
-                    qualBuf.append(" AND ");
+                    buf.append(" AND ");
                 break;
+            case Expression.NOT_BETWEEN :
+                if (childIndex == 0)
+                    buf.append(" NOT BETWEEN ");
+                else if (childIndex == 1)
+                    buf.append(" AND ");
+                break;
+        }
+
+        if (matchingObject) {
+            objectMatchTranslator.setOperation(buf.toString());
+            objectMatchTranslator.setExpression(node);
         }
     }
 
@@ -205,35 +311,38 @@ public class QualifierTranslator
             qualBuf.append("ANY ");
     }
 
-    /** Opportunity to open a bracket */
     public void startBinaryNode(Expression node, Expression parentNode) {
+        // binary nodes are the only ones that currently require this
+        detectObjectMatch(node);
+
         if (parenthesisNeeded(node, parentNode))
             qualBuf.append('(');
         if (node.getType() == Expression.LIKE_IGNORE_CASE)
             qualBuf.append("UPPER(");
     }
 
-    /** Opportunity to open a bracket */
     public void startTernaryNode(Expression node, Expression parentNode) {
         if (parenthesisNeeded(node, parentNode))
             qualBuf.append('(');
     }
 
-    /** Opportunity to close a bracket */
     public void endUnaryNode(Expression node, Expression parentNode) {
         if (parenthesisNeeded(node, parentNode))
             qualBuf.append(')');
     }
 
-    /** Opportunity to close a bracket */
     public void endBinaryNode(Expression node, Expression parentNode) {
+        // check if we need to use objectMatchTranslator to finish building the expression
+        if (matchingObject) {
+            appendObjectMatch();
+        }
+
         if (parenthesisNeeded(node, parentNode))
             qualBuf.append(')');
         if (node.getType() == Expression.LIKE_IGNORE_CASE)
             qualBuf.append(')');
     }
 
-    /** Opportunity to close a bracket */
     public void endTernaryNode(Expression node, Expression parentNode) {
         if (parenthesisNeeded(node, parentNode))
             qualBuf.append(')');
@@ -249,7 +358,7 @@ public class QualifierTranslator
         } else if (parentNode.getType() == Expression.LIST) {
             appendList(parentNode, paramsDbType(parentNode));
         } else {
-            appendLiteral(qualBuf, leaf, paramsDbType(parentNode));
+            appendLiteral(qualBuf, leaf, paramsDbType(parentNode), parentNode);
         }
     }
 
@@ -279,28 +388,27 @@ public class QualifierTranslator
     private final void appendList(Expression listExpr, DbAttribute paramDesc) {
         Iterator it = null;
         Object list = listExpr.getOperand(0);
-        if(list instanceof List) {
+        if (list instanceof List) {
             it = ((List) list).iterator();
-        }
-        else if(list instanceof Object[]) {
-        	it = IteratorUtils.arrayIterator((Object[])list);
-        }
-        else {
-        	String className = (list != null) ? list.getClass().getName() : "<null>";
-        	throw new IllegalArgumentException("Unsupported type for the list expressions: " + className);
+        } else if (list instanceof Object[]) {
+            it = IteratorUtils.arrayIterator((Object[]) list);
+        } else {
+            String className =
+                (list != null) ? list.getClass().getName() : "<null>";
+            throw new IllegalArgumentException(
+                "Unsupported type for the list expressions: " + className);
         }
 
-      
         // process first element outside the loop
         // (unroll loop to avoid condition checking
         if (it.hasNext())
-            appendLiteral(qualBuf, it.next(), paramDesc);
+            appendLiteral(qualBuf, it.next(), paramDesc, listExpr);
         else
             return;
 
         while (it.hasNext()) {
             qualBuf.append(", ");
-            appendLiteral(qualBuf, it.next(), paramDesc);
+            appendLiteral(qualBuf, it.next(), paramDesc, listExpr);
         }
     }
 
@@ -328,10 +436,14 @@ public class QualifierTranslator
      * @see org.objectstyle.cayenne.access.trans.QueryAssemblerHelper#getObjEntity()
      */
     public ObjEntity getObjEntity() {
-        return (isTranslateParentQual())
-            ? queryAssembler.getEngine().getEntityResolver().lookupObjEntity(
-                (queryAssembler.getQuery()))
-            : super.getObjEntity();
+        if (isTranslateParentQual()) {
+        	SelectQuery query = (SelectQuery)queryAssembler.getQuery();
+			return queryAssembler.getEngine().getEntityResolver().lookupObjEntity(
+							(query.getParentObjEntityName()));
+        }
+        else {
+			return super.getObjEntity();
+        }
     }
 
     /**
@@ -352,4 +464,33 @@ public class QualifierTranslator
         }
     }
 
+    protected void appendLiteral(
+        StringBuffer buf,
+        Object val,
+        DbAttribute attr,
+        Expression parentExpression) {
+
+        if (!matchingObject) {
+            super.appendLiteral(buf, val, attr, parentExpression);
+        } else if (val == null || (val instanceof DataObject)) {
+            objectMatchTranslator.setDataObject((DataObject) val);
+        } else {
+            throw new IllegalArgumentException("Attempt to use literal other than DataObject during object match.");
+        }
+    }
+
+    protected void processRelTermination(
+        StringBuffer buf,
+        DbRelationship rel) {
+
+        if (!matchingObject) {
+            super.processRelTermination(buf, rel);
+        } else {
+            if (rel.isToMany()) {
+                // append joins
+                queryAssembler.dbRelationshipAdded(rel);
+            }
+            objectMatchTranslator.setRelationship(rel);
+        }
+    }
 }

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,6 @@
  */
 package org.objectstyle.cayenne.access.trans;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.DbRelationship;
 
@@ -65,35 +64,31 @@ import org.objectstyle.cayenne.map.DbRelationship;
  *  @author Andrei Adamchik
  */
 public class DeleteTranslator extends QueryAssembler {
-	private static Logger logObj = Logger.getLogger(DeleteTranslator.class);
 
-	public String aliasForTable(DbEntity dbEnt) {
-		throw new RuntimeException("aliases not supported");
-	}
+    public String aliasForTable(DbEntity dbEnt) {
+        throw new RuntimeException("aliases not supported");
+    }
 
-	public void dbRelationshipAdded(DbRelationship dbRel) {
-		throw new RuntimeException("db relationships not supported");
-	}
+    public void dbRelationshipAdded(DbRelationship dbRel) {
+        throw new RuntimeException("db relationships not supported");
+    }
 
-	/** Main method of DeleteTranslator class. Translates DeleteQuery
-	 *  into a JDBC PreparedStatement
-	 */
-	public String createSqlString() throws Exception {
-		StringBuffer queryBuf = new StringBuffer("DELETE FROM ");
+    /** Main method of DeleteTranslator class. Translates DeleteQuery
+     *  into a JDBC PreparedStatement
+     */
+    public String createSqlString() throws Exception {
+        StringBuffer queryBuf = new StringBuffer("DELETE FROM ");
 
-		// 1. append table name
-		DbEntity dbEnt = engine.getEntityResolver().lookupDbEntity(query);
-		queryBuf.append(dbEnt.getFullyQualifiedName());
+        // 1. append table name
+        DbEntity dbEnt = engine.getEntityResolver().lookupDbEntity(query);
+        queryBuf.append(dbEnt.getFullyQualifiedName());
 
-		// 2. build qualifier
-		String qualifierStr =
-			adapter
-				.getQualifierFactory()
-				.createTranslator(this)
-				.doTranslation();
-		if (qualifierStr != null)
-			queryBuf.append(" WHERE ").append(qualifierStr);
+        // 2. build qualifier
+        String qualifierStr =
+            adapter.getQualifierTranslator(this).doTranslation();
+        if (qualifierStr != null)
+            queryBuf.append(" WHERE ").append(qualifierStr);
 
-		return queryBuf.toString();
-	}
+        return queryBuf.toString();
+    }
 }

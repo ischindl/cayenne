@@ -1,21 +1,21 @@
 <document>
 <title>User Guide - Quick Start</title>
-    <properties>
-        <author>Andrei Adamchik</author>
-    </properties>
-<navigator>
-	<up>/userguide/index.html</up>
-	<prev>/userguide/quickstart/comline.html</prev>
-       <next>/userguide/quickstart/tapestrywebapp.html</next>
-</navigator> 
+<toc name="toc-user-guide" chapter="3. Quick Start"/>
 <body>
     <section name="3. Quick Start">
-       <subsection name="3.2 &quot;JSP/Struts Web Application&quot; Tutorial">
+       <subsection name="3.3 JSP/Struts Tutorial">
                <p>This section shows how to write and a deploy a jsp web application
     	using Cayenne.</p>
     	
    	    <panel name="Note:">
     		Full tutorial source code is included in Cayenne distribution in "src/tutorials" folder.
+    	</panel>
+    	<p></p>
+    	<panel name="Note:">
+    		Configuration given in this tutorial assumes Servlet 2.3 compatible
+    		container. For older containers, move cayenne files from WEB-INF to WEB-INF/classes
+    		(e.g. "mv cayenne.xml datanode.driver.xml datamap.map.xml classes/") and remove listener
+    		section from the web.xml.
     	</panel>
 
    	<p>Tutorial steps:</p>
@@ -29,7 +29,7 @@
     		<li><a href="#6">Compile and Deploy the Application.</a></li>
     	</ul>
     	
-               <subsection name="3.2.1 Tutorial Setup" anchor="1">
+               <subsection name="3.3.1 Tutorial Setup" anchor="1">
        		<p>- Follow the steps outlined in <a href="../install/index.html">Cayenne 
        		installation instructions</a>. In particular, JSDK 1.4 must be installed.
        		</p>
@@ -63,39 +63,21 @@
     		to any convenient directory.</li> 
     		
     		<li>Copy all JAR files distributed with Struts (located in <code>lib</code> subdirectory) to
-    		<code>WEB-INF/lib</code> subdirectory of the tutorial project. At the minimum these files
-    		are required:
-    			<ul>
-    		    	<li>commons-beanutils.jar</li>
-    		    	<li>commons-collections.jar</li>
-    		    	<li>commons-dbcp.jar</li>
-    		    	<li>commons-digester.jar</li>
-    		    	<li>commons-logging.jar</li>
-    		    	<li>commons-pool.jar</li>
-    		    	<li>commons-services.jar</li>
-    		    	<li>commons-validator.jar</li>
-    		    	<li>struts.jar</li>
-    			</ul>    		
-    		</li>
+    		<code>WEB-INF/lib</code> subdirectory of the tutorial project.</li>
     		
-    		<li>Copy the following Struts configuration files from Struts <code>lib</code> subdirectory 
-    		to <code>WEB-INF</code> subdirectory of the tutorial project:
-				<ul>
-    		    	<li>struts-bean.tld</li>
-    		    	<li>struts-html.tld</li>
-    		    	<li>struts-logic.tld</li>
-    		    	<li>struts-nested.tld</li>
-    		    	<li>struts-template.tld</li>
-    		    	<li>validator-rules.xml</li>
-    			</ul>    
+    		<li>Copy all the *.tld files and validator-rules.xml from Struts 
+    		<code>lib</code> subdirectory 
+    		to <code>WEB-INF</code> subdirectory of the tutorial project.
+			
     		</li>
     		</ul>
     		
-    		Tutorial was testsed with Struts 1.1b1, earlier versions of Struts will most 
-    		likely require a different setup.</p>
+    		Tutorial was testsed with Struts 1.1, other versions of Struts may
+    		require a different setup.</p>
+    		<br/>
     	</subsection>
     	
-       <subsection name="3.2.2 Prepare Tutorial Database" anchor="2">
+       <subsection name="3.3.2 Prepare Tutorial Database" anchor="2">
     		<p>Run <a href="../../tutorials/cayenne-web-app/tutorialdb.sql"><code>tutorialdb.sql</code></a>
     		script located in the project directory to create test tables. 
     		This script is tested on MySQL, but it should be easy to port to any other RDBMS. Also
@@ -105,7 +87,7 @@
     		of this script to recreate tables from scratch.</p>
     	</subsection>
     	
-       <subsection name="3.2.3 Setup Cayenne Configuration Files" anchor="3">
+       <subsection name="3.3.3 Setup Cayenne Configuration Files" anchor="3">
     		<p>Configuration files included in this tutorial are:
     		
     		<ul>
@@ -123,24 +105,25 @@
     			driver information of the test database.</li>
     		</ul>         	
     		</p>
-    	    <img src="/images/tutorial-cfg-node.gif" width="639" height="503" border="0" align="middle"
+    	    <img src="/images/modelerguide/select-adapter.jpg" width="520" height="336" border="0" align="middle"
 			alt="Configure Node Panel"/>
+			<br/>
     	</subsection>
     	
     	
-       <subsection name="3.2.4 Create Database Primary Key Support." anchor="4">
+       <subsection name="3.3.4 Create Database Primary Key Support." anchor="4">
     	<p>Open <code>cayenne.xml</code> in CayenneModeler and generate needed database
     	objects for primary key support by following these  
-    	<a href="../../modelerguide/pksupport.html">instructions</a>. Skip this step if it was already 
+    	<a href="../../modelerguide/common-tasks/pksupport.html">instructions</a>. Skip this step if it was already 
     	done for another tutorial.</p>
     	</subsection>
     	
-       <subsection name="3.2.5 Generate Java Code for DataObjects" anchor="5">
+       <subsection name="3.3.5 Generate Java Code for DataObjects" anchor="5">
     		<p>Open <code>cayenne.xml</code> in CayenneModeler and generate Java classes 
     		for DataObjects by going to <strong>"Tools -> Generate Classes"</strong> 
     		and selecting the <strong><code>WEB-INF/classes</code></strong> under the tutorial 
     		project directory in the opened popup:</p>
-    		<img src="/images/classgen.gif" width="546" height="489" border="0" align="middle"
+    		<img src="/images/modelerguide/generate-classes.jpg" width="520" height="416" border="0" align="middle"
 			alt="Generate Classes Dialog"/>
 			
     		<p>Click <strong>"Generate"</strong> button. After the generation 
@@ -158,7 +141,7 @@
     		</ul>
     		</p>    	
     	</subsection>
-               <subsection name="3.2.6 Compile and Deploy the Application" anchor="6">
+               <subsection name="3.3.6 Compile and Deploy the Application" anchor="6">
     		<p>Compile the source code like you would normally compile a webapplication.
     		The example is given for javac from the command line (assuming that JAVA_HOME variable 
     		points to the JDK 1.3 or 1.4 installation). Substitute <code>[servlet.jar]</code> 
@@ -167,16 +150,16 @@
     		On Windows:</p>
 <source>
 cayenne-web-app> cd WEB-INF\classes
-cayenne-web-app\WEB-INF\classes> set CLASSPATH=%CLASSPATH%;[servlet.jar] 
-cayenne-web-app\WEB-INF\classes> set CLASSPATH=%CLASSPATH%;..\lib\struts.jar;..\lib\cayenne.jar
-cayenne-web-app\WEB-INF\classes> %JAVA_HOME%\bin\javac webtest\*.java formbean\*.java action\*.java
+classes> set CLASSPATH=%CLASSPATH%;[servlet.jar] 
+classes> set CLASSPATH=%CLASSPATH%;..\lib\struts.jar;..\lib\cayenne.jar
+classes> %JAVA_HOME%\bin\javac webtest\*.java formbean\*.java action\*.java
 </source>
 
     		<p>On UNIX:</p>
 <source>
 cayenne-web-app# cd WEB-INF/classes
-cayenne-web-app# export CLASSPATH=$CLASSPATH:[servlet.jar]:../lib/struts.jar:../lib/cayenne.jar
-cayenne-web-app# $JAVA_HOME/bin/javac webtest/*.java formbean/*.java action/*.java
+classes# export CLASSPATH=$CLASSPATH:[servlet.jar]:../lib/struts.jar:../lib/cayenne.jar
+classes# $JAVA_HOME/bin/javac webtest/*.java formbean/*.java action/*.java
 </source>
 
 			<p>To deploy, simply copy <code>cayenne-web-app</code> directory to Tomcat 

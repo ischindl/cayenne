@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,7 +62,9 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.DefaultCellEditor;
@@ -82,11 +84,12 @@ import org.objectstyle.cayenne.map.DataMapException;
 import org.objectstyle.cayenne.map.DbAttributePair;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.DbRelationship;
+import org.objectstyle.cayenne.map.event.RelationshipEvent;
 import org.objectstyle.cayenne.modeler.CayenneDialog;
 import org.objectstyle.cayenne.modeler.Editor;
 import org.objectstyle.cayenne.modeler.PanelFactory;
-import org.objectstyle.cayenne.modeler.event.RelationshipEvent;
 import org.objectstyle.cayenne.modeler.util.CayenneTable;
+import org.objectstyle.cayenne.modeler.util.CayenneWidgetFactory;
 import org.objectstyle.cayenne.modeler.util.MapUtil;
 import org.objectstyle.cayenne.modeler.util.ModelerUtil;
 import org.objectstyle.cayenne.project.NamedObjectFactory;
@@ -99,293 +102,319 @@ import org.objectstyle.cayenne.project.NamedObjectFactory;
  * @author Andrei Adamchik
  */
 public class ResolveDbRelationshipDialog
-	extends CayenneDialog
-	implements ActionListener {
+    extends CayenneDialog
+    implements ActionListener {
 
-	private DataMap map;
-	private java.util.List originalList;
-	private java.util.List dbRelList;
-	private DbEntity start;
-	private DbEntity end;
-	private DbRelationship dbRel;
-	private boolean isDbRelNew;
-	private DbRelationship reverseDbRel;
-	private boolean isReverseDbRelNew;
+    protected DataMap map;
+    protected java.util.List originalList;
+    protected java.util.List dbRelList;
+    protected DbEntity start;
+    protected DbEntity end;
+    protected DbRelationship dbRel;
+    protected boolean isDbRelNew;
+    protected DbRelationship reverseDbRel;
+    protected boolean isReverseDbRelNew;
 
-	JLabel reverseNameLabel = new JLabel("Reverse Relationship:");
-	JLabel reverseCheckLabel = new JLabel("Create Reverse:");
-	JTextField name = new JTextField(20);
-	JTextField reverseName = new JTextField(20);
-	JCheckBox hasReverseDbRel = new JCheckBox("", false);
-	JTable table = new CayenneTable();
-	JButton add = new JButton("Add");
-	JButton remove = new JButton("Remove");
-	JButton save = new JButton("Save");
-	JButton cancel = new JButton("Cancel");
+    protected JLabel reverseNameLabel =
+        CayenneWidgetFactory.createLabel("Reverse Relationship:");
+    protected JLabel reverseCheckLabel =
+        CayenneWidgetFactory.createLabel("Create Reverse:");
+    protected JTextField name = CayenneWidgetFactory.createTextField();
+    protected JTextField reverseName = CayenneWidgetFactory.createTextField();
+    protected JCheckBox hasReverseDbRel = new JCheckBox("", false);
+    protected CayenneTable table = new CayenneTable();
+    protected JButton add = new JButton("Add");
+    protected JButton remove = new JButton("Remove");
+    protected JButton save = new JButton("Save");
+    protected JButton cancel = new JButton("Cancel");
 
-	private boolean cancelPressed;
+    private boolean cancelPressed;
 
-	public ResolveDbRelationshipDialog(
-		java.util.List relationships,
-		DbEntity start,
-		DbEntity end,
-		boolean toMany) {
+    public ResolveDbRelationshipDialog(
+        java.util.List relationships,
+        DbEntity start,
+        DbEntity end,
+        boolean toMany) {
 
-		super(Editor.getFrame(), "", true);
+        super(Editor.getFrame(), "", true);
 
-		this.map = getMediator().getCurrentDataMap();
-		this.originalList = relationships;
-		this.start = start;
-		this.end = end;
+        this.map = getMediator().getCurrentDataMap();
+        this.originalList = relationships;
+        this.start = start;
+        this.end = end;
 
-		// If DbRelationship does not exist, create it.
-		if (relationships == null || relationships.size() == 0) {
-			dbRelList = new ArrayList();
-			dbRel =
-				(DbRelationship) NamedObjectFactory.createRelationship(
-					start,
-					end,
-					toMany);
-			dbRelList.add(dbRel);
-			reverseDbRel = null;
-			dbRel.setSourceEntity(start);
-			dbRel.setTargetEntity(end);
-			dbRel.setToMany(toMany);
-			isReverseDbRelNew = true;
-			isDbRelNew = true;
-		} else {
-			dbRelList = new ArrayList(relationships);
-			dbRel = (DbRelationship) dbRelList.get(0);
-			reverseDbRel = dbRel.getReverseRelationship();
-			isReverseDbRelNew = (reverseDbRel == null);
-			isDbRelNew = false;
-		}
+        // If DbRelationship does not exist, create it.
+        if (relationships == null || relationships.size() == 0) {
+            dbRelList = new ArrayList();
+            dbRel =
+                (DbRelationship) NamedObjectFactory.createRelationship(
+                    start,
+                    end,
+                    toMany);
+            dbRelList.add(dbRel);
+            reverseDbRel = null;
+            dbRel.setSourceEntity(start);
+            dbRel.setTargetEntity(end);
+            dbRel.setToMany(toMany);
+            isReverseDbRelNew = true;
+            isDbRelNew = true;
+        } else {
+            dbRelList = new ArrayList(relationships);
+            dbRel = (DbRelationship) dbRelList.get(0);
+            reverseDbRel = dbRel.getReverseRelationship();
+            isReverseDbRelNew = (reverseDbRel == null);
+            isDbRelNew = false;
+        }
 
-		init();
+        init();
 
-		this.pack();
-		this.centerWindow();
-	}
+        this.pack();
+        this.centerWindow();
+    }
 
-	/** Set up the graphical components. */
-	private void init() {
-		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+    /** Set up the graphical components. */
+    private void init() {
+        getContentPane().setLayout(
+            new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
 
-		if (!isReverseDbRelNew) {
-			reverseCheckLabel.setText("Update Reverse:");
-		}
+        if (!isReverseDbRelNew) {
+            reverseCheckLabel.setText("Update Reverse:");
+        }
 
-		// If this is relationship of DbEntity to itself, disable 
-		// reverse relationship check box
-		if (start == end) {
-			reverseName.setText("");
-			reverseName.setEnabled(false);
-			reverseNameLabel.setEnabled(false);
-			hasReverseDbRel.setSelected(false);
-			hasReverseDbRel.setEnabled(false);
-			reverseCheckLabel.setEnabled(false);
-		}
-		// If reverse relationship doesn't exist, deselect checkbox 
-		// and disable reverseName text field		
-		else if (null == reverseDbRel) {
-			reverseName.setText("");
-			reverseName.setEnabled(false);
-			reverseNameLabel.setEnabled(false);
-			hasReverseDbRel.setSelected(false);
-		} else {
-			reverseNameLabel.setEnabled(true);
-			reverseName.setEnabled(true);
-			reverseName.setText(
-				(reverseDbRel.getName() != null ? reverseDbRel.getName() : ""));
-			hasReverseDbRel.setSelected(true);
-		}
-		hasReverseDbRel.addActionListener(this);
+        // If this is relationship of DbEntity to itself, disable 
+        // reverse relationship check box
+        if (start == end) {
+            reverseName.setText("");
+            reverseName.setEnabled(false);
+            reverseNameLabel.setEnabled(false);
+            hasReverseDbRel.setSelected(false);
+            hasReverseDbRel.setEnabled(false);
+            reverseCheckLabel.setEnabled(false);
+        }
+        // If reverse relationship doesn't exist, deselect checkbox 
+        // and disable reverseName text field		
+        else if (null == reverseDbRel) {
+            reverseName.setText("");
+            reverseName.setEnabled(false);
+            reverseNameLabel.setEnabled(false);
+            hasReverseDbRel.setSelected(false);
+        } else {
+            reverseNameLabel.setEnabled(true);
+            reverseName.setEnabled(true);
+            reverseName.setText(
+                (reverseDbRel.getName() != null ? reverseDbRel.getName() : ""));
+            hasReverseDbRel.setSelected(true);
+        }
+        hasReverseDbRel.addActionListener(this);
 
-		name.setText((dbRel.getName() != null ? dbRel.getName() : ""));
+        name.setText((dbRel.getName() != null ? dbRel.getName() : ""));
 
-		Component[] left =
-			new Component[] {
-				new JLabel("Relationship: "),
-				reverseNameLabel,
-				reverseCheckLabel };
+        Component[] left =
+            new Component[] {
+                CayenneWidgetFactory.createLabel("Relationship: "),
+                reverseNameLabel,
+                reverseCheckLabel };
 
-		Component[] right = new Component[] { name, reverseName, hasReverseDbRel };
+        Component[] right =
+            new Component[] { name, reverseName, hasReverseDbRel };
 
-		JPanel panel = new JPanel();
-		panel.setLayout(new FlowLayout(FlowLayout.LEFT));
-		panel.add(PanelFactory.createForm(left, right, 5, 5, 5, 5));
-		getContentPane().add(panel);
+        JPanel panel = new JPanel();
+        panel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        panel.add(PanelFactory.createForm(left, right, 5, 5, 5, 5));
+        getContentPane().add(panel);
 
-		// Attribute pane
-		DbAttributePairTableModel model =
-			new DbAttributePairTableModel(dbRel, getMediator(), this, true);
-		table.setModel(model);
-		table.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		JScrollPane scroll_pane = new JScrollPane(table);
-		scroll_pane.setPreferredSize(new Dimension(600, 100));
-		getContentPane().add(scroll_pane, BorderLayout.CENTER);
+        // Attribute pane
+        DbAttributePairTableModel model =
+            new DbAttributePairTableModel(dbRel, getMediator(), this, true);
+        table.setModel(model);
+        table.getSelectionModel().setSelectionMode(
+            ListSelectionModel.SINGLE_SELECTION);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        JScrollPane scroll_pane = new JScrollPane(table);
+        scroll_pane.setPreferredSize(new Dimension(600, 100));
+        getContentPane().add(scroll_pane, BorderLayout.CENTER);
 
-		TableColumn col = table.getColumnModel().getColumn(0);
-		col.setMinWidth(150);
-		JComboBox comboBox =
-			new JComboBox(ModelerUtil.getDbAttributeNames(getMediator(), start));
-		comboBox.setEditable(false);
-		col.setCellEditor(new DefaultCellEditor(comboBox));
-		col = table.getColumnModel().getColumn(1);
-		col.setMinWidth(150);
-		col = table.getColumnModel().getColumn(2);
-		col.setMinWidth(150);
-		comboBox = new JComboBox(ModelerUtil.getDbAttributeNames(getMediator(), end));
-		comboBox.setEditable(false);
-		col.setCellEditor(new DefaultCellEditor(comboBox));
-		col = table.getColumnModel().getColumn(3);
-		col.setMinWidth(150);
+        TableColumn col = table.getColumnModel().getColumn(0);
+        col.setMinWidth(150);
+        JComboBox comboBox =
+            CayenneWidgetFactory.createComboBox(
+                ModelerUtil.getDbAttributeNames(getMediator(), start),
+                true);
 
-		setTitle("DbRelationship Info: " + start.getName() + " to " + end.getName());
+        comboBox.setEditable(false);
+        col.setCellEditor(new DefaultCellEditor(comboBox));
+        col = table.getColumnModel().getColumn(1);
+        col.setMinWidth(150);
+        col = table.getColumnModel().getColumn(2);
+        col.setMinWidth(150);
+        comboBox =
+            CayenneWidgetFactory.createComboBox(
+                ModelerUtil.getDbAttributeNames(getMediator(), end),
+                true);
+        comboBox.setEditable(false);
+        col.setCellEditor(new DefaultCellEditor(comboBox));
+        col = table.getColumnModel().getColumn(3);
+        col.setMinWidth(150);
 
-		JPanel buttons =
-			PanelFactory.createButtonPanel(new JButton[] { add, remove, save, cancel });
-		getContentPane().add(buttons, BorderLayout.SOUTH);
+        setTitle(
+            "DbRelationship Info: " + start.getName() + " to " + end.getName());
 
-		add.addActionListener(this);
-		remove.addActionListener(this);
-		save.addActionListener(this);
-		cancel.addActionListener(this);
-	}
+        JPanel buttons =
+            PanelFactory.createButtonPanel(
+                new JButton[] { add, remove, save, cancel });
+        getContentPane().add(buttons, BorderLayout.SOUTH);
 
-	public java.util.List getDbRelList() {
-		return dbRelList;
-	}
+        add.addActionListener(this);
+        remove.addActionListener(this);
+        save.addActionListener(this);
+        cancel.addActionListener(this);
+    }
 
-	public boolean isCancelPressed() {
-		return cancelPressed;
-	}
+    public List getDbRelationships() {
+        return dbRelList;
+    }
 
-	public void actionPerformed(ActionEvent e) {
-		Object src = e.getSource();
-		DbAttributePairTableModel model = (DbAttributePairTableModel) table.getModel();
+    public boolean isCancelPressed() {
+        return cancelPressed;
+    }
 
-		if (src == add) {
-			model.addRow();
-		} else if (src == remove) {
-			stopEditing();
-			int row = table.getSelectedRow();
-			if (row >= 0)
-				model.removeRow(row);
-		} else if (src == save) {
-			cancelPressed = false;
-			save();
-		} else if (src == cancel) {
-			dbRelList = originalList;
-			cancelPressed = true;
-			hide();
-		} else if (src == hasReverseDbRel) {
-			if (!hasReverseDbRel.isSelected()) {
-				reverseName.setText("");
-			}
-			reverseName.setEnabled(hasReverseDbRel.isSelected());
-			reverseNameLabel.setEnabled(hasReverseDbRel.isSelected());
-		}
-	}
+    public void actionPerformed(ActionEvent e) {
+        Object src = e.getSource();
+        DbAttributePairTableModel model =
+            (DbAttributePairTableModel) table.getModel();
 
-	private void stopEditing() {
-		// Stop whatever editing may be taking place
-		int col_index = table.getEditingColumn();
-		if (col_index >= 0) {
-			TableColumn col = table.getColumnModel().getColumn(col_index);
-			col.getCellEditor().stopCellEditing();
-		}
-	}
+        if (src == add) {
+            model.addRow(new DbAttributePair());
+            table.select(model.getRowCount() - 1);
+        } else if (src == remove) {
+            stopEditing();
+            int row = table.getSelectedRow();
+            model.removeRow(model.getJoin(row));
+        } else if (src == save) {
+            cancelPressed = false;
+            save();
+        } else if (src == cancel) {
+            dbRelList = originalList;
+            cancelPressed = true;
+            hide();
+        } else if (src == hasReverseDbRel) {
+            if (!hasReverseDbRel.isSelected()) {
+                reverseName.setText("");
+            }
+            reverseName.setEnabled(hasReverseDbRel.isSelected());
+            reverseNameLabel.setEnabled(hasReverseDbRel.isSelected());
+        }
+    }
 
-	private void save() {
-		if (!name.getText().equals(dbRel.getName())) {
-			String oldName = dbRel.getName();
-			MapUtil.setRelationshipName(dbRel.getSourceEntity(), dbRel, name.getText());
+    private void stopEditing() {
+        // Stop whatever editing may be taking place
+        int col_index = table.getEditingColumn();
+        if (col_index >= 0) {
+            TableColumn col = table.getColumnModel().getColumn(col_index);
+            col.getCellEditor().stopCellEditing();
+        }
+    }
 
-			getMediator().fireDbRelationshipEvent(
-				new RelationshipEvent(this, dbRel, dbRel.getSourceEntity(), oldName));
-		}
+    private void save() {
+        if (!name.getText().equals(dbRel.getName())) {
+            String oldName = dbRel.getName();
+            MapUtil.setRelationshipName(
+                dbRel.getSourceEntity(),
+                dbRel,
+                name.getText());
 
-		DbAttributePairTableModel model = (DbAttributePairTableModel) table.getModel();
-		try {
-			model.commit();
-		} catch (DataMapException e) {
-			e.printStackTrace();
-			return;
-		}
+            getMediator().fireDbRelationshipEvent(
+                new RelationshipEvent(
+                    this,
+                    dbRel,
+                    dbRel.getSourceEntity(),
+                    oldName));
+        }
 
-		// If new DbRelationship was created, add it to the source.
-		if (isDbRelNew) {
-			start.addRelationship(dbRel);
-		}
+        DbAttributePairTableModel model =
+            (DbAttributePairTableModel) table.getModel();
+        try {
+            model.commit();
+        } catch (DataMapException e) {
+            e.printStackTrace();
+            return;
+        }
 
-		// check "to dep pk" setting,
-		// maybe this is no longer valid
-		if (dbRel.isToDependentPK() && !MapUtil.isValidForDepPk(dbRel)) {
-			dbRel.setToDependentPK(false);
-		}
+        // If new DbRelationship was created, add it to the source.
+        if (isDbRelNew) {
+            start.addRelationship(dbRel);
+        }
 
-		// If new reverse DbRelationship was created, add it to the target
-		if (hasReverseDbRel.isSelected()) {
-			if (reverseDbRel == null) {
-				// Check if there is an existing relationship with the same joins
-				reverseDbRel = dbRel.getReverseRelationship();
-			}
+        // check "to dep pk" setting,
+        // maybe this is no longer valid
+        if (dbRel.isToDependentPK() && !MapUtil.isValidForDepPk(dbRel)) {
+            dbRel.setToDependentPK(false);
+        }
 
-			// If didn't find anything, create reverseDbRel
-			if (reverseDbRel == null) {
-				reverseDbRel = new DbRelationship();
-				reverseDbRel.setSourceEntity(dbRel.getTargetEntity());
-				reverseDbRel.setTargetEntity(dbRel.getSourceEntity());
-				reverseDbRel.setToMany(!dbRel.isToMany());
-			}
+        // If new reverse DbRelationship was created, add it to the target
+        if (hasReverseDbRel.isSelected()) {
+            if (reverseDbRel == null) {
+                // Check if there is an existing relationship with the same joins
+                reverseDbRel = dbRel.getReverseRelationship();
+            }
 
-			java.util.List revJoins = getReverseJoins();
-			reverseDbRel.setJoins(revJoins);
+            // If didn't find anything, create reverseDbRel
+            if (reverseDbRel == null) {
+                reverseDbRel = new DbRelationship();
+                reverseDbRel.setSourceEntity(dbRel.getTargetEntity());
+                reverseDbRel.setTargetEntity(dbRel.getSourceEntity());
+                reverseDbRel.setToMany(!dbRel.isToMany());
+            }
 
-			// check if joins map to a primary key of this entity
-			if (!dbRel.isToDependentPK()) {
-				Iterator it = revJoins.iterator();
-				if (it.hasNext()) {
-					boolean toDepPK = true;
-					while (it.hasNext()) {
-						DbAttributePair join = (DbAttributePair) it.next();
-						if (!join.getTarget().isPrimaryKey()) {
-							toDepPK = false;
-							break;
-						}
-					}
+            java.util.List revJoins = getReverseJoins();
+            reverseDbRel.setJoins(revJoins);
 
-					reverseDbRel.setToDependentPK(toDepPK);
-				}
-			}
+            // check if joins map to a primary key of this entity
+            if (!dbRel.isToDependentPK()) {
+                Iterator it = revJoins.iterator();
+                if (it.hasNext()) {
+                    boolean toDepPK = true;
+                    while (it.hasNext()) {
+                        DbAttributePair join = (DbAttributePair) it.next();
+                        if (!join.getTarget().isPrimaryKey()) {
+                            toDepPK = false;
+                            break;
+                        }
+                    }
 
-			reverseDbRel.setName(reverseName.getText());
-			if (isReverseDbRelNew) {
-				end.addRelationship(reverseDbRel);
-			}
-		}
+                    reverseDbRel.setToDependentPK(toDepPK);
+                }
+            }
 
-		getMediator().fireDbRelationshipEvent(
-			new RelationshipEvent(this, dbRel, dbRel.getSourceEntity()));
-		hide();
-	}
+            reverseDbRel.setName(reverseName.getText());
+            if (isReverseDbRelNew) {
+                end.addRelationship(reverseDbRel);
+            }
+        }
 
-	private java.util.List getReverseJoins() {
-		java.util.List rev_list = new ArrayList();
-		java.util.List list =
-			(dbRel.getJoins() != null ? dbRel.getJoins() : new ArrayList());
-		Iterator iter = list.iterator();
-		// Loop through the list of attribute pairs, create reverse pairs
-		// and put them to the reverse list.
-		while (iter.hasNext()) {
-			DbAttributePair pair = (DbAttributePair) iter.next();
-			DbAttributePair rev_pair;
-			rev_pair = new DbAttributePair(pair.getTarget(), pair.getSource());
-			rev_list.add(rev_pair);
-		}
-		return rev_list;
-	}
+        getMediator().fireDbRelationshipEvent(
+            new RelationshipEvent(this, dbRel, dbRel.getSourceEntity()));
+        hide();
+    }
+
+    private List getReverseJoins() {
+        List joins = dbRel.getJoins();
+
+        if ((joins == null) || (joins.size() == 0)) {
+            return Collections.EMPTY_LIST;
+        }
+
+        List reverseJoins = new ArrayList(joins.size());
+
+        // Loop through the list of attribute pairs, create reverse pairs
+        // and put them to the reverse list.
+        for (int i = 0, numJoins = joins.size(); i < numJoins; i++) {
+            DbAttributePair pair = (DbAttributePair) joins.get(i);
+            reverseJoins.add(
+                new DbAttributePair(pair.getTarget(), pair.getSource()));
+        }
+
+        return reverseJoins;
+    }
 
 }

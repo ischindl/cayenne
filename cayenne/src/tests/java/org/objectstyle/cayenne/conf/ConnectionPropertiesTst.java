@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,10 +57,10 @@ package org.objectstyle.cayenne.conf;
 
 import java.util.List;
 
-import org.apache.commons.collections.ExtendedProperties;
-import org.objectstyle.cayenne.access.DataSourceInfo;
-
 import junit.framework.TestCase;
+
+import org.apache.commons.collections.ExtendedProperties;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 
 /**
  * @author Andrei Adamchik
@@ -87,7 +87,7 @@ public class ConnectionPropertiesTst extends TestCase {
 
         DataSourceInfo dsi = ps.buildDataSourceInfo(props);   
         
-        assertEquals("1", dsi.getAdapterClass());     
+        assertEquals("1", dsi.getAdapterClassName());     
         assertEquals("2", dsi.getJdbcDriver());     
         assertEquals("3", dsi.getPassword());     
         assertEquals("4", dsi.getDataSourceUrl());     

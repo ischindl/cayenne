@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,9 +57,11 @@
 package org.objectstyle.cayenne.gen;
 
 import java.io.Writer;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
-import org.apache.log4j.Logger;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
@@ -74,9 +76,18 @@ import org.objectstyle.cayenne.util.ResourceLocator;
   * @author Andrei Adamchik
   */
 public class ClassGenerator {
-	private static Logger logObj = Logger.getLogger(ClassGenerator.class);
 	
 	private static boolean initDone;
+
+	private static Set reservedKeywords = new HashSet(Arrays.asList(new Object[] {
+		"abstract", "default", "if", "private", "this", "boolean", "do",
+		"implements", "protected", "throw", "break", "double", "import",
+		"public", "throws", "byte", "else", "instanceof", "return", "transient",
+		"case", "extends", "int", "short", "try", "catch", "final", "interface",
+		"static", "void", "char", "finally", "long", "strictfp", "volatile",
+		"class", "float", "native", "super", "while", "const", "for", "new",
+		"switch", "continue", "goto", "package", "synchronized" }
+	));
 
 	/** 
 	 * Allows to configure ClassGenerator to load class 
@@ -109,9 +120,8 @@ public class ClassGenerator {
 					"org.apache.velocity.runtime.resource.loader.JarResourceLoader");
 				props.put("jar.resource.loader.path", classLoaderUrl);
 			} else if (classLoaderUrl != null && classLoaderUrl.startsWith("file:")) {
-
 				loaderProp = "file";
-				props.put("file.resource.loader.path", classLoaderUrl);
+				props.put("file.resource.loader.path", classLoaderUrl.substring(5));
 			}
 
 			// always add Filesystem loader for default templates
@@ -223,6 +233,14 @@ public class ClassGenerator {
 		}
 
 		return type;
+	}
+
+	public String formatVariableName(String variableName) {
+		if (reservedKeywords.contains(variableName)) {
+			return "_" + variableName;
+		} else {
+			return variableName;
+		}
 	}
 
 	/** Returns prefix used to distinguish between superclass

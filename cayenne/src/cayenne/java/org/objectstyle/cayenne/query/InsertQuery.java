@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne.query;
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,6 +53,7 @@ package org.objectstyle.cayenne.query;
  * <http://objectstyle.org/>.
  *
  */ 
+package org.objectstyle.cayenne.query;
 
 import java.util.Map;
 
@@ -75,9 +75,15 @@ public class InsertQuery extends AbstractQuery {
     }
 
     /** Creates InsertQuery with the <code>rootClass</code> as the root object */
-   public InsertQuery(Class rootClass) {
+    public InsertQuery(Class rootClass) {
     	this.setRoot(rootClass);
     }
+    
+	/** Creates InsertQuery with the <code>rootClass</code> as the root object */
+	public InsertQuery(Class rootClass, Map dataRow) {
+		this.setRoot(rootClass);
+		this.setObjectSnapshot(dataRow);
+	}
     
     /** Creates InsertQuery with <code>objEntityName</code> parameter. */
     public InsertQuery(String objEntityName) {

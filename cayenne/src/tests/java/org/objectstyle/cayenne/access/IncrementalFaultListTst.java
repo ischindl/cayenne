@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,20 +72,12 @@ public class IncrementalFaultListTst extends CayenneTestCase {
     protected GenericSelectQuery query;
 
     /**
-     * Constructor for IncrementalFaultListTst.
-     * @param name
-     */
-    public IncrementalFaultListTst(String name) {
-        super(name);
-    }
-
-    /**
      * @see junit.framework.TestCase#setUp()
      */
     protected void setUp() throws Exception {
         super.setUp();
         getDatabaseSetup().cleanTableData();
-        new DataContextTst("Helper").populateTables();
+        new DataContextTst().populateTables();
 
         SelectQuery q = new SelectQuery("Artist");
         
@@ -126,37 +118,35 @@ public class IncrementalFaultListTst extends CayenneTestCase {
     }
 
     public void testPagesRead1() throws Exception {
-        assertTrue(((IncrementalFaultList) list).elements.get(0) instanceof Artist);
-        assertTrue(((IncrementalFaultList) list).elements.get(8) instanceof Map);
+        assertTrue(list.elements.get(0) instanceof Artist);
+        assertTrue(list.elements.get(8) instanceof Map);
 
         list.resolveInterval(5, 10);
-        assertTrue(((IncrementalFaultList) list).elements.get(7) instanceof Artist);
+        assertTrue(list.elements.get(7) instanceof Artist);
 
         list.resolveAll();
-        assertTrue(
-            ((IncrementalFaultList) list).elements.get(list.size() - 1)
-                instanceof Artist);
+        assertTrue((list.elements.get(list.size() - 1)) instanceof Artist);
     }
 
     public void testGet1() throws Exception {
-        assertTrue(((IncrementalFaultList) list).elements.get(0) instanceof Artist);
-        assertTrue(((IncrementalFaultList) list).elements.get(8) instanceof Map);
+        assertTrue(list.elements.get(0) instanceof Artist);
+        assertTrue(list.elements.get(8) instanceof Map);
 
         Object a = list.get(8);
 
         assertNotNull(a);
         assertTrue(a instanceof Artist);
-        assertTrue(((IncrementalFaultList) list).elements.get(8) instanceof Artist);
+        assertTrue(list.elements.get(8) instanceof Artist);
     }
 
     public void testGet2() throws Exception {
         ((SelectQuery) query).setFetchingDataRows(true);
-        assertTrue(((IncrementalFaultList) list).elements.get(0) instanceof Artist);
-        assertTrue(((IncrementalFaultList) list).elements.get(8) instanceof Map);
+        assertTrue(list.elements.get(0) instanceof Artist);
+        assertTrue(list.elements.get(8) instanceof Map);
 
         Object a = list.get(8);
 
         assertNotNull(a);
-        assertTrue(((IncrementalFaultList) list).elements.get(8) instanceof Artist);
+        assertTrue(list.elements.get(8) instanceof Artist);
     }
 }

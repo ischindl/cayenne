@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,14 +55,15 @@
  */
 package org.objectstyle.cayenne.modeler.datamap;
 
-import org.apache.log4j.Logger;
+import java.util.ArrayList;
+
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DeleteRule;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
 import org.objectstyle.cayenne.map.Relationship;
+import org.objectstyle.cayenne.map.event.RelationshipEvent;
 import org.objectstyle.cayenne.modeler.control.EventController;
-import org.objectstyle.cayenne.modeler.event.RelationshipEvent;
 import org.objectstyle.cayenne.modeler.util.CayenneTableModel;
 import org.objectstyle.cayenne.modeler.util.MapUtil;
 
@@ -73,8 +74,6 @@ import org.objectstyle.cayenne.modeler.util.MapUtil;
  * @author Andrei Adamchik
  */
 public class ObjRelationshipTableModel extends CayenneTableModel {
-	private static Logger logObj = Logger.getLogger(ObjRelationshipTableModel.class);
-
 	// Columns
 	static final int REL_NAME = 0;
 	static final int REL_TARGET = 1;
@@ -84,11 +83,10 @@ public class ObjRelationshipTableModel extends CayenneTableModel {
 	protected ObjEntity entity;
 
 	public ObjRelationshipTableModel(
-		ObjEntity entity,
-		EventController mediator,
-		Object eventSource) {
-			
-		super(mediator, eventSource, entity.getRelationshipList());
+			ObjEntity entity,
+			EventController mediator,
+			Object eventSource) {
+		super(mediator, eventSource, new ArrayList(entity.getRelationships()));
 		this.entity = entity;
 	}
 	
@@ -188,12 +186,12 @@ public class ObjRelationshipTableModel extends CayenneTableModel {
 			rel.setTargetEntity(target);
 			RelationshipEvent e = new RelationshipEvent(eventSource, rel, entity);
 			mediator.fireObjRelationshipEvent(e);
-		} else if (column == REL_CARDINALITY) {
+		} /*else if (column == REL_CARDINALITY) {
 			Boolean temp = (Boolean) aValue;
 			rel.setToMany(temp.booleanValue());
 			RelationshipEvent e = new RelationshipEvent(eventSource, rel, entity);
 			mediator.fireObjRelationshipEvent(e);
-		} else if (column == REL_DELETERULE) {
+		}*/ else if (column == REL_DELETERULE) {
 			String temp = (String)aValue;
 			rel.setDeleteRule(DeleteRule.deleteRuleForName(temp));
 			RelationshipEvent e = new RelationshipEvent(eventSource, rel, entity);
@@ -223,6 +221,9 @@ public class ObjRelationshipTableModel extends CayenneTableModel {
 	}
 
 	public boolean isCellEditable(int row, int col) {
+		if(col==REL_CARDINALITY) {
+			return false; //Cannot edit the toMany flag on an ObjRelationship
+		}
 		return true;
 	} 
 

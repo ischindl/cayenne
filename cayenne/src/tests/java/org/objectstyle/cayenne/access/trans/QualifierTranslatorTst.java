@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,10 @@
 package org.objectstyle.cayenne.access.trans;
 
 import org.apache.log4j.Logger;
+import org.objectstyle.art.Gallery;
+import org.objectstyle.cayenne.ObjectId;
+import org.objectstyle.cayenne.exp.Expression;
+import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.exp.TstBinaryExpSuite;
 import org.objectstyle.cayenne.exp.TstExpressionCase;
 import org.objectstyle.cayenne.exp.TstExpressionSuite;
@@ -67,78 +71,100 @@ import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class QualifierTranslatorTst extends CayenneTestCase {
-	private static Logger logObj = Logger.getLogger(QualifierTranslatorTst.class);
+    private static Logger logObj =
+        Logger.getLogger(QualifierTranslatorTst.class);
 
-	protected TstQueryAssembler qa;
+    protected TstQueryAssembler qa;
 
-	public QualifierTranslatorTst(String name) {
-		super(name);
-	}
+    protected void setUp() throws java.lang.Exception {
+        qa = TstQueryAssembler.assembler(getDomain(), Query.SELECT_QUERY);
+    }
 
-	protected void setUp() throws java.lang.Exception {
-		qa = TstQueryAssembler.assembler(getDomain(), Query.SELECT_QUERY);
-	}
+    public void testNonQualifiedQuery() throws java.lang.Exception {
+        qa.dispose();
+        qa = TstQueryAssembler.assembler(getDomain(), Query.INSERT_QUERY);
 
-	public void testNonQualifiedQuery() throws java.lang.Exception {
-		qa.dispose();
-		qa = TstQueryAssembler.assembler(getDomain(), Query.INSERT_QUERY);
+        try {
+            new QualifierTranslator(qa).doTranslation();
+            fail();
+        } catch (ClassCastException ccex) {
+            // exception expected
+        } finally {
+            qa.dispose();
+        }
+    }
 
-		try {
-			new QualifierTranslator(qa).doTranslation();
-			fail();
-		} catch (ClassCastException ccex) {
-			// exception expected
-		} finally {
-			qa.dispose();
-		}
-	}
-    
-	public void testNullQualifier() throws Exception {
-		try {
-			assertNull(new QualifierTranslator(qa).doTranslation());
-		} finally {
-			qa.dispose();
-		}
-	}
+    public void testNullQualifier() throws Exception {
+        try {
+            assertNull(new QualifierTranslator(qa).doTranslation());
+        } finally {
+            qa.dispose();
+        }
+    }
 
-	public void testUnary() throws java.lang.Exception {
-		doExpressionTest(new TstUnaryExpSuite());
-	}
+    public void testUnary() throws Exception {
+        doExpressionTest(new TstUnaryExpSuite());
+    }
 
-	public void testBinary() throws java.lang.Exception {
-		doExpressionTest(new TstBinaryExpSuite());
-	}
+    public void testBinary() throws Exception {
+        doExpressionTest(new TstBinaryExpSuite());
+    }
 
-	public void testTernary() throws java.lang.Exception {
-		doExpressionTest(new TstTernaryExpSuite());
-	}
+    public void testTernary() throws Exception {
+        doExpressionTest(new TstTernaryExpSuite());
+    }
 
-	private void doExpressionTest(TstExpressionSuite suite)
-		throws java.lang.Exception {
+    public void testExtras() throws Exception {
+        ObjectId oid1 = new ObjectId(Gallery.class, "GALLERY_ID", 1);
+        ObjectId oid2 = new ObjectId(Gallery.class, "GALLERY_ID", 2);
+        Gallery g1 = new Gallery();
+        Gallery g2 = new Gallery();
+        g1.setObjectId(oid1);
+        g2.setObjectId(oid2);
+        
 
-		try {
-			TstExpressionCase[] cases = suite.cases();
+        Expression e1 = ExpressionFactory.matchExp("toGallery", g1);
+        Expression e2 = e1.orExp(ExpressionFactory.matchExp("toGallery", g2));
 
-			int len = cases.length;
-			for (int i = 0; i < len; i++) {
-				try {
-					((QualifiedQuery) qa.getQuery()).setQualifier(
-						cases[i].getCayenneExp());
-					ObjEntity ent =
-						getDomain().getEntityResolver().lookupObjEntity(
-							cases[i].getRootEntity());
-					assertNotNull(ent);
-					qa.getQuery().setRoot(ent);
-					cases[i].assertTranslatedWell(
-						new QualifierTranslator(qa).doTranslation(),
-						false);
-				} catch (Exception ex) {
-					logObj.error("Failed case: [" + i + "]: " + cases[i]);
-					throw ex;
-				}
-			}
-		} finally {
-			qa.dispose();
-		}
-	}
+        TstExpressionCase extraCase =
+            new TstExpressionCase(
+                "Exhibit",
+                e2,
+                "(ta.GALLERY_ID = ?) OR (ta.GALLERY_ID = ?)",
+                4,
+                4);
+
+        TstExpressionSuite suite = new TstExpressionSuite() {
+        };
+        suite.addCase(extraCase);
+        doExpressionTest(suite);
+    }
+
+    private void doExpressionTest(TstExpressionSuite suite) throws Exception {
+
+        try {
+            TstExpressionCase[] cases = suite.cases();
+
+            int len = cases.length;
+            for (int i = 0; i < len; i++) {
+                try {
+                    ((QualifiedQuery) qa.getQuery()).setQualifier(
+                        cases[i].getCayenneExp());
+                    ObjEntity ent =
+                        getDomain().getEntityResolver().lookupObjEntity(
+                            cases[i].getRootEntity());
+                    assertNotNull(ent);
+                    qa.getQuery().setRoot(ent);
+                    String translated =
+                        new QualifierTranslator(qa).doTranslation();
+                    cases[i].assertTranslatedWell(translated);
+                } catch (Exception ex) {
+                    logObj.error("Failed case: [" + i + "]: " + cases[i]);
+                    throw ex;
+                }
+            }
+        } finally {
+            qa.dispose();
+        }
+    }
 }

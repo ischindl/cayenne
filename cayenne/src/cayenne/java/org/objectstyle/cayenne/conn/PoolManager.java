@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,6 @@ import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
 import javax.sql.PooledConnection;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.util.RequestDequeue;
 import org.objectstyle.cayenne.util.RequestQueue;
 
@@ -84,15 +83,6 @@ import org.objectstyle.cayenne.util.RequestQueue;
  * @author Andrei Adamchik
  */
 public class PoolManager implements DataSource, ConnectionEventListener {
-    private static Logger logObj = Logger.getLogger(PoolManager.class);
-
-    /** 
-     * Defines a maximum number of threads that could wait in the
-     * connection queue at any given moment. In the future this 
-     * parameter should be made configurable.
-     */
-    public static final int MAX_QUEUE_SIZE = 25;
-
     /** 
      * Defines a maximum time in milliseconds that a connection
      * request could wait in the connection queue. After this period
@@ -126,9 +116,43 @@ public class PoolManager implements DataSource, ConnectionEventListener {
         String password)
         throws SQLException {
 
+        this(
+            jdbcDriver,
+            dataSourceUrl,
+            minCons,
+            maxCons,
+            userName,
+            password,
+            null);
+    }
+
+    public PoolManager(
+        String jdbcDriver,
+        String dataSourceUrl,
+        int minCons,
+        int maxCons,
+        String userName,
+        String password,
+        ConnectionEventLoggingDelegate logger)
+        throws SQLException {
+
+        if (logger != null) {
+            DataSourceInfo info = new DataSourceInfo();
+            info.setJdbcDriver(jdbcDriver);
+            info.setDataSourceUrl(dataSourceUrl);
+            info.setMinConnections(minCons);
+            info.setMaxConnections(maxCons);
+            info.setUserName(userName);
+            info.setPassword(password);
+            logger.logPoolCreated(info);
+        }
+        
         this.jdbcDriver = jdbcDriver;
         this.dataSourceUrl = dataSourceUrl;
-        PoolDataSource poolDS = new PoolDataSource(jdbcDriver, dataSourceUrl);
+        DriverDataSource driverDS =
+            new DriverDataSource(jdbcDriver, dataSourceUrl);
+        driverDS.setLogger(logger);
+        PoolDataSource poolDS = new PoolDataSource(driverDS);
         init(poolDS, minCons, maxCons, userName, password);
     }
 
@@ -164,12 +188,16 @@ public class PoolManager implements DataSource, ConnectionEventListener {
         // do sanity checks...
         if (maxConnections < 0) {
             throw new SQLException(
-                "Maximum number of connections can not be negative (" + maxCons + ").");
+                "Maximum number of connections can not be negative ("
+                    + maxCons
+                    + ").");
         }
 
         if (minConnections < 0) {
             throw new SQLException(
-                "Minimum number of connections can not be negative (" + minCons + ").");
+                "Minimum number of connections can not be negative ("
+                    + minCons
+                    + ").");
         }
 
         if (minConnections > maxConnections) {
@@ -184,14 +212,17 @@ public class PoolManager implements DataSource, ConnectionEventListener {
         this.poolDataSource = poolDataSource;
 
         // init pool
-        threadQueue = new RequestQueue(MAX_QUEUE_SIZE, MAX_QUEUE_WAIT);
+        threadQueue = new RequestQueue(-1, MAX_QUEUE_WAIT);
         usedPool = Collections.synchronizedList(new ArrayList(maxConnections));
-        unusedPool = Collections.synchronizedList(new ArrayList(maxConnections));
+        unusedPool =
+            Collections.synchronizedList(new ArrayList(maxConnections));
         growPool(minConnections, userName, password);
     }
 
     /** Creates and returns new PooledConnection object. */
-    protected PooledConnection newPooledConnection(String userName, String password)
+    protected PooledConnection newPooledConnection(
+        String userName,
+        String password)
         throws SQLException {
         return (userName != null)
             ? poolDataSource.getPooledConnection(userName, password)
@@ -239,7 +270,8 @@ public class PoolManager implements DataSource, ConnectionEventListener {
         int i = 0;
         int startPoolSize = getPoolSize();
         for (; i < addConnections && startPoolSize + i < maxConnections; i++) {
-            PooledConnection newConnection = newPooledConnection(userName, password);
+            PooledConnection newConnection =
+                newPooledConnection(userName, password);
             newConnection.addConnectionEventListener(this);
             unusedPool.add(newConnection);
         }
@@ -247,9 +279,12 @@ public class PoolManager implements DataSource, ConnectionEventListener {
         return i;
     }
 
-    protected synchronized void shrinkPool(int closeConnections) throws SQLException {
+    protected synchronized void shrinkPool(int closeConnections)
+        throws SQLException {
         int close =
-            unusedPool.size() < closeConnections ? unusedPool.size() : closeConnections;
+            unusedPool.size() < closeConnections
+                ? unusedPool.size()
+                : closeConnections;
         int lastInd = unusedPool.size() - close;
 
         for (int i = unusedPool.size() - 1; i >= lastInd; i--) {
@@ -352,7 +387,8 @@ public class PoolManager implements DataSource, ConnectionEventListener {
             if (size == 0) {
                 RequestDequeue result = threadQueue.queueThread();
                 if (result.isDequeueSuccess()) {
-                    return ((PooledConnection) result.getDequeueEventObject()).getConnection();
+                    return ((PooledConnection) result.getDequeueEventObject())
+                        .getConnection();
                 } else if (result.isQueueFull()) {
                     throw new SQLException("Can't obtain connection. Too many requests waiting in the queue.");
                 } else {
@@ -362,7 +398,8 @@ public class PoolManager implements DataSource, ConnectionEventListener {
         }
 
         int lastObjectInd = unusedPool.size() - 1;
-        PooledConnection pooledConn = (PooledConnection) unusedPool.remove(lastObjectInd);
+        PooledConnection pooledConn =
+            (PooledConnection) unusedPool.remove(lastObjectInd);
         usedPool.add(pooledConn);
         return pooledConn.getConnection();
     }
@@ -413,7 +450,7 @@ public class PoolManager implements DataSource, ConnectionEventListener {
      * to notify PoolManager that connection is in invalid state.
      */
     public synchronized void connectionErrorOccurred(ConnectionEvent event) {
-        // later on we should analize the error to see if this
+        // later on we should analyze the error to see if this
         // is fatal... right now just kill this PooledConnection
 
         PooledConnection errorSrc = (PooledConnection) event.getSource();

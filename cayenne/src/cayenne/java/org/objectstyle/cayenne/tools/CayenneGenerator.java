@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,8 +66,8 @@ import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.gen.AntClassGenerator;
 import org.objectstyle.cayenne.gen.ClassGenerator;
 import org.objectstyle.cayenne.gen.DefaultClassGenerator;
-import org.objectstyle.cayenne.gen.GenMapLoader;
 import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.MapLoader;
 import org.xml.sax.InputSource;
 
 /** 
@@ -80,7 +80,7 @@ public class CayenneGenerator extends Task {
 
     static {
        // init logging properties
-       Configuration.configCommonLogging();	
+       Configuration.configureCommonLogging();	
     }
     
 	protected File map;
@@ -124,7 +124,7 @@ public class CayenneGenerator extends Task {
 	protected void processMap() throws Exception {
 		DataMap dataMap = loadDataMap();
 		generator.setTimestamp(map.lastModified());
-		generator.setObjEntities(dataMap.getObjEntitiesAsList());
+		generator.setObjEntities(new ArrayList(dataMap.getObjEntities()));
 		generator.validateAttributes();
 		generator.execute();
 	}
@@ -132,7 +132,7 @@ public class CayenneGenerator extends Task {
 	/** Loads and returns DataMap based on <code>map</code> attribute. */
 	protected DataMap loadDataMap() throws Exception {
 		InputSource in = new InputSource(map.getCanonicalPath());
-		return new GenMapLoader().loadDataMap(in, loadDependencies());
+		return new MapLoader().loadDataMap(in, loadDependencies());
 	}
 
 	/**
@@ -143,7 +143,7 @@ public class CayenneGenerator extends Task {
 		List deps = new ArrayList();
 
 		if (mapDeps != null && mapDeps.length > 0) {
-			GenMapLoader loader = new GenMapLoader();
+			MapLoader loader = new MapLoader();
 			for (int i = 0; i < mapDeps.length; i++) {
 				InputSource in = new InputSource(mapDeps[i].getCanonicalPath());
 				deps.add(loader.loadDataMap(in));

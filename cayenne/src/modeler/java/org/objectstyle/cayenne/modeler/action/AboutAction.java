@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,14 +65,17 @@ import org.objectstyle.cayenne.project.ProjectPath;
  * @author Andrei Adamchik
  */
 public class AboutAction extends CayenneAction {
-    public static final String ACTION_NAME = "About CayenneModeler";
+
+	public static final String getActionName() {
+		return "About CayenneModeler";
+	}
 
     /**
      * Constructor for AboutMenuAction.
      * @param name
      */
     public AboutAction() {
-        super(ACTION_NAME);
+        super(getActionName());
     }
 
     /**

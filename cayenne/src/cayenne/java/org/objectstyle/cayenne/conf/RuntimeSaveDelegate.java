@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002 The ObjectStyle Group
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,9 @@
  */
 package org.objectstyle.cayenne.conf;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -94,6 +97,17 @@ public class RuntimeSaveDelegate implements ConfigSaverDelegate {
         return domain;
     }
 
+    protected DataNode findNode(String domainName, String nodeName) {
+        DataDomain domain = findDomain(domainName);
+        DataNode node = domain.getNode(nodeName);
+        if (node == null) {
+            throw new IllegalArgumentException(
+                "Can't find DataNode: " + domainName + "." + nodeName);
+        }
+
+        return node;
+    }
+
     public Iterator dependentMapNames(String domainName, String mapName) {
         Transformer tr = new Transformer() {
             public Object transform(Object input) {
@@ -110,7 +124,7 @@ public class RuntimeSaveDelegate implements ConfigSaverDelegate {
                 return ((DataDomain) input).getName();
             }
         };
-        return new TransformIterator(config.getDomainList().iterator(), tr);
+        return new TransformIterator(config.getDomains().iterator(), tr);
     }
 
     public String mapLocation(String domainName, String mapName) {
@@ -124,30 +138,25 @@ public class RuntimeSaveDelegate implements ConfigSaverDelegate {
             }
         };
 
-        List maps = findDomain(domainName).getMapList();
+        List maps = new ArrayList(findDomain(domainName).getDataMaps());
 
         // sort to satisfy dependencies
-        DataMap.sortMaps(maps);
+        Collections.sort(maps, new DataMap.MapComparator());
 
         return new TransformIterator(maps.iterator(), tr);
     }
 
     public String nodeAdapterName(String domainName, String nodeName) {
-        DbAdapter adapter =
-        findDomain(domainName).getNode(nodeName).getAdapter();
+        DbAdapter adapter = findNode(domainName, nodeName).getAdapter();
         return (adapter != null) ? adapter.getClass().getName() : null;
     }
 
     public String nodeDataSourceName(String domainName, String nodeName) {
-        return findDomain(domainName)
-            .getNode(nodeName)
-            .getDataSourceLocation();
+        return findNode(domainName, nodeName).getDataSourceLocation();
     }
 
     public String nodeFactoryName(String domainName, String nodeName) {
-        return findDomain(domainName)
-            .getNode(nodeName)
-            .getDataSourceFactory();
+        return findNode(domainName, nodeName).getDataSourceFactory();
     }
 
     public Iterator nodeNames(String domainName) {
@@ -157,7 +166,7 @@ public class RuntimeSaveDelegate implements ConfigSaverDelegate {
             }
         };
 
-        List nodes = findDomain(domainName).getDataNodeList();
+        Collection nodes = findDomain(domainName).getDataNodes();
         return new TransformIterator(nodes.iterator(), tr);
     }
 
@@ -167,7 +176,8 @@ public class RuntimeSaveDelegate implements ConfigSaverDelegate {
                 return ((DataMap) input).getName();
             }
         };
-        List maps = findDomain(domainName).getNode(nodeName).getMapList();
+
+        Collection maps = findNode(domainName, nodeName).getDataMaps();
         return new TransformIterator(maps.iterator(), tr);
     }
 }

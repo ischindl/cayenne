@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,9 +57,9 @@
 package org.objectstyle.cayenne.map;
 
 /** 
- * A DbAttributePair represents a join
- * between two database tables. A set of DbAtributePair's
- * defines full semantics of a DbRelationship.
+ * A DbAttributePair represents a join between two database tables. A PK/FK
+ * relationship consists of one or more joins. Correspinding Cayenne descriptor
+ * object, DbRelationship, contains one or more DbAtributePairs.
  * 
  * @author Misha Shengaout
  * @author Andrei Adamchik
@@ -68,11 +68,12 @@ public class DbAttributePair {
 	protected DbAttribute source;
 	protected DbAttribute target;
 
-    public DbAttributePair() {}
+    public DbAttributePair() {
+    }
     
 	public DbAttributePair(DbAttribute sourceAttribute, DbAttribute targetAttribute) {
-		setSource(sourceAttribute);
-		setTarget(targetAttribute);
+		this.setSource(sourceAttribute);
+		this.setTarget(targetAttribute);
 	}
 
 	/** Returns DbAttribute on on the left side of the join. */

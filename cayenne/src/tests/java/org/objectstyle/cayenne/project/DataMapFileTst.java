@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,14 +67,6 @@ public class DataMapFileTst extends CayenneTestCase {
     protected DataMapFile dmf;
     protected DataMap map;
     protected Project pr;
-    
-    /**
-     * Constructor for MapFileTst.
-     * @param arg0
-     */
-    public DataMapFileTst(String arg0) {
-        super(arg0);
-    }
 
     /**
      * @see junit.framework.TestCase#setUp()

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,12 +64,6 @@ public class DerivedDbEntityTst extends CayenneTestCase {
     protected DerivedDbEntity ent;
     protected DataMap map;
 
-
-    public DerivedDbEntityTst(String name) {
-        super(name);
-    }
-
-
     public void setUp() throws Exception {
         ent = new DerivedDbEntity("abc");
         map = new DataMap();
@@ -128,8 +122,8 @@ public class DerivedDbEntityTst extends CayenneTestCase {
     	
     	ent.resetToParentView();
     	
-    	assertEquals(0, ent.getAttributeList().size());
-    	assertEquals(0, ent.getRelationshipList().size());
+    	assertEquals(0, ent.getAttributes().size());
+    	assertEquals(0, ent.getRelationships().size());
     }
     
     public void testResetToParentView2() throws Exception {
@@ -146,8 +140,8 @@ public class DerivedDbEntityTst extends CayenneTestCase {
     	
     	ent.resetToParentView();
     	
-    	assertEquals(1, ent.getAttributeList().size());
-    	assertEquals(1, ent.getRelationshipList().size());
+    	assertEquals(1, ent.getAttributes().size());
+    	assertEquals(1, ent.getRelationships().size());
     }
     
     protected void assignParent() {

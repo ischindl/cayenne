@@ -1,8 +1,8 @@
 /* ====================================================================
- * 
- * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * The ObjectStyle Group Software License, Version 1.0
+ *
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,7 +10,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -18,15 +18,15 @@
  *    distribution.
  *
  * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
+ *    any, must include the following acknowlegement:
+ *       "This product includes software developed by the
  *        ObjectStyle Group (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
  *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
+ * 4. The names "ObjectStyle Group" and "Cayenne"
  *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
+ *    from this software without prior written permission. For written
  *    permission, please contact andrus@objectstyle.org.
  *
  * 5. Products derived from this software may not be called "ObjectStyle"
@@ -63,41 +63,48 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.access.DataNode;
-import org.objectstyle.cayenne.access.DefaultOperationObserver;
+import org.objectstyle.cayenne.access.QueryLogger;
+import org.objectstyle.cayenne.access.util.DefaultOperationObserver;
 import org.objectstyle.cayenne.access.util.SelectObserver;
 import org.objectstyle.cayenne.map.DbAttribute;
 import org.objectstyle.cayenne.map.DbEntity;
+import org.objectstyle.cayenne.map.DbKeyGenerator;
 import org.objectstyle.cayenne.map.ObjAttribute;
 import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.query.SqlModifyQuery;
 import org.objectstyle.cayenne.query.SqlSelectQuery;
+import org.objectstyle.cayenne.util.IDUtil;
 
-/** 
+/**
  * Default primary key generator implementation. Uses a lookup table named
- * "AUTO_PK_SUPPORT" to search and increment primary keys for tables.  
- * 
+ * "AUTO_PK_SUPPORT" to search and increment primary keys for tables.
+ *
  * @author Andrei Adamchik
  */
 public class JdbcPkGenerator implements PkGenerator {
-	private static Logger logObj = Logger.getLogger(JdbcPkGenerator.class);
-
-	private static final String NEXT_ID = "NEXT_ID";
-	private static final ObjAttribute[] objDesc =
-		new ObjAttribute[] { new ObjAttribute("nextId", Integer.class.getName(), null)};
-	private static final DbAttribute[] resultDesc =
+    public static final int DEFAULT_PK_CACHE_SIZE = 20;
+    
+	protected static final String NEXT_ID = "NEXT_ID";
+	protected static final ObjAttribute[] objDesc =
+		new ObjAttribute[] {
+			 new ObjAttribute("nextId", Integer.class.getName(), null)};
+	protected static final DbAttribute[] resultDesc =
 		new DbAttribute[] { new DbAttribute(NEXT_ID, Types.INTEGER, null)};
 
 	protected Map pkCache = new HashMap();
-	protected int pkCacheSize = 20;
+	protected int pkCacheSize = DEFAULT_PK_CACHE_SIZE;
 
+	static {
+		objDesc[0].setDbAttributePath(NEXT_ID);
+	}
 
 	public void createAutoPk(DataNode node, List dbEntities) throws Exception {
 		// check if a table exists
@@ -133,9 +140,9 @@ public class JdbcPkGenerator implements PkGenerator {
 		return list;
 	}
 
-	/** 
-	 * Drops table named "AUTO_PK_SUPPORT" if it exists in the 
-	 * database. 
+	/**
+	 * Drops table named "AUTO_PK_SUPPORT" if it exists in the
+	 * database.
 	 */
 	public void dropAutoPk(DataNode node, List dbEntities) throws Exception {
 		if (autoPkTableExists(node)) {
@@ -211,7 +218,7 @@ public class JdbcPkGenerator implements PkGenerator {
 		return "DROP TABLE AUTO_PK_SUPPORT";
 	}
 
-	/** 
+	/**
 	 * Checks if AUTO_PK_TABLE already exists in the database.
 	 */
 	protected boolean autoPkTableExists(DataNode node) throws SQLException {
@@ -219,7 +226,8 @@ public class JdbcPkGenerator implements PkGenerator {
 		boolean exists = false;
 		try {
 			DatabaseMetaData md = con.getMetaData();
-			ResultSet tables = md.getTables(null, null, "AUTO_PK_SUPPORT", null);
+			ResultSet tables =
+				md.getTables(null, null, "AUTO_PK_SUPPORT", null);
 			try {
 				exists = tables.next();
 			} finally {
@@ -233,13 +241,18 @@ public class JdbcPkGenerator implements PkGenerator {
 		return exists;
 	}
 
-	/** 
-	 * Runs JDBC update over a Connection obtained from DataNode. 
+	/**
+	 * Runs JDBC update over a Connection obtained from DataNode.
 	 * Returns a number of objects returned from update.
-	 * 
-	 * @throws java.lang.Exception in case of query failure. 
+	 *
+	 * @throws SQLException in case of query failure.
 	 */
 	public int runUpdate(DataNode node, String sql) throws SQLException {
+		QueryLogger.logQuery(
+			QueryLogger.DEFAULT_LOG_LEVEL,
+			sql,
+			Collections.EMPTY_LIST);
+
 		Connection con = node.getDataSource().getConnection();
 		try {
 			Statement upd = con.createStatement();
@@ -253,10 +266,10 @@ public class JdbcPkGenerator implements PkGenerator {
 		}
 	}
 
-	/** 
+	/**
 	 * Creates and executes SqlModifyQuery using inner class PkSchemaProcessor
 	 * to track the results of the execution.
-	 * 
+	 *
 	 * @throws java.lang.Exception in case of query failure. */
 	protected List runSelect(DataNode node, String sql) throws Exception {
 		SqlSelectQuery q = new SqlSelectQuery();
@@ -275,65 +288,104 @@ public class JdbcPkGenerator implements PkGenerator {
 	}
 
 	/**
-	 * <p>Generates new (unique and non-repeating) primary key for specified 
+	 * <p>Generates new (unique and non-repeating) primary key for specified
 	 * dbEntity.</p>
 	 *
-	 * <p>This implementation is naive and can have problems with high 
-	 * volume databases, when multiple applications can use this to get 
-	 * a primary key value. There is a possiblity that 2 clients will 
-	 * recieve the same value of primary key. So database specific 
-	 * implementations should be created for cleaner approach (like Oracle
-	 * sequences, for example).</p>
+	 * <p>This implementation is naive since it does not lock the database rows
+	 * when executing select and subsequent update. Adapter-specific implementations 
+	 * are more robust.</p>
 	 */
-	public Object generatePkForDbEntity(DataNode node, DbEntity ent) throws Exception {
 
-		PkRange r = (PkRange) pkCache.get(ent.getName());
-		if (r == null || r.isExhausted()) {
-			int val = pkFromDatabase(node, ent);
+	public Object generatePkForDbEntity(DataNode node, DbEntity ent)
+		throws Exception {
+            
+        // check for binary pk
+        Object binPK = binaryPK(ent);
+        if(binPK != null) {
+            return binPK;
+        }
+            
+		DbKeyGenerator pkGenerator = ent.getPrimaryKeyGenerator();
+		int cacheSize;
+		if (pkGenerator != null && pkGenerator.getKeyCacheSize() != null)
+			cacheSize = pkGenerator.getKeyCacheSize().intValue();
+		else
+			cacheSize = pkCacheSize;
 
-			if (pkCacheSize == 1) {
-				return new Integer(val);
+        // if no caching, always generate fresh
+        if(cacheSize <= 1) {
+			return new Integer(pkFromDatabase(node, ent));
+        }
+        
+		synchronized (pkCache) {
+			PkRange r = (PkRange) pkCache.get(ent.getName());
+			
+			if(r == null) {
+				// created exhaused PkRange
+				r = new PkRange(1, 0);
+				pkCache.put(ent.getName(), r);
 			}
-
-			r = new PkRange(val, val + pkCacheSize - 1);
-			pkCache.put(ent.getName(), r);
+			
+			if (r.isExhausted()) {
+				int val = pkFromDatabase(node, ent);
+				r.reset(val, val + cacheSize - 1);
+			}
+			
+			return r.getNextPrimaryKey();
 		}
-
-		return r.getNextPrimaryKey();
 	}
+    
+    /**
+     * @return a binary PK if DbEntity has a BINARY or VARBINARY pk, null otherwise.
+     * This method will likely be deprecated in 1.1 in favor of a more generic soultion.
+     * @since 1.0.2
+     */
+    protected byte[] binaryPK(DbEntity entity) {
+        List pkColumns = entity.getPrimaryKey();
+        if(pkColumns.size() == 1) {
+            DbAttribute pk = (DbAttribute) pkColumns.get(0);
+            if(pk.getMaxLength() > 0 && (pk.getType() == Types.BINARY || pk.getType() == Types.VARBINARY)) {
+                return IDUtil.pseudoUniqueByteSequence(pk.getMaxLength());
+            }
+        }
+        
+        return null;
+    }
 
-	/** 
-	 * Performs primary key generation ignoring cache. Generates 
+	/**
+	 * Performs primary key generation ignoring cache. Generates
 	 * a range of primary keys as specified by
-	 * "pkCacheSize" bean property. 
-	 * 
-	 * <p>This method is called internally from "generatePkForDbEntity" 
-	 * and then generated range of key values is saved in cache for 
-	 * performance. Subclasses that implement different primary key 
-	 * generation solutions should override this method, 
+	 * "pkCacheSize" bean property.
+	 *
+	 * <p>This method is called internally from "generatePkForDbEntity"
+	 * and then generated range of key values is saved in cache for
+	 * performance. Subclasses that implement different primary key
+	 * generation solutions should override this method,
 	 * not "generatePkForDbEntity".</p>
 	 */
-	protected int pkFromDatabase(DataNode node, DbEntity ent) throws Exception {
+	protected int pkFromDatabase(DataNode node, DbEntity ent)
+		throws Exception {
 
 		// run queries via DataNode to utilize its transactional behavior
 		List queries = new ArrayList(2);
 
-		// 1. prepare select 
-		SqlSelectQuery sel = new SqlSelectQuery(ent, pkSelectString(ent.getName()));
+		// 1. prepare select
+		SqlSelectQuery sel =
+			new SqlSelectQuery(ent, pkSelectString(ent.getName()));
 		sel.setObjDescriptors(objDesc);
 		sel.setResultDescriptors(resultDesc);
 		queries.add(sel);
 
-		// 2. prepare update 
+		// 2. prepare update
 		queries.add(new SqlModifyQuery(ent, pkUpdateString(ent.getName())));
 
 		PkRetrieveProcessor observer = new PkRetrieveProcessor(ent.getName());
 		node.performQueries(queries, observer);
 
-		if (!observer.successFlag) {
+		if (!observer.isSuccess()) {
 			throw new CayenneRuntimeException("Error generating PK.");
 		} else {
-			return observer.nextId.intValue();
+			return observer.getNextId();
 		}
 	}
 
@@ -350,11 +402,11 @@ public class JdbcPkGenerator implements PkGenerator {
 	 * Sets the size of the entity primary key cache.
 	 * If <code>pkCacheSize</code> parameter is less than 1,
 	 * cache size is set to "one".
-	 * 
+	 *
 	 * <p><i>Note that our tests show that setting primary key
-	 * cache value to anything much bigger than 20 does not give 
+	 * cache value to anything much bigger than 20 does not give
 	 * any significant performance increase. Therefore it does
-	 * not make sense to use bigger values, since this may 
+	 * not make sense to use bigger values, since this may
 	 * potentially create big gaps in the database primary
 	 * key sequences in cases like application crashes or restarts.
 	 * </i></p>
@@ -363,18 +415,34 @@ public class JdbcPkGenerator implements PkGenerator {
 		this.pkCacheSize = (pkCacheSize < 1) ? 1 : pkCacheSize;
 	}
 
+	public void reset() {
+		pkCache.clear();
+	}
+
 	/** OperationObserver for primary key retrieval. */
-	class PkRetrieveProcessor extends DefaultOperationObserver {
-		private boolean successFlag;
-		private Integer nextId;
-		private String entName;
+	protected class PkRetrieveProcessor extends DefaultOperationObserver {
+		protected boolean success;
+		protected Integer nextId;
+		protected String entName;
 
 		public PkRetrieveProcessor(String entName) {
 			this.entName = entName;
 		}
 
+		public boolean isSuccess() {
+			return success;
+		}
+
 		public boolean useAutoCommit() {
 			return false;
+		}
+
+		public int getNextId() {
+			if (nextId != null) {
+				return nextId.intValue();
+			} else {
+				throw new CayenneRuntimeException("No key was retrieved.");
+			}
 		}
 
 		public void nextDataRows(Query query, List dataRows) {
@@ -387,7 +455,8 @@ public class JdbcPkGenerator implements PkGenerator {
 			}
 			if (dataRows.size() > 1) {
 				throw new CayenneRuntimeException(
-					"Error generating PK : too many rows for entity: " + entName);
+					"Error generating PK : too many rows for entity: "
+						+ entName);
 			}
 
 			Map lastPk = (Map) dataRows.get(0);
@@ -402,17 +471,21 @@ public class JdbcPkGenerator implements PkGenerator {
 
 			if (resultCount != 1)
 				throw new CayenneRuntimeException(
-					"Error generating PK : update count is wrong: " + resultCount);
+					"Error generating PK : update count is wrong: "
+						+ resultCount);
 		}
 
 		public void transactionCommitted() {
 			super.transactionCommitted();
-			successFlag = true;
+			success = true;
 		}
 
 		public void nextQueryException(Query query, Exception ex) {
 			super.nextQueryException(query, ex);
-			String entityName = ((query != null) && (query.getRoot()!=null)) ? query.getRoot().toString() : null;
+			String entityName =
+				((query != null) && (query.getRoot() != null))
+					? query.getRoot().toString()
+					: null;
 			throw new CayenneRuntimeException(
 				"Error generating PK for entity '" + entityName + "'.",
 				ex);

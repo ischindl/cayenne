@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,6 +62,7 @@ import org.objectstyle.art.oneway.Artist;
 import org.objectstyle.art.oneway.Painting;
 import org.objectstyle.cayenne.access.DataContext;
 import org.objectstyle.cayenne.access.DataDomain;
+import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.query.SelectQuery;
@@ -74,19 +75,11 @@ import org.objectstyle.cayenne.unittest.OneWayMappingTestCase;
 public class OneWayOneToManyTst extends OneWayMappingTestCase {
     protected DataContext ctxt;
 
-    /**
-     * Constructor for OneWayOneToManyTst.
-     * @param name
-     */
-    public OneWayOneToManyTst(String name) {
-        super(name);
-    }
-
     protected void setUp() throws Exception {
         CayenneTestDatabaseSetup setup = getDatabaseSetup();
         setup.cleanTableData();
         DataDomain dom = getDomain();
-        setup.createPkSupportForMapEntities(dom.getDataNodes()[0]);
+        setup.createPkSupportForMapEntities((DataNode)dom.getDataNodes().iterator().next());
 
         ctxt = getDomain().createDataContext();
     }

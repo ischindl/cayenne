@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -106,11 +106,12 @@ public class RelationshipErrorMsg extends ValidationDisplayHandler {
     }
 
     public void displayField(EventController mediator, JFrame frame) {
-        RelationshipDisplayEvent event;
-        event = new RelationshipDisplayEvent(frame, rel, entity, map, domain);
+        RelationshipDisplayEvent event =
+            new RelationshipDisplayEvent(frame, rel, entity, map, domain);
         if (entity instanceof ObjEntity) {
             mediator.fireObjRelationshipDisplayEvent(event);
-        } else if (entity instanceof DbEntity) {
+        }
+        else if (entity instanceof DbEntity) {
             mediator.fireDbRelationshipDisplayEvent(event);
         }
     }

@@ -1,22 +1,23 @@
 <document>
 <title>User Guide - Quick Start</title>
-    <properties>
-        <author>Craig Miskell</author>
-    </properties>
-<navigator>
-	<up>/userguide/index.html</up>
-	<prev>/userguide/quickstart/webapp.html</prev>
-	<next>/userguide/design/index.html</next>
-</navigator> 
+<toc name="toc-user-guide" chapter="3. Quick Start"/>
 <body>
     <section name="3. Quick Start">
-    	<subsection name="3.3 &quot;Tapestry Web Application&quot; Tutorial">
-		<p><a href="http://tapestry.sourceforge.net/">Tapestry</a> is a powerful component-based 
+    	<subsection name="3.4 Tapestry Tutorial">
+		<p><a href="http://jakarta.apache.org/tapestry/">Tapestry</a> is a powerful component-based 
 		web application framework. This section shows how to write and a deploy a Tapestry web 
 		application	using Cayenne as an O/R layer.</p>
     	
    	    <panel name="Note:">
     		Full tutorial source code is included in Cayenne distribution in "src/tutorials" folder.
+    	</panel>
+    	
+    	<p></p>
+    	<panel name="Note:">
+    		Configuration given in this tutorial assumes Servlet 2.3 compatible
+    		container. For older containers, move cayenne files from WEB-INF to WEB-INF/classes
+    		(e.g. "mv cayenne.xml datanode.driver.xml datamap.map.xml classes/") and remove listener
+    		section from the web.xml.
     	</panel>
 
    	<p>Tutorial steps:</p>
@@ -26,11 +27,10 @@
     		<li><a href="#2">Prepare Tutorial Database.</a></li>
     		<li><a href="#3">Setup Cayenne Configuration Files.</a></li>
     		<li><a href="#4">Create Database Primary Key Support.</a></li>
-    		<li><a href="#5">Generate Java Code for DataObjects.</a></li>
     		<li><a href="#6">Compile and Deploy the Application.</a></li>
     	</ul>
     	
-       	<subsection name="3.3.1 Tutorial Setup" anchor="1">
+       	<subsection name="3.4.1 Tutorial Setup" anchor="1">
        		<p>- Follow the steps outlined in <a href="../install/index.html">Cayenne 
        		installation instructions</a>. In particular, JSDK 1.4 must be installed.
        		</p>
@@ -57,17 +57,26 @@
        		</p>
        		
     		<p>- <i>Optional: if you have Tapestry already installed, you should skip 
-    		this step.</i> Obtain the latest Tapestry distribution and unzip somewhere. 
-    		(This tutorial was tested with Tapestry 2.2). Copy <code>ognl.jar</code> 
+    		this step.</i> Obtain the latest <a href="http://jakarta.apache.org/tapestry/">Tapestry 
+    		distribution</a> and unzip somewhere. 
+    		(This tutorial was tested with Tapestry 2.3). Copy <code>ognl.jar</code> 
     		and <code>net.sf.tapestry-*.jar</code> 
     		from the Tapestry distribution (/lib/ext for ognl, /lib for tapestry-*.jar) 
     		to EITHER the <code>WEB-INF/lib</code> subdirectory of the tutorial project 
     		directory, or some other location that your web container will be able to 
-    		locate.  E.g. for Tomcat, $CATALINA_HOME/shared/lib is a good place. 
+    		locate.
     		</p>
+    		
+    		<panel name="Tapestry 3.0+ Note:">Tapestry 3.0 and higher is a Jakarta 
+    		subproject and is no longer hosted on 
+    		SourceForge. As a result it has its packages renamed from "net.sf.tapestry.*" 
+    		to "org.apache.tapestry.*". To use the tutorial with 3.0+, import statements 
+    		must be manually fixed to reflect package name change. Older versions of Tapestry
+    		can still be found at the SourceForge page at http://sourceforge.net/projects/tapestry 
+    		</panel>
     	</subsection>
     	
-    	<subsection name="3.3.2 Prepare Tutorial Database" anchor="2">
+    	<subsection name="3.4.2 Prepare Tutorial Database" anchor="2">
     		<p>Run <a href="../../tutorials/cayenne-tapestry-app/tutorialdb.sql"><code>tutorialdb.sql</code></a>
     		script located in the project directory to create test tables. 
     		This script is tested on MySQL, but it should be easy to port to any other RDBMS. Also
@@ -77,7 +86,7 @@
     		of this script to recreate tables from scratch.</p>
     	</subsection>
     	
-    	<subsection name="3.3.3 Setup Cayenne Configuration Files" anchor="3">
+    	<subsection name="3.4.3 Setup Cayenne Configuration Files" anchor="3">
     		<p>Configuration files included in this tutorial are:
     		
     		<ul>
@@ -94,18 +103,19 @@
     			driver information of the test database.  Do this by editing the Data Source Info section of data node properties page</li>
     		</ul>         	
     		</p>
-    	    <img src="/images/tutorial-cfg-node.gif" width="639" height="503" border="0" align="middle"
+    	    <img src="/images/modelerguide/select-adapter.jpg" width="520" height="336" border="0" align="middle"
 			alt="Configure Node Panel"/>
+			<br/>
     	</subsection>
     	
     	
-    	<subsection name="3.3.4 Create Database Primary Key Support." anchor="4">
+    	<subsection name="3.4.4 Create Database Primary Key Support." anchor="4">
     	<p>Open <code>cayenne.xml</code> in CayenneModeler and generate needed database
     	objects for primary key support by following these  
-    	<a href="../../modelerguide/pksupport.html">instructions</a>. Skip this step if it was already 
+    	<a href="../../modelerguide/common-tasks/pksupport.html">instructions</a>. Skip this step if it was already 
     	done for another tutorial.</p>
     	</subsection>
-   	<subsection name="3.3.5 Compile and Deploy the Application" anchor="6">
+   	<subsection name="3.4.5 Compile and Deploy the Application" anchor="6">
     		<p>To compile the application, the easiest way is to use ant.  
     		Change into the cayenne-tapestry-app directory and invoke ant.  
     		The application will be built. <i>Note that "servlet.jar" (or an appropriate jar file with all

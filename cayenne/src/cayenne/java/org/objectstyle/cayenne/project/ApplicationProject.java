@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,10 +56,10 @@
 package org.objectstyle.cayenne.project;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-import org.objectstyle.cayenne.access.DataDomain;
+import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.conf.ConfigStatus;
 import org.objectstyle.cayenne.conf.Configuration;
@@ -70,7 +70,9 @@ import org.objectstyle.cayenne.map.DataMap;
  * @author Andrei Adamchik
  */
 public class ApplicationProject extends Project {
-    protected ProjectConfiguration config;
+	private static Logger logObj = Logger.getLogger(ApplicationProject.class);
+
+    protected ProjectConfiguration configuration;
 
     /**
      * Constructor for ApplicationProject.
@@ -82,43 +84,58 @@ public class ApplicationProject extends Project {
     }
 
     /**
-     * Initializes internal <code>config</code> object and then calls super.
+     * Initializes internal <code>Configuration</code> object and then calls super.
      */
-    protected void postInit(File projectFile) {
+    protected void postInitialize(File projectFile) {
+    	logObj.debug("postInitialize: " + projectFile);
+
         try {
-            File f = (projectFile != null) ? projectFile.getCanonicalFile() : null;
-            config = new ProjectConfiguration(f);
-        } catch (IOException e) {
+        	// if the projectFile is real..
+            if (projectFile != null) {
+            	// see whether it's a directory
+            	if (projectFile.isDirectory()) {
+            		// if so, create a new default file with full path
+            		projectFile = new File(projectFile.getPath()
+            								+ File.separator
+            								+ Configuration.DEFAULT_DOMAIN_FILE);
+            	}
+
+            	projectFile = projectFile.getCanonicalFile();
+            }
+
+			ProjectConfiguration conf = new ProjectConfiguration(projectFile);
+
+			// try to initialize configuration
+			if (conf.canInitialize()) {
+				conf.initialize();
+				conf.didInitialize();
+			}
+
+			this.configuration = conf;
+        } catch (Exception e) {
             throw new ProjectException("Error creating ApplicationProject.", e);
         }
-        super.postInit(projectFile);
+
+        super.postInitialize(projectFile);
     }
 
     /**
     * Returns Cayenne configuration object associated with this project. 
     */
-    public Configuration getConfig() {
-        return (Configuration) config;
+    public Configuration getConfiguration() {
+        return configuration;
     }
 
     /**
     * Sets Cayenne configuration object associated with this project. 
     */
-    public void setConfig(ProjectConfiguration config) {
-        this.config = config;
-    }
-
-    public DataDomain[] getDomains() {
-        List domains = getConfig().getDomainList();
-        if (domains == null) {
-            return new DataDomain[0];
-        }
-        return (DataDomain[]) domains.toArray(new DataDomain[domains.size()]);
+    public void setConfiguration(ProjectConfiguration config) {
+        this.configuration = config;
     }
 
     public void checkForUpgrades() {
         if (hasRenamedFiles()) {
-            upgradeMessages.add("Some files require renaming");
+            upgradeMessages.add("Some files require renaming.");
         }
     }
 
@@ -126,7 +143,7 @@ public class ApplicationProject extends Project {
      * @see org.objectstyle.cayenne.project.Project#getChildren()
      */
     public List getChildren() {
-        return config.getDomainList();
+        return new ArrayList(this.getConfiguration().getDomains());
     }
 
     /**
@@ -137,7 +154,8 @@ public class ApplicationProject extends Project {
     */
     public ProjectFile projectFileForObject(Object obj) {
         if (requiresProjectFile(obj)) {
-            return new ApplicationProjectFile(this);
+        	String domainFileName = this.getConfiguration().getDomainConfigurationName();
+            return new ApplicationProjectFile(this, domainFileName);
         } else if (requiresMapFile(obj)) {
             return new DataMapFile(this, (DataMap) obj);
         } else if (requiresNodeFile(obj)) {
@@ -173,6 +191,6 @@ public class ApplicationProject extends Project {
     
 
     public ConfigStatus getLoadStatus() {
-        return (config != null) ? config.getLoadStatus() : new ConfigStatus();
+        return (configuration != null) ? configuration.getLoadStatus() : new ConfigStatus();
     }
 }

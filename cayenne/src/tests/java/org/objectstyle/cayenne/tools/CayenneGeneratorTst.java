@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,6 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 
-import org.apache.log4j.Logger;
 import org.apache.oro.text.perl.Perl5Util;
 import org.apache.tools.ant.Location;
 import org.apache.tools.ant.Project;
@@ -72,10 +71,9 @@ import org.objectstyle.cayenne.util.ResourceLocator;
 import org.objectstyle.cayenne.util.Util;
 
 public class CayenneGeneratorTst extends CayenneTestCase {
-	private static Logger logObj = Logger.getLogger(CayenneGeneratorTst.class);
 
 	private static final Perl5Util regexUtil = new Perl5Util();
-	private static final Project project = new Project();
+    private static final Project project = new Project();
 	private static final File baseDir = CayenneTestResources.getResources().getTestDir();
 	private static final File map = new File(baseDir, "antmap.xml");
 	private static final File template = new File(baseDir, "velotemplate.vm");
@@ -89,10 +87,10 @@ public class CayenneGeneratorTst extends CayenneTestCase {
 
 	private static void extractFiles() {
 		ResourceLocator locator = new ResourceLocator();
-		locator.setSkipAbsPath(true);
+		locator.setSkipAbsolutePath(true);
 		locator.setSkipClasspath(false);
-		locator.setSkipCurDir(true);
-		locator.setSkipHomeDir(true);
+		locator.setSkipCurrentDirectory(true);
+		locator.setSkipHomeDirectory(true);
 
 		// Configuration superclass statically defines what 
 		// ClassLoader to use for resources. This
@@ -104,10 +102,6 @@ public class CayenneGeneratorTst extends CayenneTestCase {
 		Util.copy(url1, map);
 		URL url2 = locator.findResource("test-resources/testtemplate.vm");
 		Util.copy(url2, template);
-	}
-
-	public CayenneGeneratorTst(String name) {
-		super(name);
 	}
 
 	public void setUp() throws java.lang.Exception {
@@ -141,7 +135,7 @@ public class CayenneGeneratorTst extends CayenneTestCase {
 
 		File _a =
 			new File(mapDir, convertPath("org/objectstyle/art/_Artist.java"));
-		assertTrue(!_a.exists());
+		assertFalse(_a.exists());
 	}
 
 	/** Test single classes generation including full package path. */
@@ -167,7 +161,7 @@ public class CayenneGeneratorTst extends CayenneTestCase {
 
 		File _a =
 			new File(mapDir, convertPath("org/objectstyle/art/_Artist.java"));
-		assertTrue(!_a.exists());
+		assertFalse(_a.exists());
 	}
 
 	/** Test single classes generation ignoring package path. */
@@ -191,11 +185,11 @@ public class CayenneGeneratorTst extends CayenneTestCase {
 		assertContents(a, "Artist", "org.objectstyle.art", "CayenneDataObject");
 
 		File _a = new File(mapDir, convertPath("_Artist.java"));
-		assertTrue(!_a.exists());
+		assertFalse(_a.exists());
 
 		File pkga =
 			new File(mapDir, convertPath("org/objectstyle/art/Artist.java"));
-		assertTrue(!pkga.exists());
+		assertFalse(pkga.exists());
 	}
 
 	/** Test pairs generation including full package path. */
@@ -259,7 +253,7 @@ public class CayenneGeneratorTst extends CayenneTestCase {
 
 		File pkga =
 			new File(mapDir, convertPath("org/objectstyle/art/Artist.java"));
-		assertTrue(!pkga.exists());
+		assertFalse(pkga.exists());
 	}
 
 	/** 

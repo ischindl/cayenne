@@ -12,9 +12,11 @@
 	<property name="test.output" value="${test.build}/out/${cayenne.test.connection}"/>
 	<property name="test.report" value="${test.build}/report/${cayenne.test.connection}"/>
 	<property name="test.filter" value="**/*Tst.class"/>
+	<property environment="test.env"/>
 	
     <path id="classpath">
     	<fileset dir="${otherlib.dir}">
+			<include name="${ant-junitreport.jar}"/>
 			<include name="${junit.jar}"/>
 		</fileset>
     	<fileset dir="${ant.home}/lib">
@@ -25,6 +27,7 @@
 		</fileset>
 		<pathelement path="build/tests/classes"/>
 		<pathelement path="build/tests/deps"/>
+		<pathelement path="${test.env.CLASSPATH}"/>
     </path>
     
 
@@ -62,20 +65,31 @@
     <!-- ============================================= -->
     <!-- Runs and reports on tests.                    -->
     <!-- ============================================= -->
-    <target name="test" depends="compile">
+    <target name="test" depends="check-connection,compile">
     	<!-- Run Java on itself to avoid classloader weirdness in JUnit -->
     	<java fork="true" classname="org.apache.tools.ant.Main" failonerror="true">
     		<arg value="-f"/>
     		<arg value="build-tests.xml"/>
-    		<arg value="unit-test-report"/>
+    		<arg value="unit-test-run"/>
+
+			<jvmarg value="-Xms64m"/>
+			<jvmarg value="-Xmx64m"/>
     		
 			<sysproperty key="cayenne.test.connection" value="${cayenne.test.connection}"/>
+			<sysproperty key="cayenne.test.report" value="${cayenne.test.report}"/>
 			<sysproperty key="ant.home" value="${ant.home}"/>
 			<sysproperty key="dist" value="${dist}"/>
 			<sysproperty key="test.filter" value="${test.filter}"/>
 			<classpath refid="classpath"/>
     	</java>
     </target>    
+    
+    <!-- ============================================= -->
+    <!-- Defines testing sequence                      -->
+    <!-- ============================================= -->
+    <target name="unit-test-run" depends="unit-test,unit-test-report-needed,unit-test-report">
+    	<fail message="Cayenne tests failed, see files in ${test.output} for details." if="cayenne.test.failure"/>
+    </target>
     
     <!-- ============================================= -->
     <!-- Runs Unit tests.                              -->
@@ -98,8 +112,8 @@
         
         <junit fork="false" 
                haltonfailure="no" 
-               errorProperty="test.cayenne.failure"
-               failureProperty="test.cayenne.failure">
+               errorProperty="cayenne.test.failure"
+               failureProperty="cayenne.test.failure">
                
             <formatter type="xml" usefile="true"/>
             <batchtest todir="${test.output}">
@@ -113,7 +127,7 @@
     <!-- ============================================= -->
     <!-- Reports failures.                             -->
     <!-- ============================================= -->
-    <target name="unit-test-report" depends="unit-test" if="test.cayenne.failure">
+    <target name="unit-test-report" depends="unit-test" if="cayenne.test.report.needed">
     	<!-- HTML report is only generated on failures for speed -->
     	<junitreport todir="${test.report}">
 			<fileset dir="${test.output}">
@@ -121,9 +135,23 @@
 			</fileset>
 			<report format="frames" todir="${test.report}"/>
 		</junitreport>
-		
-		
-        <fail message="Cayenne tests failed, see files in ${test.output} for details"/>
+    </target>
+    
+    <target name="unit-test-report-needed">
+         <!-- In case of failures, always run report,  -->
+         <!-- in case of success, only when asked.     -->
+         <condition property="cayenne.test.report.needed">
+         	<or>
+         		<isset property="cayenne.test.failure"/>
+         		<istrue value="${cayenne.test.report}"/>
+         	</or>
+         </condition>
+    </target>
+    
+    <!-- This is a simple property check, misspelled property can still -->
+    <!-- lead to failed connection to the test database. -->
+    <target name="check-connection" unless="cayenne.test.connection">
+    	<fail>'cayenne.test.connection' property must be defined to point to a named connection entry.</fail>
     </target>
 </project>
 

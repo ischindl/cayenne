@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -146,15 +146,6 @@ public abstract class Expression implements Serializable {
      */
     public static final int DB_PATH = 27;
 
-    /** 
-     * Describes a table column name.
-     * DB_NAME expression is resolved relative to a root 
-     * DbEntity. 
-     * 
-     * @deprecated use DB_PATH instead
-     */
-    public static final int DB_NAME = DB_PATH;
-
     /** Interpreted as a comma-separated list of literals. */
     public static final int LIST = 28;
     /** Interpreted as a subquery within a parent query. */
@@ -169,7 +160,12 @@ public abstract class Expression implements Serializable {
     public static final int MAX = 33;
     /** Interpreted as an aggregate min function. */
     public static final int MIN = 34;
-
+    
+    public static final int NOT_BETWEEN = 35;
+	public static final int NOT_IN = 36;
+	public static final int NOT_LIKE = 37;
+	public static final int NOT_LIKE_IGNORE_CASE = 38;
+	
     protected int type;
 
     /**
@@ -211,6 +207,14 @@ public abstract class Expression implements Serializable {
                 return "DB_PATH";
             case LIST :
                 return "LIST";
+            case NOT_BETWEEN:
+                return "NOT BETWEEN";
+			case NOT_IN:
+				return "NOT IN"; 
+			case NOT_LIKE:
+				return "NOT LIKE"; 
+			case NOT_LIKE_IGNORE_CASE:
+				return "NOT LIKE IGNORE CASE"; 
             default :
                 return "other";
         }
@@ -231,8 +235,8 @@ public abstract class Expression implements Serializable {
     /**
      * A shortcut for <code>expWithParams(params, true)</code>.
      */
-    public Expression expWithParams(Map params) {
-        return expWithParams(params, true);
+    public Expression expWithParameters(Map parameters) {
+        return expWithParameters(parameters, true);
     }
 
     /**
@@ -244,7 +248,7 @@ public abstract class Expression implements Serializable {
      * explicitly created in the map for the corresponding key.
      * </i></p>
      * 
-     * @param params a map of parameters, with each key being a string name of
+     * @param parameters a map of parameters, with each key being a string name of
      * an expression parameter, and value being the value that should be used in
      * the final expression.
      * @param pruneMissing If <code>true</code>, subexpressions that rely
@@ -255,9 +259,9 @@ public abstract class Expression implements Serializable {
      * real values, or null if the whole expression was pruned, due to the
      * missing parameters.
      */
-    public Expression expWithParams(Map params, boolean pruneMissing) {
+    public Expression expWithParameters(Map parameters, boolean pruneMissing) {
         ParametrizedExpressionBuilder builder =
-            new ParametrizedExpressionBuilder(this, params, pruneMissing);
+            new ParametrizedExpressionBuilder(this, parameters, pruneMissing);
         ExpressionTraversal traversal = new ExpressionTraversal();
         traversal.setHandler(builder);
         traversal.traverseExpression(this);
@@ -265,7 +269,7 @@ public abstract class Expression implements Serializable {
 
         if (logObj.isDebugEnabled()) {
             logObj.debug("Created expression: " + newExp);
-            logObj.debug("  Parameters: " + params);
+            logObj.debug("  Parameters: " + parameters);
         }
 
         return newExp;
@@ -347,7 +351,6 @@ public abstract class Expression implements Serializable {
         return filtered;
     }
 
-
     /**
      * Convenience method to log nested expressions. Used mainly for debugging.
      * Called from "toString".
@@ -359,15 +362,15 @@ public abstract class Expression implements Serializable {
             if (i > 0) {
                 buf.append(" ").append(expName()).append(" ");
             }
-            
+
             Object op = getOperand(i);
             if (op == null) {
                 buf.append("<null>");
             } else if (op instanceof String) {
                 buf.append("'").append(op).append("'");
             } else if (op instanceof Expression) {
-            	buf.append('(');
-            	((Expression)op).toStringBuffer(buf);
+                buf.append('(');
+                ((Expression) op).toStringBuffer(buf);
                 buf.append(')');
             } else {
                 buf.append(String.valueOf(op));
@@ -384,7 +387,7 @@ public abstract class Expression implements Serializable {
     }
 
     /**
-     * Helper class to process parametrised expressions.
+     * Helper class to process parameterized expressions.
      */
     class ParametrizedExpressionBuilder extends TraversalHelper {
         protected final Expression fakeTopLevelParent = new UnaryExpression();
@@ -568,8 +571,8 @@ public abstract class Expression implements Serializable {
                 parent.setOperand(childIndex, findExp((Expression) child));
             } else {
                 // check for parameter substitution
-                if (child instanceof ExpressionParam) {
-                    ExpressionParam param = (ExpressionParam) child;
+                if (child instanceof ExpressionParameter) {
+                    ExpressionParameter param = (ExpressionParameter) child;
 
                     // explicitly check if key exists, since null value
                     // may simply indicate NULL

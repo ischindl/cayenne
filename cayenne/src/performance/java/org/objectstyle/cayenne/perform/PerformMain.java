@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,13 +55,16 @@
  */
 package org.objectstyle.cayenne.perform;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+
 import javax.sql.DataSource;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
-import org.objectstyle.cayenne.access.DataSourceInfo;
 import org.objectstyle.cayenne.conf.Configuration;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.conn.PoolDataSource;
 import org.objectstyle.cayenne.conn.PoolManager;
 import org.objectstyle.cayenne.dba.DbAdapter;
@@ -75,12 +78,10 @@ import org.objectstyle.perform.ResultRenderer;
 
 /** Runs performance tests. */
 public class PerformMain {
-    private static Logger logObj = Logger.getLogger(PerformMain.class);
-
     public static DataDomain sharedDomain;
 
     public static void main(String[] args) {
-        Configuration.configCommonLogging();
+        Configuration.configureCommonLogging();
         prepareDomain();
 
         if (args.length == 0) {
@@ -200,26 +201,22 @@ public class PerformMain {
             DataMap map = new MapLoader().loadDataMap(CayenneTestResources.TEST_MAP_PATH);
 
             // node
-            DataNode node = new DataNode("node");
-            node.setDataSource(ds);
-            
             Class adapterClass = DataNode.DEFAULT_ADAPTER_CLASS;
 
-            if (dsi.getAdapterClass() != null) {
-                adapterClass = Class.forName(dsi.getAdapterClass());
+            if (dsi.getAdapterClassName() != null) {
+                adapterClass = Class.forName(dsi.getAdapterClassName());
             }
  
-            node.setAdapter((DbAdapter) adapterClass.newInstance());
-            
+            DbAdapter adapter = (DbAdapter) adapterClass.newInstance();
+			DataNode node = adapter.createDataNode("node");
+			node.setDataSource(ds);
             node.addDataMap(map);
 
             // generate pk's
-            DataMap[] dataMaps = node.getDataMaps();
-            int len = dataMaps.length;
-            for (int i = 0; i < len; i++) {
-                node.getAdapter().getPkGenerator().createAutoPk(
-                    node,
-                    dataMaps[i].getDbEntitiesAsList());
+            Iterator dataMaps = node.getDataMaps().iterator();
+			while (dataMaps.hasNext()) {
+				Collection ents = ((DataMap)dataMaps.next()).getDbEntities();
+                node.getAdapter().getPkGenerator().createAutoPk(node, new ArrayList(ents));
             }
 
             // domain

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,9 @@ package org.objectstyle.cayenne.modeler.view;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.event.ItemEvent;
 
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -69,6 +72,8 @@ import javax.swing.table.TableCellRenderer;
 
 import org.objectstyle.cayenne.modeler.PanelFactory;
 import org.objectstyle.cayenne.modeler.control.ClassGeneratorController;
+import org.objectstyle.cayenne.modeler.util.CayenneWidgetFactory;
+import org.objectstyle.cayenne.modeler.util.ScopeWidgetFactory;
 import org.objectstyle.cayenne.modeler.validator.ValidatorDialog;
 import org.scopemvc.core.PropertyManager;
 import org.scopemvc.core.Selector;
@@ -100,10 +105,11 @@ public class ClassGeneratorDialog extends SPanel {
 
         // build entity table
         STable table = new ClassGeneratorTable();
+        table.setRowHeight(25);
+        table.setRowMargin(3);
         ClassGeneratorModel model = new ClassGeneratorModel(table);
         model.setSelector("entities");
-        model.setColumnNames(
-            new String[] { "Entity", "Class", "Generate", "Problems" });
+        model.setColumnNames(new String[] { "Entity", "Class", "Generate", "Problems" });
         model.setColumnSelectors(
             new String[] {
                 "entity.name",
@@ -115,38 +121,40 @@ public class ClassGeneratorDialog extends SPanel {
 
         // make sure that long columns are not squeezed
         table.getColumnModel().getColumn(1).setMinWidth(100);
-        table.getColumnModel().getColumn(3).setMinWidth(150);
+        table.getColumnModel().getColumn(3).setMinWidth(250);
+
+        // build superclass package
+        JLabel superClassPackageLabel =
+            CayenneWidgetFactory.createLabel("Superclass Package:");
+        final STextField superClassPackage = ScopeWidgetFactory.createTextField();
+        superClassPackage.setSelector("superClassPackage");
 
         // build pair checkbox
-        Box generate_pair_box = Box.createHorizontalBox();
-
-        SCheckBox generatePair = new SCheckBox();
+        JLabel generatePairLabel =
+            CayenneWidgetFactory.createLabel("Generate parent/child class pairs:");
+        SCheckBox generatePair = new SCheckBox() {
+                // (de)activate the text field
+    public void itemStateChanged(ItemEvent inEvent) {
+                superClassPackage.setEnabled(
+                    inEvent.getStateChange() == ItemEvent.SELECTED);
+                super.itemStateChanged(inEvent);
+            }
+        };
         generatePair.setSelector("pairs");
 
-        generate_pair_box.add(Box.createHorizontalStrut(2));
-        generate_pair_box.add(new JLabel("Generate parent/child class pairs"));
-        generate_pair_box.add(Box.createHorizontalStrut(7));
-        generate_pair_box.add(generatePair);
-        generate_pair_box.add(Box.createHorizontalStrut(2));
-
         // build folder selector
-        Box folder_box = Box.createHorizontalBox();
-
-        STextField folder = new STextField();
+        JLabel folderLabel = CayenneWidgetFactory.createLabel("Output directory:");
+        JPanel folderPanel = new JPanel();
+        folderPanel.setLayout(new FlowLayout(FlowLayout.LEADING, 0, 0));
+        STextField folder = ScopeWidgetFactory.createTextField();
         folder.setSelector("outputDir");
-
         SAction chooseAction =
             new SAction(ClassGeneratorController.CHOOSE_LOCATION_CONTROL);
         SButton chooseButton = new SButton(chooseAction);
         chooseButton.setEnabled(true);
-
-        folder_box.add(Box.createHorizontalStrut(2));
-        folder_box.add(new JLabel("Output directory:"));
-        folder_box.add(Box.createHorizontalStrut(7));
-        folder_box.add(folder);
-        folder_box.add(Box.createHorizontalStrut(3));
-        folder_box.add(chooseButton);
-        folder_box.add(Box.createHorizontalStrut(2));
+        folderPanel.add(folder);
+        folderPanel.add(Box.createHorizontalStrut(5));
+        folderPanel.add(chooseButton);
 
         // build action buttons
         SAction generateAction =
@@ -154,16 +162,27 @@ public class ClassGeneratorDialog extends SPanel {
         SButton generateButton = new SButton(generateAction);
         generateButton.setEnabled(true);
 
-        SAction cancelAction =
-            new SAction(ClassGeneratorController.CANCEL_CONTROL);
+        SAction cancelAction = new SAction(ClassGeneratorController.CANCEL_CONTROL);
         SButton cancelButton = new SButton(cancelAction);
         cancelButton.setEnabled(true);
 
         // assemble
+        JPanel formPanel =
+            PanelFactory.createForm(
+                new Component[] {
+                    generatePairLabel,
+                    superClassPackageLabel,
+                    folderLabel },
+                new Component[] { generatePair, superClassPackage, folderPanel },
+                5,
+                5,
+                5,
+                5);
+
         JPanel panel =
             PanelFactory.createTablePanel(
                 table,
-                new JComponent[] { generate_pair_box, folder_box },
+                new JComponent[] { formPanel },
                 new JButton[] { generateButton, cancelButton });
         add(panel, BorderLayout.CENTER);
     }
@@ -190,7 +209,8 @@ public class ClassGeneratorDialog extends SPanel {
             try {
                 Boolean enabled = (Boolean) manager.get(row, enabledSelector);
                 return enabled != null && enabled.booleanValue();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 return false;
             }
         }
@@ -209,6 +229,8 @@ public class ClassGeneratorDialog extends SPanel {
     }
 
     class ClassGeneratorTable extends STable {
+        protected final Dimension preferredSize = new Dimension(500, 300);
+
         protected DefaultTableCellRenderer problemRenderer;
 
         public ClassGeneratorTable() {
@@ -223,6 +245,10 @@ public class ClassGeneratorDialog extends SPanel {
                 ? super.getCellRenderer(row, column)
                 : problemRenderer;
         }
+
+        public Dimension getPreferredScrollableViewportSize() {
+            return preferredSize;
+        }
     }
 
     class ClassGeneratorProblemRenderer extends DefaultTableCellRenderer {
@@ -234,12 +260,11 @@ public class ClassGeneratorDialog extends SPanel {
             boolean hasFocus,
             int row,
             int column) {
-            
-            if(value instanceof Boolean) {
-            	value = "";
+
+            if (value instanceof Boolean) {
+                value = "";
             }
-            
-            
+
             return super.getTableCellRendererComponent(
                 table,
                 value,

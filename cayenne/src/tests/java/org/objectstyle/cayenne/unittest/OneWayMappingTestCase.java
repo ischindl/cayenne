@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,11 +65,9 @@ public class OneWayMappingTestCase extends CayenneTestCase {
 
     /**
      * Constructor for OneWayMappingTestCase.
-     * 
-     * @param name
      */
-    public OneWayMappingTestCase(String name) {
-        super(name);
+    public OneWayMappingTestCase() {
+        super();
         OneWayMappingProject.init();
     }
 
@@ -85,6 +83,6 @@ public class OneWayMappingTestCase extends CayenneTestCase {
      * @see org.objectstyle.cayenne.unittest.CayenneTestCase#getNode()
      */
     public DataNode getNode() {
-        return getDomain().getDataNodes()[0];
+        return (DataNode)getDomain().getDataNodes().iterator().next();
     }
 }

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,13 +63,9 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
 public class ToManyListTst extends CayenneTestCase {
     private boolean flag;
     
-    public ToManyListTst(String name) {
-        super(name);
-    }
-    
     public void testListDataSource() throws java.lang.Exception {
         ToManyListDataSource lds = new ToManyListDataSource() {
-            public void updateListData(ToManyList l) {};
+            public void updateListData(ToManyList l) {}
         };
         
         ToManyList list = new ToManyList(lds, null, null);
@@ -84,7 +80,7 @@ public class ToManyListTst extends CayenneTestCase {
             public void updateListData(ToManyList l) {
                 flag = true;
                 l.setObjectList(new ArrayList());
-            };
+            }
         };
         
         ToManyList list = new ToManyList(lds, null, null);

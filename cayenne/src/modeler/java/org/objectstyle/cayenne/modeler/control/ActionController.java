@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,6 +72,7 @@ import org.objectstyle.cayenne.modeler.action.ImportEOModelAction;
 import org.objectstyle.cayenne.modeler.action.ProjectAction;
 import org.objectstyle.cayenne.modeler.action.RemoveAction;
 import org.objectstyle.cayenne.modeler.action.SaveAction;
+import org.objectstyle.cayenne.modeler.action.ValidateAction;
 import org.objectstyle.cayenne.project.ProjectPath;
 import org.scopemvc.core.Control;
 import org.scopemvc.core.ControlException;
@@ -113,9 +114,10 @@ public class ActionController extends ModelerController {
 
     protected void projectClosed() {
         disableAllActions();
-        getAction(ProjectAction.ACTION_NAME).setEnabled(false);
-        getAction(SaveAction.ACTION_NAME).setEnabled(false);
-        getAction(CreateDomainAction.ACTION_NAME).setEnabled(false);
+		getAction(ValidateAction.getActionName()).setEnabled(false);
+		getAction(ProjectAction.getActionName()).setEnabled(false);
+        getAction(SaveAction.getActionName()).setEnabled(false);
+        getAction(CreateDomainAction.getActionName()).setEnabled(false);
 
         updateRemoveAction(null);
     }
@@ -148,7 +150,7 @@ public class ActionController extends ModelerController {
             name = "Remove";
         }
 
-        getAction(RemoveAction.ACTION_NAME).setName(name);
+        getAction(RemoveAction.getActionName()).setName(name);
     }
 
     /**
@@ -168,7 +170,7 @@ public class ActionController extends ModelerController {
         for (int i = 0; i < len; i++) {
 
             // "save" button has its own rules
-            if (keys[i].equals(SaveAction.ACTION_NAME)) {
+            if (keys[i].equals(SaveAction.getActionName())) {
                 continue;
             }
 
@@ -181,8 +183,9 @@ public class ActionController extends ModelerController {
      */
     protected void enableProjectActions() {
         disableAllActions();
-        getAction(CreateDomainAction.ACTION_NAME).setEnabled(true);
-        getAction(ProjectAction.ACTION_NAME).setEnabled(true);
+        getAction(CreateDomainAction.getActionName()).setEnabled(true);
+		getAction(ProjectAction.getActionName()).setEnabled(true);
+		getAction(ValidateAction.getActionName()).setEnabled(true);
     }
 
     /**
@@ -206,11 +209,11 @@ public class ActionController extends ModelerController {
         enableProjectActions();
 
         if (domain != null) {
-            getAction(CreateDataMapAction.ACTION_NAME).setEnabled(true);
-            getAction(RemoveAction.ACTION_NAME).setEnabled(true);
-            getAction(CreateNodeAction.ACTION_NAME).setEnabled(true);
-            getAction(ImportDbAction.ACTION_NAME).setEnabled(true);
-            getAction(ImportEOModelAction.ACTION_NAME).setEnabled(true);
+            getAction(CreateDataMapAction.getActionName()).setEnabled(true);
+            getAction(RemoveAction.getActionName()).setEnabled(true);
+            getAction(CreateNodeAction.getActionName()).setEnabled(true);
+            getAction(ImportDbAction.getActionName()).setEnabled(true);
+            getAction(ImportEOModelAction.getActionName()).setEnabled(true);
         }
     }
 }

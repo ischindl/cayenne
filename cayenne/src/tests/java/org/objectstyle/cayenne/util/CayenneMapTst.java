@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,14 +64,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
  * @author Andrei Adamchik
  */
 public class CayenneMapTst extends CayenneTestCase {
-
-	/**
-	 * Constructor for CayenneMapTst.
-	 * @param arg0
-	 */
-	public CayenneMapTst(String arg0) {
-		super(arg0);
-	}
 
 	protected CayenneMapEntry makeEntry() {
 		return new CayenneMapEntry() {

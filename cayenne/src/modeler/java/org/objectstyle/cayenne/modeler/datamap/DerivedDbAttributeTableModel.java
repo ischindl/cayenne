@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,8 +57,8 @@ package org.objectstyle.cayenne.modeler.datamap;
 
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.DerivedDbAttribute;
+import org.objectstyle.cayenne.map.event.AttributeEvent;
 import org.objectstyle.cayenne.modeler.control.EventController;
-import org.objectstyle.cayenne.modeler.event.AttributeEvent;
 
 /**
  * Table model for derived DbAttributes.
@@ -82,9 +82,9 @@ public class DerivedDbAttributeTableModel extends DbAttributeTableModel {
 	 * @param eventSource
 	 */
 	public DerivedDbAttributeTableModel(
-		DbEntity entity,
-		EventController mediator,
-		Object eventSource) {
+			DbEntity entity,
+			EventController mediator,
+			Object eventSource) {
 		super(entity, mediator, eventSource);
 	}
 
@@ -186,8 +186,10 @@ public class DerivedDbAttributeTableModel extends DbAttributeTableModel {
 				setGroupBy((Boolean) newVal, attr);
 				break;
 			case DB_ATTRIBUTE_PRIMARY_KEY :
-				setPrimaryKey((Boolean) newVal, attr);
-				fireTableCellUpdated(row, DB_ATTRIBUTE_MANDATORY);
+				if(!setPrimaryKey((Boolean) newVal, attr, row)) {
+					return;
+				}
+
 				break;
 			case DB_ATTRIBUTE_MANDATORY :
 				setMandatory((Boolean) newVal, attr);

@@ -1,95 +1,11 @@
 <document>
-<title>User Guide</title>
-<navigator>
-	<next>/userguide/intro.html</next>
-</navigator>
+<title>User Guide - Introduction</title>
+<toc name="toc-user-guide"/>
 <body>
-    <section name="Table of Contents">        
-        <ul>
-            <li><a href="intro.html">1. Introduction</a>
-            <ul>
-                <li><a href="intro.html#about">1.1 About Cayenne</a></li>
-                <li><a href="intro.html#contrib">1.2 Acknowledgements</a></li>
-                <li><a href="intro.html#license">1.3 License</a></li>
-            </ul><br/></li>  
-            
-            <li><a href="install/index.html">2. Installation</a>
-            <ul>
-                <li><a href="install/index.html#sys_req">2.1 System Requirements</a></li>
-                <li><a href="install/install.html#inst">2.2 Installation</a></li>
-                <li><a href="install/postinstall.html#jar">2.3 Understanding Cayenne JAR Files</a></li>
-                <li><a href="install/compile.html#compile">2.4 Compiling Cayenne from Source</a></li>
-            </ul><br/></li>
-            
-            <li><a href="quickstart/index.html">3. Quick Start</a>
-            <ul>
-                <li><a href="quickstart/comline.html">3.1 "Command-line Application" Tutorial</a></li>
-                <li><a href="quickstart/webapp.html">3.2 "JSP/Struts Web Application" Tutorial</a></li>
-                <li><a href="quickstart/tapestrywebapp.html">3.3 "Tapestry Web Application" Tutorial</a></li>
-            </ul><br/></li>
-            
-            <li><a href="design/index.html">4. Design</a>
-            <ul>
-                <li><a href="design/index.html#or_map">4.1 Object Relational Mapping</a></li>
-                <li><a href="design/graph.html#do">4.2 Object Graph</a></li>
-                <li><a href="design/dataobj.html#do">4.3 Data Objects</a></li>
-                <li><a href="design/access.html#access_classes">4.4 Access Classes</a></li>
-                <li><a href="design/datasrc.html#connect">4.5 Cayenne DataSource</a></li>
-                <li><a href="design/crossdb.html#crossdb">4.6 Cross-Database Issues</a></li>
-                <li><a href="design/autopk.html#pk">4.7 Primary Key Generation</a></li>
-            </ul><br/></li>
-            
-            <li><a href="appguide/index.html">5. Writing Cayenne Applications</a>
-            <ul>
-                <li><a href="appguide/project.html#datamap">5.1 Cayenne Project</a></li>
-                <li><a href="appguide/javagen.html#javagen">5.2 Generating Java Classes</a></li>
-            </ul><br/></li>
-            
-            <li><a href="datactxt/index.html">6. Using DataContext</a>
-            <ul>
-            	<li><a href="datactxt/create.html">6.1 Obtaining DataContext</a></li>
-            	<li><a href="datactxt/performquery.html">6.2 Running Queries</a></li>
-            	<li><a href="datactxt/statemanagement.html">6.3 DataObject State Management</a></li>
-            </ul><br/>
-            </li>
-            
-            <li><a href="fetch/index.html">7. Using SelectQueries</a>
-            <ul>
-                <li><a href="fetch/selectQuery.html">7.1 SelectQuery</a></li>
-                <li><a href="fetch/exp.html">7.2 Using Qualifier Expressions</a></li>
-                <li><a href="fetch/orderings.html">7.3 Using Orderings</a></li>
-                <li><a href="fetch/other.html">7.4 Controlling SelectQuery Behavior</a></li>
-                <li><a href="fetch/params.html">7.5 Reusing SelectQueries: Parameterized Queries</a></li>
-                <li><a href="fetch/raw.html">7.6 Executing raw SQL: SqlSelectQuery</a></li>
-            </ul><br/></li>
-            
-            <li><a href="modify/index.html">8. Modifying DataObjects</a>
-            <ul>
-            	<li><a href="modify/data-context.html">8.1 Using DataContext</a></li>
-            </ul><br/></li>
-            
-            <li><a href="perform/index.html">9. Performance Tuning</a>
-            <ul>
-                <li><a href="perform/index.html#data_rows">9.1 Data Rows</a></li>
-                <li><a href="perform/index.html#iterator">9.2 ResultIterator: Incremental Data Processing</a></li>
-                <li><a href="perform/index.html#paged">9.3 Paged Queries</a></li>
-            </ul><br/></li>
-            
-            <li><a href="deploy/index.html">10. Deployment</a>
-            <ul>
-                <li><a href="deploy/index.html#config">10.1 Configuration</a></li>
-                <li><a href="deploy/index.html#standalone">10.2 Standalone Applications</a></li>
-                <li><a href="deploy/index.html#web">10.3 Web Applications</a></li>
-                <li><a href="deploy/index.html#custom">10.4 Customizing Configuration</a></li>
-                <li><a href="deploy/index.html#jndi">10.5 Using JNDI</a></li>
-            </ul><br/></li>
-            
-            <li><a href="misc.html">11. Miscellaneous Information</a>
-            <ul>
-                <li><a href="misc.html#webobjects">11.1 Cayenne and WebObjects</a></li>
-            </ul><br/></li>
-        </ul>
+    <section name="Cayenne User Guide">
+    <p>User Guide documents Cayenne behavior and most common patterns of Cayenne use. 
+    It includes a set of tutorials, discussion of Cayenne design and deployment.
+    </p>
     </section>
 </body>
 </document>
-

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,50 +55,56 @@
  */
 package org.objectstyle.cayenne.modeler.event;
 
+import junit.framework.TestCase;
+
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.Entity;
-
-import junit.framework.TestCase;
+import org.objectstyle.cayenne.map.event.EntityEvent;
 
 /**
  * @author Andrei Adamchik
  */
 public class EntityEventTst extends TestCase {
 
-	/**
-	 * Constructor for EntityEventTst.
-	 * @param arg0
-	 */
-	public EntityEventTst(String arg0) {
-		super(arg0);
+    public void testConstructor1() throws Exception {
+        Object src = new Object();
+        Entity d = new DbEntity("abc");
+        EntityEvent e = new EntityEvent(src, d);
+
+        assertSame(src, e.getSource());
+        assertSame(d, e.getEntity());
+    }
+
+    public void testConstructor2() throws Exception {
+        Object src = new Object();
+        Entity d = new DbEntity("abc");
+        EntityEvent e = new EntityEvent(src, d, "oldname");
+
+        assertSame(src, e.getSource());
+        assertSame(d, e.getEntity());
+        assertEquals("oldname", e.getOldName());
+    }
+
+    public void testEntity() throws Exception {
+        Object src = new Object();
+        Entity d = new DbEntity("abc");
+        EntityEvent e = new EntityEvent(src, null);
+
+        e.setEntity(d);
+        assertSame(d, e.getEntity());
+    }
+
+    public void testNameChange1() throws Exception {
+        Entity d = new DbEntity("abc");
+        EntityEvent e = new EntityEvent(new Object(), d, "xyz");
+        assertEquals(d.getName(), e.getNewName());
+        assertTrue(e.isNameChange());
+    }
+    
+	public void testNameChange2() throws Exception {
+		Entity d = new DbEntity("abc");
+		EntityEvent e = new EntityEvent(new Object(), d, "abc");
+		assertEquals(d.getName(), e.getNewName());
+		assertFalse(e.isNameChange());
 	}
-
-   public void testConstructor1() throws Exception {
-    	Object src = new Object();
-    	Entity d = new DbEntity("abc");
-    	EntityEvent e = new EntityEvent(src, d);
-    	
-    	assertSame(src, e.getSource());
-    	assertSame(d, e.getEntity());
-    }
-    
-    public void testConstructor2() throws Exception  {
-    	Object src = new Object();
-    	Entity d = new DbEntity("abc");
-    	EntityEvent e = new EntityEvent(src, d, "oldname");
-    	
-    	assertSame(src, e.getSource());
-    	assertSame(d, e.getEntity());
-    	assertEquals("oldname", e.getOldName());
-    }
-    
-    public void testEntity() throws Exception  {
-    	Object src = new Object();
-   	    Entity d = new DbEntity("abc");
-    	EntityEvent e = new EntityEvent(src, null);
-    	
-    	e.setEntity(d);
-    	assertSame(d, e.getEntity());
-    }
 }
-

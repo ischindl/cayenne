@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002 The ObjectStyle Group
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,11 +69,12 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.event.DataMapEvent;
 import org.objectstyle.cayenne.modeler.Editor;
+import org.objectstyle.cayenne.modeler.ErrorDebugDialog;
 import org.objectstyle.cayenne.modeler.ModelerPreferences;
 import org.objectstyle.cayenne.modeler.control.EventController;
 import org.objectstyle.cayenne.modeler.event.DataMapDisplayEvent;
-import org.objectstyle.cayenne.modeler.event.DataMapEvent;
 import org.objectstyle.cayenne.modeler.util.EOModelFileFilter;
 import org.objectstyle.cayenne.modeler.util.EOModelSelectFilter;
 import org.objectstyle.cayenne.project.ProjectPath;
@@ -87,12 +88,14 @@ import org.objectstyle.cayenne.wocompat.EOModelProcessor;
 public class ImportEOModelAction extends CayenneAction {
     private static Logger logObj = Logger.getLogger(ImportEOModelAction.class);
 
-    public static final String ACTION_NAME = "Import EOModel";
+	public static String getActionName() {
+		return "Import EOModel";
+	}
 
     protected JFileChooser eoModelChooser;
 
     public ImportEOModelAction() {
-        super(ACTION_NAME);
+        super(getActionName());
     }
 
     /**
@@ -126,6 +129,7 @@ public class ImportEOModelAction extends CayenneAction {
                 addDataMap(map);
             } catch (Exception ex) {
                 logObj.log(Level.INFO, "EOModel Loading Exception", ex);
+                ErrorDebugDialog.guiException(ex);
             }
 
         }

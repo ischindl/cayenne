@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,10 +66,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
  */
 public class DataDomainTst extends CayenneTestCase {
 
-	public DataDomainTst(String name) {
-		super(name);
-	}
-
 	public void testName() throws Exception {
 		String tstName = "tst_name";
 		DataDomain domain = new DataDomain();
@@ -80,11 +76,11 @@ public class DataDomainTst extends CayenneTestCase {
 
 	public void testNodes() throws java.lang.Exception {
 		DataDomain domain = new DataDomain("dom1");
-		assertEquals(0, domain.getDataNodes().length);
+		assertEquals(0, domain.getDataNodes().size());
 		domain.addNode(new DataNode("1"));
-		assertEquals(1, domain.getDataNodes().length);
+		assertEquals(1, domain.getDataNodes().size());
 		domain.addNode(new DataNode("2"));
-		assertEquals(2, domain.getDataNodes().length);
+		assertEquals(2, domain.getDataNodes().size());
 	}
 
 	public void testNodeMaps() throws java.lang.Exception {

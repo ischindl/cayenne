@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,7 @@
 package org.objectstyle.cayenne.map;
 
 import java.sql.Types;
+import java.util.List;
 
 import org.objectstyle.cayenne.dba.TypesMapping;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
@@ -64,14 +65,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
  * @author Andrei Adamchik
  */
 public class DbAttributeTst extends CayenneTestCase {
-
-	/**
-	 * Constructor for DbAttributeTst.
-	 * @param arg0
-	 */
-	public DbAttributeTst(String arg0) {
-		super(arg0);
-	}
 
     public void testConstructor1() throws Exception {
     	DbAttribute a = new DbAttribute("abc");
@@ -88,5 +81,77 @@ public class DbAttributeTst extends CayenneTestCase {
     	assertEquals(type, a.getType());
     	assertSame(dbe, a.getEntity());
     }
+
+	public void testPrimaryKeyEmpty() {
+		DbEntity dbe = new DbEntity("e");
+		assertNotNull(dbe.getPrimaryKey());
+
+		DbAttribute a = new DbAttribute("abc", Types.INTEGER, dbe);
+		dbe.addAttribute(a);
+		assertNotNull(dbe.getPrimaryKey());
+		assertEquals(0, dbe.getPrimaryKey().size());
+	}
+
+	public void testPrimaryKeyAdded() {
+		DbEntity dbe = new DbEntity("e");
+		DbAttribute a = new DbAttribute("abc", Types.INTEGER, dbe);
+		a.setPrimaryKey(true);
+		dbe.addAttribute(a);
+		List pk = dbe.getPrimaryKey();
+		assertNotNull(pk);
+		assertEquals(1, pk.size());
+		assertSame(pk, dbe.getPrimaryKey());
+	}
+
+	public void testPrimaryKeyAttributeChanged() {
+		DbEntity dbe = new DbEntity("e");
+		DbAttribute a = new DbAttribute("abc", Types.INTEGER, dbe);
+		dbe.addAttribute(a);
+		List pk = dbe.getPrimaryKey();
+		assertNotNull(pk);
+		assertEquals(0, pk.size());
+		assertSame(pk, dbe.getPrimaryKey());
+
+		a.setPrimaryKey(true);
+		pk = dbe.getPrimaryKey();
+		assertNotNull(pk);
+		assertEquals(1, pk.size());
+		assertSame(pk, dbe.getPrimaryKey());
+	}
+
+	public void testPrimaryKeyRemoved() {
+		DbEntity dbe = new DbEntity("e");
+		DbAttribute a = new DbAttribute("abc", Types.INTEGER, dbe);
+		a.setPrimaryKey(true);
+		dbe.addAttribute(a);
+		List pk = dbe.getPrimaryKey();
+		assertNotNull(pk);
+		assertEquals(1, pk.size());
+		assertSame(pk, dbe.getPrimaryKey());
+
+		dbe.removeAttribute(a.getName());
+		pk = dbe.getPrimaryKey();
+		assertNotNull(pk);
+		assertEquals(0, pk.size());
+		assertSame(pk, dbe.getPrimaryKey());
+	}
+
+	public void testAttributesCleared() {
+		DbEntity dbe = new DbEntity("e");
+		DbAttribute a = new DbAttribute("abc", Types.INTEGER, dbe);
+		a.setPrimaryKey(true);
+		dbe.addAttribute(a);
+		List pk = dbe.getPrimaryKey();
+		assertNotNull(pk);
+		assertEquals(1, pk.size());
+		assertSame(pk, dbe.getPrimaryKey());
+
+		dbe.clearAttributes();
+		pk = dbe.getPrimaryKey();
+		assertNotNull(pk);
+		assertEquals(0, pk.size());
+		assertSame(pk, dbe.getPrimaryKey());
+	}
+
 }
 

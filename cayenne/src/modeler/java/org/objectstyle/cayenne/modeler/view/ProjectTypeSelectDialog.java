@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,8 +65,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.border.Border;
 
+import org.objectstyle.cayenne.modeler.control.ProjectTypeSelectControl;
 import org.objectstyle.cayenne.modeler.util.ModelerStrings;
 import org.objectstyle.cayenne.modeler.util.ModelerUtil;
+import org.scopemvc.core.Control;
 import org.scopemvc.view.swing.SAction;
 import org.scopemvc.view.swing.SButton;
 import org.scopemvc.view.swing.SPanel;
@@ -98,7 +100,7 @@ public class ProjectTypeSelectDialog extends SPanel {
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new GridLayout(2, 1));
         mainPanel.add(buildProjectPanel("cayenne.modeler.project.app", false));
-        
+
         // disable DataMap projects for now
         mainPanel.add(buildProjectPanel("cayenne.modeler.project.map", true));
 
@@ -124,7 +126,7 @@ public class ProjectTypeSelectDialog extends SPanel {
         // set description
         JTextArea descArea = new JTextArea(5, 50);
         descArea.setText(desc);
-        descArea.setFont(descArea.getFont().deriveFont((float)11));
+        descArea.setFont(descArea.getFont().deriveFont((float) 11));
         descArea.setEditable(false);
         descArea.setEnabled(!disabled);
         descArea.setLineWrap(true);
@@ -155,4 +157,9 @@ public class ProjectTypeSelectDialog extends SPanel {
 
         return buttonPanel;
     }
+
+    public Control getCloseControl() {
+        return new Control(ProjectTypeSelectControl.CANCEL_PROJECT_CREATE_CONTROL);
+    }
+
 }

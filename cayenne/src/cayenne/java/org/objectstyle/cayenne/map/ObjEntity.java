@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne.map;
 /* ====================================================================
- * 
- * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * The ObjectStyle Group Software License, Version 1.0
+ *
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -11,7 +10,7 @@ package org.objectstyle.cayenne.map;
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -19,15 +18,15 @@ package org.objectstyle.cayenne.map;
  *    distribution.
  *
  * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
+ *    any, must include the following acknowlegement:
+ *       "This product includes software developed by the
  *        ObjectStyle Group (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
  *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
+ * 4. The names "ObjectStyle Group" and "Cayenne"
  *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
+ *    from this software without prior written permission. For written
  *    permission, please contact andrus@objectstyle.org.
  *
  * 5. Products derived from this software may not be called "ObjectStyle"
@@ -54,22 +53,24 @@ package org.objectstyle.cayenne.map;
  * <http://objectstyle.org/>.
  *
  */
+package org.objectstyle.cayenne.map;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.objectstyle.cayenne.CayenneException;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.util.Util;
 
-/** 
- * ObjEntity is a mapping descriptor for a DataObject Java class. 
+/**
+ * ObjEntity is a mapping descriptor for a DataObject Java class.
  * It contains the information about the Java class itself, as well
  * as its mapping to the DbEntity layer.
- * 
+ *
  * @author Misha Shengaout
  * @author Andrei Adamchik
  */
@@ -80,10 +81,29 @@ public class ObjEntity extends Entity {
     protected boolean readOnly;
 
     public ObjEntity() {
+        super();
     }
 
     public ObjEntity(String name) {
-        setName(name);
+        this();
+        this.setName(name);
+    }
+
+    /**
+     * Returns Java class of persistent objects described by this entity.
+     * Casts any thrown exceptions into CayenneRuntimeException.
+     */
+    public Class getJavaClass() {
+        try {
+            return Class.forName(this.getClassName());
+        } catch (ClassNotFoundException e) {
+            throw new CayenneRuntimeException(
+                "Failed to load class for name '"
+                    + this.getClassName()
+                    + "': "
+                    + e.getMessage(),
+                e);
+        }
     }
 
     /** Returns the name of the corresponding data object class */
@@ -96,7 +116,7 @@ public class ObjEntity extends Entity {
         this.className = className;
     }
     /**
-     * 
+     *
      * Returns the fully qualified name of the super class of the data object class for this entity
      * Used in the modeller and in class generation only, not at "runtime"
      * @return String
@@ -124,9 +144,9 @@ public class ObjEntity extends Entity {
         this.dbEntity = dbEntity;
     }
 
-    /** 
+    /**
      * Returns ObjAttribute of this entity that maps to <code>dbAttr</code>
-     * parameter. Returns null if no such attribute is found. 
+     * parameter. Returns null if no such attribute is found.
      */
     public ObjAttribute getAttributeForDbAttribute(DbAttribute dbAttr) {
         Iterator it = getAttributeMap().values().iterator();
@@ -138,16 +158,16 @@ public class ObjEntity extends Entity {
         return null;
     }
 
-    /** 
-     * Returns ObjRelationship of this entity that maps to 
-     * <code>dbRel</code> parameter. Returns null if no 
-     * such relationship is found. 
+    /**
+     * Returns ObjRelationship of this entity that maps to
+     * <code>dbRel</code> parameter. Returns null if no
+     * such relationship is found.
      */
     public ObjRelationship getRelationshipForDbRelationship(DbRelationship dbRel) {
         Iterator it = getRelationshipMap().values().iterator();
         while (it.hasNext()) {
             ObjRelationship objRel = (ObjRelationship) it.next();
-            List relList = objRel.getDbRelationshipList();
+            List relList = objRel.getDbRelationships();
             if (relList.size() != 1)
                 continue;
 
@@ -157,12 +177,13 @@ public class ObjEntity extends Entity {
         return null;
     }
 
-    /** 
-     * Creates an object id from the values in object snapshot.
+    /**
+     * Creates an id snapshot (the key/value pairs for the pk of the object)
+     * from the values in object snapshot.
      * If needed attributes are missing in a snapshot or if it is null,
-     * CayenneRuntimeException is thrown. 
+     * CayenneRuntimeException is thrown.
      */
-    public ObjectId objectIdFromSnapshot(Map objectSnapshot) {
+    public Map idSnapshotMapFromSnapshot(Map objectSnapshot) {
         Map idMap = new HashMap();
         Iterator it = getDbEntity().getPrimaryKey().iterator();
         while (it.hasNext()) {
@@ -170,14 +191,24 @@ public class ObjEntity extends Entity {
             Object val = objectSnapshot.get(attr.getName());
             if (val == null) {
                 throw new CayenneRuntimeException(
-                    "Invalid snapshot value for '"
+                    "Null value for '"
                         + attr.getName()
-                        + "'. Must be present and not null.");
+                        + "'. Snapshot: "
+                        + objectSnapshot);
             }
 
             idMap.put(attr.getName(), val);
         }
+        return idMap;
+    }
 
+    /**
+     * Creates an object id from the values in object snapshot.
+     * If needed attributes are missing in a snapshot or if it is null,
+     * CayenneRuntimeException is thrown.
+     */
+    public ObjectId objectIdFromSnapshot(Map objectSnapshot) {
+        Map idMap = this.idSnapshotMapFromSnapshot(objectSnapshot);
         Class objClass;
         try {
             objClass = Class.forName(this.getClassName());
@@ -207,18 +238,18 @@ public class ObjEntity extends Entity {
             }
         }
 
-        Iterator rel_it = getRelationshipList().iterator();
-        while (rel_it.hasNext()) {
-            ObjRelationship obj_rel = (ObjRelationship) rel_it.next();
-            obj_rel.clearDbRelationships();
+        Iterator rels = this.getRelationships().iterator();
+        while (rels.hasNext()) {
+            ((ObjRelationship) rels.next()).clearDbRelationships();
         }
+
         dbEntity = null;
     }
 
     /**
-     * Returns <code>true</code> if this ObjEntity represents 
+     * Returns <code>true</code> if this ObjEntity represents
      * a set of read-only objects.
-     * 
+     *
      * @return boolean
      */
     public boolean isReadOnly() {
@@ -236,16 +267,45 @@ public class ObjEntity extends Entity {
             && ((Class) query.getRoot()).getName().equals(getClassName())) {
             return;
         }
-        
+
         if (query.getRoot() == this) {
             return;
         }
-        
+
         if (Util.nullSafeEquals(getName(), query.getRoot())) {
             return;
         }
 
         throw new IllegalArgumentException(
             "Wrong query root for ObjEntity: " + query.getRoot());
+    }
+
+    public void validate() throws CayenneException {
+        if (getName() == null)
+            throw new CayenneException("ObjEntity name not defined.");
+
+        String head = "ObjEntity: " + getName();
+
+        if (getDbEntity() == null)
+            throw new CayenneException(head + "DbEntity not defined.");
+
+        if (getClassName() == null)
+            throw new CayenneException(head + "ObjEntity's class not defined.");
+
+        Iterator it = getAttributeMap().values().iterator();
+        while (it.hasNext()) {
+            ObjAttribute objAttr = (ObjAttribute) it.next();
+            objAttr.validate();
+
+            if (!readOnly
+                && objAttr.isCompound()
+                && !objAttr.mapsToDependentDbEntity()) {
+                throw new CayenneException(
+                    head
+                        + "ObjAttribute: "
+                        + objAttr.getName()
+                        + " compound, read only.");
+            }
+        }
     }
 }

@@ -5,26 +5,30 @@
     <body>        
         <!-- News section -->
         <section name="Cayenne News">
-        <p><u><strong><i>January 5, 2003:</i></strong> <strong>Cayenne 1.0a5-1 Released.</strong></u></p>
+        <p><u><strong><i>October 27, 2003:</i></strong> <strong>Cayenne 1.0.2 Maintenance Release</strong></u></p>
         
-        <p>This is a bugfix release for Alpha 5. Upgrade is recommended, especially if Alpha 5
-        is used. See the release notes <a href="RELEASE-NOTES-1.0a5-1.txt">here</a>. 
-        Download the release 
-        	<a href="http://sourceforge.net/project/showfiles.php?group_id=48132">from 
-        here</a>. 
+        <p>Cayenne 1.0.2 is 
+        <a href="http://sourceforge.net/project/showfiles.php?group_id=48132">available for 
+        download</a>. It contains a number of adapter fixes, as well as support for binary
+        primary keys. Details can be found in <a href="RELEASE-NOTES-1.0.2.txt">release notes</a>.
+        </p>
+        
+        <p>
+        <u><strong><i>July 2003:</i></strong> <strong>New Website Design</strong></u></p>
+        
+        <p>Many thanks to our graphic artist Anna Drapeza who created this elegant site design!
+        Sadly enough good artistic work is still a rare thing in the OpenSource world.
         </p>
         
         <p><img src="images/other/nhl_logo.gif"/> 
-        <u><strong><i>November 6:</i></strong> <strong>National 
-        Hockey League Uses Cayenne.</strong></u></p>
+        <u><strong><i>May 1 2003:</i></strong> <strong>National 
+        Hockey League Switches to Cayenne</strong></u></p>
         
-        <p>During the playoffs, <a href="http://www.nhl.com">NHL.com</a> services 
-        over a million page views per day. 
-        <a href="http://objectstyle.com">ObjectStyle</a> and 
-        <a href="http://www.centralparksoftware.com/">Central Park Software</a>
-        teamed up to create a new player/team statistics engine based on Cayenne with JSP frontend
-        and Oracle backend. The project was successfully launched in October at the beginning of 
-        2002-2003 season.
+        <p>After the initial trial of Cayenne last October, NHL
+        switched all their public applications running at <a href="http://www.nhl.com">NHL.com</a>
+        to use Cayenne. With the help from <a href="http://objectstyle.com">ObjectStyle</a> and 
+        <a href="http://www.centralparksoftware.com/">Central Park Software</a> the site was successfully
+        launched to production. Currently applications receive more than 5 million hits a day. 
         </p>
         
         </section>
@@ -33,14 +37,12 @@
         <section name="About Cayenne">
         <p>Cayenne is a powerful, full-featured OpenSource Object/Relational framework. 
         Cayenne is written in Java and is intended for Java developers working with
-        relational databases. Though its current release status is Alpha, Cayenne
-        has been already successfully deployed in production environment on high 
-        volume sites.</p>
+        relational databases. Cayenne has been successfully deployed in production environment on high 
+        volume sites. Cayenne has a growing international user and developer community.</p>
         
         <p>Cayenne provides management of persistent Java objects mapped to relational databases, 
-        single method call queries and updates 
-        (including atomic updates of all modified objects), seamless integration
-        of multiple databases into a single virtual data source. 
+        single method call queries and updates (including atomic updates of all modified objects), 
+        seamless integration of multiple databases into a single virtual data source. 
         Cayenne is distributed with CayenneModeler -
         a complete GUI mapping tool that supports reverse-engineering of RDBMS schema, 
         working with database mappings and generation of Java source code for the 
@@ -50,15 +52,6 @@
         community to participate in development, testing and writing documentation.
         This way we can produce a better product that will benefit both contributors
         and user community.</p>
-        </section>
-        
-        
-        <!-- Status section -->
-        <section name="History">
-        <p>Idea of Cayenne was conceived back in April 2001 by a group of developers in 
-        Atlanta, USA. Current version is based on that original idea and is under active 
-        development since December 2001. Right now Cayenne has a growing international
-        user and developer community.</p>
         </section>
     </body>
 </document>

@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002 The ObjectStyle Group
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,6 +59,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Iterator;
 
 /**
  * Interface defines API to check the status of Cayenne configuration.
@@ -72,7 +73,113 @@ public class ConfigStatus {
     protected Map failedAdapters = new HashMap();
     protected Map failedDataSources = new HashMap();
     protected List failedMapRefs = new ArrayList();
+    protected Map messages = new HashMap();
 
+    public void addFailedMap(String name, String location, Object extraMessage) {
+    	failedMaps.put(name, location);
+    	if(extraMessage != null) {
+    		messages.put(getMapMessageKey(name, location), extraMessage);
+    	}
+    }
+    
+	public void addFailedAdapter(String name, String location, String extraMessage) {
+		failedAdapters.put(name, location);
+		if(extraMessage != null) {
+			messages.put(getAdapterMessageKey(name, location), extraMessage);
+		}
+	}
+	
+	public void addFailedDataSource(String name, String location, String extraMessage) {
+		failedDataSources.put(name, location);
+		if(extraMessage != null) {
+			messages.put(getDataSourceMessageKey(name, location), extraMessage);
+		}
+	}
+	
+	public void addFailedMapRefs(String name, String extraMessage) {
+		failedMapRefs.add(name);
+		if(extraMessage != null) {
+			messages.put(getMapRefMessageKey(name), extraMessage);
+		}
+	}
+    
+    protected String getMapMessageKey(String name, String location) {
+    	return "map:" + name + ":" + location;
+    }
+    
+    
+	protected String getAdapterMessageKey(String name, String location) {
+		return "adapter:" + name + ":" + location;
+	}
+	
+	protected String getDataSourceMessageKey(String name, String location) {
+		return "dataSource:" + name + ":" + location;
+	}
+	
+	protected String getMapRefMessageKey(String name) {
+		return "map-ref:" + name;
+	}
+	
+    /**
+     * Returns a String description of failed configuration pieces.
+     * Returns a canned "no failures" message if no failures occurred.
+     */
+    public String describeFailures() {
+    	if(!hasFailures()) {
+    		return "[No failures]";
+    	}
+    	
+    	StringBuffer buf = new StringBuffer();
+    	
+    	Iterator it = failedMaps.keySet().iterator();
+    	while(it.hasNext()) {
+    		String name = (String)it.next();
+    		String location = (String)failedMaps.get(name);
+    		Object message = messages.get(getMapMessageKey(name, location));
+    		buf.append("\n\tdomain.map.name=").append(name).append(", domain.map.location=").append(location);
+    		if(message != null) {
+    			buf.append(", reason: ").append(message);
+    		}
+    	}
+ 
+		it = failedAdapters.keySet().iterator();
+		while(it.hasNext()) {
+			String node = (String)it.next();
+			String adapter = (String)failedAdapters.get(node);
+			Object message = messages.get(getAdapterMessageKey(node, adapter));
+			buf.append("\n\tdomain.node.name=").append(node).append(", domain.node.adapter=").append(adapter);
+			if(message != null) {
+				buf.append(", reason: ").append(message);
+			}
+		}
+		
+    	it = failedDataSources.keySet().iterator();
+		while(it.hasNext()) {
+			String node = (String)it.next();
+			String location = (String)failedDataSources.get(node);
+			Object message = messages.get(getDataSourceMessageKey(node, location));
+			buf.append("\n\tdomain.node.name=").append(node).append(", domain.node.datasource=").append(location);
+			if(message != null) {
+				buf.append(", reason: ").append(message);
+			}
+		}
+		
+		it = failedMapRefs.iterator();
+		while(it.hasNext()) {
+			String mapName = (String)it.next();
+			// don't report failed links if the DataMap itself failed to load
+			if(failedMaps.get(mapName) == null) {
+				buf.append("\n\tdomain.node.map-ref.name=").append(mapName);
+				
+				Object message = messages.get(getMapRefMessageKey(mapName));
+				if(message != null) {
+					buf.append(", reason: ").append(message);
+				}
+			}
+		}
+    	return buf.toString();
+    }
+    
     /**
      * Returns a list of error messages not directly associated with project
      * objects, such as XML pare exceptions, IOExceptions, etc.

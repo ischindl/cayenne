@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,44 +55,41 @@
  */
 package org.objectstyle.cayenne;
 
-import org.objectstyle.cayenne.unittest.CayenneTestCase;
+import junit.framework.TestCase;
+
+import org.apache.log4j.Logger;
 
 /**
  * @author Andrei Adamchik
  */
-public class CayenneExceptionTst extends CayenneTestCase {
+public class CayenneExceptionTst extends TestCase {
+    static final Logger logObj = Logger.getLogger(CayenneExceptionTst.class);
 
-	/**
-	 * Constructor for CayenneExceptionTst.
-	 * @param arg0
-	 */
-	public CayenneExceptionTst(String arg0) {
-		super(arg0);
-	}
+    public void testConstructor1() throws Exception {
+        CayenneException ex = new CayenneException();
+        assertNull(ex.getCause());
+        assertTrue(ex.getMessage().startsWith(CayenneException.getExceptionLabel()));
+    }
 
-	public void testConstructor1() throws Exception {
-		CayenneException ex = new CayenneException();
-		assertNull(ex.getCause());
-		assertNull(ex.getMessage());
-	}
+    public void testConstructor2() throws Exception {
+        CayenneException ex = new CayenneException("abc");
+        assertNull(ex.getCause());
+        assertEquals(CayenneException.getExceptionLabel() + "abc", ex.getMessage());
+    }
 
-	public void testConstructor2() throws Exception {
-		CayenneException ex = new CayenneException("abc");
-		assertNull(ex.getCause());
-		assertEquals("abc", ex.getMessage());
-	}
+    public void testConstructor3() throws Exception {
+        Throwable cause = new Throwable();
+        CayenneException ex = new CayenneException(cause);
+        assertSame(cause, ex.getCause());
+        assertEquals(
+            CayenneException.getExceptionLabel() + cause.toString(),
+            ex.getMessage());
+    }
 
-	public void testConstructor3() throws Exception {
-		Throwable cause = new Throwable();
-		CayenneException ex = new CayenneException(cause);
-		assertSame(cause, ex.getCause());
-		assertEquals(cause.toString(), ex.getMessage());
-	}
-
-	public void testConstructor4() throws Exception {
-	    Throwable cause = new Throwable();
-		CayenneException ex = new CayenneException("abc", cause);
-		assertSame(cause, ex.getCause());
-		assertSame("abc", ex.getMessage());
-	}
+    public void testConstructor4() throws Exception {
+        Throwable cause = new Throwable();
+        CayenneException ex = new CayenneException("abc", cause);
+        assertSame(cause, ex.getCause());
+        assertEquals(CayenneException.getExceptionLabel() + "abc", ex.getMessage());
+    }
 }

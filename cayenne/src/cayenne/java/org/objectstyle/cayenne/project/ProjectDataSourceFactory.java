@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,17 +56,14 @@
 package org.objectstyle.cayenne.project;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 
 import javax.sql.DataSource;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.objectstyle.cayenne.ConfigException;
-import org.objectstyle.cayenne.access.DataSourceInfo;
+import org.objectstyle.cayenne.ConfigurationException;
 import org.objectstyle.cayenne.conf.DriverDataSourceFactory;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 
 /** 
  * Factory of DataSource objects used by the project model. 
@@ -80,16 +77,18 @@ public class ProjectDataSourceFactory extends DriverDataSourceFactory {
     protected File projectDir;
 
     public ProjectDataSourceFactory(File projectDir) throws Exception {
+    	super();
         this.projectDir = projectDir;
     }
 
     public DataSource getDataSource(String location, Level logLevel) throws Exception {
         try {
-            load(location);
-        } catch (ConfigException e) {
+            this.load(location);
+        } catch (ConfigurationException e) {
             logObj.info("No data source at '" + location + "', ignoring.");
         }
-        return new ProjectDataSource(getDriverInfo());
+
+        return new ProjectDataSource(this.getDriverInfo());
     }
 
     protected DataSourceInfo getDriverInfo() {
@@ -97,25 +96,8 @@ public class ProjectDataSourceFactory extends DriverDataSourceFactory {
         if (null == temp) {
             temp = new DataSourceInfo();
         }
+
         return temp;
     }
 
-    protected InputStream getInputStream(String location) {
-        File absLocation =
-            (projectDir != null) ? new File(projectDir, location) : new File(location);
-
-        try {
-            return new FileInputStream(absLocation);
-        } catch (FileNotFoundException ex) {
-            return super.getInputStream(location);
-        }
-    }
-
-    /**
-     * Returns the projectDir.
-     * @return String
-     */
-    public File getProjectDir() {
-        return projectDir;
-    }
 }

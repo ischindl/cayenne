@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,19 +55,17 @@
  */
 package org.objectstyle.cayenne.map;
 
-import org.objectstyle.cayenne.unittest.CayenneTestCase;
+import java.util.List;
+
+import junit.framework.TestCase;
+
 import org.objectstyle.cayenne.unittest.CayenneTestResources;
 import org.xml.sax.InputSource;
 
 
-public class MapLoaderLoadTst extends CayenneTestCase {
+public class MapLoaderLoadTst extends TestCase {
     protected MapLoader mapLoader;
     private String testDataMap;
-
-
-    public MapLoaderLoadTst(String name) {
-        super(name);
-    }
 
 
     public void setUp() throws Exception {
@@ -80,6 +78,17 @@ public class MapLoaderLoadTst extends CayenneTestCase {
         InputSource in = new InputSource(testDataMap);
         DataMap map = mapLoader.loadDataMap(in);
         assertNotNull(map);
+        
+        // test procedures
+        Procedure procedure = map.getProcedure("cayenne_tst_upd_proc");
+        assertNotNull(procedure);
+        List params = procedure.getCallParameters();
+        assertNotNull(params);
+        assertEquals(1, params.size());
+        ProcedureParameter param = (ProcedureParameter)params.get(0);
+        assertNotNull(param);
+        assertEquals("paintingPrice", param.getName());
+        assertEquals(ProcedureParameter.IN_PARAMETER, param.getDirection());
         
         // test derived entities
         DerivedDbEntity d1 = (DerivedDbEntity)map.getDbEntity("ARTIST_ASSETS");

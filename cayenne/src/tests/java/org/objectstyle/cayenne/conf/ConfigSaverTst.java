@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@ package org.objectstyle.cayenne.conf;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import org.objectstyle.cayenne.access.DataSourceInfo;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.project.Project;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
@@ -69,10 +69,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
  */
 public class ConfigSaverTst extends CayenneTestCase {
 	protected ConfigSaver saver;
-
-	public ConfigSaverTst(String name) {
-		super(name);
-	}
 
 	public void testStoreFullDataNode() throws Exception {
 		DataSourceInfo info = new DataSourceInfo();

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,6 @@
  */
 package org.objectstyle.cayenne;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 /**
@@ -64,15 +63,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
  * @author Andrei Adamchik
  */
 public class MiscTst extends CayenneTestCase {
-	private static Logger logObj = Logger.getLogger(MiscTst.class);
-
-    /**
-     * Constructor for MiscTest.
-     * @param arg0
-     */
-    public MiscTst(String arg0) {
-        super(arg0);
-    }
 
     public void setUp() throws Exception {
         getDatabaseSetup().cleanTableData();

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,24 +57,31 @@ package org.objectstyle.cayenne.util;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.apache.log4j.Logger;
 import org.apache.oro.text.perl.Perl5Util;
 import org.objectstyle.cayenne.CayenneException;
 import org.objectstyle.cayenne.CayenneRuntimeException;
@@ -87,11 +94,34 @@ import org.xml.sax.XMLReader;
  * @author Andrei Adamchik
  */
 public class Util {
-    private static Logger logObj = Logger.getLogger(Util.class);
-
     private static final Perl5Util regexUtil = new Perl5Util();
 
-    /** Makes up for the lack of file copying utilities in Java */
+    /**
+     * Reads file contents as String.
+     */
+    public static String stringFromFile(File file) throws IOException {
+        return stringFromFile(file, "");
+    }
+
+    public static String stringFromFile(File file, String joinWith) throws IOException {
+        StringBuffer buf = new StringBuffer();
+        BufferedReader in = new BufferedReader(new FileReader(file));
+
+        try {
+            String line = null;
+            while ((line = in.readLine()) != null) {
+                buf.append(line).append(joinWith);
+            }
+        }
+        finally {
+            in.close();
+        }
+        return buf.toString();
+    }
+
+    /**
+     * Makes up for the lack of file copying utilities in Java
+     */
     public static boolean copy(File from, File to) {
         BufferedInputStream fin = null;
         BufferedOutputStream fout = null;
@@ -100,54 +130,64 @@ public class Util {
             fin = new BufferedInputStream(new FileInputStream(from), bufSize);
             fout = new BufferedOutputStream(new FileOutputStream(to), bufSize);
             copyPipe(fin, fout, bufSize);
-        } catch (IOException ioex) {
+        }
+        catch (IOException ioex) {
             return false;
-        } catch (SecurityException sx) {
+        }
+        catch (SecurityException sx) {
             return false;
-        } finally {
+        }
+        finally {
             if (fin != null) {
                 try {
                     fin.close();
-                } catch (IOException cioex) {
+                }
+                catch (IOException cioex) {
                 }
             }
             if (fout != null) {
                 try {
                     fout.close();
-                } catch (IOException cioex) {
+                }
+                catch (IOException cioex) {
                 }
             }
         }
         return true;
     }
 
-    /** Save URL contents to a file */
+    /**
+     * Save URL contents to a file.
+     */
     public static boolean copy(URL from, File to) {
         BufferedInputStream urlin = null;
         BufferedOutputStream fout = null;
         try {
             int bufSize = 8 * 1024;
             urlin =
-                new BufferedInputStream(
-                    from.openConnection().getInputStream(),
-                    bufSize);
+                new BufferedInputStream(from.openConnection().getInputStream(), bufSize);
             fout = new BufferedOutputStream(new FileOutputStream(to), bufSize);
             copyPipe(urlin, fout, bufSize);
-        } catch (IOException ioex) {
+        }
+        catch (IOException ioex) {
             return false;
-        } catch (SecurityException sx) {
+        }
+        catch (SecurityException sx) {
             return false;
-        } finally {
+        }
+        finally {
             if (urlin != null) {
                 try {
                     urlin.close();
-                } catch (IOException cioex) {
+                }
+                catch (IOException cioex) {
                 }
             }
             if (fout != null) {
                 try {
                     fout.close();
-                } catch (IOException cioex) {
+                }
+                catch (IOException cioex) {
                 }
             }
         }
@@ -163,10 +203,7 @@ public class Util {
      * @param bufSizeHint
      * @throws IOException
      */
-    public static void copyPipe(
-        InputStream in,
-        OutputStream out,
-        int bufSizeHint)
+    public static void copyPipe(InputStream in, OutputStream out, int bufSizeHint)
         throws IOException {
         int read = -1;
         byte[] buf = new byte[bufSizeHint];
@@ -176,7 +213,9 @@ public class Util {
         out.flush();
     }
 
-    /** Improved File.delete method that allows recursive directory deletion. */
+    /**
+     * Improved File.delete method that allows recursive directory deletion.
+     */
     public static boolean delete(String filePath, boolean recursive) {
         File file = new File(filePath);
         if (!file.exists())
@@ -216,18 +255,27 @@ public class Util {
             if (e.getCause() != null) {
                 return unwindException(e.getCause());
             }
-        } else if (th instanceof CayenneRuntimeException) {
+        }
+        else if (th instanceof CayenneRuntimeException) {
             CayenneRuntimeException e = (CayenneRuntimeException) th;
             if (e.getCause() != null) {
                 return unwindException(e.getCause());
+            }
+        }
+        else if (th instanceof InvocationTargetException) {
+            InvocationTargetException e = (InvocationTargetException) th;
+            if (e.getTargetException() != null) {
+                return unwindException(e.getTargetException());
             }
         }
 
         return th;
     }
 
-    /** Compare two objects just like "equals" would. Unlike Object.equals,
-    * this method allows any of the 2 objects to be null. */
+    /**
+     * Compare two objects just like "equals" would. Unlike Object.equals,
+     * this method allows any of the 2 objects to be null.
+     */
     public static boolean nullSafeEquals(Object obj1, Object obj2) {
         if (obj1 == null && obj2 == null)
             return true;
@@ -244,25 +292,27 @@ public class Util {
         return str == null || str.length() == 0;
     }
 
-    /** Create object copy using serialization mechanism. */
-    public static Object cloneViaSerialization(Serializable obj)
-        throws Exception {
+    /**
+     * Create object copy using serialization mechanism.
+     */
+    public static Object cloneViaSerialization(Serializable obj) throws Exception {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         ObjectOutputStream out = new ObjectOutputStream(bytes);
         out.writeObject(obj);
         out.close();
 
         ObjectInputStream in =
-            new ObjectInputStream(
-                new ByteArrayInputStream(bytes.toByteArray()));
+            new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()));
         Object objCopy = in.readObject();
         in.close();
         return objCopy;
     }
 
-    /** Creates an XMLReader with default feature set. Note that all Cayenne
-      * internal XML parsers should probably use XMLReader obtained via this
-      * method for consistency sake, and can customize feature sets as needed. */
+    /**
+     * Creates an XMLReader with default feature set. Note that all Cayenne
+     * internal XML parsers should probably use XMLReader obtained via this
+     * method for consistency sake, and can customize feature sets as needed.
+     */
     public static XMLReader createXmlReader()
         throws SAXException, ParserConfigurationException {
         SAXParserFactory spf = SAXParserFactory.newInstance();
@@ -279,15 +329,18 @@ public class Util {
         return reader;
     }
 
-    /** Returns package information for the <code>className</code>
-      * parameter as a path separated with forward slash ('/').
-      * For example for class a.b.c.ClassName "a/b/c" will be returned.
-      * Method is used to lookup resources that are located in package subdirectories. */
+    /**
+     * Returns package information for the <code>className</code>
+     * parameter as a path separated with forward slash ('/').
+     * For example for class a.b.c.ClassName "a/b/c" will be returned.
+     * Method is used to lookup resources that are located in package subdirectories.
+     */
     public static String getPackagePath(String className) {
         if (regexUtil.match("/\\./", className)) {
             String path = regexUtil.substitute("s/\\./\\//g", className);
             return path.substring(0, path.lastIndexOf("/"));
-        } else {
+        }
+        else {
             return "";
         }
     }
@@ -374,8 +427,22 @@ public class Util {
         int startLen = len / 2;
         int endLen = len - startLen;
 
-        return str.substring(0, startLen)
-            + "..."
-            + str.substring(str.length() - endLen);
+        return str.substring(0, startLen) + "..." + str.substring(str.length() - endLen);
+    }
+
+    /**
+      * Returns a sorted iterator from an unsorted one. 
+      * Use this method as a last resort, since it is 
+      * much less efficient then just sorting a collection 
+      * that backs the original iterator.
+      */
+    public static Iterator sortedIterator(Iterator it, Comparator comparator) {
+        List list = new ArrayList();
+        while (it.hasNext()) {
+            list.add(it.next());
+        }
+
+        Collections.sort(list, comparator);
+        return list.iterator();
     }
 }

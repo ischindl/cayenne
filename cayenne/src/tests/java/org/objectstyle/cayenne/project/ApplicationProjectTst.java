@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,6 +60,7 @@ import java.util.List;
 
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
+import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.conf.DriverDataSourceFactory;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.ObjEntity;
@@ -72,17 +73,9 @@ public class ApplicationProjectTst extends CayenneTestCase {
     protected ApplicationProject p;
     protected File f;
 
-    /**
-     * Constructor for ApplicationProjectTst.
-     * @param name
-     */
-    public ApplicationProjectTst(String name) {
-        super(name);
-    }
-
     protected void setUp() throws Exception {
         super.setUp();
-        f = new File("cayenne.xml");
+        f = new File(Configuration.DEFAULT_DOMAIN_FILE);
         p = new ApplicationProject(f);
     }
 
@@ -90,7 +83,7 @@ public class ApplicationProjectTst extends CayenneTestCase {
     	DataNode node = new DataNode("dn");
     	DataDomain dm = new DataDomain();
     	dm.addNode(node);
-    	p.getConfig().addDomain(dm);
+    	p.getConfiguration().addDomain(dm);
     	
         ProjectFile pf = p.projectFileForObject(node);
         assertNull(pf);
@@ -103,7 +96,7 @@ public class ApplicationProjectTst extends CayenneTestCase {
 
 
     public void testConfig() throws Exception {
-        assertNotNull(p.getConfig());
+        assertNotNull(p.getConfiguration());
     }
 
     public void testConstructor() throws Exception {
@@ -130,7 +123,7 @@ public class ApplicationProjectTst extends CayenneTestCase {
         n1.addDataMap(m1);
 
         // initialize project 
-        p.getConfig().addDomain(d1);
+        p.getConfiguration().addDomain(d1);
 
         // make assertions
         List files = p.buildFileList();

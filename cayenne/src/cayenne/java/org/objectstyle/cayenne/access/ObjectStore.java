@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,6 +68,7 @@ import java.util.Map;
 import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
+import org.objectstyle.cayenne.access.util.QueryUtils;
 
 /**
  * ObjectStore maintains a cache of objects and their snapshots.
@@ -76,6 +77,7 @@ import org.objectstyle.cayenne.PersistenceState;
  */
 public class ObjectStore implements Serializable {
     protected transient Map objectMap = new HashMap();
+    protected transient Map newObjectMap = null;
     protected Map snapshotMap = new HashMap();
 
     private void writeObject(ObjectOutputStream out) throws IOException {
@@ -109,6 +111,53 @@ public class ObjectStore implements Serializable {
 
     public synchronized void addObject(DataObject obj) {
         objectMap.put(obj.getObjectId(), obj);
+
+        if ( newObjectMap != null ) {
+            newObjectMap.put(obj.getObjectId(), obj);
+        }
+    }
+
+    /**
+     * Start tracking the registration of new objects.
+     * from this objectStore. Used in conjunction
+     * with unregisterNewObjects() to control garbage
+     * collection when an instance of ObjectStore
+     * is used over a longer time for batch processing.
+     * (TODO: this won't work with changeObjectKey()?)
+     *
+     * @see org.objectstyle.cayenne.access.ObjectStore#unregisterNewObjects()
+     */
+    public synchronized void startTrackingNewObjects() {
+        newObjectMap = new HashMap();
+    }
+
+    /**
+     * Unregisters the newly registered DataObjects
+     * from this objectStore. Used in conjunction
+     * with startTrackingNewObjects() to control garbage
+     * collection when an instance of ObjectStore
+     * is used over a longer time for batch processing.
+     * (TODO: this won't work with changeObjectKey()?)
+     * 
+     * @see org.objectstyle.cayenne.access.ObjectStore#startTrackingNewObjects()
+     */
+    public synchronized void unregisterNewObjects() {
+
+        Iterator it = newObjectMap.values().iterator();
+
+        while (it.hasNext()) {
+            DataObject dataObj = (DataObject) it.next();
+
+            ObjectId oid = dataObj.getObjectId();
+            removeObject(oid);
+            removeSnapshot(oid);
+
+            dataObj.setDataContext(null);
+            dataObj.setObjectId(null);
+            dataObj.setPersistenceState(PersistenceState.TRANSIENT);
+        }
+        newObjectMap.clear();
+        newObjectMap = null;
     }
 
     public synchronized DataObject getObject(ObjectId id) {
@@ -168,9 +217,12 @@ public class ObjectStore implements Serializable {
         while (it.hasNext()) {
             DataObject dobj = (DataObject) it.next();
             int state = dobj.getPersistenceState();
-            if (state == PersistenceState.NEW
-                || state == PersistenceState.DELETED
-                || state == PersistenceState.MODIFIED) {
+            if(state==PersistenceState.MODIFIED) {
+            	if(QueryUtils.updatedProperties(dobj)!=null) {
+            		return true; //There were some updated properties
+            	} //no updated properties, continue and see if any other objects have changed
+            } else if (state == PersistenceState.NEW
+                || state == PersistenceState.DELETED) {
                 return true;
             }
         }

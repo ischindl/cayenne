@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,13 +58,12 @@ package org.objectstyle.cayenne.unittest;
 import java.io.File;
 import java.sql.Connection;
 
-import org.apache.log4j.Logger;
+import junit.framework.TestCase;
+
 import org.objectstyle.cayenne.access.DataContext;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
-import org.objectstyle.cayenne.access.DataSourceInfo;
-
-import junit.framework.TestCase;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 
 /**
  * Superclass of Cayenne test cases. Provides access to shared
@@ -73,17 +72,16 @@ import junit.framework.TestCase;
  * @author Andrei Adamchik
  */
 public class CayenneTestCase extends TestCase {
-    private static Logger logObj = Logger.getLogger(CayenneTestCase.class);
-    
-    /**
-     * Constructor for CayenneTestCase.
-     * @param arg0
-     */
-    public CayenneTestCase(String name) {
-        super(name);
-        
+
+    static {
         // init resources if needed
         CayenneTestResources.init();
+    }
+
+    public static File getDefaultTestResourceDir() {
+        return new File(
+            new File(new File(new File("build"), "tests"), "deps"),
+            "test-resources");
     }
 
     /**
@@ -91,13 +89,13 @@ public class CayenneTestCase extends TestCase {
      * cases that perform file operations.
      */
     public File getTestDir() {
-    	return CayenneTestResources.getResources().getTestDir();
+        return CayenneTestResources.getResources().getTestDir();
     }
-    
+
     public File getTestResourceDir() {
-		return new File(new File(new File(new File("build"), "tests"), "deps"), "test-resources");
+        return getDefaultTestResourceDir();
     }
-    
+
     public Connection getConnection() {
         return CayenneTestResources.getResources().getSharedConnection();
     }
@@ -117,8 +115,15 @@ public class CayenneTestCase extends TestCase {
     public DataContext createDataContext() {
         return getDomain().createDataContext();
     }
-    
+
     public CayenneTestDatabaseSetup getDatabaseSetup() {
-    	return CayenneTestResources.getResources().getSharedDatabaseSetup();
-    } 
+        return CayenneTestResources.getResources().getSharedDatabaseSetup();
+    }
+
+    public DatabaseSetupDelegate getDatabaseSetupDelegate() {
+        return CayenneTestResources
+            .getResources()
+            .getSharedDatabaseSetup()
+            .getDelegate();
+    }
 }

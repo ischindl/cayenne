@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,6 +59,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneDataObject;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
@@ -72,6 +73,8 @@ import org.objectstyle.cayenne.util.DataObjectPropertyComparator;
  * @author Craig Miskell
  */
 public class Ordering implements Comparator {
+	private static Logger logObj = Logger.getLogger(Ordering.class);
+	
     /** Symbolic representation of ascending ordering criterion. */
     public static final boolean ASC = true;
 
@@ -117,26 +120,6 @@ public class Ordering implements Comparator {
         setSortSpec(sortExpression);
         this.ascending = ascending;
         this.caseInsensitive = caseInsensitive;
-    }
-
-    /** 
-     * Returns sortPathSpec OBJ_PATH specification used in ordering.
-     * 
-     * @deprecated Since ordering now supports expression types other than OBJ_PATH,
-     * this method is deprected. Use <code>getSortSpec().getOperand(0)</code> instead.
-        */
-    public String getSortPathSpec() {
-        return (String) getSortSpec().getOperand(0);
-    }
-
-    /** 
-     * Sets path of the sort specification. 
-     * 
-     * @deprecated Since ordering now supports expression types other than OBJ_PATH,
-     * this method is deprected. Use <code>setSortSpec()</code> instead.
-     */
-    public void setSortPathSpec(String sortPathSpec) {
-        setSortSpec(sortPathSpec);
     }
 
     /** 

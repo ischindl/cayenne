@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,11 +55,10 @@
  */ 
 package org.objectstyle.cayenne.access;
 
+import java.util.List;
 import java.util.Map;
 
 import org.objectstyle.cayenne.CayenneException;
-
-
 
 /**
  * Defines API of an iterator over the records returned as a result
@@ -74,7 +73,13 @@ import org.objectstyle.cayenne.CayenneException;
  * @author Andrei Adamchik
  */
 public interface ResultIterator {
-	
+    
+    /**
+     * Returns all unread data rows from ResultSet and closes this iterator
+     * if asked to do so.
+     */
+    public List dataRows(boolean close) throws CayenneException;
+           
 	/** 
 	 * Returns true if there is at least one more record
 	 * that can be read from the iterator.

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,6 +62,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -69,8 +70,8 @@ import java.util.ListIterator;
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.access.DbGenerator;
-import org.objectstyle.cayenne.access.OperationSorter;
 import org.objectstyle.cayenne.dba.DbAdapter;
+import org.objectstyle.cayenne.dba.firebird.FirebirdAdapter;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbAttribute;
 import org.objectstyle.cayenne.map.DbEntity;
@@ -80,208 +81,253 @@ import org.objectstyle.cayenne.map.DerivedDbEntity;
  * @author Andrei Adamchik
  */
 public class CayenneTestDatabaseSetup {
-	private static Logger logObj = Logger.getLogger(CayenneTestDatabaseSetup.class);
+    private static Logger logObj = Logger.getLogger(CayenneTestDatabaseSetup.class);
 
-	protected DataMap map;
-	protected CayenneTestResources resources;
+    protected DataMap map;
+    protected CayenneTestResources resources;
+    protected DatabaseSetupDelegate delegate;
 
-	public CayenneTestDatabaseSetup(CayenneTestResources resources, DataMap map) throws Exception {
-		this.map = map;
-		this.resources = resources;
-	}
+    public CayenneTestDatabaseSetup(CayenneTestResources resources, DataMap map)
+        throws Exception {
+        this.map = map;
+        this.resources = resources;
+        this.delegate =
+            DatabaseSetupDelegate.createDelegate(resources.getSharedNode().getAdapter());
+    }
 
-	/** Deletes all data from the database tables mentioned in the DataMap. */
-	public void cleanTableData() throws Exception {
-		Connection conn = resources.getSharedConnection();
+    /** Deletes all data from the database tables mentioned in the DataMap. */
+    public void cleanTableData() throws Exception {
+        // TODO: move this to delegate
+        boolean isFirebird =
+            resources.getSharedNode().getAdapter() instanceof FirebirdAdapter;
 
-		List list = dbEntitiesInInsertOrder();
-		try {
-			if (conn.getAutoCommit()) {
-				conn.setAutoCommit(false);
-			}
+        Connection conn = resources.getSharedConnection();
 
-			Statement stmt = conn.createStatement();
+        List list = this.dbEntitiesInInsertOrder();
+        try {
+            if (conn.getAutoCommit()) {
+                conn.setAutoCommit(false);
+            }
 
-			ListIterator it = list.listIterator(list.size());
-			while (it.hasPrevious()) {
-				DbEntity ent = (DbEntity) it.previous();
-				if (ent instanceof DerivedDbEntity) {
-					continue;
-				}
+            Statement stmt = conn.createStatement();
 
-				String deleteSql = "DELETE FROM " + ent.getName();
-				stmt.executeUpdate(deleteSql);
-			}
-			conn.commit();
-			stmt.close();
-		} finally {
-			conn.close();
-		}
+            ListIterator it = list.listIterator(list.size());
+            while (it.hasPrevious()) {
+                DbEntity ent = (DbEntity) it.previous();
+                if (ent instanceof DerivedDbEntity) {
+                    continue;
+                }
 
-		// lets recreate pk support, since there is no
-		// generic way to reset pk info
-		DataNode node = resources.getSharedNode();
-		DbAdapter adapter = node.getAdapter();
+                // this may not work on tables with reflexive relationships
+                // at least on Firebird it doesn't... 
 
-		// drop
-		adapter.getPkGenerator().dropAutoPk(node, list);
+                if (isFirebird && "ARTGROUP".equalsIgnoreCase(ent.getName())) {
+                    int deleted = 0;
+                    String deleteChildren =
+                        "DELETE FROM "
+                            + ent.getName()
+                            + " WHERE GROUP_ID NOT IN (SELECT DISTINCT PARENT_GROUP_ID FROM "
+                            + ent.getName()
+                            + ")";
+                    do {
+                        deleted = stmt.executeUpdate(deleteChildren);
+                    }
+                    while (deleted > 0);
+                }
 
-		// create
-		adapter.getPkGenerator().createAutoPk(node, list);
-	}
+                String deleteSql = "DELETE FROM " + ent.getName();
+                stmt.executeUpdate(deleteSql);
+            }
+            conn.commit();
+            stmt.close();
+        }
+        finally {
+            conn.close();
+        }
+    }
 
-	/** Drops all test tables. */
-	public void dropTestTables() throws Exception {
-		Connection conn = resources.getSharedConnection();
-		DataNode node = resources.getSharedNode();
-		DbAdapter adapter = node.getAdapter();
-		List list = dbEntitiesInInsertOrder();
+    /** Drops all test tables. */
+    public void dropTestTables() throws Exception {
+        Connection conn = resources.getSharedConnection();
+        DataNode node = resources.getSharedNode();
+        DbAdapter adapter = node.getAdapter();
+        List list = this.dbEntitiesInInsertOrder();
 
-		try {
-			DatabaseMetaData md = conn.getMetaData();
-			ResultSet tables = md.getTables(null, null, "%", null);
-			List allTables = new ArrayList();
+        try {
+            delegate.willDropTables(conn, map);
 
-			while (tables.next()) {
-				// 'toUpperCase' is needed since most databases
-				// are case insensitive, and some will convert names to lower case (PostgreSQL)
-				String name = tables.getString("TABLE_NAME");
-				if (name != null)
-					allTables.add(name.toUpperCase());
-			}
-			tables.close();
+            DatabaseMetaData md = conn.getMetaData();
+            ResultSet tables = md.getTables(null, null, "%", null);
+            List allTables = new ArrayList();
 
-			// drop all tables in the map
-			Statement stmt = conn.createStatement();
+            while (tables.next()) {
+                // 'toUpperCase' is needed since most databases
+                // are case insensitive, and some will convert names to lower case (PostgreSQL)
+                String name = tables.getString("TABLE_NAME");
+                if (name != null)
+                    allTables.add(name.toUpperCase());
+            }
+            tables.close();
 
-			ListIterator it = list.listIterator(list.size());
-			while (it.hasPrevious()) {
-				DbEntity ent = (DbEntity) it.previous();
-				if (!allTables.contains(ent.getName())) {
-					continue;
-				}
+            // drop all tables in the map
+            Statement stmt = conn.createStatement();
 
-				try {
-					String dropSql = adapter.dropTable(ent);
-					logObj.warn("Drop table: " + dropSql);
-					stmt.execute(dropSql);
-				} catch (SQLException sqe) {
-					logObj.warn(
-						"Can't drop table " + ent.getName() + ", ignoring...",
-						sqe);
-				}
-			}
-		} finally {
-			conn.close();
-		}
+            ListIterator it = list.listIterator(list.size());
+            while (it.hasPrevious()) {
+                DbEntity ent = (DbEntity) it.previous();
+                if (!allTables.contains(ent.getName())) {
+                    continue;
+                }
 
-		// drop primary key support
-		adapter.getPkGenerator().dropAutoPk(node, list);
-	}
+                try {
+                    String dropSql = adapter.dropTable(ent);
+                    logObj.info("Drop table: " + dropSql);
+                    stmt.execute(dropSql);
+                }
+                catch (SQLException sqe) {
+                    logObj.warn(
+                        "Can't drop table " + ent.getName() + ", ignoring...",
+                        sqe);
+                }
+            }
 
-	/** Creates all test tables in the database. */
-	public void setupTestTables() throws Exception {
-		Connection conn = resources.getSharedConnection();
+            delegate.droppedTables(conn, map);
+        }
+        finally {
+            conn.close();
+        }
 
-		try {
-			Statement stmt = conn.createStatement();
-			Iterator it = tableCreateQueries();
-			while (it.hasNext()) {
-				String query = (String) it.next();
-				logObj.warn("Create table: " + query);
-				stmt.execute(query);
-			}
-		} finally {
-			conn.close();
-		}
+        // drop primary key support
+        adapter.getPkGenerator().dropAutoPk(node, list);
+    }
 
-		// create primary key support
-		DataNode node = resources.getSharedNode();
-		DbAdapter adapter = node.getAdapter();
-		adapter.getPkGenerator().createAutoPk(
-			node,
-			node.getDataMaps()[0].getDbEntitiesAsList());
-	}
+    /** Creates all test tables in the database. */
+    public void setupTestTables() throws Exception {
+        Connection conn = resources.getSharedConnection();
 
-	/** 
-	 * Creates primary key support for all node DbEntities.
-	 * Will use its facilities provided by DbAdapter to generate
-	 * any necessary database objects and data for primary
-	 * key support.
-	 */
-	public void createPkSupportForMapEntities(DataNode node) throws Exception {
-		DataMap[] dataMaps = node.getDataMaps();
-		int len = dataMaps.length;
-		for (int i = 0; i < len; i++) {
-			node.getAdapter().getPkGenerator().createAutoPk(
-				node,
-				dataMaps[i].getDbEntitiesAsList());
-		}
-	}
+        try {
+            delegate.willCreateTables(conn, map);
+            Statement stmt = conn.createStatement();
+            Iterator it = tableCreateQueries();
+            while (it.hasNext()) {
+                String query = (String) it.next();
+                logObj.info("Create table: " + query);
+                stmt.execute(query);
+            }
+            delegate.createdTables(conn, map);
+        }
+        finally {
+            conn.close();
+        }
 
-	/** Oracle 8i does not support more then 1 "LONG xx" column per table
-	  * PAINTING_INFO need to be fixed. */
-	private void applyOracleHack() {
-		DbEntity paintingInfo = map.getDbEntity("PAINTING_INFO");
-		DbAttribute textReview =
-			(DbAttribute) paintingInfo.getAttribute("TEXT_REVIEW");
-		textReview.setType(Types.VARCHAR);
-		textReview.setMaxLength(255);
-	}
+        // create primary key support
+        DataNode node = resources.getSharedNode();
+        DbAdapter adapter = node.getAdapter();
+        Collection ents =
+            ((DataMap) node.getDataMaps().iterator().next()).getDbEntities();
+        adapter.getPkGenerator().createAutoPk(node, new ArrayList(ents));
+    }
 
-	/** Returns iterator of preprocessed table create queries */
-	public Iterator tableCreateQueries() throws Exception {
-		List queries = new ArrayList();
-		DbAdapter adapter = resources.getSharedNode().getAdapter();
-		DbGenerator gen = new DbGenerator(adapter, map);
+    /** 
+     * Creates primary key support for all node DbEntities.
+     * Will use its facilities provided by DbAdapter to generate
+     * any necessary database objects and data for primary
+     * key support.
+     */
+    public void createPkSupportForMapEntities(DataNode node) throws Exception {
+        Iterator dataMaps = node.getDataMaps().iterator();
+        while (dataMaps.hasNext()) {
+            Collection ents = ((DataMap) dataMaps.next()).getDbEntities();
+            node.getAdapter().getPkGenerator().createAutoPk(node, new ArrayList(ents));
+        }
+    }
 
-		// Oracle 8i does not support more then 1 "LONG xx" column per table
-		// PAINTING_INFO need to be fixed
-		if (adapter
-			instanceof org.objectstyle.cayenne.dba.oracle.OracleAdapter) {
-			applyOracleHack();
-		}
+    /** Returns iterator of preprocessed table create queries */
+    public Iterator tableCreateQueries() throws Exception {
+        DbAdapter adapter = resources.getSharedNode().getAdapter();
+        DbGenerator gen = new DbGenerator(adapter, map);
+        List orderedEnts = this.dbEntitiesInInsertOrder();
+        List queries = new ArrayList();
 
-		// table definitions
-		Iterator it = dbEntitiesInInsertOrder().iterator();
-		while (it.hasNext()) {
-			DbEntity ent = (DbEntity) it.next();
-			if (ent instanceof DerivedDbEntity) {
-				continue;
-			}
+        // table definitions
+        Iterator it = orderedEnts.iterator();
+        while (it.hasNext()) {
+            DbEntity ent = (DbEntity) it.next();
+            if (ent instanceof DerivedDbEntity) {
+                continue;
+            }
 
-			queries.add(adapter.createTable(ent));
-		}
+            queries.add(adapter.createTable(ent));
+        }
 
-		// FK constraints
-		if (adapter.supportsFkConstraints()) {
-			it = dbEntitiesInInsertOrder().iterator();
-			while (it.hasNext()) {
-				DbEntity ent = (DbEntity) it.next();
-				if (ent instanceof DerivedDbEntity) {
-					continue;
-				}
+        // FK constraints
+        if (adapter.supportsFkConstraints()) {
+            it = orderedEnts.iterator();
+            while (it.hasNext()) {
+                DbEntity ent = (DbEntity) it.next();
+                if (ent instanceof DerivedDbEntity) {
+                    continue;
+                }
 
-				List qs = gen.createFkConstraintsQueries(ent);
-				queries.addAll(qs);
-			}
-		}
+                List qs = gen.createFkConstraintsQueries(ent);
+                queries.addAll(qs);
+            }
+        }
 
-		return queries.iterator();
-	}
+        return queries.iterator();
+    }
 
-	/** Helper method that orders DbEntities to satisfy referential
-	 *  constraints and returns an ordered list. */
-	private List dbEntitiesInInsertOrder() {
-		List list = map.getDbEntitiesAsList();
+    /**
+     * Helper method that orders DbEntities to satisfy referential
+     * constraints and returns an ordered list.
+     */
+    private List dbEntitiesInInsertOrder() {
+        List entities = new ArrayList(map.getDbEntities());
 
-		DataNode node = resources.getSharedNode();
-		OperationSorter sorter = node.getAdapter().getOpSorter(node);
-		if (sorter != null) {
-			list=sorter.sortedEntitiesInInsertOrder(list);
-		}
-		return list;
-	}
+        // filter out BLOB/CLOB tables if database does not support them
+        if (!delegate.supportsLobs()) {
+            Iterator it = entities.iterator();
+            List filtered = new ArrayList();
+            while (it.hasNext()) {
+                DbEntity ent = (DbEntity) it.next();
 
+                // check for LOB attributes
+                boolean hasLob = false;
+                Iterator attrs = ent.getAttributes().iterator();
+                while (attrs.hasNext()) {
+                    DbAttribute attr = (DbAttribute) attrs.next();
+                    if (attr.getType() == Types.BLOB || attr.getType() == Types.CLOB) {
+                        hasLob = true;
+                        break;
+                    }
+                }
+
+                if (!hasLob) {
+                    filtered.add(ent);
+                }
+            }
+
+            entities = filtered;
+        }
+
+        DataNode node = resources.getSharedNode();
+        node.getDependencySorter().sortDbEntities(entities, false);
+        return entities;
+    }
+
+    /**
+     * Returns the delegate.
+     * @return DatabaseSetupDelegate
+     */
+    public DatabaseSetupDelegate getDelegate() {
+        return delegate;
+    }
+
+    /**
+     * Sets the delegate.
+     * @param delegate The delegate to set
+     */
+    public void setDelegate(DatabaseSetupDelegate delegate) {
+        this.delegate = delegate;
+    }
 }
-

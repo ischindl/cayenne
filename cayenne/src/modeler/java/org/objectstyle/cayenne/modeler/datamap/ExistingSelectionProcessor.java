@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,11 +64,11 @@ package org.objectstyle.cayenne.modeler.datamap;
  * "Remove" button if the tab has attributes (relationships) already 
  * selected. 
  */
-interface ExistingSelectionProcessor {
-	/** 
-	 * Called when tab is selected. Resets the state there are any rows selected.
-	 * For example, it is useful when we want to reset "Remove" button 
-	 * if the tab has attributes (relationships) already selected. 
-	 */
-	public void processExistingSelection();
+public interface ExistingSelectionProcessor {
+    /** 
+     * Called when tab is selected. Resets the state there are any rows selected.
+     * For example, it is useful when we want to reset "Remove" button 
+     * if the tab has attributes (relationships) already selected. 
+     */
+    public void processExistingSelection();
 }

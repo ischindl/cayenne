@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,10 +55,13 @@
  */
 package org.objectstyle.cayenne.project.validator;
 
+import java.util.Iterator;
 import java.util.List;
 
+import org.objectstyle.cayenne.map.DbAttributePair;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.DbRelationship;
+import org.objectstyle.cayenne.map.DeleteRule;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
 import org.objectstyle.cayenne.project.ProjectPath;
@@ -81,17 +84,25 @@ public class ObjRelationshipValidator extends TreeNodeValidator {
         if (Util.isEmptyString(rel.getName())) {
             validator.registerError("Unnamed ObjRelationship.", path);
         }
+        // check if there are attributes having the same name
+        else if (rel.getSourceEntity().getAttribute(rel.getName()) != null) {
+            validator.registerWarning(
+                "ObjRelationship has the same name as one of ObjAttributes",
+                path);
+        }
 
         if (rel.getTargetEntity() == null) {
             validator.registerError("ObjRelationship has no target entity.", path);
-        } else {
+        }
+        else {
             // check for missing DbRelationship mappings
-            List dbRels = rel.getDbRelationshipList();
+            List dbRels = rel.getDbRelationships();
             if (dbRels.size() == 0) {
                 validator.registerWarning(
                     "ObjRelationship has no DbRelationship mapping.",
                     path);
-            } else {
+            }
+            else {
                 DbEntity expectedSrc = ((ObjEntity) rel.getSourceEntity()).getDbEntity();
                 DbEntity expectedTarget =
                     ((ObjEntity) rel.getTargetEntity()).getDbEntity();
@@ -102,6 +113,29 @@ public class ObjRelationshipValidator extends TreeNodeValidator {
                     validator.registerWarning(
                         "ObjRelationship has incomplete DbRelationship mapping.",
                         path);
+                }
+            }
+        }
+
+        //Disallow a Nullify delete rule where the relationship is toMany and the 
+        //foreign key attributes are mandatory.
+        if (rel.isToMany()
+            && !rel.isFlattened()
+            && (rel.getDeleteRule() == DeleteRule.NULLIFY)) {
+            ObjRelationship inverse = rel.getReverseRelationship();
+            if (inverse != null) {
+                DbRelationship firstRel =
+                    (DbRelationship) inverse.getDbRelationships().get(0);
+                Iterator attributePairIterator = firstRel.getJoins().iterator();
+                while (attributePairIterator.hasNext()) {
+                    DbAttributePair pair = (DbAttributePair) attributePairIterator.next();
+                    if (pair.getSource().isMandatory()) {
+                        validator.registerWarning(
+                            "ObjRelationship "
+                                + rel.getName()
+                                + " has a Nullify delete rule and a mandatory reverse relationship ",
+                            path);
+                    }
                 }
             }
         }

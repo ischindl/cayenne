@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -75,10 +75,12 @@ import org.objectstyle.cayenne.project.CayenneUserDir;
 public class ModelerPreferences extends ExtendedProperties {
     static final Logger logObj = Logger.getLogger(ModelerPreferences.class);
 
-    /** 
-     * Name of the preferences file.
-     */
-    public static final String PREF = "modeler.preferences";
+    /** Name of the preferences file. */
+	public static final String PREFERENCES_NAME = "modeler.preferences";
+
+	/** Name of the log file. */
+	public static final String LOGFILE_NAME = "modeler.log";
+
 
     // Keys for the preference file.
 
@@ -90,19 +92,37 @@ public class ModelerPreferences extends ExtendedProperties {
 
     /** List of the last 4 opened project files. */
     public static final String LAST_PROJ_FILES = "Editor.lastSeveralProjectFiles";
+
     /** The directory of the last generated classes. */
     public static final String LAST_GENERATED_CLASSES_DIR =
         "gui.datamap.GenerateClassDialog.lastDir";
+
     /** User name */
     public static final String USER_NAME = "DbLoginPanel.unInput";
+
     /** JDBC Driver Class */
     public static final String JDBC_DRIVER = "DbLoginPanel.drInput";
+
     /** Database URL */
     public static final String DB_URL = "DbLoginPanel.urlInput";
+
     /** RDBMS Adapter */
     public static final String RDBMS_ADAPTER = "DbLoginPanel.adapterInput";
 
-    protected static ModelerPreferences sharedInstance;
+	/** GUI layout */
+	public static final String EDITOR_LAFNAME = "Editor.lookAndFeel";
+	public static final String EDITOR_FRAME_WIDTH = "Editor.frameWidth";
+	public static final String EDITOR_FRAME_HEIGHT = "Editor.frameHeight";
+	public static final String EDITOR_FRAME_X  = "Editor.frameX";
+	public static final String EDITOR_FRAME_Y = "Editor.frameY";
+	public static final String EDITOR_TREE_WIDTH = "Editor.treeWidth";
+
+	/** Log file */
+	public static final String EDITOR_LOGFILE_ENABLED = "Editor.logfileEnabled";
+	public static final String EDITOR_LOGFILE = "Editor.logfile";
+
+
+	protected static ModelerPreferences sharedInstance;
 
     protected ModelerPreferences() {}
 
@@ -123,7 +143,7 @@ public class ModelerPreferences extends ExtendedProperties {
      * If such directory does not exist, it is created as a side 
      * effect of this method.
      */
-    public File prefsDir() {
+    public File preferencesDirectory() {
         return CayenneUserDir.getInstance().getDirectory();
     }
 
@@ -132,7 +152,7 @@ public class ModelerPreferences extends ExtendedProperties {
      * <code>$HOME/.cayenne/modeler.preferences</code> file. 
      */
     public void storePreferences() {
-        File prefFile = new File(prefsDir(), PREF);
+        File prefFile = new File(preferencesDirectory(), PREFERENCES_NAME);
         try {
             if (!prefFile.exists()) {
                 logObj.debug(
@@ -151,7 +171,7 @@ public class ModelerPreferences extends ExtendedProperties {
      */
     public void loadPreferences() {
         try {
-            File prefsFile = new File(prefsDir(), PREF);
+            File prefsFile = new File(preferencesDirectory(), PREFERENCES_NAME);
             if (!prefsFile.exists()) {
                 if (!prefsFile.createNewFile()) {
                     logObj.warn("Can't create preferences file " + prefsFile);

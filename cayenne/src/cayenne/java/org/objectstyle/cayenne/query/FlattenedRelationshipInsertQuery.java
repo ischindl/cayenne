@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne.query;
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,8 +53,9 @@ package org.objectstyle.cayenne.query;
  * <http://objectstyle.org/>.
  *
  */
+package org.objectstyle.cayenne.query;
+
 import org.objectstyle.cayenne.DataObject;
-import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
@@ -82,8 +82,8 @@ public class FlattenedRelationshipInsertQuery extends AbstractQuery {
 		this.destination=destination;
 		this.relationshipName=relName;
 		ObjRelationship relationship = this.getRelationship();
-		DbRelationship firstRel = (DbRelationship) relationship.getDbRelationshipList().get(0);
-		this.setRoot((DbEntity)firstRel.getTargetEntity());
+		DbRelationship firstRel = (DbRelationship) relationship.getDbRelationships().get(0);
+		this.setRoot(firstRel.getTargetEntity());
 
 	}
 	

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,7 @@
 
 package org.objectstyle.cayenne.access;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,9 +66,9 @@ import org.apache.log4j.Logger;
 import org.objectstyle.art.Artist;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataObject;
-import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
 import org.objectstyle.cayenne.access.util.ContextSelectObserver;
+import org.objectstyle.cayenne.access.util.DefaultOperationObserver;
 import org.objectstyle.cayenne.dba.JdbcPkGenerator;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.query.SqlSelectQuery;
@@ -80,14 +81,11 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
  * @author Andrei Adamchik
  */
 public class DataContextExtrasTst extends CayenneTestCase {
+
     protected DataContext ctxt;
 
-    public DataContextExtrasTst(String name) {
-        super(name);
-    }
-
-    protected void setUp() throws java.lang.Exception {
-        ctxt = getDomain().createDataContext();
+    protected void setUp() throws Exception {
+        ctxt = createDataContext();
     }
 
     public void testHasChangesNew() throws Exception {
@@ -104,45 +102,7 @@ public class DataContextExtrasTst extends CayenneTestCase {
         assertTrue(ctxt.newObjects().contains(a1));
     }
 
-    public void testUnregisterObject() throws Exception {
-        Map row = new HashMap();
-        row.put("ARTIST_ID", new Integer(1));
-        row.put("ARTIST_NAME", "ArtistXYZ");
-        row.put("DATE_OF_BIRTH", new Date());
-        DataObject obj = ctxt.objectFromDataRow("Artist", row);
-        ObjectId oid = obj.getObjectId();
 
-        assertEquals(PersistenceState.COMMITTED, obj.getPersistenceState());
-        assertSame(ctxt, obj.getDataContext());
-        assertSame(obj, ctxt.getObjectStore().getObject(oid));
-
-        ctxt.unregisterObject(obj);
-
-        assertEquals(PersistenceState.TRANSIENT, obj.getPersistenceState());
-        assertNull(obj.getDataContext());
-        assertNull(obj.getObjectId());
-        assertNull(ctxt.getObjectStore().getObject(oid));
-    }
-
-    public void testInvalidateObject() throws Exception {
-        Map row = new HashMap();
-        row.put("ARTIST_ID", new Integer(1));
-        row.put("ARTIST_NAME", "ArtistXYZ");
-        row.put("DATE_OF_BIRTH", new Date());
-        DataObject obj = ctxt.objectFromDataRow("Artist", row);
-        ObjectId oid = obj.getObjectId();
-
-        assertEquals(PersistenceState.COMMITTED, obj.getPersistenceState());
-        assertSame(ctxt, obj.getDataContext());
-        assertSame(obj, ctxt.getObjectStore().getObject(oid));
-
-        ctxt.invalidateObject(obj);
-
-        assertEquals(PersistenceState.HOLLOW, obj.getPersistenceState());
-        assertSame(ctxt, obj.getDataContext());
-        assertSame(oid, obj.getObjectId());
-        assertNull(ctxt.getObjectStore().getSnapshot(oid));
-    }
 
     public void testIdObjectFromDataRow() throws Exception {
         Map row = new HashMap();
@@ -151,9 +111,9 @@ public class DataContextExtrasTst extends CayenneTestCase {
 		assertNotNull(obj);
 
         // TODO
-        // assertTrue(ctxt.registeredObjects().contains(obj));
-        // assertEquals(PersistenceState.HOLLOW, obj.getPersistenceState());
-        // assertNull(ctxt.getCommittedSnapshot(obj));
+         assertTrue(ctxt.getObjectStore().getObjects().contains(obj));
+         assertEquals(PersistenceState.HOLLOW, obj.getPersistenceState());
+         assertNull(obj.getCommittedSnapshot());
     }
 
     public void testPartialObjectFromDataRow() throws Exception {
@@ -164,9 +124,9 @@ public class DataContextExtrasTst extends CayenneTestCase {
 		assertNotNull(obj);
 
         // TODO
-		// assertTrue(ctxt.registeredObjects().contains(obj));
-        // assertEquals(PersistenceState.HOLLOW, obj.getPersistenceState());
-        // assertNull(ctxt.getCommittedSnapshot(obj));
+		 assertTrue(ctxt.getObjectStore().getObjects().contains(obj));
+         assertEquals(PersistenceState.HOLLOW, obj.getPersistenceState());
+         assertNull(obj.getCommittedSnapshot());
     }
 
     public void testFullObjectFromDataRow() throws Exception {
@@ -194,9 +154,9 @@ public class DataContextExtrasTst extends CayenneTestCase {
         }
 
         // this should cause PK generation exception in commit later
-        DataMap map = getNode().getDataMaps()[0];
+        DataMap map = (DataMap)getNode().getDataMaps().iterator().next();
 
-        gen.dropAutoPk(getNode(), map.getDbEntitiesAsList());
+        gen.dropAutoPk(getNode(), new ArrayList(map.getDbEntities()));
 
         // disable logging for thrown exceptions
 		Logger observerLogger = Logger.getLogger(DefaultOperationObserver.class);
@@ -209,6 +169,7 @@ public class DataContextExtrasTst extends CayenneTestCase {
             // exception expected
         } finally {
             observerLogger.setLevel(oldLevel);
+			gen.createAutoPk(getNode(), new ArrayList(map.getDbEntities()));
         }
     }
 

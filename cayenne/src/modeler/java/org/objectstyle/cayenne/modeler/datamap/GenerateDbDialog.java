@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -82,8 +82,8 @@ import javax.swing.JTextArea;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.objectstyle.cayenne.access.DataSourceInfo;
 import org.objectstyle.cayenne.access.DbGenerator;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.dba.DbAdapter;
 import org.objectstyle.cayenne.modeler.CayenneDialog;
 import org.objectstyle.cayenne.modeler.Editor;
@@ -101,8 +101,8 @@ public class GenerateDbDialog
     implements ActionListener, ItemListener {
     private static Logger logObj = Logger.getLogger(Editor.class);
 
-    private static final int WIDTH = 380;
-    private static final int HEIGHT = 190;
+    private static final int GENERATEDB_WIDTH = 380;
+    private static final int GENERATEDB_HEIGHT = 190;
 
     protected DataSourceInfo dsi;
     protected DbAdapter adapter;
@@ -120,7 +120,7 @@ public class GenerateDbDialog
     protected JCheckBox dropPK;
 
     public GenerateDbDialog(DataSourceInfo dsi, DbAdapter adapter, DbGenerator gen) {
-        super(Editor.getFrame(), "Generate Database", true);
+        super(Editor.getFrame(), "Generate Database Schema", true);
         
         this.dsi = dsi;
         this.adapter = adapter;
@@ -138,7 +138,7 @@ public class GenerateDbDialog
         saveSql.addActionListener(this);
         cancel.addActionListener(this);
 
-        setSize(WIDTH, HEIGHT);
+        setSize(GENERATEDB_WIDTH, GENERATEDB_HEIGHT);
         this.pack();
         this.centerWindow();
         this.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -228,16 +228,16 @@ public class GenerateDbDialog
     }
 
     protected void generateDBSchema() {
-        gen.setShouldDropTables(dropTables.isSelected());
-
         try {
             gen.runGenerator(dsi);
-            JOptionPane.showMessageDialog(this, "Generation Complete.");
+            JOptionPane.showMessageDialog(this, "Schema Generation Complete.");
 
         } catch (Exception ex) {
+            StringBuffer buffer = new StringBuffer("Schema Generation Error - " + ex.getMessage());
             if (ex instanceof SQLException) {
                 SQLException exception = (SQLException) ex;
                 while ((exception = exception.getNextException()) != null) {
+                    buffer.append(" - ").append(exception.getMessage());
                     logObj.log(Level.INFO, "Nested exception", exception);
                 }
             }
@@ -245,17 +245,17 @@ public class GenerateDbDialog
 
             JOptionPane.showMessageDialog(
                 this,
-                "Error creating database - " + ex.getMessage());
+                buffer.toString());
             return;
         }
     }
 
     protected void storeSQL() {
-        File projDir = Editor.getProject().getProjectDir();
+        File projDir = Editor.getProject().getProjectDirectory();
         FileSystemViewDecorator fileView = new FileSystemViewDecorator(projDir);
         JFileChooser fc = new JFileChooser(fileView);
         fc.setDialogType(JFileChooser.SAVE_DIALOG);
-        fc.setDialogTitle("Create database");
+        fc.setDialogTitle("Save SQL Script");
         if (null != projDir) {
             fc.setCurrentDirectory(projDir);
         }

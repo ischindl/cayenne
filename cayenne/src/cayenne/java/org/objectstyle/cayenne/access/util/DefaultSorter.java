@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002 The ObjectStyle Group
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,38 +53,46 @@
  * <http://objectstyle.org/>.
  *
  */
+
 package org.objectstyle.cayenne.access.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
-import net.ash.dbutil.DbUtils;
-import net.ash.dbutil.Table;
-import net.ash.graph.CollectionFactory;
-import net.ash.graph.Digraph;
-import net.ash.graph.IndegreeTopologicalSort;
-import net.ash.graph.MapDigraph;
-import net.ash.graph.StrongConnection;
-import org.apache.commons.collections.ComparatorUtils;
 import org.apache.commons.collections.comparators.ReverseComparator;
+import org.objectstyle.ashwood.dbutil.DbUtils;
+import org.objectstyle.ashwood.dbutil.ForeignKey;
+import org.objectstyle.ashwood.dbutil.Table;
+import org.objectstyle.ashwood.graph.CollectionFactory;
+import org.objectstyle.ashwood.graph.Digraph;
+import org.objectstyle.ashwood.graph.IndegreeTopologicalSort;
+import org.objectstyle.ashwood.graph.MapDigraph;
+import org.objectstyle.ashwood.graph.StrongConnection;
+import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataObject;
+import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.access.QueryEngine;
 import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.map.DbAttributePair;
 import org.objectstyle.cayenne.map.DbEntity;
+import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.ObjEntity;
-import org.objectstyle.cayenne.query.Query;
+import org.objectstyle.cayenne.map.ObjRelationship;
 
 /**
- * Operation sorter implementation using 
- * <a href="http://objectstyle.org/ashwood">Ashwood library</a>.
- * 
+ * DefaultSorter is a default implementation of DependencySorter based on
+ * ASHWOOD library. Presently it works for acyclic database schemas with
+ * possible multi-reflexive tables. The class uses topological sorting from
+ * ASHWOOD.
+ *
  * @author Andriy Shapochka
- * @author Craig Miskell
- * @author Andrei Adamchik
  */
 public class DefaultSorter implements DependencySorter {
 
@@ -93,49 +101,52 @@ public class DefaultSorter implements DependencySorter {
     protected Digraph referentialDigraph;
     protected Digraph contractedReferentialDigraph;
     protected Map components;
+    protected Map reflexiveDbEntities;
 
     protected TableComparator tableComparator;
     protected DbEntityComparator dbEntityComparator;
     protected ObjEntityComparator objEntityComparator;
-    protected DataObjectComparator dataObjectComparator;
-    protected InsertQueryComparator insertQueryComparator;
-    protected Comparator deleteQueryComparator;
-    protected QueryComparator queryComparator;
 
-    public DefaultSorter() {
-        tableComparator = new TableComparator();
-        dbEntityComparator = new DbEntityComparator();
-        objEntityComparator = new ObjEntityComparator();
-        dataObjectComparator = new DataObjectComparator();
-        insertQueryComparator = new InsertQueryComparator();
-        deleteQueryComparator =
-            ComparatorUtils.reversedComparator(insertQueryComparator);
-        queryComparator = new QueryComparator();
+    // used for lazy initialization
+    protected boolean dirty;
+
+    public DefaultSorter(QueryEngine queryEngine) {
+        indexSorter(queryEngine);
     }
 
-    public void initSorter(QueryEngine queryEngine, DataMap[] maps) {
+    /**
+      * Marks this instance as "dirty", so that it will be indexed lazily on
+      * the next invocation.
+      */
+    public void indexSorter(QueryEngine queryEngine) {
+        this.dirty = true;
         this.queryEngine = queryEngine;
-        Collection tables = new ArrayList();
-        dbEntityToTableMap = new HashMap();
+    }
 
-        if (maps == null) {
+    /**
+     * Reindexes internal sorter.
+     */
+    protected synchronized void _indexSorter() {
+        if (!dirty) {
             return;
         }
 
-        for (int i = 0; i < maps.length; i++) {
-            DbEntity[] entitiesToConvert = maps[i].getDbEntities();
-            for (int j = 0; j < entitiesToConvert.length; j++) {
-                DbEntity entity = entitiesToConvert[j];
-                Table table =
-                    new Table(
-                        entity.getCatalog(),
-                        entity.getSchema(),
-                        entity.getName());
+        Collection tables = new ArrayList(64);
+        dbEntityToTableMap = new HashMap(64);
+        reflexiveDbEntities = new HashMap(32);
+        for (Iterator i = queryEngine.getDataMaps().iterator(); i.hasNext();) {
+            DataMap map = (DataMap) i.next();
+            Iterator entitiesToConvert = map.getDbEntities().iterator();
+            while (entitiesToConvert.hasNext()) {
+                DbEntity entity = (DbEntity)entitiesToConvert.next();
+                Table table = new Table(entity.getCatalog(),
+                						entity.getSchema(),
+                						entity.getName());
+                fillInMetadata(table, entity);
                 dbEntityToTableMap.put(entity, table);
                 tables.add(table);
             }
         }
-
         referentialDigraph = new MapDigraph(MapDigraph.HASHMAP_FACTORY);
         DbUtils.buildReferentialDigraph(referentialDigraph, tables);
         StrongConnection contractor =
@@ -159,9 +170,190 @@ public class DefaultSorter implements DependencySorter {
                 components.put(i.next(), rec);
             }
         }
+
+        tableComparator = new TableComparator();
+        dbEntityComparator = new DbEntityComparator();
+        objEntityComparator = new ObjEntityComparator();
+
+        // clear dirty flag
+        this.dirty = false;
     }
 
-    public Comparator getDbEntityComparator(boolean dependantFirst) {
+    public void sortDbEntities(List dbEntities, boolean deleteOrder) {
+        _indexSorter();
+        Collections.sort(dbEntities, getDbEntityComparator(deleteOrder));
+    }
+
+    public void sortObjEntities(List objEntities, boolean deleteOrder) {
+        _indexSorter();
+        Collections.sort(objEntities, getObjEntityComparator(deleteOrder));
+    }
+
+    public void sortObjectsForEntity(
+        ObjEntity objEntity,
+        List objects,
+        boolean deleteOrder) {
+
+        DbEntity dbEntity = objEntity.getDbEntity();
+
+        // if no sorting is required
+        if (!isReflexive(dbEntity)) {
+            return;
+        }
+
+        // don't forget to index the sorter
+        _indexSorter();
+
+        int size = objects.size();
+        List reflexiveRels = (List) reflexiveDbEntities.get(dbEntity);
+        String[] objRelNames = new String[reflexiveRels.size()];
+        for (int i = 0; i < objRelNames.length; i++) {
+            DbRelationship dbRel = (DbRelationship) reflexiveRels.get(i);
+            ObjRelationship objRel =
+                (dbRel != null
+                    ? objEntity.getRelationshipForDbRelationship(dbRel)
+                    : null);
+            objRelNames[i] = (objRel != null ? objRel.getName() : null);
+        }
+
+        List sorted = new ArrayList(size);
+
+        Digraph objectDependencyGraph =
+            new MapDigraph(MapDigraph.HASHMAP_FACTORY);
+        DataObject[] masters = new DataObject[objRelNames.length];
+        for (int i = 0; i < size; i++) {
+            DataObject current = (DataObject) objects.get(i);
+            objectDependencyGraph.addVertex(current);
+            int actualMasterCount = 0;
+            for (int k = 0; k < objRelNames.length; k++) {
+                String objRelName = objRelNames[k];
+                if (objRelName == null)
+                    continue;
+                masters[k] =
+                    (objRelName != null
+                        ? (DataObject) current.readPropertyDirectly(objRelName)
+                        : null);
+                if (masters[k] == null) {
+                    masters[k] =
+                        findReflexiveMaster(
+                            current,
+                            (ObjRelationship) objEntity.getRelationship(
+                                objRelName),
+                            current.getObjectId().getObjClass());
+                }
+
+                if (masters[k] != null) {
+                    actualMasterCount++;
+                }
+            }
+            int mastersFound = 0;
+
+            for (int j = 0;
+                j < size && mastersFound < actualMasterCount;
+                j++) {
+
+                if (i == j) {
+                    continue;
+                }
+
+                DataObject masterCandidate = (DataObject) objects.get(j);
+                for (int k = 0; k < masters.length; k++) {
+                    if (masterCandidate.equals(masters[k])) {
+                        objectDependencyGraph.putArc(
+                            masterCandidate,
+                            current,
+                            Boolean.TRUE);
+                        mastersFound++;
+                    }
+                }
+            }
+        }
+
+        IndegreeTopologicalSort sorter =
+            new IndegreeTopologicalSort(objectDependencyGraph);
+
+        while (sorter.hasNext()) {
+            DataObject o = (DataObject) sorter.next();
+            if (o == null)
+                throw new CayenneRuntimeException(
+                    "Sorting objects for "
+                        + objEntity.getClassName()
+                        + " failed. Cycles found.");
+            sorted.add(o);
+        }
+
+        // since API requires sorting within the same array,
+        // simply replace all objects with objects in the right order... 
+        // may come up with something cleaner later
+        objects.clear();
+        objects.addAll(sorted);
+
+        if (deleteOrder) {
+            Collections.reverse(objects);
+        }
+    }
+
+    protected void fillInMetadata(Table table, DbEntity entity) {
+        //in this case quite a dummy
+        short keySequence = 1;
+        Iterator i = entity.getRelationshipMap().values().iterator();
+
+        while (i.hasNext()) {
+            DbRelationship candidate = (DbRelationship) i.next();
+            if ((!candidate.isToMany() && !candidate.isToDependentPK())
+                || candidate.isToMasterPK()) {
+                DbEntity target = (DbEntity) candidate.getTargetEntity();
+                boolean newReflexive = entity.equals(target);
+                Iterator j = candidate.getJoins().iterator();
+                while (j.hasNext()) {
+                    DbAttributePair join = (DbAttributePair) j.next();
+                    DbAttribute targetAttribute = join.getTarget();
+                    if (targetAttribute.isPrimaryKey()) {
+                        ForeignKey fk = new ForeignKey();
+                        fk.setPkTableCatalog(target.getCatalog());
+                        fk.setPkTableSchema(target.getSchema());
+                        fk.setPkTableName(target.getName());
+                        fk.setPkColumnName(targetAttribute.getName());
+                        fk.setColumnName(join.getSource().getName());
+                        fk.setKeySequence(keySequence++);
+                        table.addForeignKey(fk);
+
+                        if (newReflexive) {
+                            List reflexiveRels =
+                                (List) reflexiveDbEntities.get(entity);
+                            if (reflexiveRels == null) {
+                                reflexiveRels = new ArrayList(1);
+                                reflexiveDbEntities.put(entity, reflexiveRels);
+                            }
+                            reflexiveRels.add(candidate);
+                            newReflexive = false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    protected DataObject findReflexiveMaster(
+        DataObject obj,
+        ObjRelationship toOneRel,
+        Class targetClass) {
+        DbRelationship finalRel = (DbRelationship) toOneRel.getDbRelationships().get(0);
+        Map snapshot = obj.getCommittedSnapshot();
+        if (snapshot == null) {
+            snapshot = obj.getCurrentSnapshot();
+        }
+
+        Map pksnapshot = finalRel.targetPkSnapshotWithSrcSnapshot(snapshot);
+        if (pksnapshot != null) {
+            ObjectId destId = new ObjectId(targetClass, pksnapshot);
+            return obj.getDataContext().registeredObject(destId);
+        }
+
+        return null;
+    }
+
+    protected Comparator getDbEntityComparator(boolean dependantFirst) {
         Comparator c = dbEntityComparator;
         if (dependantFirst) {
             c = new ReverseComparator(c);
@@ -169,7 +361,7 @@ public class DefaultSorter implements DependencySorter {
         return c;
     }
 
-    public Comparator getObjEntityComparator(boolean dependantFirst) {
+    protected Comparator getObjEntityComparator(boolean dependantFirst) {
         Comparator c = objEntityComparator;
         if (dependantFirst) {
             c = new ReverseComparator(c);
@@ -177,54 +369,18 @@ public class DefaultSorter implements DependencySorter {
         return c;
     }
 
-    public Comparator getDataObjectComparator(boolean dependantFirst) {
-        Comparator c = dataObjectComparator;
-        if (dependantFirst) {
-            c = new ReverseComparator(c);
-        }
-        return c;
+    protected Table getTable(DbEntity dbEntity) {
+        return (dbEntity != null)
+            ? (Table) dbEntityToTableMap.get(dbEntity)
+            : null;
     }
 
-    public Comparator getQueryComparator() {
-        return queryComparator;
-    }
-
-    public Comparator getInsertQueryComparator() {
-        return insertQueryComparator;
-    }
-
-    public Comparator getDeleteQueryComparator() {
-        return deleteQueryComparator;
-    }
-
-    public Comparator getTableComparator() {
-        return tableComparator;
-    }
-
-    public Table getTable(DbEntity dbEntity) {
-        return (
-            dbEntity != null ? (Table) dbEntityToTableMap.get(dbEntity) : null);
-    }
-
-    public Table getTable(ObjEntity objEntity) {
+    protected Table getTable(ObjEntity objEntity) {
         return getTable(objEntity.getDbEntity());
     }
 
-    public int getIndex(Table table) {
-        return ((ComponentRecord) components.get(table)).index;
-    }
-
-    public Table getTable(DataObject dataObject) {
-        Class entClass = dataObject.getObjectId().getObjClass();
-        DbEntity dbEntity =
-            queryEngine.getEntityResolver().lookupDbEntity(entClass);
-        return getTable(dbEntity);
-    }
-
-    public Table getTable(Query query) {
-        DbEntity dbEntity =
-            queryEngine.getEntityResolver().lookupDbEntity(query);
-        return getTable(dbEntity);
+    protected boolean isReflexive(DbEntity metadata) {
+        return reflexiveDbEntities.containsKey(metadata);
     }
 
     private class DbEntityComparator implements Comparator {
@@ -243,66 +399,6 @@ public class DefaultSorter implements DependencySorter {
                 return 0;
             Table t1 = getTable((ObjEntity) o1);
             Table t2 = getTable((ObjEntity) o2);
-            return tableComparator.compare(t1, t2);
-        }
-    }
-
-    private class DataObjectComparator implements Comparator {
-        public int compare(Object o1, Object o2) {
-            if (o1 == o2)
-                return 0;
-            Table t1 = getTable((DataObject) o1);
-            Table t2 = getTable((DataObject) o2);
-            return tableComparator.compare(t1, t2);
-        }
-    }
-
-    private class QueryComparator implements Comparator {
-        public int compare(Object o1, Object o2) {
-            if (o1 == o2)
-                return 0;
-            Query q1 = (Query) o1;
-            Query q2 = (Query) o2;
-            int type1 = q1.getQueryType();
-            int type2 = q2.getQueryType();
-            switch (type1) {
-                case Query.INSERT_QUERY :
-                    if (type2 != Query.INSERT_QUERY)
-                        return -1;
-                    else
-                        return insertQueryComparator.compare(q1, q2);
-                case Query.UPDATE_QUERY :
-                    if (type2 == Query.INSERT_QUERY)
-                        return 1;
-                    else if (type2 == Query.UPDATE_QUERY)
-                        return 0;
-                    else
-                        return -1;
-                case Query.DELETE_QUERY :
-                    if (type2 == Query.INSERT_QUERY
-                        || type2 == Query.UPDATE_QUERY)
-                        return 1;
-                    else if (type2 == Query.DELETE_QUERY)
-                        return deleteQueryComparator.compare(q1, q2);
-                    else
-                        return -1;
-                default :
-                    if (type2 == Query.INSERT_QUERY
-                        || type2 == Query.UPDATE_QUERY
-                        || type2 == Query.DELETE_QUERY)
-                        return 1;
-                    else
-                        return 0;
-            }
-        }
-    }
-
-    private class InsertQueryComparator implements Comparator {
-        public int compare(Object o1, Object o2) {
-            if (o1 == o2)
-                return 0;
-            Table t1 = getTable((Query) o1);
-            Table t2 = getTable((Query) o2);
             return tableComparator.compare(t1, t2);
         }
     }

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,6 +59,7 @@ import java.io.PrintWriter;
 
 import org.objectstyle.cayenne.conf.ConfigSaver;
 import org.objectstyle.cayenne.conf.ConfigSaverDelegate;
+import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.conf.RuntimeSaveDelegate;
 
 /**
@@ -72,15 +73,26 @@ import org.objectstyle.cayenne.conf.RuntimeSaveDelegate;
 public class ApplicationProjectFile extends ProjectFile {
     protected ConfigSaverDelegate saveDelegate;
 
-    public ApplicationProjectFile() {
+	private String objectName = null;
+
+    private ApplicationProjectFile() {
+    	super();
     }
 
-    /**
-     * Constructor for ApplicationProjectFile.
-     */
-    public ApplicationProjectFile(Project project) {
-        super(project, "cayenne.xml");
-    }
+	/**
+	 * Constructor for default ApplicationProjectFile.
+	 */
+	public ApplicationProjectFile(Project project) {
+		this(project, Configuration.DEFAULT_DOMAIN_FILE);
+	}
+
+	/**
+	 * Constructor for ApplicationProjectFile with an existing file.
+	 */
+	public ApplicationProjectFile(Project project, String fileName) {
+		super(project, fileName);
+		this.objectName = fileName.substring(0, fileName.lastIndexOf(this.getLocationSuffix()));
+	}
 
     /**
      * Returns suffix to append to object name when 
@@ -102,14 +114,14 @@ public class ApplicationProjectFile extends ProjectFile {
      * @see org.objectstyle.cayenne.project.ProjectFile#getObjectName()
      */
     public String getObjectName() {
-        return "cayenne";
+        return this.objectName;
     }
 
     public void save(PrintWriter out) throws Exception {
         ConfigSaverDelegate localDelegate =
             (saveDelegate != null)
                 ? saveDelegate
-                : new RuntimeSaveDelegate(((ApplicationProject) projectObj).getConfig());
+                : new RuntimeSaveDelegate(((ApplicationProject) projectObj).getConfiguration());
         new ConfigSaver(localDelegate).storeDomains(out);
     }
 

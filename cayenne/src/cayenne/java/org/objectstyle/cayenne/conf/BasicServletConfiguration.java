@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,9 +55,13 @@
  */
 package org.objectstyle.cayenne.conf;
 
-import java.io.InputStream;
-
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
+
+import org.apache.log4j.Logger;
+import org.objectstyle.cayenne.access.DataContext;
+import org.objectstyle.cayenne.util.ResourceLocator;
+import org.objectstyle.cayenne.util.WebApplicationResourceLocator;
 
 /**
   * BasicServletConfiguration is a Configuration that uses ServletContext 
@@ -66,52 +70,108 @@ import javax.servlet.ServletContext;
   * It resolves configuration file paths relative to the web application
   * "WEB-INF" directory.
   * 
-  * <p>BasicServletConfiguration compatible with Servlet Specification 2.2 and higher.
+  * <p>
+  * BasicServletConfiguration is compatible with Servlet Specification 2.2 and higher.
   * Also look at ServletConfiguration for the information how to utilize listeners 
-  * ntroduced in Servlet Specification 2.3.
+  * introduced in Servlet Specification 2.3.
   * </p>
   *
   * @author Andrei Adamchik
+  * @author Scott Finnerty
   */
-public class BasicServletConfiguration extends Configuration {
+public class BasicServletConfiguration extends DefaultConfiguration {
+	private static Logger logObj = Logger.getLogger(BasicServletConfiguration.class);
 
-    protected ServletContext servletContext;
+	public static final String CONFIGURATION_PATH_KEY =
+		"cayenne.configuration.path";
+	public static final String DATA_CONTEXT_KEY = "cayenne.datacontext";
 
-    public static BasicServletConfiguration initConfig(ServletContext ctxt) {
-        BasicServletConfiguration conf = new BasicServletConfiguration(ctxt);
-        Configuration.initSharedConfig(conf);
-        return conf;
-    }
+	protected ServletContext servletContext;
 
-    public BasicServletConfiguration() {}
+	public synchronized static BasicServletConfiguration initializeConfiguration(ServletContext ctxt) {
+		// check if this web application already has a servlet configuration
+		// sometimes multiple initializations are done by mistake...
+		
+		// Andrus: are there any cases when reinitialization is absolutely required?
+		
+		// don't use static getter, since it will do initialization on demand!!!
+		Configuration oldConfiguration = Configuration.sharedConfiguration;
+		if (oldConfiguration instanceof BasicServletConfiguration) {
+			BasicServletConfiguration basicConfiguration =
+				(BasicServletConfiguration) oldConfiguration;
+			if (basicConfiguration.getServletContext() == ctxt) {
+				logObj.info(
+					"BasicServletConfiguration is already initialized, reusing.");
+				return basicConfiguration;
+			}
+		}
 
-    public BasicServletConfiguration(ServletContext ctxt) {
-        servletContext = ctxt;
-    }
+		BasicServletConfiguration conf = new BasicServletConfiguration(ctxt);
+		Configuration.initializeSharedConfiguration(conf);
 
-    /**
-     * Sets the servletContext.
-     * @param servletContext The servletContext to set
-     */
-    public void setServletContext(ServletContext servletContext) {
-        this.servletContext = servletContext;
-    }
+		return conf;
+	}
 
-    /** Returns current application context object. */
-    public ServletContext getServletContext() {
-        return servletContext;
-    }
+	/** 
+	 * Returns default Cayenne DataContext associated with the HttpSession.
+	 * If no DataContext exists in the session, it is created on the spot. 
+	 */
+	public static DataContext getDefaultContext(HttpSession session) {
+		synchronized (session) {
+			DataContext ctxt =
+				(DataContext) session.getAttribute(DATA_CONTEXT_KEY);
 
-    /** Locates domain configuration file in a web application
-      * looking for "cayenne.xml" in application "WEB-INF" directory. */
-    public InputStream getDomainConfig() {
-        return servletContext.getResourceAsStream("/WEB-INF/" + DOMAIN_FILE);
-    }
+			if (ctxt == null) {
+				ctxt = DataContext.createDataContext();
+				session.setAttribute(
+					BasicServletConfiguration.DATA_CONTEXT_KEY,
+					ctxt);
+			}
 
-    /** Locates data map configuration file via ServletContext
-      * associated with this Configuration treating 
-      * <code>location</code> as relative to application "WEB-INF" directory.. */
-    public InputStream getMapConfig(String location) {
-        return servletContext.getResourceAsStream("/WEB-INF/" + location);
-    }
+			return ctxt;
+		}
+	}
+
+	public BasicServletConfiguration() {
+		super();
+
+	}
+
+	public BasicServletConfiguration(ServletContext ctxt) {
+		super();
+		this.setServletContext(ctxt);
+
+		ResourceLocator l = new WebApplicationResourceLocator(servletContext);
+		l.setSkipAbsolutePath(true);
+		l.setSkipClasspath(false);
+		l.setSkipCurrentDirectory(true);
+		l.setSkipHomeDirectory(true);
+
+		// check for a configuration path in the context parameters
+		String configurationPath =
+			ctxt.getInitParameter(CONFIGURATION_PATH_KEY);
+		if (configurationPath != null
+			&& configurationPath.trim().length() > 0) {
+			l.addFilesystemPath(configurationPath);
+		}
+
+		this.setResourceLocator(l);
+	}
+
+	/**
+	 * Sets the servletContext.
+	 * @param servletContext The servletContext to set
+	 */
+	public void setServletContext(ServletContext servletContext) {
+		this.servletContext = servletContext;
+	}
+
+	/** Returns current application context object. */
+	public ServletContext getServletContext() {
+		return servletContext;
+	}
+
+	public boolean canInitialize() {
+		return (getServletContext() != null);
+	}
 }

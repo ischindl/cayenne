@@ -11,21 +11,23 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
 public class ConfigLoaderTst extends CayenneTestCase {
     private static Logger logObj = Logger.getLogger(ConfigLoaderTst.class);
 
-    /**
-     * Constructor for ConfigLoaderTst.
-     * @param name
-     */
-    public ConfigLoaderTst(String name) {
-        super(name);
-    }
-
     public void testLoadDomains() throws Exception {
         Iterator it = new ConfigLoaderSimpleSuite().getCases().iterator();
         while (it.hasNext()) {
             ConfigLoaderCase aCase = (ConfigLoaderCase) it.next();
             logObj.debug("Starting Case: " + aCase);
-            ConfigLoader helper =
-                new ConfigLoader(new EmptyConfiguration().getLoaderDelegate());
+
+            Configuration conf = new EmptyConfiguration();
+            if (conf.canInitialize()) {
+				conf.initialize();
+				conf.didInitialize();
+            }
+            else {
+            	fail("Configuration refused to be initialized.");
+            }
+
+            ConfigLoaderDelegate delegate = conf.getLoaderDelegate();
+            ConfigLoader helper = new ConfigLoader(delegate);
             aCase.test(helper);
         }
     }

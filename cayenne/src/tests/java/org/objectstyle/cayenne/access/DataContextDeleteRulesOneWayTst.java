@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,20 +67,12 @@ import org.objectstyle.cayenne.unittest.OneWayMappingTestCase;
 public class DataContextDeleteRulesOneWayTst extends OneWayMappingTestCase {
 	private DataContext context;
 
-	/**
-	 * Constructor for DataContextDeleteRulesOneWayTst.
-	 * @param name
-	 */
-	public DataContextDeleteRulesOneWayTst(String name) {
-		super(name);
-	}
-
 	public void setUp() throws java.lang.Exception {
 		CayenneTestDatabaseSetup setup = getDatabaseSetup();
 		setup.cleanTableData();
 
 		DataDomain dom = getDomain();
-		setup.createPkSupportForMapEntities(dom.getDataNodes()[0]);
+		setup.createPkSupportForMapEntities((DataNode)dom.getDataNodes().iterator().next());
 
 		context = dom.createDataContext();
 	}

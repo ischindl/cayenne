@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,14 +66,17 @@ import org.objectstyle.cayenne.project.NamedObjectFactory;
  * @author Andrei Adamchik
  */
 public class CreateDerivedDbEntityAction extends CreateDbEntityAction {
-    public static final String ACTION_NAME = "Create Derived DbEntity";
+
+	public static String getActionName() {
+		return "Create Derived DbEntity";
+	}
     
 	/**
 	 * Constructor for CreateDerivedDbEntityAction.
 	 */
 	public CreateDerivedDbEntityAction() {
-		setName(ACTION_NAME);
-		super.putValue(Action.DEFAULT, ACTION_NAME);
+		super.setName(getActionName());
+		super.putValue(Action.DEFAULT, getActionName());
 	}
 	
 	public String getIconName() {
@@ -90,5 +93,6 @@ public class CreateDerivedDbEntityAction extends CreateDbEntityAction {
 		map.addDbEntity(entity);
 		return entity;
 	}
+
 }
 

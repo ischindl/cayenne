@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -83,7 +83,8 @@ public abstract class QueryAssemblerHelper {
 
     protected QueryAssembler queryAssembler;
 
-    public QueryAssemblerHelper() {}
+    public QueryAssemblerHelper() {
+    }
 
     /** Creates QueryAssemblerHelper. Sets queryAssembler property. */
     public QueryAssemblerHelper(QueryAssembler queryAssembler) {
@@ -134,14 +135,20 @@ public abstract class QueryAssemblerHelper {
                     processRelTermination(buf, rel);
                 } else {
                     // find and add joins ....
-                    processRelParts(rel);
+                    Iterator relit = rel.getDbRelationships().iterator();
+                    while (relit.hasNext()) {
+                        queryAssembler.dbRelationshipAdded(
+                            (DbRelationship) relit.next());
+                    }
                 }
                 lastRelationship = rel;
             } else {
                 ObjAttribute objAttr = (ObjAttribute) pathComp;
                 if (lastRelationship != null) {
+                    List lastDbRelList = lastRelationship.getDbRelationships();
                     DbRelationship lastDbRel =
-                        (DbRelationship) lastRelationship.getDbRelationshipList().get(0);
+                        (DbRelationship) lastDbRelList.get(
+                            lastDbRelList.size() - 1);
                     processColumn(buf, objAttr.getDbAttribute(), lastDbRel);
                 } else {
                     processColumn(buf, objAttr.getDbAttribute());
@@ -189,7 +196,9 @@ public abstract class QueryAssemblerHelper {
         DbRelationship rel) {
         String alias =
             (queryAssembler.supportsTableAliases())
-                ? queryAssembler.aliasForTable((DbEntity) dbAttr.getEntity(), rel)
+                ? queryAssembler.aliasForTable(
+                    (DbEntity) dbAttr.getEntity(),
+                    rel)
                 : null;
 
         buf.append(dbAttr.getAliasedName(alias));
@@ -203,6 +212,7 @@ public abstract class QueryAssemblerHelper {
 
         buf.append(dbAttr.getAliasedName(alias));
     }
+
 
     /**
      * Appends SQL code to the query buffer to handle <code>val</code> as a
@@ -224,7 +234,11 @@ public abstract class QueryAssemblerHelper {
      * is being appended.
      * 
      */
-    protected void appendLiteral(StringBuffer buf, Object val, DbAttribute attr) {
+    protected void appendLiteral(
+        StringBuffer buf,
+        Object val,
+        DbAttribute attr,
+        Expression parentExpression) {
         if (val == null) {
             buf.append("NULL");
         } else if (val instanceof DataObject) {
@@ -254,9 +268,13 @@ public abstract class QueryAssemblerHelper {
             }
 
             // checks have been passed, use id value
-            appendLiteralDirect(buf, snap.get(snap.keySet().iterator().next()), attr);
+            appendLiteralDirect(
+                buf,
+                snap.get(snap.keySet().iterator().next()),
+                attr,
+                parentExpression);
         } else {
-            appendLiteralDirect(buf, val, attr);
+            appendLiteralDirect(buf, val, attr, parentExpression);
         }
     }
 
@@ -270,10 +288,11 @@ public abstract class QueryAssemblerHelper {
      * @param val object that should be appended as a literal to the query. 
      * Must be of one of "standard JDBC" types. Can not be null.
      */
-    private final void appendLiteralDirect(
+    protected void appendLiteralDirect(
         StringBuffer buf,
         Object val,
-        DbAttribute attr) {
+        DbAttribute attr,
+        Expression parentExpression) {
         buf.append('?');
 
         // we are hoping that when processing parameter list, 
@@ -320,49 +339,30 @@ public abstract class QueryAssemblerHelper {
         return null;
     }
 
-    /** 
-     *  Processes ObjRelationship. Decomposes it into DbRelationships 
-     *  and appends parts to the query buffer. 
-     */
-    protected void processRelParts(ObjRelationship rel) {
-        Iterator it = rel.getDbRelationshipList().iterator();
-        while (it.hasNext()) {
-            queryAssembler.dbRelationshipAdded((DbRelationship) it.next());
-        }
-    }
-
     /** Processes case when an OBJ_PATH expression ends with relationship.
       * If this is a "to many" relationship, a join is added and a column
       * expression for the target entity primary key. If this is a "to one"
       * relationship, column expresion for the source foreign key is added.
       */
-    protected void processRelTermination(StringBuffer buf, ObjRelationship rel) {
-        if (rel.isToMany()) {
-            // append joins
-            processRelParts(rel);
+    protected void processRelTermination(
+        StringBuffer buf,
+        ObjRelationship rel) {
+
+        Iterator dbRels = rel.getDbRelationships().iterator();
+
+        // scan DbRelationships
+        while (dbRels.hasNext()) {
+            DbRelationship dbRel = (DbRelationship) dbRels.next();
+
+            // if this is a last relationship in the path,
+            // it needs special handling
+            if (!dbRels.hasNext()) {
+                processRelTermination(buf, dbRel);
+            } else {
+                // find and add joins ....
+                queryAssembler.dbRelationshipAdded(dbRel);
+            }
         }
-
-        List dbRels = rel.getDbRelationshipList();
-
-        // get last DbRelationship on the list
-        DbRelationship dbRel = (DbRelationship) dbRels.get(dbRels.size() - 1);
-        List joins = dbRel.getJoins();
-        if (joins.size() != 1) {
-            StringBuffer msg = new StringBuffer();
-            msg
-                .append("OBJ_PATH expressions are only supported ")
-                .append("for a single-join relationships. ")
-                .append("This relationship has ")
-                .append(joins.size())
-                .append(" joins.");
-
-            throw new CayenneRuntimeException(msg.toString());
-        }
-
-        DbAttributePair join = (DbAttributePair) joins.get(0);
-
-        DbAttribute att = join.getSource();
-        processColumn(buf, att);
     }
 
     /** 
@@ -371,7 +371,10 @@ public abstract class QueryAssemblerHelper {
      * expression for the target entity primary key. If this is a "to one"
      * relationship, column expresion for the source foreign key is added.
      */
-    protected void processRelTermination(StringBuffer buf, DbRelationship rel) {
+    protected void processRelTermination(
+        StringBuffer buf,
+        DbRelationship rel) {
+
         if (rel.isToMany()) {
             // append joins
             queryAssembler.dbRelationshipAdded(rel);

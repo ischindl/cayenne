@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -110,7 +110,11 @@ public class ExpressionFactory {
                 Expression.SUM,
                 Expression.AVG,
                 Expression.MIN,
-                Expression.MAX };
+                Expression.MAX,
+                Expression.NOT_BETWEEN,
+                Expression.NOT_IN,
+                Expression.NOT_LIKE,
+                Expression.NOT_LIKE_IGNORE_CASE };
 
         int max = 0;
         int min = 0;
@@ -139,6 +143,7 @@ public class ExpressionFactory {
 
         // ternary types
         typeLookup[Expression.BETWEEN] = TernaryExpression.class;
+		typeLookup[Expression.NOT_BETWEEN] = TernaryExpression.class;
 
         // binary types
         typeLookup[Expression.EQUAL_TO] = BinaryExpression.class;
@@ -148,8 +153,11 @@ public class ExpressionFactory {
         typeLookup[Expression.LESS_THAN_EQUAL_TO] = BinaryExpression.class;
         typeLookup[Expression.GREATER_THAN_EQUAL_TO] = BinaryExpression.class;
         typeLookup[Expression.IN] = BinaryExpression.class;
+		typeLookup[Expression.NOT_IN] = BinaryExpression.class;
         typeLookup[Expression.LIKE] = BinaryExpression.class;
         typeLookup[Expression.LIKE_IGNORE_CASE] = BinaryExpression.class;
+		typeLookup[Expression.NOT_LIKE] = BinaryExpression.class;
+		typeLookup[Expression.NOT_LIKE_IGNORE_CASE] = BinaryExpression.class;
         typeLookup[Expression.ADD] = BinaryExpression.class;
         typeLookup[Expression.SUBTRACT] = BinaryExpression.class;
         typeLookup[Expression.MULTIPLY] = BinaryExpression.class;
@@ -213,7 +221,7 @@ public class ExpressionFactory {
      * expressions. Applied only in path expressions.
      */
     protected static Object wrapPathOperand(Object op) {
-        if (op instanceof List) {
+        if ((op instanceof List) || (op instanceof Object[])) {
             return unaryExp(Expression.LIST, op);
         } else {
             return op;
@@ -424,18 +432,141 @@ public class ExpressionFactory {
     }
 
     /**
-     * An shortcut for <code>binaryPathExp(Expression.EQUAL_TO, pathSpec, value)</code>.
+     * An shortcut for <code>binaryDbNameExp(Expression.EQUAL_TO, pathSpec, value)</code>.
+     */
+    public static Expression matchDbExp(String pathSpec, Object value) {
+        return binaryDbPathExp(Expression.EQUAL_TO, pathSpec, value);
+    }
+
+    /**
+     * A convenience shortcut for <code>binaryPathExp(Expression.EQUAL_TO,
+     * pathSpec, value)
+     * </code>.
      */
     public static Expression matchExp(String pathSpec, Object value) {
         return binaryPathExp(Expression.EQUAL_TO, pathSpec, value);
     }
 
     /**
-     * An shortcut for <code>binaryDbNameExp(Expression.EQUAL_TO, pathSpec, value)</code>.
+     * A convenience shortcut for <code>binaryPathExp(Expression.NOT_EQUAL_TO,
+     * pathSpec, value)
+     * </code>.
      */
-    public static Expression matchDbExp(String pathSpec, Object value) {
-        return binaryDbPathExp(Expression.EQUAL_TO, pathSpec, value);
+    public static Expression noMatchExp(String pathSpec, Object value) {
+        return binaryPathExp(Expression.NOT_EQUAL_TO, pathSpec, value);
     }
+
+    /**
+     * A convenience shortcut for <code>binaryPathExp(Expression.LESS_THAN,
+     * pathSpec, value)
+     * </code>.
+     */
+    public static Expression lessExp(String pathSpec, Object value) {
+        return binaryPathExp(Expression.LESS_THAN, pathSpec, value);
+    }
+
+    /**
+     * A convenience shortcut for <code>binaryPathExp(Expression.LESS_THAN_EQUAL_TO,
+     * pathSpec, value)
+     * </code>.
+     */
+    public static Expression lessOrEqualExp(String pathSpec, Object value) {
+        return binaryPathExp(Expression.LESS_THAN_EQUAL_TO, pathSpec, value);
+    }
+
+    /**
+     * A convenience shortcut for <code>binaryPathExp(Expression.GREATER_THAN,
+     * pathSpec, value)
+     * </code>.
+     */
+    public static Expression greaterExp(String pathSpec, Object value) {
+        return binaryPathExp(Expression.GREATER_THAN, pathSpec, value);
+    }
+
+    /**
+     * A convenience shortcut for <code>binaryPathExp(Expression.GREATER_THAN_EQUAL_TO,
+     * pathSpec, value)
+     * </code>.
+     */
+    public static Expression greaterOrEqualExp(String pathSpec, Object value) {
+        return binaryPathExp(Expression.GREATER_THAN_EQUAL_TO, pathSpec, value);
+    }
+
+    /**
+     * A convenience shortcut for building IN expression.
+     */
+    public static Expression inExp(String pathSpec, Object[] values) {
+        return binaryPathExp(Expression.IN, pathSpec, wrapPathOperand(values));
+    }
+
+    /**
+     * A convenience shortcut for building IN expression.
+     */
+    public static Expression inExp(String pathSpec, List values) {
+        return binaryPathExp(Expression.IN, pathSpec, wrapPathOperand(values));
+    }
+    
+	/**
+	 * A convenience shortcut for building NOT_IN expression.
+	 */
+	public static Expression notInExp(String pathSpec, List values) {
+		return binaryPathExp(Expression.NOT_IN, pathSpec, wrapPathOperand(values));
+	}
+
+    /**
+     * A convenience shortcut for building BETWEEN expressions.
+     */
+    public static Expression betweenExp(
+        String pathSpec,
+        Object value1,
+        Object value2) {
+        Expression path = unaryExp(Expression.OBJ_PATH, pathSpec);
+        return ternaryExp(Expression.BETWEEN, path, value1, value2);
+    }
+    
+	/**
+	 * A convenience shortcut for building NOT_BETWEEN expressions.
+	 */
+	public static Expression notBetweenExp(
+			String pathSpec,
+			Object value1,
+			Object value2) {
+			Expression path = unaryExp(Expression.OBJ_PATH, pathSpec);
+		return ternaryExp(Expression.NOT_BETWEEN, path, value1, value2);
+	}
+
+    /**
+     * A convenience shortcut for <code>binaryPathExp(Expression.LIKE, pathSpec,
+     * value)</code>.
+     */
+    public static Expression likeExp(String pathSpec, Object value) {
+        return binaryPathExp(Expression.LIKE, pathSpec, value);
+    }
+    
+	/**
+	 * A convenience shortcut for <code>binaryPathExp(Expression.NOT_LIKE, pathSpec,
+	 * value)</code>.
+	 */
+	public static Expression notLikeExp(String pathSpec, Object value) {
+		return binaryPathExp(Expression.NOT_LIKE, pathSpec, value);
+	}
+
+    /**
+     * A convenience shortcut for <code>binaryPathExp(Expression.
+     * LIKE_IGNORE_CASE, pathSpec, value)</code>.
+     */
+    public static Expression likeIgnoreCaseExp(String pathSpec, Object value) {
+        return binaryPathExp(Expression.LIKE_IGNORE_CASE, pathSpec, value);
+    }
+    
+	/**
+	 * A convenience shortcut for <code>binaryPathExp(Expression.
+	 * NOT_LIKE_IGNORE_CASE, pathSpec, value)</code>.
+	 */
+	public static Expression notLikeIgnoreCaseExp(String pathSpec, Object value) {
+		return binaryPathExp(Expression.NOT_LIKE_IGNORE_CASE, pathSpec, value);
+	}
+    
 
     /** 
      * Joins all <code>expressions</code> in a single expression. 

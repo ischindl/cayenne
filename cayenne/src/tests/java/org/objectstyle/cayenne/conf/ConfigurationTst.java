@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,18 +55,16 @@
  */
 package org.objectstyle.cayenne.conf;
 
+import java.io.File;
 import java.io.InputStream;
 
+import org.objectstyle.cayenne.ConfigurationException;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.project.ProjectDataSourceFactory;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
-
+import org.objectstyle.cayenne.util.ResourceLocator;
 
 public class ConfigurationTst extends CayenneTestCase {
-
-    public ConfigurationTst(String name) {
-        super(name);
-    }
 
     public void testDomain() throws java.lang.Exception {
         Configuration cfg = new Config();
@@ -82,22 +80,64 @@ public class ConfigurationTst extends CayenneTestCase {
 	public void testOverrideFactory() throws java.lang.Exception {
 		Configuration cfg = new Config();
 
-        assertNull(cfg.getOverrideFactory());
+        assertNull(cfg.getDataSourceFactory());
 		ProjectDataSourceFactory factory = new ProjectDataSourceFactory(null);
-        cfg.setOverrideFactory(factory);
-        assertSame(factory, cfg.getOverrideFactory());
+        cfg.setDataSourceFactory(factory);
+        assertSame(factory, cfg.getDataSourceFactory());
 	}
 
+	public void testDefaultConfigurationConstructorWithNullName() {
+		try {
+			new DefaultConfiguration(null);
+			fail("expected ConfigurationException!");
+		}
+		catch (ConfigurationException ex) {
+			// OK
+		}
+	}
+
+	public void testFileConfigurationConstructorWithNullFile() {
+		try {
+			new FileConfiguration((File)null);
+			fail("expected ConfigurationException!");
+		}
+		catch (ConfigurationException ex) {
+			// OK
+		}
+	}
+
+	public void testFileConfigurationConstructorWithNullName() {
+		try {
+			new FileConfiguration((String)null);
+			fail("expected ConfigurationException!");
+		}
+		catch (ConfigurationException ex) {
+			// OK
+		}
+	}
 
     /** Concrete Configuration subclass used for tests. */
     public static class Config extends Configuration {
-        public InputStream getDomainConfig() {
+
+		public boolean canInitialize() {
+			return true;
+		}
+
+		public void initialize() throws Exception {
+		}
+
+		public void didInitialize() {
+		}
+
+		public ResourceLocator getResourceLocator() {
+			return null;
+		}
+
+		protected InputStream getDomainConfiguration() {
             return null;
         }
 
-        /** Returns DataMap configuration from a specified location or null if it
-          * can not be found. */
-        public InputStream getMapConfig(String location) {
+		protected InputStream getMapConfiguration(String location) {
             return null;
         }
     }

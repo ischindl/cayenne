@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,6 @@ package org.objectstyle.cayenne.modeler.action;
 
 import java.awt.event.ActionEvent;
 
-import org.objectstyle.cayenne.modeler.Editor;
 import org.objectstyle.cayenne.modeler.ModelerPreferences;
 import org.objectstyle.cayenne.project.ProjectPath;
 
@@ -65,13 +64,16 @@ import org.objectstyle.cayenne.project.ProjectPath;
  * @author Andrei Adamchik
  */
 public class ExitAction extends ProjectAction {
-    public static final String ACTION_NAME = "Exit";
+
+    public static String getActionName() {
+    	return "Exit";
+    }
 
     /**
      * Constructor for ExitAction.
      */
     public ExitAction() {
-        super(ACTION_NAME);
+        super(getActionName());
     }
 
     public void performAction(ActionEvent e) {
@@ -83,8 +85,10 @@ public class ExitAction extends ProjectAction {
             return;
         }
 
-        ModelerPreferences.getPreferences().storePreferences();
-        Editor.getFrame().setVisible(false);
+		// write prefs to persistent store
+		ModelerPreferences.getPreferences().storePreferences();
+
+		// goodbye
         System.exit(0);
     }
 

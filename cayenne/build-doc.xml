@@ -35,6 +35,10 @@
              <filterset begintoken="!--" endtoken="--">
 				<filter token="SFLOGO" value="${sf.logo}"/>
 			 </filterset>
+				 
+			<filterset begintoken="!--" endtoken="--">
+				<filter token="JNLOGO" value="${java.net.logo}"/>
+			 </filterset>
          </copy>
     </target>
     
@@ -109,8 +113,20 @@
             <fileset dir="xdocs/images">
                 <include name="**/*.gif"/>
                 <include name="**/*.jpeg"/>
+                <include name="**/*.png"/>
                 <include name="**/*.jpg"/>
                 <include name="**/*.css"/>
+            </fileset>
+        </copy>
+        
+        <!-- copy modeler buttons -->
+        <mkdir dir="${dist}/doc/images/modeler"/>
+        <copy todir="${dist}/doc/images/modeler" filtering="no" flatten="yes">
+            <fileset dir="src/modeler/java">
+                <include name="**/*.gif"/>
+                <include name="**/*.jpeg"/>
+                <include name="**/*.png"/>
+                <include name="**/*.jpg"/>
             </fileset>
         </copy>
     </target>

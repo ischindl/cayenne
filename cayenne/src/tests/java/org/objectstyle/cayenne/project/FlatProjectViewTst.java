@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,14 +65,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
  * @author Andrei Adamchik
  */
 public class FlatProjectViewTst extends CayenneTestCase {
-
-    /**
-     * Constructor for FlatProjectView.
-     * @param name
-     */
-    public FlatProjectViewTst(String name) {
-        super(name);
-    }
 
     public void testFlattenProjectView() throws Exception {
         DataMap map = new DataMap("m1");

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,33 +63,64 @@ import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class PkGeneratorTst extends CayenneTestCase {
-    protected PkGenerator pkGen;
-    protected DataNode node;
-    protected DbEntity paintEnt;
+	
+	protected PkGenerator pkGen;
+	protected DataNode node;
+	protected DbEntity paintEnt;
 
-    public PkGeneratorTst(String name) {
-        super(name);
-    }
+	protected void setUp() throws java.lang.Exception {
+		getDatabaseSetup().cleanTableData();
+		node = (DataNode) getDomain().getDataNodes().iterator().next();
+		pkGen = node.getAdapter().getPkGenerator();
+		paintEnt =
+			node.getEntityResolver().lookupObjEntity("Painting").getDbEntity();
+		List list = new ArrayList();
+		list.add(paintEnt);
+		pkGen.createAutoPk(node, list);
+		pkGen.reset();
+	}
 
-    protected void setUp() throws java.lang.Exception {
-        getDatabaseSetup().cleanTableData();
-
-        node = getDomain().getDataNodes()[0];
-        pkGen = node.getAdapter().getPkGenerator();
-        paintEnt = node.getEntityResolver().lookupObjEntity("Painting").getDbEntity();
-        List list = new ArrayList();
-        list.add(paintEnt);
-        pkGen.createAutoPk(node, list);
-    }
-
-    public void testGeneratePkForDbEntity() throws java.lang.Exception {
-        List pkList = new ArrayList();
-
-        for (int i = 0; i < 6; i++) {
-            Object pk = pkGen.generatePkForDbEntity(node, paintEnt);
-            assertNotNull(pk);
-            assertTrue(!pkList.contains(pk));
-            pkList.add(pk);
+	public void testGeneratePkForDbEntity() throws Exception {
+		List pkList = new ArrayList();
+    
+        int testSize = (pkGen instanceof JdbcPkGenerator) ? ((JdbcPkGenerator)pkGen).getPkCacheSize() * 2 : 25;
+        if(testSize < 25) {
+        	testSize = 25;
         }
+ 
+		for (int i = 0; i < testSize; i++) {
+			Object pk = pkGen.generatePkForDbEntity(node, paintEnt);
+			assertNotNull(pk);
+			assertTrue(pk instanceof Number);
+			assertFalse(pkList.contains(pk));
+
+			// check that the number is continuous
+			// of course this assumes a single-threaded test
+			if (pkList.size() > 0) {
+               Number last = (Number)pkList.get(pkList.size() - 1);
+               assertEquals(last.intValue() + 1, ((Number)pk).intValue());
+			}
+
+			pkList.add(pk);
+		}
+	}
+    
+    public void testBinaryPK1() throws Exception {
+        if (!(pkGen instanceof JdbcPkGenerator)) {
+            return;
+        }
+
+        DbEntity artistEntity = getDomain().getEntityResolver().lookupDbEntity("Artist");
+        assertNull(((JdbcPkGenerator) pkGen).binaryPK(artistEntity));
+    }
+
+    public void testBinaryPK2() throws Exception {
+        if (!(pkGen instanceof JdbcPkGenerator)) {
+            return;
+        }
+
+        DbEntity binPKEntity =
+            getDomain().getEntityResolver().lookupDbEntity("BinaryPKTest1");
+        assertNotNull(((JdbcPkGenerator) pkGen).binaryPK(binPKEntity));
     }
 }

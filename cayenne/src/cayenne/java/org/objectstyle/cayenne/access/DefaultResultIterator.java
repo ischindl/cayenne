@@ -1,8 +1,8 @@
 /* ====================================================================
- * 
- * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * The ObjectStyle Group Software License, Version 1.0
+ *
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,7 +10,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -18,15 +18,15 @@
  *    distribution.
  *
  * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
+ *    any, must include the following acknowlegement:
+ *       "This product includes software developed by the
  *        ObjectStyle Group (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
  *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
+ * 4. The names "ObjectStyle Group" and "Cayenne"
  *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
+ *    from this software without prior written permission. For written
  *    permission, please contact andrus@objectstyle.org.
  *
  * 5. Products derived from this software may not be called "ObjectStyle"
@@ -58,114 +58,125 @@ package org.objectstyle.cayenne.access;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.sql.CallableStatement;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneException;
-import org.objectstyle.cayenne.access.trans.SelectQueryAssembler;
 import org.objectstyle.cayenne.access.types.ExtendedType;
-import org.objectstyle.cayenne.access.types.ExtendedTypeMap;
-import org.objectstyle.cayenne.dba.DbAdapter;
-import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.access.util.ResultDescriptor;
 
 /**
- * Default implementation of ResultIterator interface. Serves as a 
+ * Default implementation of ResultIterator interface. Serves as a
  * factory that creates data rows from <code>java.sql.ResultSet</code>.
- * 
+ *
  * <p><i>For more information see <a href="../../../../../../userguide/index.html"
  * target="_top">Cayenne User Guide.</a></i></p>
- * 
+ *
  * @author Andrei Adamchik
  */
 public class DefaultResultIterator implements ResultIterator {
-    private static Logger logObj = Logger.getLogger(DefaultResultIterator.class);
+    private static Logger logObj =
+        Logger.getLogger(DefaultResultIterator.class);
 
-    protected PreparedStatement prepStmt;
-    protected ResultSet resultSet;
+    // Connection information
     protected Connection connection;
+    protected Statement statement;
+    protected ResultSet resultSet;
 
-    protected DbAttribute[] rowDescriptor;
-    protected ExtendedType[] converters;
-    protected int[] idIndex;
+    // Result descriptor
+    protected ResultDescriptor descriptor;
 
-    protected int resultSize;
+    protected int mapCapacity;
+    protected int idMapCapacity;
 
     protected boolean closingConnection;
     protected boolean isClosed;
 
     protected boolean nextRow;
-
-    /** 
-     * Creates new DefaultResultIterator. Initializes it
-     * with ResultSet and query metadata.
-     */
-    public DefaultResultIterator(
-        PreparedStatement prepStmt,
-        DbAdapter adapter,
-        SelectQueryAssembler assembler)
-        throws SQLException, CayenneException {
-
-        this.prepStmt = prepStmt;
-        this.connection = assembler.getCon();
-        this.resultSet = prepStmt.executeQuery();
-        this.rowDescriptor = assembler.getSnapshotDesc(resultSet);
-
-        String[] rowTypes = assembler.getResultTypes(resultSet);
-
-        resultSize = rowDescriptor.length;
-        
-        // this list will hold positions of PK atributes
-        List idIndexList = new ArrayList(resultSize);
-
-        converters = new ExtendedType[resultSize];
-        ExtendedTypeMap typeMap = adapter.getTypeConverter();
-        
-        for (int i = 0; i < resultSize; i++) {
-        	// index id columns
-        	if(rowDescriptor[i].isPrimaryKey()) {
-        		idIndexList.add(new Integer(i));
-        	}
-        	
-        	// initialize converters
-            converters[i] = typeMap.getRegisteredType(rowTypes[i]);
-        }
-
-        int indexSize = idIndexList.size();
-        idIndex = new int[indexSize];
-        for(int i = 0; i < indexSize; i++) {
-        	idIndex[i] = ((Integer)idIndexList.get(i)).intValue();
-        }
-        
-        init(assembler);
-    }
+    protected int fetchedSoFar;
+    protected int fetchLimit;
 
     /**
-     * Reads the first row of data.
+     * Utility method to read stored procedure out parameters as a map. 
+     * Returns an empty map if no out parameters exist.
      */
-    protected void init(SelectQueryAssembler assembler)
+    public static Map readProcedureOutParameters(
+        CallableStatement statement,
+        ResultDescriptor resultDescriptor)
+        throws SQLException, Exception {
+
+        int resultWidth = resultDescriptor.getResultWidth();
+        if (resultWidth > 0) {
+            Map dataRow = new HashMap(resultWidth * 2, 0.75f);
+            ExtendedType[] converters = resultDescriptor.getConverters();
+            int[] jdbcTypes = resultDescriptor.getJdbcTypes();
+            String[] names = resultDescriptor.getNames();
+            int[] outParamIndexes = resultDescriptor.getOutParamIndexes();
+
+            // process result row columns,
+            for (int i = 0; i < outParamIndexes.length; i++) {
+                int index = outParamIndexes[i];
+
+                // note: jdbc column indexes start from 1, not 0 unlike everywhere else
+                Object val =
+                    converters[index].materializeObject(
+                        statement,
+                        index + 1,
+                        jdbcTypes[index]);
+                dataRow.put(names[index], val);
+            }
+            
+            return dataRow;
+        }
+
+        return Collections.EMPTY_MAP;
+    }
+
+    public DefaultResultIterator(
+        Connection connection,
+        Statement statement,
+        ResultSet resultSet,
+        ResultDescriptor descriptor,
+        int fetchLimit)
         throws SQLException, CayenneException {
+
+        this.connection = connection;
+        this.statement = statement;
+        this.resultSet = resultSet;
+        this.descriptor = descriptor;
+        this.fetchLimit = fetchLimit;
+
+        this.mapCapacity =
+            (int) Math.ceil((descriptor.getNames().length) / 0.75);
+        this.idMapCapacity =
+            (int) Math.ceil((descriptor.getIdIndexes().length) / 0.75);
+
         checkNextRow();
     }
 
-    /** 
-     * Moves internal ResultSet cursor position down one row. 
+    /**
+     * Moves internal ResultSet cursor position down one row.
      * Checks if the next row is available.
      */
     protected void checkNextRow() throws SQLException, CayenneException {
         nextRow = false;
-        if (resultSet.next()) {
+        if ((fetchLimit <= 0 || fetchedSoFar < fetchLimit)
+            && resultSet.next()) {
             nextRow = true;
+            fetchedSoFar++;
         }
     }
 
-    /** 
+    /**
      * Returns true if there is at least one more record
      * that can be read from the iterator.
      */
@@ -173,7 +184,7 @@ public class DefaultResultIterator implements ResultIterator {
         return nextRow;
     }
 
-    /** 
+    /**
      * Returns the next result row as a Map.
      */
     public Map nextDataRow() throws CayenneException {
@@ -195,10 +206,10 @@ public class DefaultResultIterator implements ResultIterator {
     }
 
     /**
-     * Returns all unread data rows from ResultSet and closes
-     * this iterator. 
+     * Returns all unread data rows from ResultSet, closing
+     * this iterator if needed.
      */
-    public List dataRows() throws CayenneException {
+    public List dataRows(boolean close) throws CayenneException {
         List list = new ArrayList();
 
         try {
@@ -207,27 +218,33 @@ public class DefaultResultIterator implements ResultIterator {
             }
             return list;
         } finally {
-            this.close();
+            if (close) {
+                this.close();
+            }
         }
     }
 
-    /** 
+    /**
      * Reads a row from the internal ResultSet at the current
      * cursor position.
      */
     protected Map readDataRow() throws SQLException, CayenneException {
         try {
-            Map dataRow = new HashMap();
+            Map dataRow = new HashMap(mapCapacity, 0.75f);
+            ExtendedType[] converters = descriptor.getConverters();
+            int[] jdbcTypes = descriptor.getJdbcTypes();
+            String[] names = descriptor.getNames();
+            int resultWidth = names.length;
 
             // process result row columns,
-            for (int i = 0; i < resultSize; i++) {
-                // note: jdbc column indexes start from 1, not 0 as in arrays
+            for (int i = 0; i < resultWidth; i++) {
+                // note: jdbc column indexes start from 1, not 0 unlike everywhere else
                 Object val =
                     converters[i].materializeObject(
                         resultSet,
                         i + 1,
-                        rowDescriptor[i].getType());
-                dataRow.put(rowDescriptor[i].getName(), val);
+                        jdbcTypes[i]);
+                dataRow.put(names[i], val);
             }
 
             return dataRow;
@@ -236,32 +253,38 @@ public class DefaultResultIterator implements ResultIterator {
             throw cex;
         } catch (Exception otherex) {
             logObj.warn("Error", otherex);
-            throw new CayenneException("Exception materializing column.", otherex);
+            throw new CayenneException(
+                "Exception materializing column.",
+                otherex);
         }
     }
 
-    /** 
+    /**
      * Reads a row from the internal ResultSet at the current
-     * cursor position.
+     * cursor position, processing only columns that are part of the ObjectId
+     * of a terget class.
      */
     protected Map readIdRow() throws SQLException, CayenneException {
         try {
-            Map idRow = new HashMap();
-            
+            Map idRow = new HashMap(idMapCapacity, 0.75f);
+            ExtendedType[] converters = descriptor.getConverters();
+            int[] jdbcTypes = descriptor.getJdbcTypes();
+            String[] names = descriptor.getNames();
+            int[] idIndex = descriptor.getIdIndexes();
             int len = idIndex.length;
 
             for (int i = 0; i < len; i++) {
-            	
-            	// dereference column index
-            	int index = idIndex[i];
-            	
+
+                // dereference column index
+                int index = idIndex[i];
+
                 // note: jdbc column indexes start from 1, not 0 as in arrays
                 Object val =
                     converters[index].materializeObject(
                         resultSet,
                         index + 1,
-                        rowDescriptor[index].getType());
-                idRow.put(rowDescriptor[index].getName(), val);
+                        jdbcTypes[index]);
+                idRow.put(names[index], val);
             }
 
             return idRow;
@@ -270,12 +293,13 @@ public class DefaultResultIterator implements ResultIterator {
             throw cex;
         } catch (Exception otherex) {
             logObj.warn("Error", otherex);
-            throw new CayenneException("Exception materializing id column.", otherex);
+            throw new CayenneException(
+                "Exception materializing id column.",
+                otherex);
         }
     }
 
-
-    /** 
+    /**
      * Closes ResultIterator and associated ResultSet. This method must be
      * called explicitly when the user is finished processing the records.
      * Otherwise unused database resources will not be released properly.
@@ -296,12 +320,14 @@ public class DefaultResultIterator implements ResultIterator {
             }
 
             try {
-                prepStmt.close();
+                statement.close();
             } catch (SQLException e2) {
                 out.println("Error closing PreparedStatement");
                 e2.printStackTrace(out);
             }
 
+            // close connection, if this object was explicitly configured to be
+            // responsible for doing it
             if (this.isClosingConnection()) {
                 try {
                     connection.close();
@@ -315,14 +341,15 @@ public class DefaultResultIterator implements ResultIterator {
                 out.close();
                 errors.close();
             } catch (IOException ioex) {
-                // this is totally unexpected, 
+                // this is totally unexpected,
                 // after all we are writing to the StringBuffer
-                // in the memory	
+                // in the memory
             }
             StringBuffer buf = errors.getBuffer();
 
             if (buf.length() > 0) {
-                throw new CayenneException("Error closing ResultIterator: " + buf);
+                throw new CayenneException(
+                    "Error closing ResultIterator: " + buf);
             }
 
             isClosed = true;
@@ -330,8 +357,8 @@ public class DefaultResultIterator implements ResultIterator {
     }
 
     /**
-     * Returns <code>true</code> if this iterator is responsible 
-     * for closing its connection, otherwise a user of the iterator 
+     * Returns <code>true</code> if this iterator is responsible
+     * for closing its connection, otherwise a user of the iterator
      * must close the connection after closing the iterator.
      */
     public boolean isClosingConnection() {
@@ -362,7 +389,7 @@ public class DefaultResultIterator implements ResultIterator {
 
     /**
      * Reads just ObjectId columns and returns them as a map.
-     * 
+     *
      * @see org.objectstyle.cayenne.access.ResultIterator#nextObjectId()
      */
     public Map nextObjectId() throws CayenneException {

@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002 The ObjectStyle Group
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,73 +56,35 @@
 
 package org.objectstyle.cayenne.access.util;
 
-import java.util.Comparator;
+import java.util.List;
 
 import org.objectstyle.cayenne.access.QueryEngine;
-import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.ObjEntity;
 
 /**
- * Interface that defines a set of algorithms used for sorting various lists of
- * Cayenne objects.
+ * Interface that defines API to algorithms used for sorting Cayenne entities
+ * based on their dependencies.
  * 
  * @author Andrei Adamchik
  */
 public interface DependencySorter {
-	public void initSorter(QueryEngine queryEngine, DataMap[] dataMaps);
-	
-	/**
-	 * Returns a comparator for sorting DbEntities to satisfy their
-	 * dependencies.
-	 * 
-	 * @param dependentLast If set to <code>true</code>, this comparator will
-	 * place dependent objects after the the objects they depend upon.
-	 * 
-	 * @return Comparator
-	 */
-    public Comparator getDbEntityComparator(boolean dependentLast);
+    /**
+     * Sorts a list of DbEntities.
+     */
+    public void sortDbEntities(List dbEntities, boolean deleteOrder);
 
     /**
-     * Returns a comparator for sorting ObjEntities to satisfy their
-     * dependencies.
-     *
-     * @param dependentLast If set to <code>true</code>, this comparator will
-     * place dependent objects after the the objects they depend upon.
-     *
-     * @return Comparator
+     * Sorts a list of ObjEntities.
      */
-    public Comparator getObjEntityComparator(boolean dependentLast);
-
+    public void sortObjEntities(List objEntities, boolean deleteOrder);
+    
     /**
-     * Returns a comparator for sorting DataObjects to satisfy their
-     * dependencies.
-     *
-     * @param dependentLast If set to <code>true</code>, this comparator will
-     * place dependent objects after the the objects they depend upon.
-     *
-     * @return Comparator
+     * Sorts a list of objects belonging to the ObjEntity. 
      */
-    public Comparator getDataObjectComparator(boolean dependentLast);
-
+    public void sortObjectsForEntity(ObjEntity entity, List objects, boolean deleteOrder);
+    
     /**
-     * Returns a comparator for sorting queries to satisfy their dependencies.
-     * 
-     * @return Comparator
+     * Reindexes sorter for the query engine.
      */
-    public Comparator getQueryComparator();
-
-    /**
-     * Returns a comparator for sorting InsertQueries to satisfy their
-     * dependencies.
-     *
-     * @return Comparator
-     */
-    public Comparator getInsertQueryComparator();
-
-    /**
-     * Returns a comparator for sorting DeleteQueries to satisfy their
-     * dependencies.
-     *
-     * @return Comparator
-     */
-    public Comparator getDeleteQueryComparator();
+    public void indexSorter(QueryEngine queryEngine);
 }

@@ -1,18 +1,11 @@
 <document>
 <title>CayenneModeler Guide</title>
-<navigator>
-	<next>/modelerguide/intro.html</next>
-</navigator>
+<toc name="toc-modeler-guide"/>
 <body>
-    <section name="Table of Contents">        
-        <ul>
-             <li><a href="intro.html">1. Introduction</a></li>
-             <li><a href="runmodeler.html">2. Running CayenneModeler</a></li>
-             <li><a href="modelerconcepts.html">3. Concepts and Terminology</a></li>
-             <li><a href="mapschema.html">4. DataMap First, Database Second</a></li>
-             <li><a href="schemamap.html">5. Database First, DataMap Second</a></li>
-             <li><a href="pksupport.html">6. Generating Primary Key Support in the Database</a></li>
-        </ul>
+   <section name="CayenneModeler Guide">
+    <p>CayenneModeler Guide discusses how to use CayenneModeler GUI Application to create and maintain 
+    Object/Relational mapping projects.
+    </p>
     </section>
 </body>
 </document>

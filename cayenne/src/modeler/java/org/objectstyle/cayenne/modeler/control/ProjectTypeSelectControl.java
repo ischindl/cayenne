@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,6 @@
  */
 package org.objectstyle.cayenne.modeler.control;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.modeler.Editor;
 import org.objectstyle.cayenne.modeler.view.ProjectTypeSelectDialog;
 import org.objectstyle.cayenne.project.ApplicationProject;
@@ -69,8 +68,6 @@ import org.scopemvc.core.ControlException;
  * @author Andrei Adamchik
  */
 public class ProjectTypeSelectControl extends BasicController {
-    private static Logger logObj = Logger.getLogger(ProjectTypeSelectControl.class);
-
     public static final String CREATE_APP_PROJECT_CONTROL =
         "cayenne.modeler.project.app.button";
     public static final String CREATE_MAP_PROJECT_CONTROL =
@@ -92,16 +89,18 @@ public class ProjectTypeSelectControl extends BasicController {
         setView(new ProjectTypeSelectDialog());
         super.startup();
     }
-    
+
     /**
      * @see org.scopemvc.controller.basic.BasicController#doHandleControl(Control)
      */
     protected void doHandleControl(Control control) throws ControlException {
         if (control.matchesID(CANCEL_PROJECT_CREATE_CONTROL)) {
             shutdown();
-        } else if (control.matchesID(CREATE_APP_PROJECT_CONTROL)) {
+        }
+        else if (control.matchesID(CREATE_APP_PROJECT_CONTROL)) {
             doCreateAppProject();
-        } else if (control.matchesID(CREATE_MAP_PROJECT_CONTROL)) {
+        }
+        else if (control.matchesID(CREATE_MAP_PROJECT_CONTROL)) {
             doCreateMapProject();
         }
     }

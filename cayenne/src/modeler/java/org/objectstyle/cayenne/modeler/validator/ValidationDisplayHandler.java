@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,6 +63,8 @@ import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.map.Attribute;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.Entity;
+import org.objectstyle.cayenne.map.Procedure;
+import org.objectstyle.cayenne.map.ProcedureParameter;
 import org.objectstyle.cayenne.map.Relationship;
 import org.objectstyle.cayenne.modeler.control.EventController;
 import org.objectstyle.cayenne.project.ProjectException;
@@ -82,24 +84,36 @@ public abstract class ValidationDisplayHandler {
 
     protected ValidationInfo validationInfo;
     protected DataDomain domain;
-    
+
     public static ValidationDisplayHandler getErrorMsg(ValidationInfo result) {
         Object validatedObj = result.getValidatedObject();
 
         ValidationDisplayHandler msg = null;
         if (validatedObj instanceof Attribute) {
             msg = new AttributeErrorMsg(result);
-        } else if (validatedObj instanceof Relationship) {
+        }
+        else if (validatedObj instanceof Relationship) {
             msg = new RelationshipErrorMsg(result);
-        } else if (validatedObj instanceof Entity) {
+        }
+        else if (validatedObj instanceof Entity) {
             msg = new EntityErrorMsg(result);
-        } else if (validatedObj instanceof DataNode) {
+        }
+        else if (validatedObj instanceof DataNode) {
             msg = new DataNodeErrorMsg(result);
-        } else if (validatedObj instanceof DataMap) {
+        }
+        else if (validatedObj instanceof DataMap) {
             msg = new DataMapErrorMsg(result);
-        } else if (validatedObj instanceof DataDomain) {
+        }
+        else if (validatedObj instanceof DataDomain) {
             msg = new DomainErrorMsg(result);
-        } else {
+        }
+        else if (validatedObj instanceof Procedure) {
+            msg = new ProcedureErrorMsg(result);
+        }
+        else if (validatedObj instanceof ProcedureParameter) {
+            msg = new ProcedureParameterErrorMsg(result);
+        }
+        else {
             throw new ProjectException("Unsupported project node: " + validatedObj);
         }
 
@@ -107,7 +121,7 @@ public abstract class ValidationDisplayHandler {
     }
 
     public ValidationDisplayHandler(ValidationInfo validationInfo) {
-    	this.validationInfo = validationInfo;
+        this.validationInfo = validationInfo;
     }
 
     /** 
@@ -140,7 +154,7 @@ public abstract class ValidationDisplayHandler {
     public ProjectPath getPath() {
         return validationInfo.getPath();
     }
-    
+
     public ValidationInfo getValidationInfo() {
         return validationInfo;
     }

@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002 The ObjectStyle Group
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,7 +62,6 @@ import java.io.File;
 
 import javax.swing.KeyStroke;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.modeler.Editor;
 import org.objectstyle.cayenne.modeler.control.EventController;
@@ -79,14 +78,15 @@ import org.objectstyle.cayenne.project.validator.Validator;
  * @author Misha Shengaout
  */
 public class SaveAction extends CayenneAction {
-    private static Logger logObj = Logger.getLogger(SaveAction.class);
 
-    public static final String ACTION_NAME = "Save";
+	public static String getActionName() {
+		return "Save";
+	}
 
     protected ProjectOpener fileChooser = new ProjectOpener();
 
     public SaveAction() {
-        super(ACTION_NAME);
+        super(getActionName());
     }
 
     public KeyStroke getAcceleratorKey() {
@@ -110,7 +110,7 @@ public class SaveAction extends CayenneAction {
                 return false;
             }
 
-            p.setProjectDir(projectDir);
+            p.setProjectDirectory(projectDir);
         }
 
         p.save();

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,11 +56,13 @@
 package org.objectstyle.cayenne.modeler;
 
 import java.awt.Component;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.ImageIcon;
@@ -70,7 +72,6 @@ import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
 import org.apache.log4j.Logger;
@@ -80,27 +81,33 @@ import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.DerivedDbEntity;
 import org.objectstyle.cayenne.map.Entity;
+import org.objectstyle.cayenne.map.MapObject;
 import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.Procedure;
+import org.objectstyle.cayenne.map.event.DataMapEvent;
+import org.objectstyle.cayenne.map.event.DataMapListener;
+import org.objectstyle.cayenne.map.event.DataNodeEvent;
+import org.objectstyle.cayenne.map.event.DataNodeListener;
+import org.objectstyle.cayenne.map.event.DbEntityListener;
+import org.objectstyle.cayenne.map.event.DomainEvent;
+import org.objectstyle.cayenne.map.event.DomainListener;
+import org.objectstyle.cayenne.map.event.EntityEvent;
+import org.objectstyle.cayenne.map.event.ObjEntityListener;
+import org.objectstyle.cayenne.map.event.ProcedureEvent;
+import org.objectstyle.cayenne.map.event.ProcedureListener;
 import org.objectstyle.cayenne.modeler.action.CayenneAction;
 import org.objectstyle.cayenne.modeler.control.EventController;
 import org.objectstyle.cayenne.modeler.event.DataMapDisplayEvent;
 import org.objectstyle.cayenne.modeler.event.DataMapDisplayListener;
-import org.objectstyle.cayenne.modeler.event.DataMapEvent;
-import org.objectstyle.cayenne.modeler.event.DataMapListener;
 import org.objectstyle.cayenne.modeler.event.DataNodeDisplayEvent;
 import org.objectstyle.cayenne.modeler.event.DataNodeDisplayListener;
-import org.objectstyle.cayenne.modeler.event.DataNodeEvent;
-import org.objectstyle.cayenne.modeler.event.DataNodeListener;
 import org.objectstyle.cayenne.modeler.event.DbEntityDisplayListener;
-import org.objectstyle.cayenne.modeler.event.DbEntityListener;
 import org.objectstyle.cayenne.modeler.event.DomainDisplayEvent;
 import org.objectstyle.cayenne.modeler.event.DomainDisplayListener;
-import org.objectstyle.cayenne.modeler.event.DomainEvent;
-import org.objectstyle.cayenne.modeler.event.DomainListener;
 import org.objectstyle.cayenne.modeler.event.EntityDisplayEvent;
-import org.objectstyle.cayenne.modeler.event.EntityEvent;
 import org.objectstyle.cayenne.modeler.event.ObjEntityDisplayListener;
-import org.objectstyle.cayenne.modeler.event.ObjEntityListener;
+import org.objectstyle.cayenne.modeler.event.ProcedureDisplayEvent;
+import org.objectstyle.cayenne.modeler.event.ProcedureDisplayListener;
 import org.objectstyle.cayenne.modeler.util.ProjectTree;
 
 /** 
@@ -122,21 +129,17 @@ public class BrowseView
         ObjEntityListener,
         ObjEntityDisplayListener,
         DbEntityListener,
-        DbEntityDisplayListener {
-    private static Logger logObj = Logger.getLogger(BrowseView.class);
+        DbEntityDisplayListener,
+        ProcedureListener,
+        ProcedureDisplayListener {
 
-    private static final int DOMAIN_NODE = 1;
-    private static final int NODE_NODE = 2;
-    private static final int MAP_NODE = 3;
-    private static final int OBJ_ENTITY_NODE = 4;
-    private static final int DB_ENTITY_NODE = 5;
+    private static Logger logObj = Logger.getLogger(BrowseView.class);
 
     protected EventController mediator;
     protected ProjectTree browseTree;
-    protected DefaultMutableTreeNode rootNode;
     protected DefaultMutableTreeNode currentNode;
 
-    protected DefaultTreeModel model;
+    protected boolean reorderOnFocus;
 
     public BrowseView(EventController mediator) {
         super();
@@ -146,11 +149,8 @@ public class BrowseView
         browseTree.setCellRenderer(new BrowseViewRenderer());
         setViewportView(browseTree);
 
-        model = (DefaultTreeModel) browseTree.getModel();
-        rootNode = (DefaultMutableTreeNode) model.getRoot();
-
         // listen for mouse events
-        MouseListener ml = new MouseAdapter() {
+        browseTree.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 int selRow = browseTree.getRowForLocation(e.getX(), e.getY());
                 if (selRow != -1) {
@@ -160,17 +160,26 @@ public class BrowseView
                     }
                 }
             }
-        };
-        browseTree.addMouseListener(ml);
+        });
 
-        // listen to tree events (since not al selections
+        // listen to tree events (since not all selections
         // are done by clicking tree with mouse)
-        TreeSelectionListener tsl = new TreeSelectionListener() {
+        browseTree.addTreeSelectionListener(new TreeSelectionListener() {
             public void valueChanged(TreeSelectionEvent e) {
                 processSelection(e.getPath());
             }
-        };
-        browseTree.addTreeSelectionListener(tsl);
+        });
+
+        // listen to focus events to reorder list
+        browseTree.addFocusListener(new FocusListener() {
+            public void focusGained(FocusEvent e) {
+                fixOrdering();
+            }
+
+            public void focusLost(FocusEvent e) {
+                fixOrdering();
+            }
+        });
 
         mediator.addDomainListener(this);
         mediator.addDomainDisplayListener(this);
@@ -182,6 +191,8 @@ public class BrowseView
         mediator.addObjEntityDisplayListener(this);
         mediator.addDbEntityListener(this);
         mediator.addDbEntityDisplayListener(this);
+        mediator.addProcedureListener(this);
+        mediator.addProcedureDisplayListener(this);
     }
 
     public void currentDomainChanged(DomainDisplayEvent e) {
@@ -193,10 +204,17 @@ public class BrowseView
     }
 
     public void currentDataNodeChanged(DataNodeDisplayEvent e) {
-        if (e.getSource() == this || e.isDataNodeChanged() == false)
+        if (e.getSource() == this || !e.isDataNodeChanged())
             return;
 
         showNode(new Object[] { e.getDomain(), e.getDataNode()});
+    }
+
+    public void currentProcedureChanged(ProcedureDisplayEvent e) {
+        if (e.getSource() == this || !e.isProcedureChanged())
+            return;
+
+        showNode(new Object[] { e.getDomain(), e.getDataMap(), e.getProcedure()});
     }
 
     public void currentDataMapChanged(DataMapDisplayEvent e) {
@@ -221,17 +239,70 @@ public class BrowseView
         showNode(new Object[] { e.getDomain(), e.getDataMap(), e.getEntity()});
     }
 
+    public void procedureAdded(ProcedureEvent e) {
+        if (e.getSource() == this) {
+            return;
+        }
+
+        DefaultMutableTreeNode node =
+            browseTree.getProjectModel().getNodeForObjectPath(
+                new Object[] {
+                    mediator.getCurrentDataDomain(),
+                    mediator.getCurrentDataMap()});
+
+        if (node == null) {
+            return;
+        }
+
+        Procedure procedure = e.getProcedure();
+        currentNode = new DefaultMutableTreeNode(procedure, false);
+        fixEntityPosition(node, currentNode);
+        showNode(currentNode);
+    }
+
+    public void procedureChanged(ProcedureEvent e) {
+        Object[] path =
+            new Object[] {
+                mediator.getCurrentDataDomain(),
+                mediator.getCurrentDataMap(),
+                e.getProcedure()};
+
+        updateNode(path);
+
+        if (e.isNameChange()) {
+            reorderOnFocus = true;
+        }
+    }
+
+    public void procedureRemoved(ProcedureEvent e) {
+        if (e.getSource() == this) {
+            return;
+        }
+
+        removeNode(
+            new Object[] {
+                mediator.getCurrentDataDomain(),
+                mediator.getCurrentDataMap(),
+                e.getProcedure()});
+    }
+
     public void domainChanged(DomainEvent e) {
         if (e.getSource() == this)
             return;
 
         updateNode(new Object[] { e.getDomain()});
+
+        if (e.isNameChange()) {
+            reorderOnFocus = true;
+        }
     }
 
     public void domainAdded(DomainEvent e) {
         if (e.getSource() == this)
             return;
-        browseTree.insertObject(e.getDomain(), rootNode);
+        browseTree.insertObject(
+            e.getDomain(),
+            (DefaultMutableTreeNode) browseTree.getProjectModel().getRoot());
     }
 
     public void domainRemoved(DomainEvent e) {
@@ -245,38 +316,46 @@ public class BrowseView
     public void dataNodeChanged(DataNodeEvent e) {
         if (e.getSource() == this)
             return;
+
+        if (e.isNameChange()) {
+            reorderOnFocus = true;
+        }
+
         DefaultMutableTreeNode node =
             browseTree.getProjectModel().getNodeForObjectPath(
                 new Object[] { mediator.getCurrentDataDomain(), e.getDataNode()});
 
         if (null != node) {
-            model.nodeChanged(node);
-            DataMap[] maps = e.getDataNode().getDataMaps();
+            browseTree.getProjectModel().nodeChanged(node);
+            List maps = new ArrayList(e.getDataNode().getDataMaps());
+            int mapCount = maps.size();
             // If added map to this node
-            if (maps.length > node.getChildCount()) {
+            if (mapCount > node.getChildCount()) {
                 // Find map not already under node and add it
-                for (int i = 0; i < maps.length; i++) {
+                for (int i = 0; i < mapCount; i++) {
                     boolean found = false;
                     for (int j = 0; j < node.getChildCount(); j++) {
-                        DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(j);
-                        if (maps[i] == child.getUserObject()) {
+                        DefaultMutableTreeNode child =
+                            (DefaultMutableTreeNode) node.getChildAt(j);
+                        if (maps.get(i) == child.getUserObject()) {
                             found = true;
                             break;
                         }
                     }
                     if (!found) {
-                        browseTree.insertObject(maps[i], node);
+                        browseTree.insertObject(maps.get(i), node);
                         break;
                     }
                 } // End for(i)
-            } else if (maps.length < node.getChildCount()) {
+            }
+            else if (mapCount < node.getChildCount()) {
                 for (int j = 0; j < node.getChildCount(); j++) {
                     boolean found = false;
                     DefaultMutableTreeNode child;
                     child = (DefaultMutableTreeNode) node.getChildAt(j);
                     Object obj = child.getUserObject();
-                    for (int i = 0; i < maps.length; i++) {
-                        if (maps[i] == obj) {
+                    for (int i = 0; i < mapCount; i++) {
+                        if (maps.get(i) == obj) {
                             found = true;
                             break;
                         }
@@ -315,6 +394,10 @@ public class BrowseView
         }
 
         updateNode(new Object[] { mediator.getCurrentDataDomain(), e.getDataMap()});
+
+        if (e.isNameChange()) {
+            reorderOnFocus = true;
+        }
     }
 
     public void dataMapAdded(DataMapEvent e) {
@@ -341,9 +424,9 @@ public class BrowseView
         removeNode(new Object[] { domain, map });
 
         // Clean up map from the nodes
-        DataNode[] nodes = domain.getDataNodes();
-        for (int i = 0; i < nodes.length; i++) {
-            removeNode(new Object[] { domain, nodes[i], map });
+        Iterator nodes = new ArrayList(domain.getDataNodes()).iterator();
+        while (nodes.hasNext()) {
+            removeNode(new Object[] { domain, nodes.next(), map });
         }
     }
 
@@ -378,23 +461,22 @@ public class BrowseView
      *      selected.</li>
      *  </ul>
      */
-    public void entityChanged(EntityEvent e) {
+    protected void entityChanged(EntityEvent e) {
         if (e.getSource() == this) {
             return;
         }
 
-        updateNode(
+        Object[] path =
             new Object[] {
                 mediator.getCurrentDataDomain(),
                 mediator.getCurrentDataMap(),
-                e.getEntity()});
+                e.getEntity()};
 
-        updateNode(
-            new Object[] {
-                mediator.getCurrentDataDomain(),
-                mediator.getCurrentDataNode(),
-                mediator.getCurrentDataMap(),
-                e.getEntity()});
+        updateNode(path);
+
+        if (e.isNameChange()) {
+            reorderOnFocus = true;
+        }
     }
 
     /** 
@@ -419,7 +501,10 @@ public class BrowseView
 
             if (mapNode != null) {
                 currentNode = new DefaultMutableTreeNode(entity, false);
-                model.insertNodeInto(currentNode, mapNode, mapNode.getChildCount());
+                browseTree.getProjectModel().insertNodeInto(
+                    currentNode,
+                    mapNode,
+                    mapNode.getChildCount());
             }
         }
 
@@ -429,10 +514,10 @@ public class BrowseView
                     mediator.getCurrentDataDomain(),
                     mediator.getCurrentDataMap()});
 
-        if(mapNode == null) {
-        	return;
+        if (mapNode == null) {
+            return;
         }
-        
+
         currentNode = new DefaultMutableTreeNode(entity, false);
         fixEntityPosition(mapNode, currentNode);
         showNode(currentNode);
@@ -498,7 +583,7 @@ public class BrowseView
         }
 
         // remove this node
-        model.removeNodeFromParent(toBeRemoved);
+        browseTree.getProjectModel().removeNodeFromParent(toBeRemoved);
     }
 
     /** Makes node current, visible and selected.*/
@@ -520,10 +605,8 @@ public class BrowseView
         if (node == null) {
             return;
         }
-        currentNode = node;
-        TreePath treePath = new TreePath(currentNode.getPath());
-        browseTree.scrollPathToVisible(treePath);
-        browseTree.setSelectionPath(treePath);
+
+        this.showNode(node);
     }
 
     protected void updateNode(Object[] path) {
@@ -534,7 +617,7 @@ public class BrowseView
         DefaultMutableTreeNode node =
             browseTree.getProjectModel().getNodeForObjectPath(path);
         if (node != null) {
-            model.nodeChanged(node);
+            browseTree.getProjectModel().nodeChanged(node);
         }
     }
 
@@ -574,7 +657,8 @@ public class BrowseView
         if (obj instanceof DataDomain) {
             mediator.fireDomainDisplayEvent(
                 new DomainDisplayEvent(this, (DataDomain) obj));
-        } else if (obj instanceof DataMap) {
+        }
+        else if (obj instanceof DataMap) {
             if (data.length == 3) {
                 mediator.fireDataMapDisplayEvent(
                     new DataMapDisplayEvent(
@@ -582,14 +666,16 @@ public class BrowseView
                         (DataMap) obj,
                         (DataDomain) data[data.length - 3],
                         (DataNode) data[data.length - 2]));
-            } else if (data.length == 2) {
+            }
+            else if (data.length == 2) {
                 mediator.fireDataMapDisplayEvent(
                     new DataMapDisplayEvent(
                         this,
                         (DataMap) obj,
                         (DataDomain) data[data.length - 2]));
             }
-        } else if (obj instanceof DataNode) {
+        }
+        else if (obj instanceof DataNode) {
             if (data.length == 2) {
                 mediator.fireDataNodeDisplayEvent(
                     new DataNodeDisplayEvent(
@@ -597,23 +683,35 @@ public class BrowseView
                         (DataDomain) data[data.length - 2],
                         (DataNode) obj));
             }
-        } else if (obj instanceof Entity) {
+        }
+        else if (obj instanceof Entity) {
             EntityDisplayEvent e = new EntityDisplayEvent(this, (Entity) obj);
             e.setUnselectAttributes(true);
             if (data.length == 4) {
                 e.setDataMap((DataMap) data[data.length - 2]);
                 e.setDomain((DataDomain) data[data.length - 4]);
                 e.setDataNode((DataNode) data[data.length - 3]);
-            } else if (data.length == 3) {
+            }
+            else if (data.length == 3) {
                 e.setDataMap((DataMap) data[data.length - 2]);
                 e.setDomain((DataDomain) data[data.length - 3]);
             }
 
             if (obj instanceof ObjEntity) {
                 mediator.fireObjEntityDisplayEvent(e);
-            } else if (obj instanceof DbEntity) {
+            }
+            else if (obj instanceof DbEntity) {
                 mediator.fireDbEntityDisplayEvent(e);
             }
+        }
+        else if (obj instanceof Procedure) {
+            ProcedureDisplayEvent e =
+                new ProcedureDisplayEvent(
+                    this,
+                    (Procedure) obj,
+                    (DataMap) data[data.length - 2],
+                    (DataDomain) data[data.length - 3]);
+            mediator.fireProcedureDisplayEvent(e);
         }
     }
 
@@ -628,6 +726,16 @@ public class BrowseView
         return list.toArray();
     }
 
+    private synchronized void fixOrdering() {
+        if (reorderOnFocus) {
+            logObj.warn("View items names have changed, must reorder the view..");
+
+            // TODO: (andrus) implements ordering procedure that actually works
+            // browseTree.reorder();
+            reorderOnFocus = false;
+        }
+    }
+
     /** 
      * Inserts entity node in alphabetical order. 
      * Assumes that the tree is already ordered, except for one node. 
@@ -635,8 +743,12 @@ public class BrowseView
     private void fixEntityPosition(
         DefaultMutableTreeNode parent,
         DefaultMutableTreeNode entityNode) {
-        Entity curEnt = (Entity) entityNode.getUserObject();
-        boolean isObj = curEnt instanceof ObjEntity;
+
+        if (parent == null || entityNode == null) {
+            return;
+        }
+
+        MapObject mapObject = (MapObject) entityNode.getUserObject();
 
         int len = parent.getChildCount();
         int ins = -1;
@@ -645,7 +757,7 @@ public class BrowseView
         for (int i = 0; i < len; i++) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) parent.getChildAt(i);
 
-            // remeber to remove node
+            // remember to remove node
             if (node == entityNode) {
                 rm = i;
                 continue;
@@ -656,23 +768,10 @@ public class BrowseView
                 continue;
             }
 
-            Entity e = (Entity) node.getUserObject();
+            MapObject e = (MapObject) node.getUserObject();
 
             // ObjEntities go before DbEntities
-            if (isObj && (e instanceof DbEntity)) {
-                ins = i;
-            }
-            if (!isObj && (e instanceof ObjEntity)) {
-                continue;
-            }
-
-            // Ignore unnamed
-            if (e.getName() == null) {
-                continue;
-            }
-
-            // Do alphabetical comparison
-            if (e.getName().compareTo(curEnt.getName()) > 0) {
+            if (MapObjectsComparator.compare(mapObject, e) <= 0) {
                 ins = i;
             }
         }
@@ -683,14 +782,56 @@ public class BrowseView
 
         // remove
         if (rm >= 0) {
-            model.removeNodeFromParent(entityNode);
+            browseTree.getProjectModel().removeNodeFromParent(entityNode);
             if (rm < ins) {
                 ins--;
             }
         }
 
         // insert
-        model.insertNodeInto(entityNode, parent, ins);
+        browseTree.getProjectModel().insertNodeInto(entityNode, parent, ins);
+    }
+
+    static class MapObjectsComparator {
+
+        public static int compare(MapObject o1, MapObject o2) {
+            int delta = getClassWeight(o1) - getClassWeight(o2);
+            if (delta != 0) {
+                return delta;
+            }
+
+            // assume that o2 is a MapObject too, and is NOT NULL;
+            // this is proven as a result of earlier delta calculation
+            String name1 = o1.getName();
+            String name2 = o2.getName();
+
+            if (name1 == null) {
+                return (name2 != null) ? -1 : 0;
+            }
+            else if (name2 == null) {
+                return 1;
+            }
+            else {
+                return name1.compareTo(name2);
+            }
+        }
+
+        protected static int getClassWeight(MapObject o) {
+
+            if (o instanceof ObjEntity) {
+                return 1;
+            }
+            else if (o instanceof DbEntity) {
+                return 2;
+            }
+            else if (o instanceof Procedure) {
+                return 3;
+            }
+            else {
+                // this should trap nulls among other things
+                return Integer.MAX_VALUE;
+            }
+        }
     }
 
     static class BrowseViewRenderer extends DefaultTreeCellRenderer {
@@ -700,6 +841,7 @@ public class BrowseView
         ImageIcon dbEntityIcon;
         ImageIcon objEntityIcon;
         ImageIcon derivedDbEntityIcon;
+        ImageIcon procedureIcon;
 
         public BrowseViewRenderer() {
             ClassLoader cl = BrowseViewRenderer.class.getClassLoader();
@@ -721,6 +863,10 @@ public class BrowseView
 
             url = cl.getResource(CayenneAction.RESOURCE_PATH + "icon-objentity.gif");
             objEntityIcon = new ImageIcon(url);
+
+            url =
+                cl.getResource(CayenneAction.RESOURCE_PATH + "icon-stored-procedure.gif");
+            procedureIcon = new ImageIcon(url);
         }
 
         public Component getTreeCellRendererComponent(
@@ -744,20 +890,29 @@ public class BrowseView
             Object obj = node.getUserObject();
             if (obj instanceof DataDomain) {
                 setIcon(domainIcon);
-            } else if (obj instanceof DataNode) {
+            }
+            else if (obj instanceof DataNode) {
                 setIcon(nodeIcon);
-            } else if (obj instanceof DataMap) {
+            }
+            else if (obj instanceof DataMap) {
                 setIcon(mapIcon);
-            } else if (obj instanceof Entity) {
+            }
+            else if (obj instanceof Entity) {
                 Entity ent = (Entity) obj;
                 if (ent instanceof DerivedDbEntity) {
                     setIcon(derivedDbEntityIcon);
-                } else if (ent instanceof DbEntity) {
+                }
+                else if (ent instanceof DbEntity) {
                     setIcon(dbEntityIcon);
-                } else if (ent instanceof ObjEntity) {
+                }
+                else if (ent instanceof ObjEntity) {
                     setIcon(objEntityIcon);
                 }
             }
+            else if (obj instanceof Procedure) {
+                setIcon(procedureIcon);
+            }
+
             return this;
         }
     }

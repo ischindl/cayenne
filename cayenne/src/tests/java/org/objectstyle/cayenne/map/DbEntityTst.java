@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne.map;
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,6 +53,7 @@ package org.objectstyle.cayenne.map;
  * <http://objectstyle.org/>.
  *
  */
+package org.objectstyle.cayenne.map;
 
 import java.util.List;
 
@@ -61,10 +61,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class DbEntityTst extends CayenneTestCase {
     protected DbEntity ent;
-
-    public DbEntityTst(String name) {
-        super(name);
-    }
 
     public void setUp() throws Exception {
         ent = new DbEntity();
@@ -122,6 +118,38 @@ public class DbEntityTst extends CayenneTestCase {
         assertEquals(1, pk.size());
         assertSame(a2, pk.get(0));
     }
+
+	public void testAddPKAttribute() {
+		DbAttribute a1 = new DbAttribute();
+		a1.setName("a1");
+		a1.setPrimaryKey(false);
+
+		assertTrue(ent.getPrimaryKey().isEmpty());
+		ent.addAttribute(a1);
+		assertTrue(ent.getPrimaryKey().isEmpty());
+	}
+
+	public void testChangeAttributeToPK() {
+		DbAttribute a1 = new DbAttribute();
+		a1.setName("a1");
+		a1.setPrimaryKey(false);
+		ent.addAttribute(a1);
+
+		assertFalse(ent.getPrimaryKey().contains(a1));
+		a1.setPrimaryKey(true);
+		assertTrue(ent.getPrimaryKey().contains(a1));
+	}
+
+	public void testChangePKAttribute() {
+		DbAttribute a1 = new DbAttribute();
+		a1.setName("a1");
+		a1.setPrimaryKey(true);
+		ent.addAttribute(a1);
+
+		assertTrue(ent.getPrimaryKey().contains(a1));
+		a1.setPrimaryKey(false);
+		assertFalse(ent.getPrimaryKey().contains(a1));
+	}
 
     public void testRemovAttribute() throws Exception {
         DataMap map = new DataMap("map");

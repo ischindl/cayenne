@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,27 +56,30 @@
 package org.objectstyle.cayenne.modeler.action;
 
 import java.awt.event.ActionEvent;
+import java.util.Iterator;
 
 import javax.swing.JOptionPane;
 
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.event.DataMapEvent;
 import org.objectstyle.cayenne.modeler.Editor;
-import org.objectstyle.cayenne.modeler.event.DataMapEvent;
 import org.objectstyle.cayenne.project.ProjectPath;
 
 /**
  * @author Andrei Adamchik
  */
 public class PackageMenuAction extends CayenneAction {
-    public static final String ACTION_NAME =
-        "Set Package Name for Obj Entities";
+
+	public static String getActionName() {
+		return "Set Package Name for Obj Entities";
+	}
 
     /**
      * Constructor for PackageMenuAction.
      */
     public PackageMenuAction() {
-        super(ACTION_NAME);
+        super(getActionName());
     }
 
     /**
@@ -104,9 +107,10 @@ public class PackageMenuAction extends CayenneAction {
             return;
         // Go through all obj entities in the current data map and
         // set their package names.
-        ObjEntity[] entities = map.getObjEntities();
-        for (int i = 0; i < entities.length; i++) {
-            String name = entities[i].getClassName();
+        Iterator entities = map.getObjEntities().iterator();
+        while (entities.hasNext()) {
+        	ObjEntity entity = (ObjEntity)entities.next();
+            String name = entity.getClassName();
 
             // there may be entities with no class selected yet
             if (name == null) {
@@ -117,10 +121,10 @@ public class PackageMenuAction extends CayenneAction {
             if (idx > 0) {
                 name =
                     (idx == name.length() - 1)
-                        ? entities[i].getName()
+                        ? entity.getName()
                         : name.substring(idx + 1);
             }
-            entities[i].setClassName(package_name + name);
+			entity.setClassName(package_name + name);
         }
         getMediator().fireDataMapEvent(new DataMapEvent(this, map));
     }

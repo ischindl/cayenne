@@ -1,15 +1,11 @@
 <document>
 <title>User Guide - Design</title>
-<navigator>
-	<up>/userguide/index.html</up>
-	<prev>/userguide/design/crossdb.html</prev>
-	<next>/userguide/appguide/index.html</next>
-</navigator>
+<toc name="toc-user-guide" chapter="4. Design"/>
 <body>
     <section name="4. Design">
         <subsection name="4.7 Primary Key Generation" anchor="pk">
             <p>Depending on the type of persistent objects and the database
-            design, primary key values can be handled in a few different. 
+            design, primary key values can be handled in a few different ways. 
             A decision to use one or another technique will affect how 
             the mapping is done. Here is a summary of possible scenarious. Each one
             is described below in details.
@@ -44,17 +40,17 @@
             
             <subsection name="4.7.1 Meaningful Primary Key" anchor="pk-do">            
             <p>DataObjects can provide their own values for the primary key 
-            columns. Sometimes this makes sense. For example if a primary
-            key column conains meaningful data, like Social Security Number.
+            columns. Sometimes this makes sense, for example if a primary
+            key column conains meaningful data like a Social Security Number.
             In such cases primary key handling is no different from handling any other
             persistent attributes. Each primary key column (DbAttribute) will
-            have an ObjAttribute mapped to it. Java class implementing DataObject
-            will contain a property described by this ObjAttribute. Value
+            have an ObjAttribute mapped to it. The Java class implementing DataObject
+            will contain a property described by this ObjAttribute. The value
             of this property will be saved to the database.</p>
             </subsection>
             
                    
-          	<subsection name="4.7.2 Primary Key Derived From Realtionship" anchor="pk-rel">            
+          	<subsection name="4.7.2 Primary Key Derived From Relationship" anchor="pk-rel">            
             	<p>A primary key column of a table may depend on a primary key 
             	column of another table. This is normally the case with "join"
             	tables used to resolve many-to-many relationships. In such cases 
@@ -88,7 +84,7 @@
             	
             	<p>To generate needed database objects for the primary key autogeneration
             	use CayenneModeler and follow the instructions given 
-            	<a href="../../modelerguide/pksupport.html">here</a>.</p>
+            	<a href="../../modelerguide/common-tasks/pksupport.html">here</a>.</p>
             	
             	<p><i>Note: Cayenne would only support a PK generation for a single 
             	column per table.</i></p>

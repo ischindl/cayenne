@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,10 +62,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestDatabaseSetup;
 
 public class DataNodeExtrasTst extends CayenneTestCase {
 
-	public DataNodeExtrasTst(String name) {
-		super(name);
-	}
-
 	public void testName() throws Exception {
 		String tstName = "tst_name";
 		DataNode node = new DataNode();
@@ -94,7 +90,7 @@ public class DataNodeExtrasTst extends CayenneTestCase {
         CayenneTestDatabaseSetup setup = getDatabaseSetup();
         setup.cleanTableData();        
 
-		DataNode node = getDomain().getDataNodes()[0];
+		DataNode node = (DataNode)getDomain().getDataNodes().iterator().next();
 		setup.createPkSupportForMapEntities(node);
 
 		DbEntity artistEnt = node.getEntityResolver().lookupObjEntity("Artist").getDbEntity();
@@ -112,7 +108,7 @@ public class DataNodeExtrasTst extends CayenneTestCase {
 	
 	public void testPopulatedNodeEntityResolver() {
 		//Test shared node (one loaded with a real model)
-		assertNotNull(getDomain().getDataNodes()[0].getEntityResolver());
+		assertNotNull(((DataNode)getDomain().getDataNodes().iterator().next()).getEntityResolver());
 	}
 	
 	public void testEmptyNodeEntityResolver() {

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@ package org.objectstyle.cayenne.modeler.action;
 import java.awt.event.ActionEvent;
 
 import org.objectstyle.cayenne.map.DerivedDbEntity;
-import org.objectstyle.cayenne.modeler.event.EntityEvent;
+import org.objectstyle.cayenne.map.event.EntityEvent;
 import org.objectstyle.cayenne.modeler.util.MapUtil;
 import org.objectstyle.cayenne.project.ProjectPath;
 
@@ -66,14 +66,17 @@ import org.objectstyle.cayenne.project.ProjectPath;
  * @author Andrei Adamchik
  */
 public class DerivedEntitySyncAction extends CayenneAction {
-    public static final String ACTION_NAME = "Reset Derived Entity";
+
+	public static String getActionName() {
+		return "Reset Derived Entity";
+	}
 
     /**
      * Constructor for DerivedEntitySyncAction.
      * @param name
      */
     public DerivedEntitySyncAction() {
-        super(ACTION_NAME);
+        super(getActionName());
     }
 
     /**

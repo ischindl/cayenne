@@ -3,7 +3,7 @@ package org.objectstyle.cayenne.project;
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,7 @@ import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
-import org.objectstyle.cayenne.access.DataSourceInfo;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 
 /**
  * ProjectDataSource is a DataSource implementation used by 

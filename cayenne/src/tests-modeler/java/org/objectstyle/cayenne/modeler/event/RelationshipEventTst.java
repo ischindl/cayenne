@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,23 +55,16 @@
  */
 package org.objectstyle.cayenne.modeler.event;
 
+import junit.framework.TestCase;
+
 import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.Relationship;
-
-import junit.framework.TestCase;
+import org.objectstyle.cayenne.map.event.RelationshipEvent;
 
 /**
  * @author Andrei Adamchik
  */
 public class RelationshipEventTst extends TestCase {
-
-	/**
-	 * Constructor for RelationshipEventTst.
-	 * @param arg0
-	 */
-	public RelationshipEventTst(String arg0) {
-		super(arg0);
-	}
 
 	public void testRelationship() throws Exception {
 		Object src = new Object();

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,21 +55,23 @@
  */
 package org.objectstyle.cayenne.modeler;
 
+import java.awt.Dialog;
+import java.awt.Frame;
 import java.awt.Window;
 
 import javax.swing.JRootPane;
 
-import org.apache.log4j.Logger;
 import org.scopemvc.controller.basic.ViewContext;
 import org.scopemvc.controller.swing.SwingContext;
 import org.scopemvc.core.View;
 import org.scopemvc.view.swing.SwingView;
 
 /**
+ * CayenneModeler specific implementation of Scope ViewContext.
+ * 
  * @author Andrei Adamchik
  */
 public class ModelerContext extends SwingContext {
-    private static Logger logObj = Logger.getLogger(ModelerContext.class);
 
     public static void setupContext() {
         ViewContext.clearThreadContext();
@@ -83,7 +85,43 @@ public class ModelerContext extends SwingContext {
         super();
     }
 
-    protected void showViewInPrimaryWindow(SwingView view) {}
+    protected void showViewInPrimaryWindow(SwingView view) {
+    }
+
+    /**
+     * Overrides super implementation to create closeable dialogs.
+     */
+    protected void showViewInDialog(SwingView inView) {
+    	// NOTE: 
+    	// copied from superclass, except that JDialog is substituted for CayenneDialog
+    	// Keep in mind when upgrading Scope to the newer versions.
+
+        // Make a JDialog to contain the view.
+        Window parentWindow = getDefaultParentWindow();
+
+        final CayenneDialog dialog;
+        if (parentWindow instanceof Dialog) {
+            dialog = new CayenneDialog((Dialog) parentWindow);
+        }
+        else {
+            dialog = new CayenneDialog((Frame) parentWindow);
+        }
+
+        // Set title, modality, resizability
+        if (inView.getTitle() != null) {
+            dialog.setTitle(inView.getTitle());
+        }
+        if (inView.getDisplayMode() == SwingView.MODAL_DIALOG) {
+            dialog.setModal(true);
+        }
+        else {
+            dialog.setModal(false);
+        }
+        dialog.setResizable(inView.isResizable());
+
+        setupWindow(dialog.getRootPane(), inView, true);
+        dialog.toFront();
+    }
 
     /**
      * Overrides super implementation to allow using Scope

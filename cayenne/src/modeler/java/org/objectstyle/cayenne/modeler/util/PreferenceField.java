@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,8 @@ package org.objectstyle.cayenne.modeler.util;
 
 import java.awt.Component;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Vector;
 
 import javax.swing.ComboBoxEditor;
@@ -70,30 +71,27 @@ import javax.swing.JList;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.modeler.ModelerPreferences;
 import org.objectstyle.cayenne.util.Util;
 
 public class PreferenceField extends JComboBox {
-    private static Logger logObj = Logger.getLogger(PreferenceField.class);
-
     private String key;
 
     /** 
      * Values to put in pref field in addition to preference values.
      * These values are not going to be stored to preference file.
      */
-    private List initValues;
+    private Collection initValues;
 
     /** 
      * Creates PreferenceField that will set preferences 
      * only on explicit call to <code>storePreferences()</code>.
      */
     public PreferenceField(String key) {
-        this(key, new Vector());
+        this(key, Collections.EMPTY_LIST);
     }
 
-    public PreferenceField(String key, List initValues) {
+    public PreferenceField(String key, Collection initValues) {
         this.key = key;
 
         setRenderer(new Renderer(40));

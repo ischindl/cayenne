@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne.access.types;
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,32 +52,53 @@ package org.objectstyle.cayenne.access.types;
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
  *
- */ 
+ */
+package org.objectstyle.cayenne.access.types;
 
-
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-
 /** 
- * Defines methods to read Java objects from JDBC result sets 
- * and write as parameters of PreparedStatements. 
+ * Defines methods to read Java objects from JDBC ResultSets 
+ * and write as parameters of PreparedStatements.
+ * 
+ * @author Andrei Adamchik
  */
 public interface ExtendedType {
-    /** Returns a full name of Java class that this map supports. */
+    /** 
+     * Returns a full name of Java class that this ExtendedType supports.
+     */
     public String getClassName();
 
-    /** Converts an object of class returned by 'className' to a corresponding
-      * Java type from 'java.lang.*' package that could be used to map to 
-      * <code>type</code> JDBC type. 
-      * @throws Exception if an object is of incorrect type, or if JDBC type 
-      * is incompatible with object. */
-    public Object toJdbcObject(Object val, int type) throws Exception;
+    /**
+     * Initializes a single parameter of a PreparedStatement with object value. 
+     */
+    public void setJdbcObject(
+        PreparedStatement st,
+        Object val,
+        int pos,
+        int type,
+        int precision)
+        throws Exception;
 
-
-    /** Reads an object from JDBC ResultSet column converting it to class
-      * returned by 'getClassName' method.
-      *
-      * @throws Exception if read error ocurred, or an object can't be converted
-      * to a target Java class. */
-    public Object materializeObject(ResultSet rs, int index, int type) throws Exception;
+    /** 
+     * Reads an object from JDBC ResultSet column, converting it to class
+     * returned by 'getClassName' method.
+     *
+     * @throws Exception if read error ocurred, or an object can't be converted
+     * to a target Java class.
+     */
+    public Object materializeObject(ResultSet rs, int index, int type)
+        throws Exception;
+        
+    /** 
+     * Reads an object from a stored procedure OUT parameter, converting it to class
+     * returned by 'getClassName' method.
+     *
+     * @throws Exception if read error ocurred, or an object can't be converted
+     * to a target Java class.
+     */
+    public Object materializeObject(CallableStatement rs, int index, int type)
+        throws Exception;
 }

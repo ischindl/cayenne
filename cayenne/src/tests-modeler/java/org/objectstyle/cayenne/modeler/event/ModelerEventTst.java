@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,39 +57,41 @@ package org.objectstyle.cayenne.modeler.event;
 
 import junit.framework.TestCase;
 
+import org.objectstyle.cayenne.map.event.MapEvent;
+
 /**
  * @author Andrei Adamchik
  */
 public class ModelerEventTst extends TestCase {
 
-	/**
-	 * Constructor for ModelerEventTst.
-	 * @param arg0
-	 */
-	public ModelerEventTst(String arg0) {
-		super(arg0);
-	}
-
     public void testConstructor1() throws Exception {
     	Object src = new Object();
-    	ModelerEvent e = new ModelerEvent(src);
+    	MapEvent e = new TestMapEvent(src);
     	assertSame(src, e.getSource());
-    }
-    
-    public void testConstructor2() throws Exception  {
-    	Object src = new Object();
-    	ModelerEvent e = new ModelerEvent(src, "oldname", "newname");
-    	assertSame(src, e.getSource());
-    	assertEquals("oldname", e.getOldName());
-    	assertEquals("newname", e.getNewName());
     }
     
     public void testId() throws Exception  {
-    	ModelerEvent e = new ModelerEvent(new Object());
-    	assertEquals(ModelerEvent.CHANGE, e.getId());
+    	MapEvent e = new TestMapEvent(new Object());
+    	assertEquals(MapEvent.CHANGE, e.getId());
     	
-    	e.setId(ModelerEvent.ADD);
-    	assertEquals(ModelerEvent.ADD, e.getId());
+    	e.setId(MapEvent.ADD);
+    	assertEquals(MapEvent.ADD, e.getId());
+    }
+    
+    class TestMapEvent extends MapEvent {
+        public TestMapEvent(Object source) {
+            super(source);
+            // TODO Auto-generated constructor stub
+        }
+
+        public TestMapEvent(Object source, String oldName) {
+            super(source, oldName);
+            // TODO Auto-generated constructor stub
+        }
+
+    	public String getNewName() {
+    		return "";
+    	}
     }
 }
 

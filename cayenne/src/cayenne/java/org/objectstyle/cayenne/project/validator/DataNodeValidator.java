@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,6 @@ package org.objectstyle.cayenne.project.validator;
 
 import java.util.Iterator;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.conf.DriverDataSourceFactory;
@@ -68,7 +67,6 @@ import org.objectstyle.cayenne.util.Util;
  * @author Andrei Adamchik
  */
 public class DataNodeValidator extends TreeNodeValidator {
-    private static Logger logObj = Logger.getLogger(DataNodeValidator.class);
 
     /**
      * Constructor for DataNodeValidator.
@@ -118,7 +116,7 @@ public class DataNodeValidator extends TreeNodeValidator {
         }
 
         // check for duplicate names in the parent context
-        Iterator it = domain.getDataNodeList().iterator();
+        Iterator it = domain.getDataNodes().iterator();
         while (it.hasNext()) {
             DataNode otherNode = (DataNode) it.next();
             if (otherNode == node) {

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,29 +55,41 @@
  */
 package org.objectstyle.cayenne.dba.sybase;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
 
-import org.objectstyle.cayenne.access.DataNode;
-import org.objectstyle.cayenne.access.OperationSorter;
+import org.objectstyle.cayenne.access.types.ByteArrayType;
 import org.objectstyle.cayenne.access.types.CharType;
+import org.objectstyle.cayenne.access.types.ExtendedTypeMap;
+import org.objectstyle.cayenne.access.types.ShortType;
 import org.objectstyle.cayenne.dba.JdbcAdapter;
 import org.objectstyle.cayenne.dba.PkGenerator;
 
 /** 
- * DbAdapter implementation for 
- * <a href="http://www.sybase.com">Sybase RDBMS</a>.
+ * DbAdapter implementation for <a href="http://www.sybase.com">Sybase RDBMS</a>.
  *
  * @author Andrei Adamchik
  */
 public class SybaseAdapter extends JdbcAdapter {
-    protected Map sorters = new HashMap();
 
-    public SybaseAdapter() {
-        super();
-        typeConverter.registerType(new CharType());
+    /**
+     * Installs appropriate ExtendedTypes as converters for passing values
+     * between JDBC and Java layers.
+     */
+    protected void configureExtendedTypes(ExtendedTypeMap map) {
+        super.configureExtendedTypes(map);
+
+        // create specially configured CharType handler
+        map.registerType(new CharType(true, false));
+
+        // create specially configured ByteArrayType handler
+        map.registerType(new ByteArrayType(true, false));
+
+        // address Sybase driver inability to handle java.lang.Short
+        map.registerType(new ShortType(true));
     }
-    
+
     /** 
      * Creates and returns a primary key generator. 
      * Overrides superclass implementation to return an
@@ -86,16 +98,28 @@ public class SybaseAdapter extends JdbcAdapter {
     protected PkGenerator createPkGenerator() {
         return new SybasePkGenerator();
     }
-    
-    
-    public OperationSorter getOpSorter(DataNode node) {
-        synchronized (sorters) {
-            OperationSorter sorter = (OperationSorter) sorters.get(node);
-            if (sorter == null) {
-                sorter = new OperationSorter(node, node.getDataMaps());
-                sorters.put(node, sorter);
+    /**
+     *
+     */
+
+    public void bindParameter(
+        PreparedStatement statement,
+        Object object,
+        int pos,
+        int sqlType,
+        int precision)
+        throws SQLException, Exception {
+
+        // Sybase driver doesn't like CLOBs and BLOBs as parameters
+        if (object == null) {
+            if (sqlType == Types.CLOB) {
+                sqlType = Types.VARCHAR;
             }
-            return sorter;
+            else if (sqlType == Types.BLOB) {
+                sqlType = Types.VARBINARY;
+            }
         }
+
+        super.bindParameter(statement, object, pos, sqlType, precision);
     }
 }

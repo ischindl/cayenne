@@ -1,8 +1,8 @@
 /* ====================================================================
- * 
- * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * The ObjectStyle Group Software License, Version 1.0
+ *
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,7 +10,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -18,15 +18,15 @@
  *    distribution.
  *
  * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
+ *    any, must include the following acknowlegement:
+ *       "This product includes software developed by the
  *        ObjectStyle Group (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
  *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
+ * 4. The names "ObjectStyle Group" and "Cayenne"
  *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
+ *    from this software without prior written permission. For written
  *    permission, please contact andrus@objectstyle.org.
  *
  * 5. Products derived from this software may not be called "ObjectStyle"
@@ -57,15 +57,16 @@ package org.objectstyle.cayenne.access.trans;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.art.Artist;
 import org.objectstyle.art.ArtistAssets;
 import org.objectstyle.art.ArtistExhibit;
 import org.objectstyle.art.ArtistPaintingCounts;
+import org.objectstyle.art.CompoundPainting;
 import org.objectstyle.art.Painting;
 import org.objectstyle.art.SubPainting;
 import org.objectstyle.cayenne.ObjectId;
@@ -77,14 +78,9 @@ import org.objectstyle.cayenne.query.SelectQuery;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class SelectTranslatorTst extends CayenneTestCase {
-    private static Logger logObj = Logger.getLogger(SelectTranslatorTst.class);
 
     protected SelectQuery q;
     protected DbEntity artistEnt;
-
-    public SelectTranslatorTst(String name) {
-        super(name);
-    }
 
     protected void setUp() throws Exception {
         q = new SelectQuery();
@@ -190,6 +186,8 @@ public class SelectTranslatorTst extends CayenneTestCase {
             q.setParentObjEntityName("Painting");
             q.setParentQualifier(
                 ExpressionFactory.matchExp("toArtist.artistName", "abc"));
+			q.andParentQualifier(
+			    ExpressionFactory.greaterOrEqualExp("estimatedPrice", new BigDecimal(1)));
             q.setQualifier(
                 ExpressionFactory.matchExp("estimatedPrice", new BigDecimal(3)));
 
@@ -202,6 +200,7 @@ public class SelectTranslatorTst extends CayenneTestCase {
 
             // no WHERE clause
             assertTrue("WHERE clause is expected: " + sql, sql.indexOf(" WHERE ") > 0);
+			assertTrue("WHERE clause must have estimated price: " + sql, sql.indexOf("ESTIMATED_PRICE >=") > 0);
 
             assertTrue(
                 "GROUP BY clause is expected:" + sql,
@@ -220,6 +219,9 @@ public class SelectTranslatorTst extends CayenneTestCase {
             assertTrue(
                 "Qualifier for related entity must be in WHERE: " + sql,
                 sql.indexOf("ARTIST_NAME") < sql.indexOf(" GROUP BY "));
+			assertTrue(
+				 "WHERE clause must have estimated price: " + sql,
+				 sql.indexOf("ESTIMATED_PRICE >=") < sql.indexOf(" GROUP BY "));
         } finally {
             con.close();
         }
@@ -347,13 +349,13 @@ public class SelectTranslatorTst extends CayenneTestCase {
 
             int i1 = generatedSql.indexOf(" FROM ");
             assertTrue(i1 > 0);
-            
+
             int i2 = generatedSql.indexOf(" WHERE ");
             assertTrue(i2 > i1);
- 
+
             int i3 = generatedSql.indexOf("DATE_OF_BIRTH", i2 + 1);
             assertTrue(i3 > i2);
-            
+
             int i4 = generatedSql.indexOf("DATE_OF_BIRTH", i3 + 1);
             assertTrue("No second DOB comparison: " + i4 + ", " + i3, i4 > i3);
         } finally {
@@ -363,7 +365,7 @@ public class SelectTranslatorTst extends CayenneTestCase {
 
 
    /**
-     * Test query when qualifying on the same attribute accessed over 
+     * Test query when qualifying on the same attribute accessed over
      * relationship, more than once.
      * Check translation "Painting.toArtist.dateOfBirth > ? AND Painting.toArtist.dateOfBirth < ?".
      */
@@ -394,21 +396,78 @@ public class SelectTranslatorTst extends CayenneTestCase {
 
             int i1 = generatedSql.indexOf(" FROM ");
             assertTrue(i1 > 0);
-            
+
             int i2 = generatedSql.indexOf(" WHERE ");
             assertTrue(i2 > i1);
- 
+
             int i3 = generatedSql.indexOf("DATE_OF_BIRTH", i2 + 1);
             assertTrue(i3 > i2);
-            
+
             int i4 = generatedSql.indexOf("DATE_OF_BIRTH", i3 + 1);
             assertTrue("No second DOB comparison: " + i4 + ", " + i3, i4 > i3);
         } finally {
             con.close();
         }
     }
-    
-    
+
+    public void testCreateSqlString9() throws Exception {
+        Connection con = getConnection();
+
+        try {
+            // query for a compound ObjEntity with qualifier
+            q.setRoot(CompoundPainting.class);
+            q.setQualifier(
+                ExpressionFactory.binaryExp(Expression.LIKE, "artistName", "a%"));
+
+            String generatedSql = buildTranslator(con).createSqlString();
+
+            // do some simple assertions to make sure all parts are in
+            assertNotNull(generatedSql);
+            assertTrue(generatedSql.startsWith("SELECT "));
+
+            int i1 = generatedSql.indexOf(" FROM ");
+            assertTrue(i1 > 0);
+
+            int i2 = generatedSql.indexOf("PAINTING");
+            assertTrue(i2 > 0);
+
+            int i3 = generatedSql.indexOf("ARTIST");
+            assertTrue(i3 > 0);
+
+            int i4 = generatedSql.indexOf("GALLERY");
+            assertTrue(i4 > 0);
+
+            int i5 = generatedSql.indexOf("PAINTING_INFO");
+            assertTrue(i5 > 0);
+
+            int i6 = generatedSql.indexOf("ARTIST_NAME");
+            assertTrue(i6 > 0);
+
+            int i7 = generatedSql.indexOf("ESTIMATED_PRICE");
+            assertTrue(i7 > 0);
+
+            int i8 = generatedSql.indexOf("GALLERY_NAME");
+            assertTrue(i8 > 0);
+
+            int i9 = generatedSql.indexOf("PAINTING_TITLE");
+            assertTrue(i9 > 0);
+
+            int i10 = generatedSql.indexOf("TEXT_REVIEW");
+            assertTrue(i10 > 0);
+
+            int i11 = generatedSql.indexOf("PAINTING_ID");
+            assertTrue(i11 > 0);
+
+            int i12 = generatedSql.indexOf("ARTIST_ID");
+            assertTrue(i12 > 0);
+
+            int i13 = generatedSql.indexOf("GALLERY_ID");
+            assertTrue(i13 > 0);
+        } finally {
+            con.close();
+        }
+    }
+
     public void testBuildColumnList1() throws Exception {
         Connection con = getConnection();
 
@@ -418,8 +477,8 @@ public class SelectTranslatorTst extends CayenneTestCase {
             SelectTranslator transl = buildTranslator(con);
             transl.createSqlString();
 
-            List columns = transl.getColumnList();
-            List dbAttrs = artistEnt.getAttributeList();
+            List columns = transl.getColumns();
+            Collection dbAttrs = artistEnt.getAttributes();
 
             assertEquals(dbAttrs.size(), columns.size());
             Iterator it = dbAttrs.iterator();
@@ -438,12 +497,12 @@ public class SelectTranslatorTst extends CayenneTestCase {
         try {
             // configure query with custom attributes
             q.setRoot(Artist.class);
-            q.addCustDbAttribute("ARTIST_ID");
+            q.addCustomDbAttribute("ARTIST_ID");
 
             SelectTranslator transl = buildTranslator(con);
             transl.createSqlString();
 
-            List columns = transl.getColumnList();
+            List columns = transl.getColumns();
             Object[] dbAttrs = new Object[] { artistEnt.getAttribute("ARTIST_ID")};
 
             assertEquals(dbAttrs.length, columns.size());
@@ -465,10 +524,10 @@ public class SelectTranslatorTst extends CayenneTestCase {
             SelectTranslator transl = buildTranslator(con);
             transl.createSqlString();
 
-            List columns = transl.getColumnList();
+            List columns = transl.getColumns();
 
             // assert that the number of attributes in the query is right
-            // 1 (obj attr) + 1 (pk) = 2 
+            // 1 (obj attr) + 1 (pk) = 2
             assertEquals(2, columns.size());
 
         } finally {
@@ -485,10 +544,10 @@ public class SelectTranslatorTst extends CayenneTestCase {
             SelectTranslator transl = buildTranslator(con);
             transl.createSqlString();
 
-            List columns = transl.getColumnList();
+            List columns = transl.getColumns();
 
             // assert that the number of attributes in the query is right
-            // 1 (obj attr) + 1 (pk) = 2 
+            // 1 (obj attr) + 1 (pk) = 2
             assertEquals(2, columns.size());
 
         } finally {

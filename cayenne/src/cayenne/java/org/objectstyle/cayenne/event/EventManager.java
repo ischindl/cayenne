@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,19 +66,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-import org.apache.log4j.Logger;
+import org.apache.commons.collections.iterators.SingletonIterator;
 import org.objectstyle.cayenne.util.Invocation;
 
 /**
  * This class acts as bridge between an Object that wants to inform others about
- * its current state or a achnage thereof (Publisher) and a list of objects
+ * its current state or a change thereof (Publisher) and a list of objects
  * interested in the Subject (Listeners).
  * 
  * @author Dirk Olmes
- * @author Holger Hoffstätte
+ * @author Holger Hoffstaette
  */
 public class EventManager extends Object {
-	private static final Logger log = Logger.getLogger(EventManager.class);
 	private static final EventManager _defaultManager = new EventManager();
 
 	// keeps weak references to subjects
@@ -135,15 +134,15 @@ public class EventManager extends Object {
 											Object sender)
 		throws NoSuchMethodException {
 		if (listener == null) {
-			throw new IllegalArgumentException("listener must not be null");
+			throw new IllegalArgumentException("Listener must not be null.");
 		}
 
 		if (eventParameterClass == null) {
-			throw new IllegalArgumentException("event class must not be null");
+			throw new IllegalArgumentException("Event class must not be null.");
 		}
 
 		if (subject == null) {
-			throw new IllegalArgumentException("subject must not be null");
+			throw new IllegalArgumentException("Subject must not be null.");
 		}
 
 		Invocation inv = new Invocation(listener, methodName, eventParameterClass);
@@ -196,13 +195,40 @@ public class EventManager extends Object {
 	 */
 	synchronized public boolean removeListener(EventListener listener,
 												EventSubject subject) {
+		return this.removeListener(listener, subject, null);
+	}
+
+	/**
+	 * Unregister the specified listener for the events about the given subject
+	 * and the given sender.
+	 * 
+	 * @param listener the object to be unregistered
+	 * @param subject the subject from which the listener is to be unregistered
+	 * @param sender the object whose events the listener was interested in;
+	 * <code>null</code> means 'any sender'.
+	 * @return <code>true</code> if <code>listener</code> could be removed for
+	 * the given subject, else returns <code>false</code>.
+	 */
+	synchronized public boolean removeListener(EventListener listener,
+												EventSubject subject,
+												Object sender) {
 		boolean didRemove = false;
 
 		if ((listener != null) && (subject != null)) {
 			Map subjectQueues = this.invocationQueuesForSubject(subject);
 			if (subjectQueues != null) {
+				Iterator queueIter;
+				
+				// remove only listeners for sender?
+				if (sender != null) {
+					Set senderQueue = this.invocationQueueForSubjectAndSender(subject, sender);
+					queueIter = new SingletonIterator(senderQueue);
+				}
+				else {
+					queueIter = subjectQueues.values().iterator();
+				}
+
 				// iterate over all invocation queues for this subject
-				Iterator queueIter = subjectQueues.values().iterator();
 				while (queueIter.hasNext()) {
 					Set invocations = (Set)queueIter.next();
 					if ((invocations != null) && (invocations.isEmpty() == false)) {
@@ -219,7 +245,7 @@ public class EventManager extends Object {
 				}
 			}
 		}
-
+	
 		return didRemove;
 	}
 

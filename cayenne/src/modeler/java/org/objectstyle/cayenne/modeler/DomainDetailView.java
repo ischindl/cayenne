@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,101 +56,104 @@
 
 package org.objectstyle.cayenne.modeler;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
 
-import javax.swing.JLabel;
+import javax.swing.InputVerifier;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.Spring;
-import javax.swing.SpringLayout;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 
 import org.objectstyle.cayenne.access.DataDomain;
+import org.objectstyle.cayenne.conf.Configuration;
+import org.objectstyle.cayenne.map.event.DomainEvent;
 import org.objectstyle.cayenne.modeler.control.EventController;
 import org.objectstyle.cayenne.modeler.event.DomainDisplayEvent;
 import org.objectstyle.cayenne.modeler.event.DomainDisplayListener;
-import org.objectstyle.cayenne.modeler.event.DomainEvent;
+import org.objectstyle.cayenne.modeler.util.CayenneWidgetFactory;
+import org.objectstyle.cayenne.modeler.util.MapUtil;
+import org.objectstyle.cayenne.project.ApplicationProject;
 
 /** 
- * Detail view of the Data Domain
+ * Panel for editing DataDomain.
  * 
  * @author Michael Misha Shengaout 
+ * @author Andrei Adamchik
  */
-public class DomainDetailView
-    extends JPanel
-    implements DocumentListener, DomainDisplayListener {
-    EventController mediator;
+public class DomainDetailView extends JPanel implements DomainDisplayListener {
+    protected EventController eventController;
+    protected JTextField name;
 
-    JLabel nameLabel;
-    JTextField name;
-    String oldName;
-    /** Cludge to prevent marking domain as dirty during initial load. */
-    private boolean ignoreChange = false;
+    public DomainDetailView(EventController eventController) {
+        this.eventController = eventController;
 
-    public DomainDetailView(EventController temp_mediator) {
-        super();
-        mediator = temp_mediator;
-        mediator.addDomainDisplayListener(this);
         // Create and layout components
         init();
-        // Add listeners
-        name.getDocument().addDocumentListener(this);
+
+        eventController.addDomainDisplayListener(this);
+        InputVerifier inputCheck = new FieldVerifier();
+        name.setInputVerifier(inputCheck);
     }
 
     private void init() {
-        SpringLayout layout = new SpringLayout();
-        this.setLayout(layout);
-
-        nameLabel = new JLabel("Domain name: ");
-        name = new JTextField(20);
-
-        Component[] left_comp = new Component[1];
-        left_comp[0] = nameLabel;
-        Component[] right_comp = new Component[1];
-        right_comp[0] = name;
-        JPanel temp = PanelFactory.createForm(left_comp, right_comp, 5, 5, 5, 5);
-        Spring pad = Spring.constant(5);
-        Spring ySpring = pad;
-        add(temp);
-        SpringLayout.Constraints cons = layout.getConstraints(temp);
-        cons.setY(ySpring);
-        cons.setX(pad);
-    }
-
-    public void insertUpdate(DocumentEvent e) {
-        textFieldChanged(e);
-    }
-    public void changedUpdate(DocumentEvent e) {
-        textFieldChanged(e);
-    }
-    public void removeUpdate(DocumentEvent e) {
-        textFieldChanged(e);
-    }
-
-    private void textFieldChanged(DocumentEvent e) {
-        if (ignoreChange)
-            return;
-        String new_name = name.getText();
-        DataDomain domain = mediator.getCurrentDataDomain();
-        // If name hasn't changed, do nothing
-        if (new_name.equals(domain.getName()))
-            return;
-        domain.setName(new_name);
-        DomainEvent event;
-        event = new DomainEvent(this, domain, oldName);
-        mediator.fireDomainEvent(event);
-        oldName = new_name;
-
+        this.setLayout(new BorderLayout());
+        this.name = CayenneWidgetFactory.createTextField();
+        this.add(
+            PanelFactory.createForm(
+                new Component[] { CayenneWidgetFactory.createLabel("Domain name: ")},
+                new Component[] { name },
+                5,
+                5,
+                5,
+                5));
     }
 
     public void currentDomainChanged(DomainDisplayEvent e) {
         DataDomain domain = e.getDomain();
-        if (null == domain)
+        if (null == domain) {
             return;
-        oldName = domain.getName();
-        ignoreChange = true;
-        name.setText(oldName);
-        ignoreChange = false;
+        }
+
+        name.setText(domain.getName());
+    }
+
+    class FieldVerifier extends InputVerifier {
+        public boolean verify(JComponent input) {
+            if (input == name) {
+                return verifyName();
+            }
+            else {
+                return true;
+            }
+        }
+
+        protected boolean verifyName() {
+            String text = name.getText();
+            if (text == null || text.trim().length() == 0) {
+                text = "";
+            }
+
+            Configuration configuration =
+                ((ApplicationProject) Editor.getProject()).getConfiguration();
+            DataDomain domain = eventController.getCurrentDataDomain();
+
+            DataDomain matchingDomain = configuration.getDomain(text);
+
+            if (matchingDomain == null) {
+                // completely new name, set new name for domain
+                DomainEvent e = new DomainEvent(this, domain, domain.getName());
+                MapUtil.setDataDomainName(configuration, domain, text);
+                eventController.fireDomainEvent(e);
+                return true;
+            }
+            else if (matchingDomain == domain) {
+                // no name changes, just return
+                return true;
+            }
+            else {
+                // there is an entity with the same name
+                return false;
+            }
+        }
     }
 }

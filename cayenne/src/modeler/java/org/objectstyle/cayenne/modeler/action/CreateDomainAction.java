@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,10 +58,10 @@ package org.objectstyle.cayenne.modeler.action;
 import java.awt.event.ActionEvent;
 
 import org.objectstyle.cayenne.access.DataDomain;
+import org.objectstyle.cayenne.map.event.DomainEvent;
 import org.objectstyle.cayenne.modeler.Editor;
 import org.objectstyle.cayenne.modeler.control.EventController;
 import org.objectstyle.cayenne.modeler.event.DomainDisplayEvent;
-import org.objectstyle.cayenne.modeler.event.DomainEvent;
 import org.objectstyle.cayenne.project.ApplicationProject;
 import org.objectstyle.cayenne.project.NamedObjectFactory;
 import org.objectstyle.cayenne.project.ProjectPath;
@@ -70,14 +70,17 @@ import org.objectstyle.cayenne.project.ProjectPath;
  * @author Andrei Adamchik
  */
 public class CreateDomainAction extends CayenneAction {
-    public static final String ACTION_NAME = "Create DataDomain";
+
+	public static String getActionName() {
+		return "Create DataDomain";
+	}
 
     /**
      * Constructor for CreateDomainAction.
      * @param name
      */
     public CreateDomainAction() {
-        super(ACTION_NAME);
+        super(getActionName());
     }
 
     public String getIconName() {
@@ -99,8 +102,8 @@ public class CreateDomainAction extends CayenneAction {
         DataDomain domain =
             (DataDomain) NamedObjectFactory.createObject(
                 DataDomain.class,
-                project.getConfig());
-        project.getConfig().addDomain(domain);
+                project.getConfiguration());
+        project.getConfiguration().addDomain(domain);
         mediator.fireDomainEvent(new DomainEvent(this, domain, DomainEvent.ADD));
         mediator.fireDomainDisplayEvent(new DomainDisplayEvent(this, domain));
     }

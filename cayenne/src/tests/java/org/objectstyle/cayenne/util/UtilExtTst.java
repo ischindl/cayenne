@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,16 +55,10 @@
  */
 package org.objectstyle.cayenne.util;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneException;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class UtilExtTst extends CayenneTestCase {
-	private static Logger logObj = Logger.getLogger(UtilExtTst.class);
-
-	public UtilExtTst(String name) {
-		super(name);
-	}
 
 	public void testPackagePath1() throws java.lang.Exception {
 		String expectedPath = "org/objectstyle/cayenne/util";
@@ -76,7 +70,7 @@ public class UtilExtTst extends CayenneTestCase {
 	public void testPackagePath2() throws java.lang.Exception {
 		// inner class
 		class TmpTest extends Object {
-		};
+		}
 
 		String expectedPath = "org/objectstyle/cayenne/util";
 		assertEquals(
@@ -93,7 +87,7 @@ public class UtilExtTst extends CayenneTestCase {
 	}
 
 	public void testIsEmptyString2() throws Exception {
-		assertTrue(!Util.isEmptyString("  "));
+		assertFalse(Util.isEmptyString("  "));
 	}
 
 	public void testIsEmptyString3() throws Exception {
@@ -131,10 +125,10 @@ public class UtilExtTst extends CayenneTestCase {
 
 		assertTrue(o3.equals(o1));
 		assertTrue(Util.nullSafeEquals(o1, o1));
-		assertTrue(!Util.nullSafeEquals(o1, o2));
+		assertFalse(Util.nullSafeEquals(o1, o2));
 		assertTrue(Util.nullSafeEquals(o1, o3));
-		assertTrue(!Util.nullSafeEquals(o1, null));
-		assertTrue(!Util.nullSafeEquals(null, o1));
+		assertFalse(Util.nullSafeEquals(o1, null));
+		assertFalse(Util.nullSafeEquals(null, o1));
 		assertTrue(Util.nullSafeEquals(null, null));
 	}
 

@@ -1,6 +1,5 @@
 package org.objectstyle.art;
 
-import java.util.Date;
 import java.util.List;
 
 public class Artist extends org.objectstyle.cayenne.CayenneDataObject {
@@ -13,11 +12,11 @@ public class Artist extends org.objectstyle.cayenne.CayenneDataObject {
     }
     
     
-    public void setDateOfBirth(Date dateOfBirth) {
+    public void setDateOfBirth(java.util.Date dateOfBirth) {
         writeProperty("dateOfBirth", dateOfBirth);
     }
-    public Date getDateOfBirth() {
-        return (Date)readProperty("dateOfBirth");
+    public java.util.Date getDateOfBirth() {
+        return (java.util.Date)readProperty("dateOfBirth");
     }
     
     

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,18 +59,13 @@ import java.io.File;
 
 import junit.framework.TestCase;
 
+import org.objectstyle.cayenne.conf.Configuration;
+
 /**
  * @author Andrei Adamchik
  */
 public class DataMapFileFilterTst extends TestCase {
     protected DataMapFileFilter filter;
-
-    /**
-     * Constructor for DataMapFileFilterTst.
-     */
-    public DataMapFileFilterTst(String name) {
-        super(name);
-    }
 
     public void setUp() throws Exception {
         filter = new DataMapFileFilter();
@@ -81,15 +76,15 @@ public class DataMapFileFilterTst extends TestCase {
     }
 
     public void testRejectCayenneXml() throws Exception {
-        assertTrue(!filter.accept(new File("cayenne.xml")));
+        assertFalse(filter.accept(new File(Configuration.DEFAULT_DOMAIN_FILE)));
     }
 
     public void testRejectOther() throws Exception {
-        assertTrue(!filter.accept(new File("somefile.txt")));
+        assertFalse(filter.accept(new File("somefile.txt")));
     }
 
     public void testRejectHiddenMapXml() throws Exception {
-        assertTrue(!filter.accept(new File(".map.xml")));
+        assertFalse(filter.accept(new File(".map.xml")));
     }
     
     public void testAcceptMapXml() throws Exception {
@@ -97,6 +92,6 @@ public class DataMapFileFilterTst extends TestCase {
     }
     
     public void testRejectMixedCase() throws Exception {
-        assertTrue(!filter.accept(new File("xyz.MAP.xml")));
+        assertFalse(filter.accept(new File("xyz.MAP.xml")));
     }
 }

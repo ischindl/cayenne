@@ -1,8 +1,8 @@
 /* ====================================================================
- * 
- * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * The ObjectStyle Group Software License, Version 1.0
+ *
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,7 +10,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -18,15 +18,15 @@
  *    distribution.
  *
  * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
+ *    any, must include the following acknowlegement:
+ *       "This product includes software developed by the
  *        ObjectStyle Group (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
  *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
+ * 4. The names "ObjectStyle Group" and "Cayenne"
  *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
+ *    from this software without prior written permission. For written
  *    permission, please contact andrus@objectstyle.org.
  *
  * 5. Products derived from this software may not be called "ObjectStyle"
@@ -56,6 +56,8 @@
 package org.objectstyle.cayenne.access;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -63,38 +65,44 @@ import java.util.Map;
 
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataObject;
+import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.Entity;
 import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.Procedure;
 import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.query.SelectQuery;
 
 /**
- * EntityResolver encapsulates resolving between ObjEntities, DbEntities, 
- * DataObject Classes, and Entity names. An instance is typically obtained 
+ * EntityResolver encapsulates resolving between ObjEntities, DbEntities,
+ * DataObject Classes, and Entity names. An instance is typically obtained
  * from a QueryEngine by getEntityResolver. EntityResolver is thread-safe.
- * 
+ *
  * @author Craig Miskell
  * @author Andrei Adamchik
  */
 public class EntityResolver {
     protected Map dbEntityCache;
     protected Map objEntityCache;
+    protected Map procedureCache;
     protected List maps;
+    protected List mapsRef;
 
     public EntityResolver() {
         this.maps = new ArrayList();
+        this.mapsRef = Collections.unmodifiableList(maps);
         this.dbEntityCache = new HashMap();
         this.objEntityCache = new HashMap();
+        this.procedureCache = new HashMap();
     }
 
     /**
      * Constructor for EntityResolver.
      */
-    public EntityResolver(List dataMaps) {
+    public EntityResolver(Collection dataMaps) {
         this();
-        maps.addAll(dataMaps); //Take a copy
+        this.maps.addAll(dataMaps); //Take a copy
         this.constructCache();
     }
 
@@ -133,17 +141,17 @@ public class EntityResolver {
         return null;
     }
 
-    public synchronized void setDataMaps(List maps) {
+    public synchronized void setDataMaps(Collection maps) {
         this.maps.clear();
         this.maps.addAll(maps);
         clearCache();
     }
 
     /**
-     * Returns a list of internal DataMaps by copy.
+     * Returns an unmodifiable collection of DataMaps.
      */
-    public List getDataMapsList() {
-        return new ArrayList(maps);
+    public Collection getDataMaps() {
+        return mapsRef;
     }
 
     /**
@@ -155,30 +163,31 @@ public class EntityResolver {
     protected synchronized void clearCache() {
         dbEntityCache.clear();
         objEntityCache.clear();
+        procedureCache.clear();
     }
 
-    /** 
-     * Creates caches of DbEntities by ObjEntity, 
-     * DataObject class, and ObjEntity name using internal 
+    /**
+     * Creates caches of DbEntities by ObjEntity,
+     * DataObject class, and ObjEntity name using internal
      * list of maps.
      */
     protected synchronized void constructCache() {
         clearCache();
         Iterator mapIterator = maps.iterator();
         while (mapIterator.hasNext()) {
-            int i;
             DataMap thisMap = (DataMap) mapIterator.next();
 
-            ObjEntity[] objEntities = thisMap.getObjEntities();
-
-            for (i = 0; i < objEntities.length; i++) {
-                ObjEntity oe = objEntities[i];
+            // index entities
+            Iterator objEntities = thisMap.getObjEntities().iterator();
+            while (objEntities.hasNext()) {
+                ObjEntity oe = (ObjEntity) objEntities.next();
                 DbEntity de = oe.getDbEntity();
                 dbEntityCache.put(oe, de);
                 Class entityClass;
                 try {
-                    //CTM Should this be using  Configuration.getResourceLoader().loadClass(oe.getClassName()) ???
-                    entityClass = Class.forName(oe.getClassName());
+                    entityClass =
+                        Configuration.getResourceLoader().loadClass(
+                            oe.getClassName());
                 } catch (ClassNotFoundException e) {
                     throw new CayenneRuntimeException(
                         "Cannot find class " + oe.getClassName());
@@ -200,6 +209,13 @@ public class EntityResolver {
                 objEntityCache.put(entityClass, oe);
                 dbEntityCache.put(oe.getName(), de);
                 objEntityCache.put(oe.getName(), oe);
+            }
+
+            // index stored procedures
+            Iterator procedures = thisMap.getProcedures().iterator();
+            while (procedures.hasNext()) {
+                Procedure proc = (Procedure) procedures.next();
+                procedureCache.put(proc.getName(), proc);
             }
         }
     }
@@ -244,10 +260,10 @@ public class EntityResolver {
      * Internal usage only - provides the type-unsafe implementation which services
      * the four typesafe public lookupDbEntity methods
      * Looks in the DataMap's that this object was created with for the ObjEntity that maps to the
-     * specified object.  Object may be a Entity name, ObjEntity, DataObject class 
-     * (Class object for a class which implements the DataObject interface), or a DataObject 
+     * specified object.  Object may be a Entity name, ObjEntity, DataObject class
+     * (Class object for a class which implements the DataObject interface), or a DataObject
      * instance itself
-     * 
+     *
      * @return the required DbEntity, or null if none matches the specifier
      */
     private synchronized DbEntity _lookupDbEntity(Object object) {
@@ -257,7 +273,7 @@ public class EntityResolver {
 
         DbEntity result = (DbEntity) dbEntityCache.get(object);
         if (result == null) {
-            // reconstruct cache just in case some of the datamaps 
+            // reconstruct cache just in case some of the datamaps
             // have changed and now contain the required information
             constructCache();
             result = (DbEntity) dbEntityCache.get(object);
@@ -318,7 +334,7 @@ public class EntityResolver {
      * Looks in the DataMap's that this object was created with for the ObjEntity that maps to the
      * specified object. Object may be a Entity name, DataObject instance or DataObject class
      * (Class object for a class which implements the DataObject interface)
-     * 
+     *
      * @return the required ObjEntity or null if there is none that matches the specifier
      */
     private synchronized ObjEntity _lookupObjEntity(Object object) {
@@ -332,7 +348,7 @@ public class EntityResolver {
 
         ObjEntity result = (ObjEntity) objEntityCache.get(object);
         if (result == null) {
-            // reconstruct cache just in case some of the datamaps 
+            // reconstruct cache just in case some of the datamaps
             // have changed and now contain the required information
             constructCache();
             result = (ObjEntity) objEntityCache.get(object);
@@ -343,7 +359,7 @@ public class EntityResolver {
     /**
      * Looks up the ObjEntity for the given query by using the query's getRoot method and passing to lookupObjEntity
      * @return the root ObjEntity of the query
-     * @throws CayenneRuntimeException if the root of the query is a DbEntity (it is not reliably possible to map 
+     * @throws CayenneRuntimeException if the root of the query is a DbEntity (it is not reliably possible to map
      * from a DbEntity to an ObjEntity as a DbEntity may be the source for multiple ObjEntities.  It is not safe
      * to rely on such behaviour).
      */
@@ -374,5 +390,28 @@ public class EntityResolver {
     public SelectQuery lookupQuery(Class queryRoot, String queryName) {
         Entity ent = lookupObjEntity(queryRoot);
         return (ent != null) ? ent.getQuery(queryName) : null;
+    }
+
+    public Procedure lookupProcedure(Query q) {
+        Object root = q.getRoot();
+        if (root instanceof Procedure) {
+            return (Procedure) root;
+        } else if (root instanceof String) {
+            return this.lookupProcedure((String) root);
+        }
+        return null;
+    }
+
+    public Procedure lookupProcedure(String procedureName) {
+        
+        Procedure result = (Procedure) procedureCache.get(procedureName);
+        if (result == null) {
+            // reconstruct cache just in case some of the datamaps
+            // have changed and now contain the required information
+            constructCache();
+            result = (Procedure) procedureCache.get(procedureName);
+        }
+        
+        return result;
     }
 }

@@ -3,7 +3,7 @@ package org.objectstyle.cayenne.wocompat;
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,22 +72,23 @@ public class EOModelProcessorTst extends CayenneTestCase {
 
     protected EOModelProcessor processor;
 
-    public EOModelProcessorTst(String name) {
-        super(name);
-    }
-
     public void setUp() throws java.lang.Exception {
         processor = new EOModelProcessor();
     }
 
     public void testLoadModel() throws Exception {
         DataMap map = processor.loadEOModel("test-resources/art.eomodeld");
-        assertLoaded(map);
+        assertLoaded("art", map);
+    }
+    
+    public void testLoadBrokenModel() throws Exception {
+        DataMap map = processor.loadEOModel("test-resources/art-with-errors.eomodeld");
+        assertLoaded("art-with-errors", map);
     }
 
-    protected void assertLoaded(DataMap map) throws Exception {
+    protected void assertLoaded(String mapName, DataMap map) throws Exception {
         assertNotNull(map);
-        assertEquals("art", map.getName());
+        assertEquals(mapName, map.getName());
 
         // check obj entities
         ObjEntity artistE = map.getObjEntity("Artist");
@@ -112,19 +113,19 @@ public class EOModelProcessorTst extends CayenneTestCase {
         ObjRelationship rel =
             (ObjRelationship) artistE.getRelationship("artistExhibitArray");
         assertNotNull(rel);
-        assertEquals(1, rel.getDbRelationshipList().size());
+        assertEquals(1, rel.getDbRelationships().size());
         
         // check DbRelationships
         DbRelationship drel =
             (DbRelationship) artistDE.getRelationship("artistExhibitArray");
         assertNotNull(drel);
-        assertSame(drel, rel.getDbRelationshipList().get(0));
+        assertSame(drel, rel.getDbRelationships().get(0));
 
         // flattened relationships
         ObjRelationship frel =
             (ObjRelationship) artistE.getRelationship("exhibitArray");
         assertNotNull(frel);
-        assertEquals(2, frel.getDbRelationshipList().size());
+        assertEquals(2, frel.getDbRelationships().size());
         
         
         // storing data map may uncover some inconsistencies

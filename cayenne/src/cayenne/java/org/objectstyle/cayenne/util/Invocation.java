@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,12 +67,12 @@ import org.apache.log4j.Logger;
  * The target is kept with a WeakReference and can therefore be reclaimed by the
  * Garbage Collector.
  * 
- * @author Holger Hoffstätte
+ * @author Holger Hoffstaette
  * @author Dirk Olmes
  */
 public class Invocation extends Object {
 	private static final Logger log = Logger.getLogger(Invocation.class);
-
+ 
 	private WeakReference _target;
 	private Method _method;
 	private Class[] _parameterTypes;
@@ -153,7 +153,7 @@ public class Invocation extends Object {
 	 * @see #fire(Object[])
 	 */
 	public boolean fire() {
-		return this.fire((Object[])null);
+		return this.fire(null);
 	}
 
 	/**

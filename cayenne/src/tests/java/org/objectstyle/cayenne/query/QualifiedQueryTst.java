@@ -3,7 +3,7 @@ package org.objectstyle.cayenne.query;
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,10 +61,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class QualifiedQueryTst extends CayenneTestCase {
 	protected QualifiedQuery query;
-
-	public QualifiedQueryTst(String name) {
-		super(name);
-	}
 
 	public void setUp() throws java.lang.Exception {
 		query = new TstQualifiedQuery();

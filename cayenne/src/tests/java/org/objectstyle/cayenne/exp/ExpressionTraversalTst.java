@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne.exp;
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,6 +53,7 @@ package org.objectstyle.cayenne.exp;
  * <http://objectstyle.org/>.
  *
  */ 
+package org.objectstyle.cayenne.exp;
 
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
@@ -62,35 +62,29 @@ public class ExpressionTraversalTst extends CayenneTestCase {
     protected TstTraversalHandler handler;
     protected ExpressionTraversal walker;
     
-    
-    public ExpressionTraversalTst(String name) {
-        super(name);
-    }
-    
-    
-    protected void setUp() throws java.lang.Exception {                
+    protected void setUp() throws Exception {                
         handler = new TstTraversalHandler();
         walker = new ExpressionTraversal(); 
         walker.setHandler(handler);
     }
     
     
-    public void testUnary() throws java.lang.Exception {
+    public void testUnary() throws Exception {
         doExpressionTest(new TstUnaryExpSuite());
     }
     
     
-    public void testBinary() throws java.lang.Exception {
+    public void testBinary() throws Exception {
         doExpressionTest(new TstBinaryExpSuite());
     }
     
     
-    public void testTernary() throws java.lang.Exception {
+    public void testTernary() throws Exception {
         doExpressionTest(new TstTernaryExpSuite());
     } 
     
     
-    private void doExpressionTest(TstExpressionSuite suite) throws java.lang.Exception {
+    private void doExpressionTest(TstExpressionSuite suite) throws Exception {
         TstExpressionCase[] cases = suite.cases();
         
         int len = cases.length;

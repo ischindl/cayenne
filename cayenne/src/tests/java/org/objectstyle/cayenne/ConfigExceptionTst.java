@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,45 +55,38 @@
  */
 package org.objectstyle.cayenne;
 
-import org.objectstyle.cayenne.unittest.CayenneTestCase;
+import junit.framework.TestCase;
 
 /**
  * @author Andrei Adamchik
  */
-public class ConfigExceptionTst extends CayenneTestCase {
+public class ConfigExceptionTst extends TestCase {
 
-	/**
-	 * Constructor for CayenneConfigExceptionTst.
-	 * @param arg0
-	 */
-	public ConfigExceptionTst(String arg0) {
-		super(arg0);
-	}
+    public void testConstructor1() throws Exception {
+        ConfigurationException ex = new ConfigurationException();
+        assertNull(ex.getCause());
+        assertTrue(ex.getMessage().startsWith(CayenneException.getExceptionLabel()));
+    }
 
-	public void testConstructor1() throws Exception {
-		ConfigException ex = new ConfigException();
-		assertNull(ex.getCause());
-		assertNull(ex.getMessage());
-	}
+    public void testConstructor2() throws Exception {
+        ConfigurationException ex = new ConfigurationException("abc");
+        assertNull(ex.getCause());
+        assertEquals(CayenneException.getExceptionLabel() + "abc", ex.getMessage());
+    }
 
-	public void testConstructor2() throws Exception {
-		ConfigException ex = new ConfigException("abc");
-		assertNull(ex.getCause());
-		assertEquals("abc", ex.getMessage());
-	}
+    public void testConstructor3() throws Exception {
+        Throwable cause = new Throwable();
+        ConfigurationException ex = new ConfigurationException(cause);
+        assertSame(cause, ex.getCause());
+        assertEquals(
+            CayenneException.getExceptionLabel() + cause.toString(),
+            ex.getMessage());
+    }
 
-	public void testConstructor3() throws Exception {
-		Throwable cause = new Throwable();
-		ConfigException ex = new ConfigException(cause);
-		assertSame(cause, ex.getCause());
-		assertEquals(cause.toString(), ex.getMessage());
-	}
-
-	public void testConstructor4() throws Exception {
-	    Throwable cause = new Throwable();
-		ConfigException ex = new ConfigException("abc", cause);
-		assertSame(cause, ex.getCause());
-		assertSame("abc", ex.getMessage());
-	}
+    public void testConstructor4() throws Exception {
+        Throwable cause = new Throwable();
+        ConfigurationException ex = new ConfigurationException("abc", cause);
+        assertSame(cause, ex.getCause());
+        assertEquals(CayenneException.getExceptionLabel() + "abc", ex.getMessage());
+    }
 }
-

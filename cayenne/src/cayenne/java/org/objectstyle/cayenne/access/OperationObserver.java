@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -86,6 +86,11 @@ public interface OperationObserver extends OperationHints {
 	 */
     public void nextCount(Query query, int resultCount);
     
+	/** 
+	 * Invoked after the batch update is executed
+	 */
+	public void nextBatchCount(Query query, int[] resultCount);
+    
     
     /** Invoked after the next query results are read. */
     public void nextDataRows(Query query, List dataRows);
@@ -122,17 +127,5 @@ public interface OperationObserver extends OperationHints {
      */
     public void transactionRolledback();
     
-    
-    /** This method may be called by DataNode. It gives a chance to OperationObserver to order 
-     *  queries to satisfy database referential integrity constraints.
-     *
-     *  @param aNode data node that is about to run a list of queries...
-     *  @param queryList a list of queries being executed by QueryEngine as a single transaction
-     *
-     *  @return ordered query list (of course some implementations may just return unmodified original
-     *  query list if they do not care about ordering)
-     *
-     */
-    public List orderQueries(DataNode aNode, List queryList);
 }
 

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,12 +67,8 @@ import org.objectstyle.cayenne.exp.ExpressionFactory;
 public class SelectQueryTst extends SelectQueryBase {
     private static final int _artistCount = 20;
 
-    public SelectQueryTst(String name) {
-        super(name);
-    }
-
     public void testFetchLimit() throws java.lang.Exception {
- 		query.setRoot(Artist.class);
+        query.setRoot(Artist.class);
         query.setFetchLimit(7);
         performQuery();
 
@@ -93,7 +89,7 @@ public class SelectQueryTst extends SelectQueryBase {
     }
 
     public void testSelectAllObjectsRootClass() throws java.lang.Exception {
- 		query.setRoot(Artist.class);
+        query.setRoot(Artist.class);
         performQuery();
 
         // check query results
@@ -101,10 +97,10 @@ public class SelectQueryTst extends SelectQueryBase {
         assertNotNull(objects);
         assertEquals(_artistCount, objects.size());
     }
-    
+
     public void testSelectAllObjectsRootObjEntity() throws java.lang.Exception {
-		//Crude technique to obtain the Artist ObjEntity, but it works
-  		query.setRoot(this.getDomain().getEntityResolver().lookupObjEntity(Artist.class));
+        //Crude technique to obtain the Artist ObjEntity, but it works
+        query.setRoot(this.getDomain().getEntityResolver().lookupObjEntity(Artist.class));
         performQuery();
 
         // check query results
@@ -113,13 +109,10 @@ public class SelectQueryTst extends SelectQueryBase {
         assertEquals(_artistCount, objects.size());
     }
 
-
-   public void testOrderByIgnoreCase() throws Exception {
- 		query.setRoot(Artist.class);
-        Expression qual =
-            ExpressionFactory.binaryPathExp(Expression.LIKE, "artistName", "artist11");
+    public void testSelectLikeExactMatch() throws Exception {
+        query.setRoot(Artist.class);
+        Expression qual = ExpressionFactory.likeExp("artistName", "artist1");
         query.setQualifier(qual);
-
         performQuery();
 
         // check query results
@@ -128,14 +121,46 @@ public class SelectQueryTst extends SelectQueryBase {
         assertEquals(1, objects.size());
     }
 
+    public void testSelectNotLikeSingleWildcardMatch() throws Exception {
+        query.setRoot(Artist.class);
+        Expression qual = ExpressionFactory.notLikeExp("artistName", "artist11%");
+        query.setQualifier(qual);
+        performQuery();
+
+        // check query results
+        List objects = opObserver.objectsForQuery(query);
+        assertNotNull(objects);
+        assertEquals(_artistCount - 1, objects.size());
+    }
+
+    public void testSelectLikeSingleWildcardMatch() throws Exception {
+        query.setRoot(Artist.class);
+        Expression qual = ExpressionFactory.likeExp("artistName", "artist11%");
+        query.setQualifier(qual);
+        performQuery();
+
+        // check query results
+        List objects = opObserver.objectsForQuery(query);
+        assertNotNull(objects);
+        assertEquals(1, objects.size());
+    }
+
+    public void testSelectLikeMultipleWildcardMatch() throws Exception {
+        query.setRoot(Artist.class);
+        Expression qual = ExpressionFactory.likeExp("artistName", "artist1%");
+        query.setQualifier(qual);
+        performQuery();
+
+        // check query results
+        List objects = opObserver.objectsForQuery(query);
+        assertNotNull(objects);
+        assertEquals(11, objects.size());
+    }
+
     /** Test how "like ignore case" works when using uppercase parameter. */
     public void testSelectLikeIgnoreCaseObjects1() throws Exception {
- 		query.setRoot(Artist.class);
-        Expression qual =
-            ExpressionFactory.binaryPathExp(
-                Expression.LIKE_IGNORE_CASE,
-                "artistName",
-                "ARTIST%");
+        query.setRoot(Artist.class);
+        Expression qual = ExpressionFactory.likeIgnoreCaseExp("artistName", "ARTIST%");
         query.setQualifier(qual);
         performQuery();
 
@@ -147,12 +172,8 @@ public class SelectQueryTst extends SelectQueryBase {
 
     /** Test how "like ignore case" works when using lowercase parameter. */
     public void testSelectLikeIgnoreCaseObjects2() throws Exception {
-  		query.setRoot(Artist.class);
-        Expression qual =
-            ExpressionFactory.binaryPathExp(
-                Expression.LIKE_IGNORE_CASE,
-                "artistName",
-                "artist%");
+        query.setRoot(Artist.class);
+        Expression qual = ExpressionFactory.likeIgnoreCaseExp("artistName", "artist%");
         query.setQualifier(qual);
         performQuery();
 
@@ -163,8 +184,8 @@ public class SelectQueryTst extends SelectQueryBase {
     }
 
     public void testSelectCustAttributes() throws java.lang.Exception {
- 		query.setRoot(Artist.class);
-        query.addCustDbAttribute("ARTIST_NAME");
+        query.setRoot(Artist.class);
+        query.addCustomDbAttribute("ARTIST_NAME");
 
         List results = getDomain().createDataContext().performQuery(query);
 
@@ -196,7 +217,8 @@ public class SelectQueryTst extends SelectQueryBase {
 
             stmt.close();
             conn.commit();
-        } finally {
+        }
+        finally {
             conn.close();
         }
     }

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -77,15 +77,7 @@ public class ValidatorTestBase extends CayenneTestCase {
     protected Validator validator;
     protected ApplicationProject project;
 
-    /**
-     * Constructor for ValidatorTestBase.
-     * @param arg0
-     */
-    public ValidatorTestBase(String arg0) {
-        super(arg0);
-    }
-
-    /**
+   /**
      * @see junit.framework.TestCase#setUp()
      */
     protected void setUp() throws Exception {

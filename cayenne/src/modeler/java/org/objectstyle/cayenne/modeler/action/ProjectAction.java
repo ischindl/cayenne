@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -71,10 +71,12 @@ import org.scopemvc.core.Control;
 public class ProjectAction extends CayenneAction {
 	private static Logger logObj = Logger.getLogger(ProjectAction.class);
 	
-    public static final String ACTION_NAME = "Close Project";
+	public static String getActionName() {
+		return "Close Project";
+	}
 
     public ProjectAction() {
-        super(ACTION_NAME);
+        super(getActionName());
     }
 
     /**
@@ -105,7 +107,9 @@ public class ProjectAction extends CayenneAction {
         return true;
     }
 
-    /** Return false if cancel closing the window, true otherwise. */
+    /** 
+     * Returns false if cancel closing the window, true otherwise. 
+     */
     public boolean checkSaveOnClose() {
         EventController mediator = getMediator();
         if (mediator != null && mediator.isDirty()) {
@@ -113,11 +117,17 @@ public class ProjectAction extends CayenneAction {
             dialog.show();
 
             if (dialog.shouldCancel()) {
+            	// discard changes and DO NOT close
                 return false;
             } else if (dialog.shouldSave()) {
+                // save changes and close
                 ActionEvent e =
                     new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "SaveAll");
-                Editor.getFrame().getAction(SaveAction.ACTION_NAME).actionPerformed(e);
+                Editor.getFrame().getAction(SaveAction.getActionName()).actionPerformed(e);
+				if(mediator.isDirty()) {
+					// save was canceled... do not close
+					return false;
+				}
             }
         }
 

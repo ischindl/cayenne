@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,14 +55,20 @@
  */
 package org.objectstyle.cayenne.modeler.datamap;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+
 import javax.swing.JOptionPane;
 
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.dba.TypesMapping;
 import org.objectstyle.cayenne.map.DbAttribute;
 import org.objectstyle.cayenne.map.DbEntity;
+import org.objectstyle.cayenne.map.DbRelationship;
+import org.objectstyle.cayenne.map.event.AttributeEvent;
+import org.objectstyle.cayenne.modeler.Editor;
 import org.objectstyle.cayenne.modeler.control.EventController;
-import org.objectstyle.cayenne.modeler.event.AttributeEvent;
 import org.objectstyle.cayenne.modeler.util.CayenneTableModel;
 import org.objectstyle.cayenne.modeler.util.MapUtil;
 
@@ -74,247 +80,293 @@ import org.objectstyle.cayenne.modeler.util.MapUtil;
  * @author Andrei Adamchik
  */
 public class DbAttributeTableModel extends CayenneTableModel {
-	private static Logger logObj = Logger.getLogger(DbAttributeTableModel.class);
-	
-	// Columns
-	private static final int DB_ATTRIBUTE_NAME = 0;
-	private static final int DB_ATTRIBUTE_TYPE = 1;
-	private static final int DB_ATTRIBUTE_PRIMARY_KEY = 2;
-	private static final int DB_ATTRIBUTE_MANDATORY = 3;
-	private static final int DB_ATTRIBUTE_MAX = 4;
-	private static final int DB_ATTRIBUTE_PRECISION = 5;
+    private static Logger logObj = Logger.getLogger(DbAttributeTableModel.class);
 
-	protected DbEntity entity;
+    // Columns
+    private static final int DB_ATTRIBUTE_NAME = 0;
+    private static final int DB_ATTRIBUTE_TYPE = 1;
+    private static final int DB_ATTRIBUTE_PRIMARY_KEY = 2;
+    private static final int DB_ATTRIBUTE_MANDATORY = 3;
+    private static final int DB_ATTRIBUTE_MAX = 4;
+    private static final int DB_ATTRIBUTE_PRECISION = 5;
 
-	public DbAttributeTableModel(
-		DbEntity entity,
-		EventController mediator,
-		Object eventSource) {
+    protected DbEntity entity;
 
-		this(entity, mediator, eventSource, entity.getAttributeList());
-		this.entity = entity;
-	}
-	
-   public DbAttributeTableModel(
-		DbEntity entity,
-		EventController mediator,
-		Object eventSource,
-		java.util.List objectList) {
+    public DbAttributeTableModel(
+        DbEntity entity,
+        EventController mediator,
+        Object eventSource) {
+        this(entity, mediator, eventSource, new ArrayList(entity.getAttributes()));
+        this.entity = entity;
+    }
 
-		super(mediator, eventSource, objectList);
-	}
+    public DbAttributeTableModel(
+        DbEntity entity,
+        EventController mediator,
+        Object eventSource,
+        java.util.List objectList) {
+        super(mediator, eventSource, objectList);
+    }
 
     public int nameColumnInd() {
-    	return DB_ATTRIBUTE_NAME;
+        return DB_ATTRIBUTE_NAME;
     }
-    
+
     public int typeColumnInd() {
-    	return DB_ATTRIBUTE_TYPE;
+        return DB_ATTRIBUTE_TYPE;
     }
-    
+
     public int mandatoryColumnInd() {
-    	return DB_ATTRIBUTE_MANDATORY;
+        return DB_ATTRIBUTE_MANDATORY;
     }
-    
-	/**
-	 * Returns DbAttribute class.
-	 */
-	public Class getElementsClass() {
-		return DbAttribute.class;
-	}
 
-	/** 
-	 * Returns the number of columns in the table.
-	 */
-	public int getColumnCount() {
-		return 6;
-	}
+    /**
+     * Returns DbAttribute class.
+     */
+    public Class getElementsClass() {
+        return DbAttribute.class;
+    }
 
-	public DbAttribute getAttribute(int row) {
-		return (row >= 0 && row < objectList.size())
-			? (DbAttribute) objectList.get(row)
-			: null;
-	}
+    /** 
+     * Returns the number of columns in the table.
+     */
+    public int getColumnCount() {
+        return 6;
+    }
 
-	public String getColumnName(int col) {
-		switch(col) {
-			case DB_ATTRIBUTE_NAME: return "Name";
-			case DB_ATTRIBUTE_TYPE: return "Type";
-			case DB_ATTRIBUTE_PRIMARY_KEY: return "PK";
-			case DB_ATTRIBUTE_PRECISION: return "Precision";
-			case DB_ATTRIBUTE_MANDATORY: return "Mandatory";
-			case DB_ATTRIBUTE_MAX: return "Max Length";
-			default: return "";
-		}
-	}
+    public DbAttribute getAttribute(int row) {
+        return (row >= 0 && row < objectList.size())
+            ? (DbAttribute) objectList.get(row)
+            : null;
+    }
 
-	public Class getColumnClass(int col) {
-		switch (col) {
-			case DB_ATTRIBUTE_PRIMARY_KEY :
-			case DB_ATTRIBUTE_MANDATORY :
-				return Boolean.class;
-			default :
-				return String.class;
-		}
-	}
+    public String getColumnName(int col) {
+        switch (col) {
+            case DB_ATTRIBUTE_NAME :
+                return "Name";
+            case DB_ATTRIBUTE_TYPE :
+                return "Type";
+            case DB_ATTRIBUTE_PRIMARY_KEY :
+                return "PK";
+            case DB_ATTRIBUTE_PRECISION :
+                return "Precision";
+            case DB_ATTRIBUTE_MANDATORY :
+                return "Mandatory";
+            case DB_ATTRIBUTE_MAX :
+                return "Max Length";
+            default :
+                return "";
+        }
+    }
 
-	public Object getValueAt(int row, int column) {
-		DbAttribute attr = getAttribute(row);
+    public Class getColumnClass(int col) {
+        switch (col) {
+            case DB_ATTRIBUTE_PRIMARY_KEY :
+            case DB_ATTRIBUTE_MANDATORY :
+                return Boolean.class;
+            default :
+                return String.class;
+        }
+    }
 
-		if (attr == null) {
-			return "";
-		}
+    public Object getValueAt(int row, int column) {
+        DbAttribute attr = getAttribute(row);
 
-		switch (column) {
-			case DB_ATTRIBUTE_NAME :
-				return getAttributeName(attr);
-			case DB_ATTRIBUTE_TYPE :
-				return getAttributeType(attr);
-			case DB_ATTRIBUTE_PRIMARY_KEY :
-				return isPrimaryKey(attr);
-			case DB_ATTRIBUTE_PRECISION :
-				return getPrecision(attr);
-			case DB_ATTRIBUTE_MANDATORY :
-				return isMandatory(attr);
-			case DB_ATTRIBUTE_MAX :
-				return getMaxLength(attr);
-			default :
-				return "";
-		}
-	}
+        if (attr == null) {
+            return "";
+        }
 
-	public void setUpdatedValueAt(Object newVal, int row, int col) {
-		DbAttribute attr = getAttribute(row);
-		if (attr == null) {
-			return;
-		}
+        switch (column) {
+            case DB_ATTRIBUTE_NAME :
+                return getAttributeName(attr);
+            case DB_ATTRIBUTE_TYPE :
+                return getAttributeType(attr);
+            case DB_ATTRIBUTE_PRIMARY_KEY :
+                return isPrimaryKey(attr);
+            case DB_ATTRIBUTE_PRECISION :
+                return getPrecision(attr);
+            case DB_ATTRIBUTE_MANDATORY :
+                return isMandatory(attr);
+            case DB_ATTRIBUTE_MAX :
+                return getMaxLength(attr);
+            default :
+                return "";
+        }
+    }
 
-		AttributeEvent e = new AttributeEvent(eventSource, attr, entity);
+    public void setUpdatedValueAt(Object newVal, int row, int col) {
+        DbAttribute attr = getAttribute(row);
+        if (attr == null) {
+            return;
+        }
 
-		switch (col) {
-			case DB_ATTRIBUTE_NAME :
-				e.setOldName(attr.getName());
-				setAttributeName((String) newVal, attr);
-				fireTableCellUpdated(row, col);
-				break;
-			case DB_ATTRIBUTE_TYPE :
-				setAttributeType((String) newVal, attr);
-				break;
-			case DB_ATTRIBUTE_PRIMARY_KEY :
-				setPrimaryKey((Boolean) newVal, attr);
-				fireTableCellUpdated(row, DB_ATTRIBUTE_MANDATORY);
-				break;
-			case DB_ATTRIBUTE_PRECISION :
-				setPrecision((String) newVal, attr);
-				break;
-			case DB_ATTRIBUTE_MANDATORY :
-				setMandatory((Boolean) newVal, attr);
-				break;
-			case DB_ATTRIBUTE_MAX :
-				setMaxLength((String) newVal, attr);
-				break;
-		}
+        AttributeEvent e = new AttributeEvent(eventSource, attr, entity);
 
-		mediator.fireDbAttributeEvent(e);
-	}
+        switch (col) {
+            case DB_ATTRIBUTE_NAME :
+                e.setOldName(attr.getName());
+                setAttributeName((String) newVal, attr);
+                fireTableCellUpdated(row, col);
+                break;
+            case DB_ATTRIBUTE_TYPE :
+                setAttributeType((String) newVal, attr);
+                break;
+            case DB_ATTRIBUTE_PRIMARY_KEY :
+                if (!setPrimaryKey(((Boolean) newVal), attr, row)) {
+                    return;
+                }
+                break;
+            case DB_ATTRIBUTE_PRECISION :
+                setPrecision((String) newVal, attr);
+                break;
+            case DB_ATTRIBUTE_MANDATORY :
+                setMandatory((Boolean) newVal, attr);
+                break;
+            case DB_ATTRIBUTE_MAX :
+                setMaxLength((String) newVal, attr);
+                break;
+        }
 
+        mediator.fireDbAttributeEvent(e);
+    }
 
-	public String getMaxLength(DbAttribute attr) {
-		return (attr.getMaxLength() >= 0)
-			? String.valueOf(attr.getMaxLength())
-			: "";
-	}
+    public String getMaxLength(DbAttribute attr) {
+        return (attr.getMaxLength() >= 0) ? String.valueOf(attr.getMaxLength()) : "";
+    }
 
-	public String getAttributeName(DbAttribute attr) {
-		return attr.getName();
-	}
+    public String getAttributeName(DbAttribute attr) {
+        return attr.getName();
+    }
 
-	public String getAttributeType(DbAttribute attr) {
-		return TypesMapping.getSqlNameByType(attr.getType());
-	}
+    public String getAttributeType(DbAttribute attr) {
+        return TypesMapping.getSqlNameByType(attr.getType());
+    }
 
-	public String getPrecision(DbAttribute attr) {
-		return (attr.getPrecision() >= 0)
-			? String.valueOf(attr.getPrecision())
-			: "";
-	}
+    public String getPrecision(DbAttribute attr) {
+        return (attr.getPrecision() >= 0) ? String.valueOf(attr.getPrecision()) : "";
+    }
 
-	public Boolean isPrimaryKey(DbAttribute attr) {
-		return (attr.isPrimaryKey()) ? Boolean.TRUE : Boolean.FALSE;
-	}
+    public Boolean isPrimaryKey(DbAttribute attr) {
+        return (attr.isPrimaryKey()) ? Boolean.TRUE : Boolean.FALSE;
+    }
 
-	public Boolean isMandatory(DbAttribute attr) {
-		return (attr.isMandatory()) ? Boolean.TRUE : Boolean.FALSE;
-	}
-	
-	public void setMaxLength(String newVal, DbAttribute attr) {
-		if (newVal == null || newVal.trim().length() <= 0) {
-			attr.setMaxLength(-1);
-		} else {
-			try {
-				attr.setMaxLength(Integer.parseInt(newVal));
-			} catch (NumberFormatException ex) {
-				JOptionPane.showMessageDialog(
-					null,
-					"Invalid Max Length value - "
-						+ newVal
-						+ ", only numbers are allowed",
-					"Invalid Maximum Length",
-					JOptionPane.ERROR_MESSAGE);
-				return;
-			}
-		}
-	}
+    public Boolean isMandatory(DbAttribute attr) {
+        return (attr.isMandatory()) ? Boolean.TRUE : Boolean.FALSE;
+    }
 
-	public void setAttributeName(String newVal, DbAttribute attr) {
-		String newName = newVal.trim();
-		MapUtil.setAttributeName(attr, newName);
-	}
+    public void setMaxLength(String newVal, DbAttribute attr) {
+        if (newVal == null || newVal.trim().length() <= 0) {
+            attr.setMaxLength(-1);
+        }
+        else {
+            try {
+                attr.setMaxLength(Integer.parseInt(newVal));
+            }
+            catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(
+                    null,
+                    "Invalid Max Length (" + newVal + "), only numbers are allowed",
+                    "Invalid Maximum Length",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+    }
 
-	public void setAttributeType(String newVal, DbAttribute attr) {
-		attr.setType(TypesMapping.getSqlTypeByName(newVal));
-	}
+    public void setAttributeName(String newVal, DbAttribute attr) {
+        String newName = newVal.trim();
+        MapUtil.setAttributeName(attr, newName);
+    }
 
-	public void setPrecision(String newVal, DbAttribute attr) {
-		if (newVal == null || newVal.trim().length() <= 0) {
-			attr.setPrecision(-1);
-		} else {
-			try {
-				attr.setPrecision(Integer.parseInt(newVal));
-			} catch (NumberFormatException ex) {
-				JOptionPane.showMessageDialog(
-					null,
-					"Invalid precision value - "
-						+ newVal
-						+ ", only numbers are allowed",
-					"Invalid Precision Value",
-					JOptionPane.ERROR_MESSAGE);
-			}
-		}
-	}
+    public void setAttributeType(String newVal, DbAttribute attr) {
+        attr.setType(TypesMapping.getSqlTypeByName(newVal));
+    }
 
-	public void setPrimaryKey(Boolean newVal, DbAttribute attr) {
-		attr.setPrimaryKey(newVal.booleanValue());
-		if (newVal.booleanValue()) {
-			attr.setMandatory(true);
-		}
-	}
+    public void setPrecision(String newVal, DbAttribute attr) {
+        if (newVal == null || newVal.trim().length() <= 0) {
+            attr.setPrecision(-1);
+        }
+        else {
+            try {
+                attr.setPrecision(Integer.parseInt(newVal));
+            }
+            catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(
+                    null,
+                    "Invalid precision (" + newVal + "), only numbers are allowed.",
+                    "Invalid Precision Value",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
 
-	public void setMandatory(Boolean newVal, DbAttribute attr) {
-		attr.setMandatory(newVal.booleanValue());
-	}
+    public boolean setPrimaryKey(Boolean newVal, DbAttribute attr, int row) {
 
+        boolean flag = newVal.booleanValue();
 
-	public boolean isCellEditable(int row, int col) {
-		DbAttribute attrib = getAttribute(row);
-		if (null == attrib) {
-			return false;
-		}
-		else if (col == mandatoryColumnInd()) {
-			if (attrib.isPrimaryKey()) {
-				return false;
-			}
-		}
-		return true;
-	}
+        // make sure "to-dep-pk" relationships are fixed when the primary key is unset.
+        if (!flag) {
+            Collection relationships =
+                MapUtil.getRelationshipsUsingAttributeAsTarget(attr);
+            relationships.addAll(MapUtil.getRelationshipsUsingAttributeAsSource(attr));
+
+            if (relationships.size() > 0) {
+                Iterator it = relationships.iterator();
+                while (it.hasNext()) {
+                    DbRelationship relationship = (DbRelationship) it.next();
+                    if (!relationship.isToDependentPK()) {
+                        it.remove();
+                    }
+                }
+
+                // filtered only those that are to dep PK
+                if (relationships.size() > 0) {
+                    String message =
+                        (relationships.size() == 1)
+                            ? "Fix \"To Dep PK\" relationship using this attribute?"
+                            : "Fix "
+                                + relationships.size()
+                                + " \"To Dep PK\" relationships using this attribute?";
+
+                    int answer =
+                        JOptionPane.showConfirmDialog(Editor.getFrame(), message);
+                    if (answer != JOptionPane.YES_OPTION) {
+                        // no action needed
+                        return false;
+                    }
+
+                    // fix target relationships
+                    Iterator fixIt = relationships.iterator();
+                    while (fixIt.hasNext()) {
+                        DbRelationship relationship = (DbRelationship) fixIt.next();
+                        relationship.setToDependentPK(false);
+                    }
+                }
+            }
+        }
+
+        attr.setPrimaryKey(flag);
+        if (flag) {
+            attr.setMandatory(true);
+            fireTableCellUpdated(row, DB_ATTRIBUTE_MANDATORY);
+        }
+        return true;
+    }
+
+    public void setMandatory(Boolean newVal, DbAttribute attr) {
+        attr.setMandatory(newVal.booleanValue());
+    }
+
+    public boolean isCellEditable(int row, int col) {
+        DbAttribute attrib = getAttribute(row);
+        if (null == attrib) {
+            return false;
+        }
+        else if (col == mandatoryColumnInd()) {
+            if (attrib.isPrimaryKey()) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

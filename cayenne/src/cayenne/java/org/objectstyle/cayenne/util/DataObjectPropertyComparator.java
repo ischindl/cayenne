@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -88,11 +88,8 @@ public class DataObjectPropertyComparator implements Comparator {
      */
     public DataObjectPropertyComparator(List orderingsList) {
         super();
-        int i;
         orderings = new Ordering[orderingsList.size()];
-        for (i = 0; i < orderingsList.size(); i++) {
-            orderings[i] = (Ordering) orderingsList.get(i);
-        }
+        orderingsList.toArray(orderings);
     }
 
     public int compare(Object o1, Object o2) {

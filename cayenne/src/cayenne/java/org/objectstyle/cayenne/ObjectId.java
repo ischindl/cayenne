@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,32 +57,33 @@ package org.objectstyle.cayenne;
 
 import java.io.Serializable;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-import org.objectstyle.cayenne.util.Util;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /** 
- * An ObjectId is a class that uniquely identifies a 
- * persistent object.
+ * An ObjectId is a globally unique identifier of DataObjects.
  * 
- * <p>Each data object has an id uniquely identifying it. 
- * ObjectId concept corresponds to a primary key concept 
- * in the relational world. Such id is needed to 
- * implement object uniquing and other persistence layer functions. 
+ * <p>Each non-transient DataObject has an associated ObjectId. 
+ * It is a global object identifier and does not depend on the 
+ * DataContext of a particular object instance.
+ * ObjectId conceptually close to a RDBMS primary key idea. 
+ * Among other things ObjectId is used to ensure object uniqueness 
+ * within DataContext. 
  * </p>
  * 
  * @author Andrei Adamchik
  */
 public class ObjectId implements Serializable {
-	private static Logger logObj = Logger.getLogger(ObjectId.class);
-
-	// Keys: DbAttribute objects;
-	// Values database values of the corresponding attribute
+	// Keys: DbAttribute names
+	// Values: database values of the corresponding attribute
 	protected Map objectIdKeys;
 	protected Class objectClass;
+
+	// cache hasCode, since ObjectId is immutable
+	private int hashCode = Integer.MIN_VALUE;
 	
 	/**
 	 * Convenience constructor for entities that have a 
@@ -98,16 +99,17 @@ public class ObjectId implements Serializable {
 	 */
 	public ObjectId(Class objClass,  String keyName, Object id) {
 		this.objectClass = objClass;
-		Map keys = new HashMap();
-		keys.put(keyName, id);
-		setIdKeys(keys);
+		this.setIdKeys(Collections.singletonMap(keyName, id));
 	}
 
-
-	/** Creates new ObjectId */
+	/**
+	 * Creates a new ObjectId.
+	 */
 	public ObjectId(Class objClass, Map idKeys) {
 		this.objectClass = objClass;
-		setIdKeys(idKeys);
+		if (idKeys != null) {
+			this.setIdKeys(Collections.unmodifiableMap(idKeys));
+		}
 	}
 
 	protected void setIdKeys(Map idKeys) {
@@ -124,15 +126,57 @@ public class ObjectId implements Serializable {
 		}
 
 		ObjectId id = (ObjectId) object;
-		//CTM Use the class name because two objectid's should be equal even if their objClass'es were loaded
-		// by different class loaders.
-		return objectClass.getName().equals(id.objectClass.getName()) && Util.nullSafeEquals(id.objectIdKeys, this.objectIdKeys);
+
+		// use the class name because two Objectid's should be equal
+		// even if their objClass'es were loaded by different class loaders.
+		if (!objectClass.getName().equals(id.objectClass.getName())) {
+			return false;
+		}
+
+		if (id.objectIdKeys == null && objectIdKeys == null) {
+			return true;
+		}
+
+		if (id.objectIdKeys == null || objectIdKeys == null) {
+			return false;
+		}
+
+		if (id.objectIdKeys.size() != objectIdKeys.size()) {
+			return false;
+		}
+
+		EqualsBuilder builder = new EqualsBuilder();
+		Iterator entries = objectIdKeys.entrySet().iterator();
+		while (entries.hasNext()) {
+			Map.Entry entry = (Map.Entry) entries.next();
+
+			Object key = entry.getKey();
+			Object value = entry.getValue();
+			if (value == null) {
+				if (id.objectIdKeys.get(key) != null
+					|| !id.objectIdKeys.containsKey(key)) {
+					return false;
+				}
+			}
+			else {
+				// takes care of comparing primitive arrays, such as byte[]
+				builder.append(value, id.objectIdKeys.get(key));
+				if (!builder.isEquals()) {
+					return false;
+				}
+			}
+		}
+        
+		return true;
 	}
 
-	/** Returns a map of id components. 
-	 * Keys in the map are DbAttribute names, values are database values of corresponding columns */
+	/**
+	 * Returns a map of id components. 
+	 * Keys in the map are DbAttribute names, values are database values
+	 * of corresponding columns.
+	 */
 	public Map getIdSnapshot() {
-		return Collections.unmodifiableMap(objectIdKeys);
+		return objectIdKeys;
 	}
 
     /**
@@ -172,9 +216,30 @@ public class ObjectId implements Serializable {
      * @see java.lang.Object#hashCode()
      */
     public int hashCode() {
-    	int mapHash = (objectIdKeys != null) ? objectIdKeys.hashCode() : 0;
- 		//CTM Use the class name because we don't care about classes from different class loaders being "different"
-        return objectClass.getName().hashCode() + mapHash;
+		if (this.hashCode == Integer.MIN_VALUE) {
+			// build and cache hashCode
+
+			HashCodeBuilder builder = new HashCodeBuilder(3, 5);
+
+			// use the class name because two Objectid's should be equal
+			// even if their objClass'es were loaded by different class loaders.
+			builder.append(objectClass.getName().hashCode());
+
+			if (objectIdKeys != null) {
+				Iterator entries = objectIdKeys.entrySet().iterator();
+				while (entries.hasNext()) {
+					Map.Entry entry = (Map.Entry) entries.next();
+
+					// HashCodeBuilder will take care of processing object if it 
+					// happens to be a primitive array such as byte[]
+					builder.append(entry.getKey()).append(entry.getValue());
+				}
+			}
+
+			this.hashCode = builder.toHashCode();
+		}
+
+		return this.hashCode;
     }
     
 	/**

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,6 +66,7 @@ import java.util.Iterator;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.InputVerifier;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -73,16 +74,19 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import org.objectstyle.cayenne.access.DataDomain;
+import org.objectstyle.cayenne.dba.JdbcPkGenerator;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbEntity;
+import org.objectstyle.cayenne.map.DbKeyGenerator;
 import org.objectstyle.cayenne.map.DerivedDbEntity;
+import org.objectstyle.cayenne.map.event.EntityEvent;
 import org.objectstyle.cayenne.modeler.PanelFactory;
 import org.objectstyle.cayenne.modeler.control.EventController;
 import org.objectstyle.cayenne.modeler.event.DbEntityDisplayListener;
 import org.objectstyle.cayenne.modeler.event.EntityDisplayEvent;
-import org.objectstyle.cayenne.modeler.event.EntityEvent;
-import org.objectstyle.cayenne.modeler.util.CayenneTextField;
+import org.objectstyle.cayenne.modeler.util.CayenneWidgetFactory;
 import org.objectstyle.cayenne.modeler.util.MapUtil;
+import org.objectstyle.cayenne.util.Util;
 
 /** 
  * Detail view of the DbEntity properties. 
@@ -91,267 +95,363 @@ import org.objectstyle.cayenne.modeler.util.MapUtil;
  * @author Andrei Adamchik
  */
 public class DbEntityPane
-	extends JPanel
-	implements DbEntityDisplayListener, ExistingSelectionProcessor, ActionListener {
+    extends JPanel
+    implements ExistingSelectionProcessor, DbEntityDisplayListener, ActionListener {
 
-	protected EventController mediator;
+    protected EventController mediator;
 
-	protected JTextField name;
-	protected JTextField catalog;
-	protected JTextField schema;
-	protected JComboBox parentEntities;
-	protected JButton parentLabel;
-	protected JLabel schemaLabel;
-	protected JLabel catalogLabel;
+    protected JTextField name;
+    protected JTextField schema;
+    protected JComboBox parentEntities;
+    protected JButton parentLabel;
+    protected JLabel schemaLabel;
 
-	/** 
-	 * Cludge to prevent marking data map as dirty 
-	 * during initial load. 
-	 */
-	private boolean ignoreChange;
+    protected JCheckBox customPKGenerator;
+    protected JLabel customPKGeneratorLabel;
+    protected JLabel customPKGeneratorNote;
+    protected JLabel customPKGeneratorNameLabel;
+    protected JLabel customPKSizeLabel;
+    protected JTextField customPKName;
+    protected JTextField customPKSize;
 
-	public DbEntityPane(EventController mediator) {
-		super();
-		this.mediator = mediator;
-		mediator.addDbEntityDisplayListener(this);
+    /** 
+     * Cludge to prevent marking data map as dirty 
+     * during initial load. 
+     */
+    private boolean ignoreChange;
 
-		// Create and layout components
-		init();
+    public DbEntityPane(EventController mediator) {
+        super();
+        this.mediator = mediator;
+        mediator.addDbEntityDisplayListener(this);
 
-		// Add listeners
-		InputVerifier inputCheck = new FieldVerifier();
-		name.setInputVerifier(inputCheck);
-		catalog.setInputVerifier(inputCheck);
-		schema.setInputVerifier(inputCheck);
+        // Create and layout components
+        init();
 
-		parentEntities.addActionListener(this);
-		parentLabel.addActionListener(this);
-	}
+        // Add listeners
+        InputVerifier inputCheck = new FieldVerifier();
+        name.setInputVerifier(inputCheck);
+        schema.setInputVerifier(inputCheck);
+        customPKName.setInputVerifier(inputCheck);
+        customPKSize.setInputVerifier(inputCheck);
 
-	private void init() {
-		setLayout(new BorderLayout());
+        parentEntities.addActionListener(this);
+        parentLabel.addActionListener(this);
+        customPKGenerator.addActionListener(this);
+    }
 
-		JLabel nameLabel = new JLabel("Entity name: ");
-		name = new CayenneTextField(25);
+    private void init() {
+        setLayout(new BorderLayout());
 
-		catalogLabel = new JLabel("Catalog: ");
-		catalog = new CayenneTextField(25);
+        JLabel nameLabel = CayenneWidgetFactory.createLabel("DbEntity name: ");
+        name = CayenneWidgetFactory.createTextField();
 
-		schemaLabel = new JLabel("Schema: ");
-		schema = new CayenneTextField(25);
+        schemaLabel = CayenneWidgetFactory.createLabel("Schema: ");
+        schema = CayenneWidgetFactory.createTextField();
 
-		parentLabel = PanelFactory.createLabelButton("Parent entity: ");
-		parentLabel.setEnabled(false);
-		parentEntities = new JComboBox();
-		parentEntities.setEditable(false);
-		parentEntities.setEnabled(false);
+        parentLabel = CayenneWidgetFactory.createLabelButton("Parent DbEntity: ");
+        parentLabel.setEnabled(false);
+        parentEntities = CayenneWidgetFactory.createComboBox();
+        parentEntities.setEditable(false);
+        parentEntities.setEnabled(false);
 
-		Component[] leftCol =
-			new Component[] {
-				nameLabel,
-				catalogLabel,
-				schemaLabel,
-				parentLabel };
+        Component[] leftCol = new Component[] { nameLabel, schemaLabel, parentLabel };
+        Component[] rightCol = new Component[] { name, schema, parentEntities };
+        add(PanelFactory.createForm(leftCol, rightCol, 5, 5, 5, 5), BorderLayout.NORTH);
 
-		Component[] rightCol =
-			new Component[] { name, catalog, schema, parentEntities };
+        JPanel pkGeneratorPanel = new JPanel(new BorderLayout());
 
-		add(
-			PanelFactory.createForm(leftCol, rightCol, 5, 5, 5, 5),
-			BorderLayout.NORTH);
-	}
+        customPKGeneratorLabel =
+            CayenneWidgetFactory.createLabel("Customize primary key generation");
+        customPKGeneratorNote =
+            CayenneWidgetFactory.createLabel(
+                "(currently ignored by all adapters except Oracle)");
+        customPKGeneratorNote.setFont(customPKGeneratorNote.getFont().deriveFont(10));
 
-	public void processExistingSelection() {
-		EntityDisplayEvent e;
-		e =
-			new EntityDisplayEvent(
-				this,
-				mediator.getCurrentDbEntity(),
-				mediator.getCurrentDataMap(),
-				mediator.getCurrentDataDomain());
-		mediator.fireDbEntityDisplayEvent(e);
-	}
+        customPKGenerator = new JCheckBox();
 
-	public void currentDbEntityChanged(EntityDisplayEvent e) {
-		DbEntity entity = (DbEntity) e.getEntity();
-		if (null == entity || !e.isEntityChanged()) {
-			return;
-		}
+        leftCol = new Component[] { customPKGenerator, new JLabel()};
+        rightCol = new Component[] { customPKGeneratorLabel, customPKGeneratorNote };
+        pkGeneratorPanel.add(
+            PanelFactory.createForm(leftCol, rightCol, 5, 5, 5, 5),
+            BorderLayout.NORTH);
 
-		ignoreChange = true;
-		name.setText(entity.getName());
-		catalog.setText(entity.getCatalog());
-		schema.setText(entity.getSchema());
-		ignoreChange = false;
+        customPKGeneratorNameLabel = CayenneWidgetFactory.createLabel("Database object name: ");
+        customPKSizeLabel = CayenneWidgetFactory.createLabel("Cached PK Size: ");
 
-		if (entity instanceof DerivedDbEntity) {
-			updateState(true);
+        customPKName = CayenneWidgetFactory.createTextField();
+        customPKSize = CayenneWidgetFactory.createTextField();
+
+        leftCol = new Component[] { customPKGeneratorNameLabel, customPKSizeLabel };
+        rightCol = new Component[] { customPKName, customPKSize };
+        pkGeneratorPanel.add(
+            PanelFactory.createForm(leftCol, rightCol, 5, 5, 5, 5),
+            BorderLayout.CENTER);
+
+        add(pkGeneratorPanel, BorderLayout.CENTER);
+    }
+
+    public void processExistingSelection() {
+        EntityDisplayEvent e;
+        e =
+            new EntityDisplayEvent(
+                this,
+                mediator.getCurrentDbEntity(),
+                mediator.getCurrentDataMap(),
+                mediator.getCurrentDataDomain());
+        mediator.fireDbEntityDisplayEvent(e);
+    }
+
+    public void currentDbEntityChanged(EntityDisplayEvent e) {
+        DbEntity entity = (DbEntity) e.getEntity();
+        if (null == entity || !e.isEntityChanged()) {
+            return;
+        }
+
+        ignoreChange = true;
+        name.setText(entity.getName());
+        schema.setText(entity.getSchema());
+        ignoreChange = false;
+
+        if (entity instanceof DerivedDbEntity) {
+            updateState(true);
 
             // build a list consisting of non-derived entities
-			java.util.List ents = new ArrayList();
-			ents.add("");
-			
-			Iterator it = mediator.getCurrentDataMap().getDbEntitiesAsList(true).iterator();
-			while(it.hasNext()) {
-				DbEntity ent = (DbEntity)it.next();
-				if(!(ent instanceof DerivedDbEntity)) {
-					ents.add(ent.getName());
-				}
-			}			
+            java.util.List ents = new ArrayList(64);
+            ents.add("");
 
-			DefaultComboBoxModel model =
-				new DefaultComboBoxModel(ents.toArray());
-			DbEntity parent = ((DerivedDbEntity) entity).getParentEntity();
-			if (parent != null) {
-				model.setSelectedItem(parent.getName());
-			}
+            Iterator it = mediator.getCurrentDataMap().getDbEntities(true).iterator();
+            while (it.hasNext()) {
+                DbEntity ent = (DbEntity) it.next();
+                if (!(ent instanceof DerivedDbEntity)) {
+                    ents.add(ent.getName());
+                }
+            }
 
-			parentEntities.setModel(model);
-		} else {
-			updateState(false);
-			parentEntities.setSelectedIndex(-1);
-		}
-	}
+            DefaultComboBoxModel model = new DefaultComboBoxModel(ents.toArray());
+            DbEntity parent = ((DerivedDbEntity) entity).getParentEntity();
+            if (parent != null) {
+                model.setSelectedItem(parent.getName());
+            }
 
-	/**
-	 * Enables or disbales form fields depending on the
-	 * type of entity shown.
-	 */
-	protected void updateState(boolean isDerivedEntity) {
-		catalogLabel.setEnabled(!isDerivedEntity);
-		catalog.setEnabled(!isDerivedEntity);
-		schemaLabel.setEnabled(!isDerivedEntity);
-		schema.setEnabled(!isDerivedEntity);
+            parentEntities.setModel(model);
+        }
+        else {
+            updateState(false);
+            parentEntities.setSelectedIndex(-1);
+        }
+    }
 
-		parentLabel.setEnabled(isDerivedEntity);
-		parentEntities.setEnabled(isDerivedEntity);
-		parentLabel.setVisible(isDerivedEntity);
-		parentEntities.setVisible(isDerivedEntity);
-	}
+    /**
+     * Enables or disbales form fields depending on the
+     * type of entity shown.
+     */
+    protected void updateState(boolean isDerivedEntity) {
+        schemaLabel.setEnabled(!isDerivedEntity);
+        schema.setEnabled(!isDerivedEntity);
 
-	/**
-	 * @see java.awt.event.ActionListener#actionPerformed(ActionEvent)
-	 */
-	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == parentEntities) {
-			DbEntity current = mediator.getCurrentDbEntity();
+        parentLabel.setEnabled(isDerivedEntity);
+        parentEntities.setEnabled(isDerivedEntity);
+        parentLabel.setVisible(isDerivedEntity);
+        parentEntities.setVisible(isDerivedEntity);
 
-			if (current instanceof DerivedDbEntity) {
-				DerivedDbEntity derived = (DerivedDbEntity) current;
-				String name = (String) parentEntities.getSelectedItem();
+        DbEntity entity = mediator.getCurrentDbEntity();
+        updatePrimaryKeyGeneratorView(entity);
+    }
 
-				DbEntity ent =
-					(name != null && name.trim().length() > 0)
-						? mediator.getCurrentDataMap().getDbEntity(name, true)
-						: null;
+    protected void updatePrimaryKeyGeneratorView(DbEntity entity) {
+        DbKeyGenerator generator = entity.getPrimaryKeyGenerator();
+        boolean isPKGeneratorCustomized = generator != null;
 
-				if (ent != null && ent != derived.getParentEntity()) {
-					derived.setParentEntity(ent);
-					derived.resetToParentView();
-					MapUtil.cleanObjMappings(mediator.getCurrentDataMap());
+        customPKGenerator.setSelected(isPKGeneratorCustomized);
 
-					EntityEvent event = new EntityEvent(this, current);
-					mediator.fireDbEntityEvent(event);
-				}
-			}
+        customPKGeneratorNameLabel.setEnabled(isPKGeneratorCustomized);
+        customPKSizeLabel.setEnabled(isPKGeneratorCustomized);
 
-		} else if (parentLabel == e.getSource()) {
-			DbEntity current = mediator.getCurrentDbEntity();
+        customPKName.setEnabled(isPKGeneratorCustomized);
+        customPKSize.setEnabled(isPKGeneratorCustomized);
 
-			if (current instanceof DerivedDbEntity) {
-				DbEntity parent = ((DerivedDbEntity) current).getParentEntity();
-				if (parent != null) {
-					DataDomain dom = mediator.getCurrentDataDomain();
-					DataMap map = dom.getMapForDbEntity(parent.getName());
-					mediator.fireDbEntityDisplayEvent(
-						new EntityDisplayEvent(this, parent, map, dom));
-				}
-			}
+        if (isPKGeneratorCustomized) {
+            customPKName.setText(generator.getGeneratorName());
+            customPKSize.setText(
+                generator.getKeyCacheSize() != null
+                    ? generator.getKeyCacheSize().toString()
+                    : "0");
+        }
+        else {
+            customPKName.setText("");
+            customPKSize.setText("");
+        }
+    }
 
-		}
-	}
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == parentEntities) {
+            DbEntity current = mediator.getCurrentDbEntity();
 
-	class FieldVerifier extends InputVerifier {
-		public boolean verify(JComponent input) {
-			if (input == name) {
-				return verifyName();
-			} else if (input == catalog) {
-				return verifyCatalog();
-			} else if (input == schema) {
-				return verifySchema();
-			} else {
-				return true;
-			}
-		}
+            if (current instanceof DerivedDbEntity) {
+                DerivedDbEntity derived = (DerivedDbEntity) current;
+                String name = (String) parentEntities.getSelectedItem();
 
-		protected boolean verifyName() {
-			String text = name.getText();
-			if (text != null && text.trim().length() == 0) {
-				text = null;
-			}
+                DbEntity ent =
+                    (name != null && name.trim().length() > 0)
+                        ? mediator.getCurrentDataMap().getDbEntity(name, true)
+                        : null;
 
-			DataMap map = mediator.getCurrentDataMap();
-			DbEntity ent = mediator.getCurrentDbEntity();
+                if (ent != null && ent != derived.getParentEntity()) {
+                    derived.setParentEntity(ent);
+                    derived.resetToParentView();
+                    MapUtil.cleanObjMappings(mediator.getCurrentDataMap());
 
-			DbEntity matchingEnt = map.getDbEntity(text);
+                    EntityEvent event = new EntityEvent(this, current);
+                    mediator.fireDbEntityEvent(event);
+                }
+            }
 
-			if (matchingEnt == null) {
-				// completely new name, set new name for entity
-				EntityEvent e = new EntityEvent(this, ent, ent.getName());
-				MapUtil.setDbEntityName(map, ent, text);
-				mediator.fireDbEntityEvent(e);
-				return true;
-			} else if (matchingEnt == ent) {
-				// no name changes, just return
-				return true;
-			} else {
-				// there is an entity with the same name
-				return false;
-			}
-		}
+        }
+        else if (parentLabel == e.getSource()) {
+            DbEntity current = mediator.getCurrentDbEntity();
 
-		protected boolean verifyCatalog() {
-			String text = catalog.getText();
-			if (text != null && text.trim().length() == 0) {
-				text = null;
-			}
+            if (current instanceof DerivedDbEntity) {
+                DbEntity parent = ((DerivedDbEntity) current).getParentEntity();
+                if (parent != null) {
+                    DataDomain dom = mediator.getCurrentDataDomain();
+                    DataMap map = dom.getMapForDbEntity(parent.getName());
+                    mediator.fireDbEntityDisplayEvent(
+                        new EntityDisplayEvent(this, parent, map, dom));
+                }
+            }
+        }
+        else if (customPKGenerator == e.getSource()) {
+            DbEntity entity = mediator.getCurrentDbEntity();
+            if (entity == null) {
+                return;
+            }
 
-			DbEntity ent = mediator.getCurrentDbEntity();
+            if (customPKGenerator.isSelected()) {
+                if (entity.getPrimaryKeyGenerator() == null) {
+                    DbKeyGenerator generator = new DbKeyGenerator();
+                    generator.setGeneratorType(DbKeyGenerator.ORACLE_TYPE);
+                    generator.setKeyCacheSize(
+                        new Integer(JdbcPkGenerator.DEFAULT_PK_CACHE_SIZE));
+                    entity.setPrimaryKeyGenerator(generator);
+                }
 
-			if (!org
-				.objectstyle
-				.cayenne
-				.util
-				.Util
-				.nullSafeEquals(ent.getCatalog(), text)) {
+                updatePrimaryKeyGeneratorView(entity);
+            }
+            else {
+                entity.setPrimaryKeyGenerator(null);
+                updatePrimaryKeyGeneratorView(entity);
+            }
+        }
+    }
 
-				ent.setCatalog(text);
-				mediator.fireDbEntityEvent(new EntityEvent(this, ent));
-			}
+    class FieldVerifier extends InputVerifier {
+        public boolean verify(JComponent input) {
+            if (input == name) {
+                return verifyName();
+            }
+            else if (input == schema) {
+                return verifySchema();
+            }
+            else if (input == customPKSize) {
+                return verifyCustomPKSize();
+            }
+            else if (input == customPKName) {
+                return verifyCustomPKName();
+            }
+            else {
+                return true;
+            }
+        }
 
-			return true;
-		}
+        protected boolean verifyName() {
+            String text = name.getText();
+            if (text == null || text.trim().length() == 0) {
+                text = "";
+            }
 
-		protected boolean verifySchema() {
-			String text = schema.getText();
-			if (text != null && text.trim().length() == 0) {
-				text = null;
-			}
+            DataMap map = mediator.getCurrentDataMap();
+            DbEntity ent = mediator.getCurrentDbEntity();
 
-			DbEntity ent = mediator.getCurrentDbEntity();
+            DbEntity matchingEnt = map.getDbEntity(text);
 
-			if (!org
-				.objectstyle
-				.cayenne
-				.util
-				.Util
-				.nullSafeEquals(ent.getSchema(), text)) {
+            if (matchingEnt == null) {
+                // completely new name, set new name for entity
+                EntityEvent e = new EntityEvent(this, ent, ent.getName());
+                MapUtil.setDbEntityName(map, ent, text);
+                mediator.fireDbEntityEvent(e);
+                return true;
+            }
+            else if (matchingEnt == ent) {
+                // no name changes, just return
+                return true;
+            }
+            else {
+                // there is an entity with the same name
+                return false;
+            }
+        }
 
-				ent.setSchema(text);
-				mediator.fireDbEntityEvent(new EntityEvent(this, ent));
-			}
+        protected boolean verifySchema() {
+            String text = schema.getText();
+            if (text != null && text.trim().length() == 0) {
+                text = null;
+            }
 
-			return true;
-		}
-	}
+            DbEntity ent = mediator.getCurrentDbEntity();
+
+            if (!Util.nullSafeEquals(ent.getSchema(), text)) {
+                ent.setSchema(text);
+                mediator.fireDbEntityEvent(new EntityEvent(this, ent));
+            }
+
+            return true;
+        }
+
+        protected boolean verifyCustomPKSize() {
+            String text = customPKSize.getText();
+            int cacheSize = 0;
+
+            if (text != null && text.trim().length() > 0) {
+                try {
+                    cacheSize = Integer.parseInt(text);
+                }
+                catch (NumberFormatException nfex) {
+                }
+            }
+
+            // erase any incorrect input
+            if (cacheSize == 0) {
+                customPKSize.setText("0");
+            }
+
+            DbEntity entity = mediator.getCurrentDbEntity();
+            DbKeyGenerator generator = entity.getPrimaryKeyGenerator();
+
+            if (generator != null
+                && (generator.getKeyCacheSize() == null
+                    || generator.getKeyCacheSize().intValue() != cacheSize)) {
+                generator.setKeyCacheSize(new Integer(cacheSize));
+                mediator.fireDbEntityEvent(new EntityEvent(this, entity));
+            }
+
+            return true;
+        }
+
+        protected boolean verifyCustomPKName() {
+            String text = customPKName.getText();
+            if (text != null && text.trim().length() == 0) {
+                text = null;
+            }
+
+            DbEntity entity = mediator.getCurrentDbEntity();
+            DbKeyGenerator generator = entity.getPrimaryKeyGenerator();
+
+            if (generator != null && (!Util.nullSafeEquals(text, generator.getName()))) {
+                generator.setGeneratorName(text);
+                mediator.fireDbEntityEvent(new EntityEvent(this, entity));
+            }
+            return true;
+        }
+    }
 }

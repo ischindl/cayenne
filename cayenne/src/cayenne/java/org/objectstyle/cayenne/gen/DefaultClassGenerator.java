@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,6 +60,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.objectstyle.cayenne.map.DataMap;
@@ -89,7 +90,7 @@ public class DefaultClassGenerator extends MapClassGenerator {
      * in the DataMap.
      */
     public DefaultClassGenerator(DataMap map) {
-        this(map.getObjEntitiesAsList());
+        this(new ArrayList(map.getObjEntities()));
     }
 
     /** 
@@ -198,11 +199,14 @@ public class DefaultClassGenerator extends MapClassGenerator {
 
         File dest = new File(mkpath(destDir, pkgName), className + ".java");
 
-        // ignore newer files
-        if (dest.exists() && !isOld(dest)) {
-            return null;
-        }
-
+		// Ignore if the destination is newer than the map
+		// (internal timestamp), i.e. has been generated after the map was
+		// last saved AND the template is older than the destination file
+		if (dest.exists() && !isOld(dest)
+			&& (superTemplate == null || superTemplate.lastModified() < dest.lastModified())) {
+			return null;
+		}
+		
         return dest;
     }
 

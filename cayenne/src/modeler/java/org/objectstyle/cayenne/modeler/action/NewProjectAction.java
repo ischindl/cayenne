@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,18 +59,19 @@ import java.awt.event.KeyEvent;
 
 import javax.swing.KeyStroke;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.modeler.control.ProjectTypeSelectControl;
 
 /**
  * @author Andrei Adamchik
  */
 public class NewProjectAction extends ProjectAction {
-    private static Logger logObj = Logger.getLogger(NewProjectAction.class);
-    public static final String ACTION_NAME = "New Project";
+
+	public static String getActionName() {
+		return "New Project";
+	}
 
     public NewProjectAction() {
-        super(ACTION_NAME);
+        super(getActionName());
     }
 
     public String getIconName() {

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,22 +55,15 @@
  */
 package org.objectstyle.cayenne.modeler.event;
 
-import org.objectstyle.cayenne.access.DataDomain;
-
 import junit.framework.TestCase;
+
+import org.objectstyle.cayenne.access.DataDomain;
+import org.objectstyle.cayenne.map.event.DomainEvent;
 
 /**
  * @author Andrei Adamchik
  */
 public class DomainEventTst extends TestCase {
-
-	/**
-	 * Constructor for DomainEventTst.
-	 * @param arg0
-	 */
-	public DomainEventTst(String arg0) {
-		super(arg0);
-	}
 
     public void testConstructor1() throws Exception {
     	Object src = new Object();

@@ -3,7 +3,7 @@ package org.objectstyle.cayenne;
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,20 +55,12 @@ package org.objectstyle.cayenne;
  *
  */ 
 
-import org.objectstyle.cayenne.access.DataContext;
-import org.objectstyle.cayenne.unittest.CayenneTestCase;
+import junit.framework.TestCase;
 
-public class CayenneDataObjectTst extends CayenneTestCase {
-    protected DataContext ctxt;
-    
-    public CayenneDataObjectTst(String name) {
-        super(name);
-    }
-    
-    public void setUp() throws java.lang.Exception {
-        ctxt = getDomain().createDataContext();
-    }
-    
+import org.objectstyle.art.oneway.Artist;
+import org.objectstyle.cayenne.access.DataContext;
+
+public class CayenneDataObjectTst extends TestCase {
     
     public void testSetObjectId() throws Exception {
         CayenneDataObject obj = new CayenneDataObject();
@@ -97,6 +89,20 @@ public class CayenneDataObjectTst extends CayenneTestCase {
         DataContext c = new DataContext();
         obj.setDataContext(c);
         assertSame(c, obj.getDataContext());
+    }
+    
+    public void testReadNestedProperty1() throws Exception {
+        Artist a = new Artist();
+        assertNull(a.readNestedProperty("artistName"));
+        a.setArtistName("aaa");
+        assertEquals("aaa", a.readNestedProperty("artistName"));
+    }
+    
+    public void testReadNestedProperty2() throws Exception {
+        Artist a = new Artist();
+        assertNull(a.readNestedProperty("someOtherProperty"));
+        a.setSomeOtherProperty("aaa");
+        assertEquals("aaa", a.readNestedProperty("someOtherProperty"));
     }
 }
 

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,9 +55,9 @@
  */
 package org.objectstyle.cayenne.modeler.util;
 
-import org.objectstyle.cayenne.map.ObjEntity;
-
 import junit.framework.TestCase;
+
+import org.objectstyle.cayenne.map.ObjEntity;
 
 
 /**
@@ -65,13 +65,6 @@ import junit.framework.TestCase;
 */
 public class EntityWrapperTst extends TestCase {
 
-	/**
-	 * Constructor for EntityWrapperTst.
-	 */
-	public EntityWrapperTst(String name) {
-		super(name);
-	}
-	
 	public void testEntity() throws Exception {
 		ObjEntity ent = new ObjEntity("abc");
 		EntityWrapper wrap = new EntityWrapper(ent);

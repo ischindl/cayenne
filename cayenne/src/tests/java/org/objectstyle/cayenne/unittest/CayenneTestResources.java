@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,8 @@ package org.objectstyle.cayenne.unittest;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.Types;
+import java.util.Iterator;
 
 import javax.sql.DataSource;
 
@@ -64,14 +66,18 @@ import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
-import org.objectstyle.cayenne.access.DataSourceInfo;
 import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.conf.ConnectionProperties;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.conn.PoolDataSource;
 import org.objectstyle.cayenne.conn.PoolManager;
 import org.objectstyle.cayenne.dba.DbAdapter;
+import org.objectstyle.cayenne.dba.postgres.PostgresAdapter;
 import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.MapLoader;
+import org.objectstyle.cayenne.map.Procedure;
 import org.objectstyle.cayenne.util.Util;
 
 /**
@@ -101,7 +107,7 @@ public class CayenneTestResources {
             return;
         }
         initDone = true;
-        Configuration.configCommonLogging();
+        Configuration.configureCommonLogging();
         probeJDKVersion();
         startDbConnections();
     }
@@ -148,6 +154,7 @@ public class CayenneTestResources {
             createSharedDomain();
             createDbSetup();
             createTestDatabase();
+            tweakMapping();
         } else {
             logObj.warn(
                 "No property for '"
@@ -177,7 +184,7 @@ public class CayenneTestResources {
     }
 
     public DataNode getSharedNode() {
-        return sharedDomain.getDataNodes()[0];
+        return (DataNode) sharedDomain.getDataNodes().iterator().next();
     }
 
     public DataSourceInfo getFreshConnInfo() throws Exception {
@@ -196,10 +203,17 @@ public class CayenneTestResources {
             PoolDataSource poolDS =
                 new PoolDataSource(dsi.getJdbcDriver(), dsi.getDataSourceUrl());
             sharedDataSource =
-                new PoolManager(poolDS, 1, 1, dsi.getUserName(), dsi.getPassword());
+                new PoolManager(
+                    poolDS,
+                    1,
+                    1,
+                    dsi.getUserName(),
+                    dsi.getPassword());
         } catch (Exception ex) {
             logObj.error("Can not create shared data source.", ex);
-            throw new CayenneRuntimeException("Can not create shared data source.", ex);
+            throw new CayenneRuntimeException(
+                "Can not create shared data source.",
+                ex);
         }
     }
 
@@ -214,17 +228,28 @@ public class CayenneTestResources {
             // map
             DataMap map = new MapLoader().loadDataMap(mapPath);
 
-            // node
-            DataNode node = new DataNode("node");
-            node.setDataSource(sharedDataSource);
+            // adapter/node
             Class adapterClass = DataNode.DEFAULT_ADAPTER_CLASS;
 
-            if (sharedConnInfo.getAdapterClass() != null) {
-                adapterClass = Class.forName(sharedConnInfo.getAdapterClass());
+            if (sharedConnInfo.getAdapterClassName() != null) {
+                adapterClass =
+                    Class.forName(sharedConnInfo.getAdapterClassName());
             }
 
-            node.setAdapter((DbAdapter) adapterClass.newInstance());
+            DbAdapter adapter = (DbAdapter) adapterClass.newInstance();
+            DataNode node = adapter.createDataNode("node");
+            node.setDataSource(sharedDataSource);
             node.addDataMap(map);
+
+            // dirk: Postgres hack to make BLOBs work
+            if ((adapterClass == PostgresAdapter.class)
+                && (mapPath.indexOf("testmap") != -1)) {
+                logObj.info(
+                    "changing attribute IMAGE_BLOB of DbEntity PAINTING_INFO to VARBINARY for PostgreSQL");
+                DbEntity pi = map.getDbEntity("PAINTING_INFO");
+                DbAttribute att = (DbAttribute) pi.getAttribute("IMAGE_BLOB");
+                att.setType(Types.VARBINARY);
+            }
 
             // domain
             DataDomain domain = new DataDomain("domain");
@@ -248,10 +273,14 @@ public class CayenneTestResources {
     protected void createDbSetup() {
         try {
             sharedDatabaseSetup =
-                new CayenneTestDatabaseSetup(this, getSharedNode().getDataMaps()[0]);
+                new CayenneTestDatabaseSetup(
+                    this,
+                    (DataMap) getSharedNode().getDataMaps().iterator().next());
         } catch (Exception ex) {
             logObj.error("Can not create shared DatabaseSetup.", ex);
-            throw new CayenneRuntimeException("Can not create shared DatabaseSetup.", ex);
+            throw new CayenneRuntimeException(
+                "Can not create shared DatabaseSetup.",
+                ex);
         }
     }
 
@@ -266,7 +295,32 @@ public class CayenneTestResources {
             dbSetup.setupTestTables();
         } catch (Exception ex) {
             logObj.error("Error creating test database.", ex);
-            throw new CayenneRuntimeException("Error creating test database.", ex);
+            throw new CayenneRuntimeException(
+                "Error creating test database.",
+                ex);
+        }
+    }
+
+    protected void tweakMapping() {
+        try {
+            DatabaseSetupDelegate delegate =
+                getSharedDatabaseSetup().getDelegate();
+
+            Iterator maps = getSharedDomain().getDataMaps().iterator();
+            while (maps.hasNext()) {
+                DataMap map = (DataMap) maps.next();
+                Iterator procedures = map.getProcedures().iterator();
+                while (procedures.hasNext()) {
+                    Procedure proc = (Procedure) procedures.next();
+                    delegate.tweakProcedure(proc);
+                }
+            }
+
+        } catch (Exception ex) {
+            logObj.error("Error creating test database.", ex);
+            throw new CayenneRuntimeException(
+                "Error creating test database.",
+                ex);
         }
     }
 

@@ -1,8 +1,8 @@
 /* ====================================================================
- * 
- * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * The ObjectStyle Group Software License, Version 1.0
+ *
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,7 +10,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -18,15 +18,15 @@
  *    distribution.
  *
  * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
+ *    any, must include the following acknowlegement:
+ *       "This product includes software developed by the
  *        ObjectStyle Group (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
  *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
+ * 4. The names "ObjectStyle Group" and "Cayenne"
  *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
+ *    from this software without prior written permission. For written
  *    permission, please contact andrus@objectstyle.org.
  *
  * 5. Products derived from this software may not be called "ObjectStyle"
@@ -61,36 +61,36 @@ import java.util.List;
 import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.map.DbEntity;
 
-/** 
- * Defines methods to support automatic primary key generation. 
- * 
+/**
+ * Defines methods to support automatic primary key generation.
+ *
  * @author Andrei Adamchik
  */
 public interface PkGenerator {
 
-    /** 
-     * Generates necessary database objects to provide automatic primary 
-     * key support. 
-     * 
+    /**
+     * Generates necessary database objects to provide automatic primary
+     * key support.
+     *
      * @param node node that provides access to a DataSource.
      * @param dbEntities a list of entities that require primary key autogeneration support
      */
     public void createAutoPk(DataNode node, List dbEntities) throws Exception;
-    
-    /** 
-     * Returns a list of SQL strings needed to generates 
+
+    /**
+     * Returns a list of SQL strings needed to generates
      * database objects to provide automatic primary support
-     * for the list of entities. No actual database operations 
+     * for the list of entities. No actual database operations
      * are performed.
      */
     public List createAutoPkStatements(List dbEntities);
-    
 
-    /** 
-     * Drops any common database objects associated with automatic primary 
+
+    /**
+     * Drops any common database objects associated with automatic primary
      * key generation process. This may be lookup tables, special stored
-     * procedures or sequences. 
-     * 
+     * procedures or sequences.
+     *
      * @param node node that provides access to a DataSource.
      * @param dbEntities a list of entities whose primary key autogeneration support
      * should be dropped.
@@ -98,17 +98,17 @@ public interface PkGenerator {
     public void dropAutoPk(DataNode node, List dbEntities) throws Exception;
 
 
-    /** 
-     * Returns SQL string needed to drop database objects associated 
-     * with automatic primary key generation. No actual database 
+    /**
+     * Returns SQL string needed to drop database objects associated
+     * with automatic primary key generation. No actual database
      * operations are performed.
      */
     public List dropAutoPkStatements(List dbEntities);
-    
-    
+
+
 
     /**
-     * Generates new (unique and non-repeating) primary key for specified 
+     * Generates new (unique and non-repeating) primary key for specified
      * DbEntity.
      *
      *  @param ent DbEntity for which automatic PK is generated.
@@ -118,10 +118,12 @@ public interface PkGenerator {
 
 
     /**
-     * Returns SQL string that can generate new (unique and non-repeating) 
-     * primary key for specified DbEntity. No actual database operations 
+     * Returns SQL string that can generate new (unique and non-repeating)
+     * primary key for specified DbEntity. No actual database operations
      * are performed.
      */
     public String generatePkForDbEntityString(DbEntity ent);
+
+    public void reset();
 
 }

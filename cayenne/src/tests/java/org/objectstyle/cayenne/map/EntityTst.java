@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,7 @@
  */
 package org.objectstyle.cayenne.map;
 
+import java.util.Collection;
 import java.util.Iterator;
 
 import org.objectstyle.cayenne.exp.Expression;
@@ -65,10 +66,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class EntityTst extends CayenneTestCase {
     protected Entity ent;
-
-    public EntityTst(String name) {
-        super(name);
-    }
 
     public void setUp() throws Exception {
         // create an anonymous inner Entity subclass, since Entity is abstract
@@ -190,7 +187,28 @@ public class EntityTst extends CayenneTestCase {
         assertTrue(it.hasNext());
         ObjAttribute next = (ObjAttribute) it.next();
         assertNotNull(next);
-        assertTrue(!it.hasNext());
+        assertFalse(it.hasNext());
         assertSame(galleryEnt.getAttribute("galleryName"), next);
+    }
+
+    public void testRemoveAttribute() {
+        Entity entity = new Entity() {
+            protected void validateQueryRoot(Query query) {
+            }
+        };
+
+        entity.setName("test");
+        ObjAttribute attribute1 = new ObjAttribute("a1");
+        ObjAttribute attribute2 = new ObjAttribute("a2");
+
+        entity.addAttribute(attribute1);
+        entity.addAttribute(attribute2);
+
+        Collection attributes = entity.getAttributes();
+        assertEquals(2, attributes.size());
+
+        entity.removeAttribute("a1");
+        attributes = entity.getAttributes();
+        assertEquals(1, attributes.size());
     }
 }

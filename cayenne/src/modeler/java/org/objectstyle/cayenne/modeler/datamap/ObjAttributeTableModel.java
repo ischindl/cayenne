@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,8 @@
  */
 package org.objectstyle.cayenne.modeler.datamap;
 
+import java.util.ArrayList;
+
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.dba.TypesMapping;
 import org.objectstyle.cayenne.map.Attribute;
@@ -62,8 +64,8 @@ import org.objectstyle.cayenne.map.DbAttribute;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.ObjAttribute;
 import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.event.AttributeEvent;
 import org.objectstyle.cayenne.modeler.control.EventController;
-import org.objectstyle.cayenne.modeler.event.AttributeEvent;
 import org.objectstyle.cayenne.modeler.util.CayenneTableModel;
 import org.objectstyle.cayenne.modeler.util.MapUtil;
 
@@ -89,11 +91,10 @@ public class ObjAttributeTableModel extends CayenneTableModel {
 	protected DbEntity dbEntity;
 
 	public ObjAttributeTableModel(
-		ObjEntity entity,
-		EventController mediator,
-		Object eventSource) {
-
-		super(mediator, eventSource, entity.getAttributeList());
+			ObjEntity entity,
+			EventController mediator,
+			Object eventSource) {
+		super(mediator, eventSource, new ArrayList(entity.getAttributes())); // take a copy
 		this.entity = entity;
 		this.dbEntity = entity.getDbEntity();
 	}

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,10 +63,6 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class ObjEntityTst extends CayenneTestCase {
 	protected ObjEntity ent;
-
-	public ObjEntityTst(String name) {
-		super(name);
-	}
 
 	public void setUp() throws Exception {
 		ent = new ObjEntity();
@@ -133,7 +129,7 @@ public class ObjEntityTst extends CayenneTestCase {
 	}
 	
 	public void testReadOnly() throws Exception {
-		assertTrue(!ent.isReadOnly());
+		assertFalse(ent.isReadOnly());
 		ent.setReadOnly(true);
 		assertTrue(ent.isReadOnly());
 	}

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -73,104 +73,122 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-
-/** Provides JDBC-RDBMS types mapping. Loads types info from a xml file.
-  * 
-  * @author Andrei Adamchik
-  */
+/** 
+ * TypesHandler provides JDBC-RDBMS types mapping. Loads types info from 
+ * an XML file.
+ * 
+ * @author Andrei Adamchik
+ */
 public class TypesHandler {
-    private static volatile Logger logObj = Logger.getLogger(TypesHandler.class);
+	private static Logger logObj = Logger.getLogger(TypesHandler.class);
 
-    private static Map handlerMap = new HashMap();
+	private static Map handlerMap = new HashMap();
 
-    /** Returns TypesHandler using XML file located in the package
-      * of <code>adapterClass</code>. */
-    public static TypesHandler getHandler(Class adapterClass) {
-        return getHandler(Util.getPackagePath(adapterClass.getName()) + "/types.xml");
-    }
+	/** 
+	 * Returns TypesHandler using XML file located in the package of
+	 * <code>adapterClass</code>.
+	 */
+	public static TypesHandler getHandler(Class adapterClass) {
+		return getHandler(
+			Util.getPackagePath(adapterClass.getName()) + "/types.xml");
+	}
 
+	public static TypesHandler getHandler(String filePath) {
+		synchronized (handlerMap) {
+			TypesHandler handler = (TypesHandler) handlerMap.get(filePath);
 
-    public static TypesHandler getHandler(String filePath) {
-        synchronized(handlerMap) {
-            TypesHandler handler = (TypesHandler)handlerMap.get(filePath);
-            if(handler != null)
-                return handler;
+			if (handler == null) {
+				handler = new TypesHandler(filePath);
+				handlerMap.put(filePath, handler);
+			}
 
-            handler = new TypesHandler(filePath);
-            handlerMap.put(filePath, handler);
-            return handler;
-        }
-    }
+			return handler;
+		}
+	}
 
+	protected Map typesMap;
 
-    protected Map typesMap;
+	public TypesHandler(String typesConfigPath) {
+		InputStream in =
+			ResourceLocator.findResourceInClasspath(typesConfigPath);
 
-    public TypesHandler(String typesConfigPath) {
-        InputStream in = ResourceLocator.findResourceInClasspath(typesConfigPath);
+		try {
+			XMLReader parser = Util.createXmlReader();
+			TypesParseHandler ph = new TypesParseHandler();
+			parser.setContentHandler(ph);
+			parser.setErrorHandler(ph);
+			parser.parse(new InputSource(in));
 
-        try {
-            XMLReader parser = Util.createXmlReader();
-            TypesParseHandler ph = new TypesParseHandler();
-            parser.setContentHandler(ph);
-            parser.setErrorHandler(ph);
-            parser.parse(new InputSource(in));
+			typesMap = ph.getTypes();
+		} catch (Exception ex) {
+			logObj.error(
+				"Error creating TypesHandler '" + typesConfigPath + "'.",
+				ex);
+			throw new CayenneRuntimeException("Error parsing types", ex);
+		} finally {
+			try {
+				in.close();
+			} catch (IOException ioex) {
+			}
+		}
+	}
 
-            typesMap = ph.getTypes();
-        } catch(Exception ex) {
-            logObj.error("Error creating TypesHandler '" + typesConfigPath + "'.", ex);
-            throw new CayenneRuntimeException("Error parsing types", ex);
-        } finally {
-            try {
-                in.close();
-            } catch(IOException ioex) {}
-        }
-    }
+	public String[] externalTypesForJdbcType(int type) {
+		return (String[]) typesMap.get(new Integer(type));
+	}
 
-    public String[] externalTypesForJdbcType(int type) {
-        return (String[])typesMap.get(new Integer(type));
-    }
+	/** 
+	 * TypesParseHandler is a helper class to process XML streams, 
+	 * creating DataDomain objects from configuration data.
+	 */ 
+	final class TypesParseHandler extends DefaultHandler {
+		private static final String JDBC_TYPE_TAG = "jdbc-type";
+		private static final String DB_TYPE_TAG = "db-type";
+		private static final String NAME_ATTR = "name";
 
+		private Map types = new HashMap();
+		private List currentTypes = new ArrayList();
+		private int currentType = TypesMapping.NOT_DEFINED;
 
-    /** Class helps to process Xml streams, creating DataDomain objects from
-    * configuration data.*/
-    final class TypesParseHandler extends DefaultHandler {
-        private static final String JDBC_TYPE_TAG = "jdbc-type";
-        private static final String DB_TYPE_TAG = "db-type";
-        private static final String NAME_ATTR = "name";
+		public Map getTypes() {
+			return types;
+		}
 
-        private Map types = new HashMap();
-        private List currentTypes = new ArrayList();
-        private int currentType = TypesMapping.NOT_DEFINED;
+		public void startElement(
+			String namespaceURI,
+			String localName,
+			String qName,
+			Attributes atts)
+			throws SAXException {
+			if (JDBC_TYPE_TAG.equals(localName)) {
+				currentTypes.clear();
+				String strType = atts.getValue("", NAME_ATTR);
 
+				// convert to Types int value
+				try {
+					currentType =
+						Types.class.getDeclaredField(strType).getInt(null);
+				} catch (Exception ex) {
+					currentType = TypesMapping.NOT_DEFINED;
+					logObj.info("type not found: '" + strType + "', ignoring.");
+				}
+			} else if (DB_TYPE_TAG.equals(localName)) {
+				currentTypes.add(atts.getValue("", NAME_ATTR));
+			}
+		}
 
-        public Map getTypes() {
-            return types;
-        }
-
-
-        public void startElement(String namespaceURI, String localName, String qName, Attributes atts)
-        throws SAXException {
-            if(JDBC_TYPE_TAG.equals(localName)) {
-                currentTypes.clear();
-                String strType = atts.getValue("", NAME_ATTR);
-
-                // convert to Types int value
-                try {
-                    currentType = Types.class.getDeclaredField(strType).getInt(null);
-                } catch(Exception ex) {
-                    currentType = TypesMapping.NOT_DEFINED;
-                    logObj.info("type not found: '" + strType + "', ignoring.");
-                }
-            } else if(DB_TYPE_TAG.equals(localName)) {
-                currentTypes.add(atts.getValue("", NAME_ATTR));
-            }
-        }
-
-        public void endElement(String namespaceURI, String localName, String qName) throws SAXException {
-            if (JDBC_TYPE_TAG.equals(localName) && currentType != TypesMapping.NOT_DEFINED) {
-                String[] typesAsArray = new String[currentTypes.size()];
-                types.put(new Integer(currentType), currentTypes.toArray(typesAsArray));
-            }
-        }
-    }
+		public void endElement(
+			String namespaceURI,
+			String localName,
+			String qName)
+			throws SAXException {
+			if (JDBC_TYPE_TAG.equals(localName)
+				&& currentType != TypesMapping.NOT_DEFINED) {
+				String[] typesAsArray = new String[currentTypes.size()];
+				types.put(
+					new Integer(currentType),
+					currentTypes.toArray(typesAsArray));
+			}
+		}
+	}
 }

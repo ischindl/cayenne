@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,67 +58,64 @@ package org.objectstyle.cayenne;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import org.objectstyle.cayenne.unittest.CayenneTestCase;
+import junit.framework.TestCase;
 
 /**
  * @author Andrei Adamchik
  */
-public class CayenneRuntimeExceptionTst extends CayenneTestCase {
+public class CayenneRuntimeExceptionTst extends TestCase {
 
-	/**
-	 * Constructor for CayenneRuntimeExceptionTst.
-	 * @param arg0
-	 */
-	public CayenneRuntimeExceptionTst(String arg0) {
-		super(arg0);
-	}
+    public void testConstructor1() throws Exception {
+        CayenneRuntimeException ex = new CayenneRuntimeException();
+        assertNull(ex.getCause());
+        assertTrue(ex.getMessage().startsWith(CayenneException.getExceptionLabel()));
+    }
 
-	public void testConstructor1() throws Exception {
-		CayenneRuntimeException ex = new CayenneRuntimeException();
-		assertNull(ex.getCause());
-		assertNull(ex.getMessage());
-	}
+    public void testConstructor2() throws Exception {
+        CayenneRuntimeException ex = new CayenneRuntimeException("abc");
+        assertNull(ex.getCause());
+        assertEquals(CayenneException.getExceptionLabel() + "abc", ex.getMessage());
+    }
 
-	public void testConstructor2() throws Exception {
-		CayenneRuntimeException ex = new CayenneRuntimeException("abc");
-		assertNull(ex.getCause());
-		assertEquals("abc", ex.getMessage());
-	}
+    public void testConstructor3() throws Exception {
+        Throwable cause = new Throwable();
+        CayenneRuntimeException ex = new CayenneRuntimeException(cause);
+        assertSame(cause, ex.getCause());
+        assertEquals(
+            CayenneException.getExceptionLabel() + cause.toString(),
+            ex.getMessage());
+    }
 
-	public void testConstructor3() throws Exception {
-		Throwable cause = new Throwable();
-		CayenneRuntimeException ex = new CayenneRuntimeException(cause);
-		assertSame(cause, ex.getCause());
-		assertEquals(cause.toString(), ex.getMessage());
-	}
+    public void testConstructor4() throws Exception {
+        Throwable cause = new Throwable();
+        CayenneRuntimeException ex = new CayenneRuntimeException("abc", cause);
+        assertSame(cause, ex.getCause());
+        assertEquals(CayenneException.getExceptionLabel() + "abc", ex.getMessage());
+    }
 
-	public void testConstructor4() throws Exception {
-		Throwable cause = new Throwable();
-		CayenneRuntimeException ex = new CayenneRuntimeException("abc", cause);
-		assertSame(cause, ex.getCause());
-		assertSame("abc", ex.getMessage());
-	}
+    public void testThrow1() throws Exception {
+        try {
+            throw new CayenneRuntimeException();
+        }
+        catch (CayenneRuntimeException rtex) {
+            StringWriter w = new StringWriter();
+            rtex.printStackTrace(new PrintWriter(w));
+        }
+    }
 
-	public void testThrow1() throws Exception {
-		try {
-			throw new CayenneRuntimeException();
-		} catch (CayenneRuntimeException rtex) {
-			StringWriter w = new StringWriter();
-			rtex.printStackTrace(new PrintWriter(w));
-		}
-	}
+    public void testThrow2() throws Exception {
+        try {
+            try {
+                throw new Throwable("Test Cause");
+            }
+            catch (Throwable th) {
+                throw new CayenneRuntimeException(th);
+            }
+        }
+        catch (CayenneRuntimeException rtex) {
+            StringWriter w = new StringWriter();
+            rtex.printStackTrace(new PrintWriter(w));
+        }
+    }
 
-	public void testThrow2() throws Exception {
-		try {
-			try {
-				throw new Throwable("Test Cause");
-			} catch (Throwable th) {
-				throw new CayenneRuntimeException(th);
-			}
-		} catch (CayenneRuntimeException rtex) {
-			StringWriter w = new StringWriter();
-			rtex.printStackTrace(new PrintWriter(w));
-		}
-	}
-	
 }

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,23 +55,24 @@
  */
 package org.objectstyle.cayenne.dba;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.sql.Types;
 
+import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class JdbcAdapterTst extends CayenneTestCase {
 	protected JdbcAdapter adapter;
 
-	public JdbcAdapterTst(String name) {
-		super(name);
-	}
-
 	protected void setUp() throws java.lang.Exception {
 		adapter = new JdbcAdapter();
+	}
+	
+	public void testCreateDataNode() throws Exception {
+		DataNode node = adapter.createDataNode("1234");
+		assertNotNull(node);
+		assertEquals("1234", node.getName());
+		assertSame(adapter, node.getAdapter());
 	}
 
 	public void testExternalTypesForJdbcType() throws Exception {
@@ -91,36 +92,12 @@ public class JdbcAdapterTst extends CayenneTestCase {
 		} catch (Exception ex) {
 			// exception expected
 		}
-	}
+    }
 
 	private void checkType(int type) throws java.lang.Exception {
 		String[] types = adapter.externalTypesForJdbcType(type);
 		assertNotNull(types);
 		assertEquals(1, types.length);
 		assertEquals(TypesMapping.getSqlNameByType(type), types[0]);
-	}
-
-	// check for Oracle open cursors - used for debugging. 
-	public static void testOpenCursors(Connection c) {
-		try {
-			Statement st = c.createStatement();
-			ResultSet rs =
-				st.executeQuery(
-					"select user_name, status, osuser, machine, a.sql_text "
-						+ "from v$session b, v$open_cursor a where user_name = 'GOYA'");
-			System.out.println("results..");
-			System.out.println("==================");
-			while (rs.next()) {
-				System.out.print(rs.getString(1));
-				System.out.print(":" + rs.getString(2));
-				System.out.print(":" + rs.getString(3));
-				System.out.print(":" + rs.getString(4));
-				System.out.println(":" + rs.getString(5));
-			}
-			rs.close();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			System.exit(1);
-		}
 	}
 }

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,8 @@
 package org.objectstyle.cayenne.access;
 
 import org.apache.log4j.Logger;
+import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 /** Test cases for DbGenerator.
@@ -63,48 +65,59 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
   * @author Andrei Adamchik
   */
 public class DbGeneratorTst extends CayenneTestCase {
-    private static Logger logObj = Logger.getLogger(DbLoaderTst.class);
+	Logger logObj = Logger.getLogger(DbGeneratorTst.class);
+	
+	protected DbGenerator gen;
 
-    protected DbGenerator gen;
+	public void setUp() throws Exception {
+		gen =
+			new DbGenerator(
+				getNode().getAdapter(),
+				getDomain().getMap("testmap"));
+	}
 
-    public DbGeneratorTst(String name) {
-        super(name);
-    }
+	public void testAdapter() throws Exception {
+		assertSame(getNode().getAdapter(), gen.getAdapter());
+	}
 
-    public void setUp() throws Exception {
-        gen =
-            new DbGenerator(
-                getNode().getAdapter(),
-                getNode().getDataMaps()[0]);
-    }
+	public void testPkFilteringLogic() throws Exception {
+		DataMap map = getDomain().getMap("testmap");
+		DbEntity artistExhibit = map.getDbEntity("ARTIST_EXHIBIT");
+		DbEntity exhibit = map.getDbEntity("EXHIBIT");
 
-    public void testAdapter() throws Exception {
-        assertSame(getNode().getAdapter(), gen.getAdapter());
-    }
+		// sanity check
+		assertNotNull(artistExhibit);
+		assertNotNull(exhibit);
+		assertNotNull(gen.dbEntitiesRequiringAutoPK);
 
-    public void testCreatePkSupport() throws Exception {
-        assertTrue(gen.shouldCreatePKSupport());
-        gen.setShouldCreatePKSupport(false);
-        assertTrue(!gen.shouldCreatePKSupport());
+		// real test
+		assertTrue(gen.dbEntitiesRequiringAutoPK.contains(exhibit));
+		assertFalse(gen.dbEntitiesRequiringAutoPK.contains(artistExhibit));
+	}
 
-    }
+	public void testCreatePkSupport() throws Exception {
+		assertTrue(gen.shouldCreatePKSupport());
+		gen.setShouldCreatePKSupport(false);
+		assertFalse(gen.shouldCreatePKSupport());
 
-    public void testShouldCreateTables() throws Exception {
-        assertTrue(gen.shouldCreateTables());
-        gen.setShouldCreateTables(false);
-        assertTrue(!gen.shouldCreateTables());
-    }
+	}
 
-    public void testDropPkSupport() throws Exception {
+	public void testShouldCreateTables() throws Exception {
+		assertTrue(gen.shouldCreateTables());
+		gen.setShouldCreateTables(false);
+		assertFalse(gen.shouldCreateTables());
+	}
 
-        assertTrue(!gen.shouldDropPKSupport());
-        gen.setShouldDropPKSupport(true);
-        assertTrue(gen.shouldDropPKSupport());
-    }
+	public void testDropPkSupport() throws Exception {
 
-    public void testShouldDropTables() throws Exception {
-        assertTrue(!gen.shouldDropTables());
-        gen.setShouldDropTables(true);
-        assertTrue(gen.shouldDropTables());
-    }
+		assertFalse(gen.shouldDropPKSupport());
+		gen.setShouldDropPKSupport(true);
+		assertTrue(gen.shouldDropPKSupport());
+	}
+
+	public void testShouldDropTables() throws Exception {
+		assertFalse(gen.shouldDropTables());
+		gen.setShouldDropTables(true);
+		assertTrue(gen.shouldDropTables());
+	}
 }

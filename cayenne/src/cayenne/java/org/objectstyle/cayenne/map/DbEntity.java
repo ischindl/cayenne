@@ -1,8 +1,8 @@
 /* ====================================================================
- * 
- * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * The ObjectStyle Group Software License, Version 1.0
+ *
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,7 +10,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -18,15 +18,15 @@
  *    distribution.
  *
  * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
+ *    any, must include the following acknowlegement:
+ *       "This product includes software developed by the
  *        ObjectStyle Group (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
  *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
+ * 4. The names "ObjectStyle Group" and "Cayenne"
  *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
+ *    from this software without prior written permission. For written
  *    permission, please contact andrus@objectstyle.org.
  *
  * 5. Products derived from this software may not be called "ObjectStyle"
@@ -56,32 +56,43 @@
 package org.objectstyle.cayenne.map;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.objectstyle.cayenne.map.event.AttributeEvent;
+import org.objectstyle.cayenne.map.event.DbAttributeListener;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.query.Query;
 
-/** 
- * A DbEntity is a mapping descriptor that defines a structure of a database table. 
- * 
+/**
+ * A DbEntity is a mapping descriptor that defines a structure of a database table.
+ *
  * @author Misha Shengaout
  * @author Andrei Adamchik
  */
-public class DbEntity extends Entity {
+public class DbEntity extends Entity implements DbAttributeListener {
     protected String catalog;
     protected String schema;
+	protected List primaryKey;
+	protected List primaryKeyRef;
+	protected DbKeyGenerator primaryKeyGenerator;
 
     /**
-     * Creates an unnamed DbEntity. 
+     * Creates an unnamed DbEntity.
      */
     public DbEntity() {
+    	super();
+    	this.primaryKey = new ArrayList(4);
+    	this.primaryKeyRef = Collections.unmodifiableList(primaryKey);
     }
 
     /**
-     * Creates a named DbEntity. 
+     * Creates a named DbEntity.
      */
     public DbEntity(String name) {
-        setName(name);
+    	this();
+        this.setName(name);
     }
 
     /**
@@ -91,60 +102,53 @@ public class DbEntity extends Entity {
         return (schema != null) ? schema + '.' + getName() : getName();
     }
 
-    /** 
+    /**
      * Returns database schema of this table.
-     * 
+     *
      * @return table's schema, null if not set.
      */
     public String getSchema() {
         return schema;
     }
 
-    /** 
+    /**
      * Sets the database schema name of the table described
-     * by this DbEntity. 
+     * by this DbEntity.
      */
     public void setSchema(String schema) {
         this.schema = schema;
     }
 
-    /** 
+    /**
      * Returns the catalog name of the table described
-     * by this DbEntity. 
+     * by this DbEntity.
      */
     public String getCatalog() {
         return catalog;
     }
 
-    /** 
+    /**
      * Sets the catalog name of the table described
-     * by this DbEntity. 
+     * by this DbEntity.
      */
     public void setCatalog(String catalog) {
         this.catalog = catalog;
     }
 
-    /** 
-     * Returns a list of DbAttributes representing the primary
-     * key of the table described by this DbEntity. 
+    /**
+     * Returns an unmodifiable list of DbAttributes representing the
+     * primary key of the table described by this DbEntity.
      */
-    public List getPrimaryKey() {
-        List list = new ArrayList();
-        Iterator it = this.getAttributeList().iterator();
-        while (it.hasNext()) {
-            DbAttribute dba = (DbAttribute) it.next();
-            if (dba.isPrimaryKey())
-                list.add(dba);
-        }
-        return list;
-    }
+	public List getPrimaryKey() {
+		return primaryKeyRef;
+	}
 
     public String toString() {
         StringBuffer sb = new StringBuffer("DbEntity:");
         sb.append("\nTable name: ").append(this.getName());
 
         // 1. print attributes
-        Iterator attIt = attributes.values().iterator();
+        Iterator attIt = this.getAttributes().iterator();
         while (attIt.hasNext()) {
             DbAttribute dbAttribute = (DbAttribute) attIt.next();
             String name = dbAttribute.getName();
@@ -158,21 +162,27 @@ public class DbEntity extends Entity {
         }
 
         // 2. print relationships
-        Iterator relIt = getRelationshipList().iterator();
+        Iterator relIt = this.getRelationships().iterator();
         while (relIt.hasNext()) {
             DbRelationship dbRel = (DbRelationship) relIt.next();
             sb.append("\n   Rel. to: ").append(
-                dbRel.getTargetEntity().getName());
+                dbRel.getTargetEntityName());
             sb.append("\n------------------");
         }
 
         return sb.toString();
     }
 
+	public void addAttribute(Attribute attr)
+	{
+		super.addAttribute(attr);
+		this.dbAttributeAdded(new AttributeEvent(this, attr, this, MapEvent.ADD));
+	}
+
     /**
      * Removes attribute from the entity, removes any relationship
      * joins containing this attribute.
-     * 
+     *
      * @see org.objectstyle.cayenne.map.Entity#removeAttribute(String)
      */
     public void removeAttribute(String attrName) {
@@ -183,9 +193,10 @@ public class DbEntity extends Entity {
 
         DataMap map = getDataMap();
         if (map != null) {
-            DbEntity[] ents = map.getDbEntities();
-            for (int i = 0; i < ents.length; i++) {
-                Iterator it = ents[i].getRelationshipList().iterator();
+            Iterator ents = map.getDbEntities().iterator();
+            while (ents.hasNext()) {
+            	DbEntity ent = (DbEntity)ents.next();
+                Iterator it = ent.getRelationships().iterator();
                 while (it.hasNext()) {
                     DbRelationship rel = (DbRelationship) it.next();
                     Iterator joins = rel.getJoins().iterator();
@@ -201,12 +212,88 @@ public class DbEntity extends Entity {
         }
 
         super.removeAttribute(attrName);
+        this.dbAttributeRemoved(new AttributeEvent(this, attr, this, MapEvent.REMOVE));
     }
 
-    protected void validateQueryRoot(Query query)
-        throws IllegalArgumentException {
+	public void clearAttributes() {
+		super.clearAttributes();
+		// post dummy event for no specific attribute
+		this.dbAttributeRemoved(new AttributeEvent(this, null, this, MapEvent.REMOVE));
+	}
+
+    protected void validateQueryRoot(Query query) throws IllegalArgumentException {
         if (query.getRoot() != this) {
             throw new IllegalArgumentException("Wrong query root for DbEntity: " + query.getRoot());
         }
     }
+
+	public void setPrimaryKeyGenerator(DbKeyGenerator primaryKeyGenerator) {
+		this.primaryKeyGenerator = primaryKeyGenerator;
+      	if (primaryKeyGenerator != null) {
+      		primaryKeyGenerator.setDbEntity(this);
+	  	}
+    }
+
+    public DbKeyGenerator getPrimaryKeyGenerator() {
+    	return primaryKeyGenerator;
+    }
+
+	public void dbAttributeAdded(AttributeEvent e) {
+		this.handlePrimaryKeyUpdate(e);
+	}
+
+	public void dbAttributeChanged(AttributeEvent e) {
+		this.handlePrimaryKeyUpdate(e);
+	}
+
+	public void dbAttributeRemoved(AttributeEvent e) {
+		this.handlePrimaryKeyUpdate(e);
+	}
+
+	private void handlePrimaryKeyUpdate(AttributeEvent e) {
+		if ((e == null) || (e.getEntity() != this)) {
+			// not our concern
+			return;
+		}
+
+		// catch clearing (event with null ('any') DbAttribute)
+		Attribute attr = e.getAttribute();
+		if ((attr == null) && (this.attributes.isEmpty())) {
+			this.primaryKey.clear();
+			return;
+		}
+
+		// make sure we handle a DbAttribute
+		if (!(attr instanceof DbAttribute)) {
+			return;
+		}
+
+		DbAttribute dbAttr = (DbAttribute)attr;
+		if (!(this.primaryKey.contains(dbAttr)) && !(dbAttr.isPrimaryKey())) {
+			// no reason to do anything
+			return;
+		}
+
+		switch (e.getId()) {
+			case MapEvent.ADD:
+				this.primaryKey.add(attr);
+				break;
+
+			case MapEvent.REMOVE:
+				this.primaryKey.remove(attr);
+				break;
+
+			default:
+				// generic update
+				this.primaryKey.clear();
+				Iterator it = this.getAttributes().iterator();
+				while (it.hasNext()) {
+					DbAttribute dba = (DbAttribute) it.next();
+					if (dba.isPrimaryKey()) {
+						this.primaryKey.add(dba);
+					}
+				}
+		}
+	}
+
 }

@@ -1,9 +1,6 @@
 package org.objectstyle.art;
 
-import org.objectstyle.cayenne.CayenneDataObject;
-
-
-public class DeleteRuleTest1 extends CayenneDataObject {
+public class DeleteRuleTest1 extends org.objectstyle.cayenne.CayenneDataObject {
 
     public void setTest2(DeleteRuleTest2 test2) {
         setToOneTarget("test2", test2, true);

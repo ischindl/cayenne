@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,9 +60,6 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -73,7 +70,6 @@ import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.Spring;
 import javax.swing.SpringLayout;
-import javax.swing.SwingConstants;
 
 /** 
  * Utility methods for laying out components on the panels.
@@ -83,252 +79,189 @@ import javax.swing.SwingConstants;
  */
 public class PanelFactory {
 
-	/** 
-	 * Creates a borderless button that can be used
-	 * as a clickable label.
-	 */
-	public static JButton createLabelButton(String text) {
-		JButton but = new JButton(text);
-		but.setBorderPainted(false);
-		but.setHorizontalAlignment(SwingConstants.LEFT);
-		but.setFocusPainted(false);
-		but.setMargin(new Insets(0, 0, 0, 0));
-		but.setBorder(null);
-		return but;
-	}
+    /** 
+     * Creates and returns a panel with right-centered buttons.
+     */
+    public static JPanel createButtonPanel(JButton[] buttons) {
+        JPanel panel = new JPanel();
+        panel.setBorder(BorderFactory.createEmptyBorder(3, 20, 3, 7));
+        panel.setLayout(new FlowLayout(FlowLayout.RIGHT));
 
-	/** 
-	 * Creates and returns a panel with right-centered buttons.
-	 */
-	public static JPanel createButtonPanel(JButton[] buttons) {
-		JPanel panel = new JPanel();
-		panel.setBorder(BorderFactory.createEmptyBorder(3, 20, 3, 7));
-		panel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+        for (int i = 0; i < buttons.length; i++) {
+            panel.add(buttons[i]);
+        }
 
-		for (int i = 0; i < buttons.length; i++) {
-			panel.add(buttons[i]);
-		}
+        return panel;
+    }
 
-		return panel;
-	}
+    /** 
+     * Create panel with aligned labels on the right and fields on the left.
+     * Panel uses SpringLayout.
+     */
+    public static JPanel createForm(
+        Component[] leftComponents,
+        Component[] rightComponents,
+        int initialX,
+        int initialY,
+        int xPad,
+        int yPad) {
+        SpringLayout layout = new SpringLayout();
+        int numRows = Math.max(leftComponents.length, rightComponents.length);
 
-	public static JPanel createJDK13Form(
-		Component[] leftComponents,
-		Component[] rightComponents,
-		int xSpacing,
-		int ySpacing,
-		int xPad,
-		int yPad) {
+        // The constant springs we'll use to enforce spacing.
+        Spring xSpring = Spring.constant(initialX);
+        Spring ySpring = Spring.constant(initialY);
+        Spring xPadSpring = Spring.constant(xPad);
+        Spring yPadSpring = Spring.constant(yPad);
+        Spring negXPadSpring = Spring.constant(-xPad);
 
-		JPanel panel = new JPanel();
+        // Create the container and add the components to it.
+        JPanel parent = new JPanel(layout);
+        for (int i = 0; i < numRows; i++) {
+            parent.add(leftComponents[i]);
+            parent.add(rightComponents[i]);
+        }
 
-		panel.setBorder(
-			BorderFactory.createEmptyBorder(
-				xSpacing,
-				ySpacing,
-				xSpacing,
-				ySpacing));
-		GridBagLayout gbl = new GridBagLayout();
-		panel.setLayout(gbl);
+        // maxEastSpring will contain the highest min/pref/max values
+        // for the right edges of the components in the first column
+        // (i.e. the largest X coordinate in a first-column component).
+        // We use layout.getConstraint instead of layout.getConstraints
+        // (layout.getConstraints(comp).getConstraint("East"))
+        // because we need a proxy -- not the current Spring.
+        // Otherwise, it won't take the revised X position into account
+        // for the initial layout.
+        Spring maxEastSpring = layout.getConstraint("East", leftComponents[0]);
+        for (int row = 1; row < numRows; row++) {
+            maxEastSpring =
+                Spring.max(
+                    maxEastSpring,
+                    layout.getConstraint("East", leftComponents[row]));
+        }
 
-		GridBagConstraints cstr = new GridBagConstraints();
-		cstr.ipadx = xPad;
-		cstr.ipady = yPad;
-		cstr.fill = GridBagConstraints.HORIZONTAL;
-		cstr.insets = new Insets(1, 1, 1, 1);
+        // Lay out each pair. The left column's x is constrained based on
+        // the passed x location. The y for each component in the left column
+        // is the max of the previous pair's height. In the right column, x is
+        // constrained by the max width of the left column (maxEastSpring),
+        // y is constrained as in the left column, and the width is
+        // constrained to be the x location minus the width of the
+        // parent container. This last constraint makes the right column fill
+        // all extra horizontal space.
+        SpringLayout.Constraints lastConsL = null;
+        SpringLayout.Constraints lastConsR = null;
+        Spring parentWidth = layout.getConstraint("East", parent);
+        Spring rWidth = null;
+        Spring maxHeightSpring = null;
+        Spring rX = Spring.sum(maxEastSpring, xPadSpring); //right col location
+        Spring negRX = Spring.minus(rX); //negative of rX
 
-		int numRows = Math.max(leftComponents.length, rightComponents.length);
-		for (int i = 0; i < numRows; i++) {
-			cstr.gridwidth = 1;
-			cstr.anchor = GridBagConstraints.EAST;
-			gbl.setConstraints(leftComponents[i], cstr);
-			panel.add(leftComponents[i]);
+        for (int row = 0; row < numRows; row++) {
+            SpringLayout.Constraints consL = layout.getConstraints(leftComponents[row]);
+            SpringLayout.Constraints consR = layout.getConstraints(rightComponents[row]);
 
-			cstr.gridwidth = GridBagConstraints.REMAINDER;
-			cstr.anchor = GridBagConstraints.WEST;
-			gbl.setConstraints(rightComponents[i], cstr);
-			panel.add(rightComponents[i]);
-		}
+            consL.setX(xSpring);
+            consR.setX(rX);
 
-		return panel;
-	}
+            if (row == 0)
+                rWidth = consR.getWidth();
+            else
+                rWidth = Spring.max(rWidth, consR.getWidth());
+            consR.setWidth(Spring.sum(Spring.sum(parentWidth, negRX), negXPadSpring));
+            Spring height = Spring.max(consL.getHeight(), consR.getHeight());
+            if (row == 0) {
+                consL.setY(ySpring);
+                consR.setY(ySpring);
+                maxHeightSpring = Spring.sum(ySpring, height);
+            }
+            else { // row > 0
+                Spring y =
+                    Spring.sum(
+                        Spring.max(
+                            lastConsL.getConstraint("South"),
+                            lastConsR.getConstraint("South")),
+                        yPadSpring);
 
-	/** 
-	 * Create panel with aligned labels on the right and fields on the left.
-	 * Panel uses SpringLayout.
-	 */
-	public static JPanel createForm(
-		Component[] leftComponents,
-		Component[] rightComponents,
-		int initialX,
-		int initialY,
-		int xPad,
-		int yPad) {
-		SpringLayout layout = new SpringLayout();
-		int numRows = Math.max(leftComponents.length, rightComponents.length);
+                consL.setY(y);
+                consR.setY(y);
+                maxHeightSpring =
+                    Spring.sum(yPadSpring, Spring.sum(maxHeightSpring, height));
+            }
+            Dimension dimL = leftComponents[row].getPreferredSize();
+            Dimension dimR = rightComponents[row].getPreferredSize();
+            int dim_height = Math.max(dimL.height, dimR.height);
+            consL.setHeight(Spring.constant(dim_height));
+            consR.setHeight(Spring.constant(dim_height));
+            lastConsL = consL;
+            lastConsR = consR;
+        } // end of for loop
 
-		// The constant springs we'll use to enforce spacing.
-		Spring xSpring = Spring.constant(initialX);
-		Spring ySpring = Spring.constant(initialY);
-		Spring xPadSpring = Spring.constant(xPad);
-		Spring yPadSpring = Spring.constant(yPad);
-		Spring negXPadSpring = Spring.constant(-xPad);
+        // Wire up the east/south of the container so that the its preferred
+        // size is valid.  The east spring is the distance to the right
+        // column (rX) + the right component's width (rWidth) + the final
+        // padding (xPadSpring).
+        // The south side is maxHeightSpring + the final padding (yPadSpring).
 
-		// Create the container and add the components to it.
-		JPanel parent = new JPanel(layout);
-		for (int i = 0; i < numRows; i++) {
-			parent.add(leftComponents[i]);
-			parent.add(rightComponents[i]);
-		}
+        SpringLayout.Constraints consParent = layout.getConstraints(parent);
 
-		// maxEastSpring will contain the highest min/pref/max values
-		// for the right edges of the components in the first column
-		// (i.e. the largest X coordinate in a first-column component).
-		// We use layout.getConstraint instead of layout.getConstraints
-		// (layout.getConstraints(comp).getConstraint("East"))
-		// because we need a proxy -- not the current Spring.
-		// Otherwise, it won't take the revised X position into account
-		// for the initial layout.
-		Spring maxEastSpring = layout.getConstraint("East", leftComponents[0]);
-		for (int row = 1; row < numRows; row++) {
-			maxEastSpring =
-				Spring.max(
-					maxEastSpring,
-					layout.getConstraint("East", leftComponents[row]));
-		}
+        consParent.setConstraint("East", Spring.sum(rX, Spring.sum(rWidth, xPadSpring)));
+        consParent.setConstraint("South", Spring.sum(maxHeightSpring, yPadSpring));
 
-		// Lay out each pair. The left column's x is constrained based on
-		// the passed x location. The y for each component in the left column
-		// is the max of the previous pair's height. In the right column, x is
-		// constrained by the max width of the left column (maxEastSpring),
-		// y is constrained as in the left column, and the width is
-		// constrained to be the x location minus the width of the
-		// parent container. This last constraint makes the right column fill
-		// all extra horizontal space.
-		SpringLayout.Constraints lastConsL = null;
-		SpringLayout.Constraints lastConsR = null;
-		Spring parentWidth = layout.getConstraint("East", parent);
-		Spring rWidth = null;
-		Spring maxHeightSpring = null;
-		Spring rX = Spring.sum(maxEastSpring, xPadSpring); //right col location
-		Spring negRX = Spring.minus(rX); //negative of rX
+        return parent;
+    }
 
-		for (int row = 0; row < numRows; row++) {
-			SpringLayout.Constraints consL =
-				layout.getConstraints(leftComponents[row]);
-			SpringLayout.Constraints consR =
-				layout.getConstraints(rightComponents[row]);
+    /** 
+     * Creates panel with table within scroll panel and buttons in the bottom.
+     * Also sets the resizing and selection policies of the table to
+     * AUTO_RESIZE_OFF and SINGLE_SELECTION respectively.
+     */
+    public static JPanel createTablePanel(JTable table, JButton[] buttons) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout(5, 5));
 
-			consL.setX(xSpring);
-			consR.setX(rX);
+        // Create table with two columns and no rows.
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
-			if (row == 0)
-				rWidth = consR.getWidth();
-			else
-				rWidth = Spring.max(rWidth, consR.getWidth());
-			consR.setWidth(
-				Spring.sum(Spring.sum(parentWidth, negRX), negXPadSpring));
-			Spring height = Spring.max(consL.getHeight(), consR.getHeight());
-			if (row == 0) {
-				consL.setY(ySpring);
-				consR.setY(ySpring);
-				maxHeightSpring = Spring.sum(ySpring, height);
-			} else { // row > 0
-				Spring y =
-					Spring.sum(
-						Spring.max(
-							lastConsL.getConstraint("South"),
-							lastConsR.getConstraint("South")),
-						yPadSpring);
+        // Panel to add space between table and EAST/WEST borders
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
 
-				consL.setY(y);
-				consR.setY(y);
-				maxHeightSpring =
-					Spring.sum(yPadSpring, Spring.sum(maxHeightSpring, height));
-			}
-			Dimension dimL = leftComponents[row].getPreferredSize();
-			Dimension dimR = rightComponents[row].getPreferredSize();
-			int dim_height = Math.max(dimL.height, dimR.height);
-			consL.setHeight(Spring.constant(dim_height));
-			consR.setHeight(Spring.constant(dim_height));
-			lastConsL = consL;
-			lastConsR = consR;
-		} // end of for loop
+        // Add Add and Remove buttons
+        if (buttons != null) {
+            panel.add(createButtonPanel(buttons), BorderLayout.SOUTH);
+        }
+        return panel;
+    }
 
-		// Wire up the east/south of the container so that the its preferred
-		// size is valid.  The east spring is the distance to the right
-		// column (rX) + the right component's width (rWidth) + the final
-		// padding (xPadSpring).
-		// The south side is maxHeightSpring + the final padding (yPadSpring).
+    /** Creates panel with table within scroll panel and buttons in the bottom.
+      * Also sets the resizing and selection policies of the table to
+      * AUTO_RESIZE_OFF and SINGLE_SELECTION respectively.*/
+    public static JPanel createTablePanel(
+        JTable table,
+        JComponent[] components,
+        JButton[] buttons) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout(5, 5));
 
-		SpringLayout.Constraints consParent = layout.getConstraints(parent);
+        JPanel temp_panel = new JPanel(new BorderLayout());
 
-		consParent.setConstraint(
-			"East",
-			Spring.sum(rX, Spring.sum(rWidth, xPadSpring)));
-		consParent.setConstraint(
-			"South",
-			Spring.sum(maxHeightSpring, yPadSpring));
+        // Create table with two columns and no rows.
+        table.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        JScrollPane scroll_pane = new JScrollPane(table);
+        temp_panel.add(scroll_pane, BorderLayout.CENTER);
 
-		return parent;
-	}
+        for (int i = 0; i < components.length; i++) {
+            JPanel temp = new JPanel(new BorderLayout());
+            temp.add(temp_panel, BorderLayout.CENTER);
+            temp.add(components[i], BorderLayout.SOUTH);
+            temp_panel = temp;
+        }
 
-	/** 
-	 * Creates panel with table within scroll panel and buttons in the bottom.
-	 * Also sets the resizing and selection policies of the table to
-	 * AUTO_RESIZE_OFF and SINGLE_SELECTION respectively.
-	 */
-	public static JPanel createTablePanel(JTable table, JButton[] buttons) {
-		JPanel panel = new JPanel();
-		panel.setLayout(new BorderLayout(5, 5));
+        panel.add(temp_panel, BorderLayout.CENTER);
 
-		// Create table with two columns and no rows.
-		table.getSelectionModel().setSelectionMode(
-			ListSelectionModel.SINGLE_SELECTION);
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-
-		// Panel to add space between table and EAST/WEST borders
-		panel.add(new JScrollPane(table), BorderLayout.CENTER);
-
-		// Add Add and Remove buttons
-		if (buttons != null) {
-			panel.add(createButtonPanel(buttons), BorderLayout.SOUTH);
-		}
-		return panel;
-	}
-
-	/** Creates panel with table within scroll panel and buttons in the bottom.
-	  * Also sets the resizing and selection policies of the table to
-	  * AUTO_RESIZE_OFF and SINGLE_SELECTION respectively.*/
-	public static JPanel createTablePanel(
-		JTable table,
-		JComponent[] components,
-		JButton[] buttons) {
-		JPanel panel = new JPanel();
-		panel.setLayout(new BorderLayout(5, 5));
-
-		JPanel temp_panel = new JPanel(new BorderLayout());
-
-		// Create table with two columns and no rows.
-		table.getSelectionModel().setSelectionMode(
-			ListSelectionModel.SINGLE_SELECTION);
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		JScrollPane scroll_pane = new JScrollPane(table);
-		temp_panel.add(scroll_pane, BorderLayout.CENTER);
-
-		for (int i = 0; i < components.length; i++) {
-			JPanel temp = new JPanel(new BorderLayout());
-			temp.add(temp_panel, BorderLayout.CENTER);
-			temp.add(components[i], BorderLayout.SOUTH);
-			temp_panel = temp;
-		}
-
-		panel.add(temp_panel, BorderLayout.CENTER);
-
-		if (buttons != null) {
-			panel.add(createButtonPanel(buttons), BorderLayout.SOUTH);
-		}
-		return panel;
-	}
+        if (buttons != null) {
+            panel.add(createButtonPanel(buttons), BorderLayout.SOUTH);
+        }
+        return panel;
+    }
 
 }

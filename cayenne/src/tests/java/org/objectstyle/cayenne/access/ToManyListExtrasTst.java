@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,19 +65,11 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
 public class ToManyListExtrasTst extends CayenneTestCase {
 	protected ToManyList list;
 
-	/**
-	 * Constructor for ToManyListExtrasTst.
-	 * @param arg0
-	 */
-	public ToManyListExtrasTst(String arg0) {
-		super(arg0);
-	}
-
 	public void setUp() throws Exception {
 		ToManyListDataSource lds = new ToManyListDataSource() {
 			public void updateListData(ToManyList l) {
 				l.setObjectList(new ArrayList());
-			};
+			}
 		};
 
 		list = new ToManyList(lds, null, null);

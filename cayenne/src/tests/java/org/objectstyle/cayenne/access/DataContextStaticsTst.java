@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,20 +59,13 @@ import java.io.InputStream;
 
 import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.unittest.CayenneTestCase;
+import org.objectstyle.cayenne.util.ResourceLocator;
 
 /**
  * @author Andrei Adamchik
  */
 public class DataContextStaticsTst extends CayenneTestCase {
     protected Configuration savedConfig;
-
-    /**
-     * Constructor for DataContextStaticsTst.
-     * @param name
-     */
-    public DataContextStaticsTst(String name) {
-        super(name);
-    }
 
     public void testCreateDataContext1() throws Exception {
         TestConfig conf = new TestConfig(getDomain());
@@ -103,20 +96,37 @@ public class DataContextStaticsTst extends CayenneTestCase {
         protected Configuration savedConfig;
 
         public TestConfig(DataDomain domain) {
-            savedConfig = Configuration.sharedConfig;
-            Configuration.sharedConfig = this;
+            savedConfig = Configuration.sharedConfiguration;
+            Configuration.sharedConfiguration = this;
             addDomain(domain);
         }
 
         public void restoreConfig() {
-            Configuration.sharedConfig = savedConfig;
+            Configuration.sharedConfiguration = savedConfig;
         }
 
-        public InputStream getDomainConfig() {
+		public boolean canInitialize() {
+			return true;
+		}
+
+		public void initialize() throws Exception {
+		}
+
+		public void didInitialize() {
+		}
+
+        /**
+         * @deprecated Since 1.0 Beta 3 super method is deprecated
+         */
+		public ResourceLocator getResourceLocator() {
+			return null;
+		}
+
+        protected InputStream getDomainConfiguration() {
             return null;
         }
 
-        public InputStream getMapConfig(String location) {
+        protected InputStream getMapConfiguration(String location) {
             return null;
         }
     }

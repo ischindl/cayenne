@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,14 +66,6 @@ public class ProjectFileTst extends CayenneTestCase {
     protected ProjectFile pf;
 
     /**
-     * Constructor for ProjectFileTst.
-     * @param arg0
-     */
-    public ProjectFileTst(String arg0) {
-        super(arg0);
-    }
-
-    /**
     * @see junit.framework.TestCase#setUp()
     */
     protected void setUp() throws Exception {
@@ -90,7 +82,7 @@ public class ProjectFileTst extends CayenneTestCase {
     public void testRenamed() throws Exception {
     	assertTrue(pf.isRenamed());
     	pf.synchronizeLocation();
-    	assertTrue(!pf.isRenamed());
+    	assertFalse(pf.isRenamed());
     }
 
     public void testLocation() throws Exception {

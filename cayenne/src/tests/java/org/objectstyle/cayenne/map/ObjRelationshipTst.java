@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,15 +66,11 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
 public class ObjRelationshipTst extends CayenneTestCase {
     protected ObjRelationship rel;
     protected DbEntity artistDBEntity = getDomain().getEntityResolver().lookupDbEntity(Artist.class);
-	//There may not be an ObjEntity for Artist_exhibit... jump straight to the dbentity
+	// there may not be an ObjEntity for Artist_exhibit... jump straight to the dbentity
     protected DbEntity artistExhibitDBEntity = getDomain().getMapForDbEntity("ARTIST_EXHIBIT").getDbEntity("ARTIST_EXHIBIT");
 	protected DbEntity exhibitDBEntity = getDomain().getEntityResolver().lookupDbEntity(Exhibit.class);
 	protected DbEntity paintingDbEntity = getDomain().getEntityResolver().lookupDbEntity(Painting.class);
 	protected DbEntity galleryDBEntity = getDomain().getEntityResolver().lookupDbEntity(Gallery.class);
-   
-    public ObjRelationshipTst(String name) {
-        super(name);
-	}
     
     public void setUp() throws Exception {
         rel = new ObjRelationship();
@@ -129,13 +125,13 @@ public class ObjRelationshipTst extends CayenneTestCase {
     public void testSingleDbRelationship() {
     	DbRelationship r1 = new DbRelationship();
     	rel.addDbRelationship(r1);
-        assertEquals(1, rel.getDbRelationshipList().size());
-        assertEquals(r1, rel.getDbRelationshipList().get(0));
-        assertTrue(!rel.isFlattened());
-        assertTrue(!rel.isReadOnly());
-
+        assertEquals(1, rel.getDbRelationships().size());
+        assertEquals(r1, rel.getDbRelationships().get(0));
+        assertFalse(rel.isFlattened());
+        assertFalse(rel.isReadOnly());
+        assertEquals(r1.isToMany(), rel.isToMany());
         rel.removeDbRelationship(r1);
-        assertEquals(0, rel.getDbRelationshipList().size());
+        assertEquals(0, rel.getDbRelationships().size());
      }
     
     public void testFlattenedRelationship() throws Exception {
@@ -152,18 +148,22 @@ public class ObjRelationshipTst extends CayenneTestCase {
 		
         rel.addDbRelationship(r1);
         rel.addDbRelationship(r2);
-        assertEquals(2, rel.getDbRelationshipList().size());
-        assertEquals(r1, rel.getDbRelationshipList().get(0));
-        assertEquals(r2, rel.getDbRelationshipList().get(1));
+        assertTrue(rel.isToMany());
+        assertEquals(2, rel.getDbRelationships().size());
+        assertEquals(r1, rel.getDbRelationships().get(0));
+        assertEquals(r2, rel.getDbRelationships().get(1));
+
         
         assertTrue(rel.isFlattened());
-        assertTrue(!rel.isReadOnly());
+        assertFalse(rel.isReadOnly());
         
         rel.removeDbRelationship(r1);
-        assertEquals(1, rel.getDbRelationshipList().size());
-        assertEquals(r2, rel.getDbRelationshipList().get(0));
-        assertTrue(!rel.isFlattened());
-        assertTrue(!rel.isReadOnly());
+        assertFalse(rel.isToMany()); //only remaining rel is r2... a toOne
+        assertEquals(1, rel.getDbRelationships().size());
+        assertEquals(r2, rel.getDbRelationships().get(0));
+        assertFalse(rel.isFlattened());
+        assertFalse(rel.isReadOnly());
+
     }
     
     public void testReadOnlyMoreThan3DbRelsRelationship() {
@@ -188,7 +188,8 @@ public class ObjRelationshipTst extends CayenneTestCase {
         
  		assertTrue(rel.isFlattened());
         assertTrue(rel.isReadOnly());
-  	
+  	    assertTrue(rel.isToMany());
+
     }
     
     //Test for a read-only flattened relationship that is readonly because it's dbrel sequence is "incorrect" (or rather, unsupported)
@@ -208,6 +209,7 @@ public class ObjRelationshipTst extends CayenneTestCase {
 		
 		assertTrue(rel.isFlattened());
 		assertTrue(rel.isReadOnly());
+		assertTrue(rel.isToMany());
     }
     
     //Test a relationship loaded from the test datamap that we know should be flattened
@@ -216,7 +218,7 @@ public class ObjRelationshipTst extends CayenneTestCase {
      	ObjRelationship theRel=(ObjRelationship)artistEnt.getRelationship("groupArray");
      	assertNotNull(theRel);
      	assertTrue(theRel.isFlattened());
-     	assertTrue(!theRel.isReadOnly());
+     	assertFalse(theRel.isReadOnly());
     }
     
     public void testBadDeleteRuleValue() {
@@ -237,5 +239,16 @@ public class ObjRelationshipTst extends CayenneTestCase {
     		e.printStackTrace();
     		fail("Should not have thrown an exception :"+e.getMessage());
     	}
+    }
+    
+    public void testWatchesDbRelChanges() {
+        DbRelationship r1 = new DbRelationship();
+        r1.setToMany(true);
+   		rel.addDbRelationship(r1);
+   		assertTrue(rel.isToMany());
+   		
+   		//rel should be watching r1 (events) to see when that changes
+   		r1.setToMany(false);
+   		assertFalse(rel.isToMany());
     }
 }

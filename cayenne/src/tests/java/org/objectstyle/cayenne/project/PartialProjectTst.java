@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002 The ObjectStyle Group
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,14 +68,6 @@ public class PartialProjectTst extends CayenneTestCase {
     protected File testProjectFile;
     protected PartialProject project;
 
-    /**
-     * Constructor for PartialProjectTst.
-     * @param name
-     */
-    public PartialProjectTst(String name) {
-        super(name);
-    }
-
     protected void setUp() throws Exception {
         // create new test directory, copy cayenne.xml in there
         File baseDir = super.getTestDir();
@@ -86,7 +78,7 @@ public class PartialProjectTst extends CayenneTestCase {
                     throw new Exception("Can't create " + tmpDir);
                 }
 
-                testProjectFile = new File(tmpDir, Configuration.DOMAIN_FILE);
+                testProjectFile = new File(tmpDir, Configuration.DEFAULT_DOMAIN_FILE);
                 break;
             }
         }
@@ -103,7 +95,7 @@ public class PartialProjectTst extends CayenneTestCase {
     public void testParentFile() throws Exception {
         assertEquals(
             testProjectFile.getParentFile().getCanonicalFile(),
-            project.getProjectDir().getCanonicalFile());
+            project.getProjectDirectory().getCanonicalFile());
     }
 
     public void testProjectFile() throws Exception {

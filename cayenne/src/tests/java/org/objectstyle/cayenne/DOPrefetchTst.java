@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,6 @@ package org.objectstyle.cayenne;
 
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.art.Artist;
 import org.objectstyle.art.Painting;
 import org.objectstyle.cayenne.exp.Expression;
@@ -66,11 +65,6 @@ import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.query.SelectQuery;
 
 public class DOPrefetchTst extends CayenneDOTestBase {
-    private static Logger logObj = Logger.getLogger(DOPrefetchTst.class);
-
-    public DOPrefetchTst(String name) {
-        super(name);
-    }
 
     public void testPrefetchToMany() throws Exception {
         Artist a1 = super.newArtist();

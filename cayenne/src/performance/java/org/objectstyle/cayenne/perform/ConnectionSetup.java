@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne.perform;
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,18 +53,19 @@ package org.objectstyle.cayenne.perform;
  * <http://objectstyle.org/>.
  *
  */
+package org.objectstyle.cayenne.perform;
 
 import java.io.InputStream;
 
 import javax.sql.DataSource;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.access.DataDomain;
-import org.objectstyle.cayenne.access.DataSourceInfo;
+import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.conf.ConfigLoader;
 import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.conf.DefaultConfiguration;
 import org.objectstyle.cayenne.conf.DriverDataSourceFactory;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.conn.PoolManager;
 import org.objectstyle.cayenne.util.ResourceLocator;
 
@@ -78,8 +78,6 @@ import org.objectstyle.cayenne.util.ResourceLocator;
   * @author Andrei Adamchik
   */
 public class ConnectionSetup  {
-    private static Logger logObj = Logger.getLogger(ConnectionSetup.class);
-
     private boolean interactive;
  
     public ConnectionSetup(boolean interactive) {
@@ -94,12 +92,14 @@ public class ConnectionSetup  {
     private DataSourceInfo getInfoFromFile() throws Exception {
 		DisconnectedFactory factory = new DisconnectedFactory();
         DefaultConfiguration conf = new DefaultConfiguration();
-		conf.setOverrideFactory(factory);
+		conf.setDataSourceFactory(factory);
         ConfigLoader loader = new ConfigLoader(conf.getLoaderDelegate());
-        InputStream in = ResourceLocator.findResourceInFileSystem(Configuration.DOMAIN_FILE);
-        if(in == null)
-            throw new RuntimeException("Can't find '" + Configuration.DOMAIN_FILE + "'.");
-
+        InputStream in = ResourceLocator.findResourceInFileSystem(Configuration.DEFAULT_DOMAIN_FILE);
+        if(in == null) {
+            throw new RuntimeException("Can't find '"
+            							+ Configuration.DEFAULT_DOMAIN_FILE
+            							+ "'.");
+		}
         
         if(!loader.loadDomains(in)) {
             throw new RuntimeException("Error loading configuration.");
@@ -107,7 +107,8 @@ public class ConnectionSetup  {
 
         DataSourceInfo dsi = factory.getDriverInfo();            
         DataDomain dom = conf.getDomain();
-        dsi.setAdapterClass(dom.getDataNodes()[0].getAdapter().getClass().getName());
+        dsi.setAdapterClassName(((DataNode)(dom.getDataNodes().iterator().next()))
+        						.getAdapter().getClass().getName());
         return dsi;
     }
 

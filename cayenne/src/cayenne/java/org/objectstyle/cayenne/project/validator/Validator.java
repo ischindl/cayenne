@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,7 @@ import org.objectstyle.cayenne.project.Project;
 import org.objectstyle.cayenne.project.ProjectPath;
 
 /** 
- * Used for validating Cayenne projects.
+ * Validator is used to validate Cayenne projects.
  * 
  * @author Andrei Adamchik
  */
@@ -109,12 +109,12 @@ public class Validator {
             while (it.hasNext()) {
                 registerError("Adapter failed to load: " + it.next(), path);
             }
-            
+
             it = status.getFailedDataSources().keySet().iterator();
             while (it.hasNext()) {
                 registerError("DataSource failed to load: " + it.next(), path);
             }
-            
+
             it = status.getFailedMapRefs().iterator();
             while (it.hasNext()) {
                 registerError("Map reference failed to load: " + it.next(), path);
@@ -159,8 +159,7 @@ public class Validator {
         int severity,
         String message,
         ProjectPath treeNodePath) {
-        ValidationInfo result =
-            new ValidationInfo(severity, message, treeNodePath);
+        ValidationInfo result = new ValidationInfo(severity, message, treeNodePath);
         validationResults.add(result);
         if (maxSeverity < severity) {
             maxSeverity = severity;
@@ -175,7 +174,7 @@ public class Validator {
         registerValidated(ValidationInfo.WARNING, message, treeNodePath);
     }
 
-    /** Return collection of ValidationDisplayHandler objects from last validation. */
+    /** Return collection of ValidationInfo objects from last validation. */
     public List validationResults() {
         return validationResults;
     }
@@ -188,11 +187,21 @@ public class Validator {
      * if there were errors.
      */
     public synchronized int validate() {
+        return validate(project.treeNodes());
+    }
+
+	/** 
+	 * Validates a set of tree nodes passed as an iterator.
+	 * 
+	 * @return ValidationInfo.VALID if no errors were found, 
+	 * or an error code of the error with the highest severity 
+	 * if there were errors.
+	 */
+    public synchronized int validate(Iterator treeNodes) {
         reset();
 
-        Iterator it = project.treeNodes();
-        while (it.hasNext()) {
-            TreeNodeValidator.validate((ProjectPath) it.next(), this);
+        while (treeNodes.hasNext()) {
+            TreeNodeValidator.validate((ProjectPath) treeNodes.next(), this);
         }
 
         return getMaxSeverity();

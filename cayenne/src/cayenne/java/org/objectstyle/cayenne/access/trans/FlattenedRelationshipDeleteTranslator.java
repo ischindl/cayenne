@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -80,7 +80,7 @@ public class FlattenedRelationshipDeleteTranslator extends DeleteTranslator {
 	
 	protected DbEntity getDbEntity() {
 		ObjRelationship relationship = this.getRelationship();
-		DbRelationship firstRel = (DbRelationship) relationship.getDbRelationshipList().get(0);
+		DbRelationship firstRel = (DbRelationship) relationship.getDbRelationships().get(0);
 		return (DbEntity) firstRel.getTargetEntity();
 	}
 

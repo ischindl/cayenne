@@ -1,0 +1,41 @@
+<document>
+<title>CayenneModeler Guide - Running CayenneModeler</title>
+<toc name="toc-modeler-guide" chapter="1. Introduction"/>
+<body>
+ <section name="1. Introduction">
+    <subsection name="1.1. Running CayenneModeler">
+        	<p>CayenneModeler is a regular Java application and can be run on
+        	a JSDK1.4 compatible JVM. Main class is
+        	<code>org.objectstyle.cayenne.modeler.Editor</code>. For convenience
+        	Cayenne distribution provides run scripts to start modeler on
+        	Windows
+        	and UNIX platforms. To take advantage of these scripts, user must
+        	set CAYENNE_HOME <i>(optional)</i> 
+        	and JAVA_HOME environment variables as described in the
+        	<a href="../userguide/install/install.html#inst">installation section</a>.</p>
+        	
+        	<p>To run CayenneModeler, simply doubleclick the appropriate file.
+        	To run them from the command line, use the following commands. Windows:
+        	</p>
+
+        	<source>%CAYENNE_HOME%\bin\modeler.bat</source>
+
+        	<p>UNIX:</p>
+
+        	<source>$CAYENNE_HOME/bin/modeler.sh</source>
+        	
+        	<p></p>
+        	<panel name="Note:">If modeler is to be used for database reverse engineering, make
+        	sure that JDBC drivers for the target database are in the CLASSPATH.
+        	Alternatively you can modify the startup scripts mentioned above 
+        	to build appropriate CLASSPATH on the fly, that includes all drivers.
+        	</panel>
+        	</subsection>
+    </section>
+</body>
+</document>
+
+
+
+
+

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,13 +55,12 @@
  */
 package org.objectstyle.cayenne.access;
 
-import java.util.Date;
-
 import org.objectstyle.art.ArtGroup;
 import org.objectstyle.art.Artist;
 import org.objectstyle.art.ArtistExhibit;
 import org.objectstyle.art.DeleteRuleTest1;
 import org.objectstyle.art.DeleteRuleTest2;
+import org.objectstyle.art.DeleteRuleTest3;
 import org.objectstyle.art.Exhibit;
 import org.objectstyle.art.Gallery;
 import org.objectstyle.art.Painting;
@@ -75,203 +74,223 @@ import org.objectstyle.cayenne.unittest.CayenneTestDatabaseSetup;
  * @author Craig Miskell
  */
 public class DataContextDeleteRulesTst extends CayenneTestCase {
-	private DataContext context;
 
-	/**
-	 * Constructor for DataContextDeleteRulesTst.
-	 * @param name
-	 */
-	public DataContextDeleteRulesTst(String name) {
-		super(name);
-	}
+    private DataContext context;
 
-	public void setUp() throws java.lang.Exception {
-		CayenneTestDatabaseSetup setup = getDatabaseSetup();
-		setup.cleanTableData();
+    public void setUp() throws java.lang.Exception {
+        CayenneTestDatabaseSetup setup = getDatabaseSetup();
+        setup.cleanTableData();
 
-		DataDomain dom = getDomain();
-		setup.createPkSupportForMapEntities(dom.getDataNodes()[0]);
+        DataDomain dom = getDomain();
+        setup.createPkSupportForMapEntities(
+            (DataNode) dom.getDataNodes().iterator().next());
 
-		context = dom.createDataContext();
-	}
+        context = dom.createDataContext();
+    }
 
-	public void testNullifyToOne() {
-		//ArtGroup toParentGroup
-		ArtGroup parentGroup =
-			(ArtGroup) context.createAndRegisterNewObject("ArtGroup");
-		parentGroup.setName("Parent");
+    public void testNullifyToOne() {
+        //ArtGroup toParentGroup
+        ArtGroup parentGroup = (ArtGroup) context.createAndRegisterNewObject("ArtGroup");
+        parentGroup.setName("Parent");
 
-		ArtGroup childGroup =
-			(ArtGroup) context.createAndRegisterNewObject("ArtGroup");
-		childGroup.setName("Child");
-		parentGroup.addToChildGroupsArray(childGroup);
+        ArtGroup childGroup = (ArtGroup) context.createAndRegisterNewObject("ArtGroup");
+        childGroup.setName("Child");
+        parentGroup.addToChildGroupsArray(childGroup);
 
-		//Check to make sure that the relationships are both exactly correct
-		// before starting.  We're not really testing this, but it is imperative
-		// that it is correct before testing the real details.
-		assertEquals(parentGroup, childGroup.getToParentGroup());
-		assertTrue(parentGroup.getChildGroupsArray().contains(childGroup));
+        //Check to make sure that the relationships are both exactly correct
+        // before starting.  We're not really testing this, but it is imperative
+        // that it is correct before testing the real details.
+        assertEquals(parentGroup, childGroup.getToParentGroup());
+        assertTrue(parentGroup.getChildGroupsArray().contains(childGroup));
 
-		//Always good to commit before deleting... bad things happen otherwise
-		context.commitChanges();
+        //Always good to commit before deleting... bad things happen otherwise
+        context.commitChanges();
 
-		context.deleteObject(childGroup);
+        context.deleteObject(childGroup);
 
-		//The things we are testing.
-		assertTrue(!parentGroup.getChildGroupsArray().contains(childGroup));
-		//Although deleted, the property should be null (good cleanup policy)
-		//assertNull(childGroup.getToParentGroup());
+        //The things we are testing.
+        assertFalse(parentGroup.getChildGroupsArray().contains(childGroup));
+        //Although deleted, the property should be null (good cleanup policy)
+        //assertNull(childGroup.getToParentGroup());
 
-		//And be sure that the commit works afterwards, just for sanity
-		context.commitChanges();
-	}
+        //And be sure that the commit works afterwards, just for sanity
+        context.commitChanges();
+    }
 
-	public void testNullifyToManyFlattened() {
-		//ArtGroup artistArray
-		ArtGroup aGroup =
-			(ArtGroup) context.createAndRegisterNewObject("ArtGroup");
-		aGroup.setName("Group Name");
-		Artist anArtist = (Artist) context.createAndRegisterNewObject("Artist");
-		anArtist.setArtistName("A Name");
-		aGroup.addToArtistArray(anArtist);
+    public void testNullifyToManyFlattened() {
+        //ArtGroup artistArray
+        ArtGroup aGroup = (ArtGroup) context.createAndRegisterNewObject("ArtGroup");
+        aGroup.setName("Group Name");
+        Artist anArtist = (Artist) context.createAndRegisterNewObject("Artist");
+        anArtist.setArtistName("A Name");
+        aGroup.addToArtistArray(anArtist);
 
-		//Preconditions - good to check to be sure
-		assertTrue(aGroup.getArtistArray().contains(anArtist));
-		assertTrue(anArtist.getGroupArray().contains(aGroup));
-		context.commitChanges();
+        //Preconditions - good to check to be sure
+        assertTrue(aGroup.getArtistArray().contains(anArtist));
+        assertTrue(anArtist.getGroupArray().contains(aGroup));
+        context.commitChanges();
 
-		context.deleteObject(aGroup);
+        context.deleteObject(aGroup);
 
-		//The things to test
-		assertTrue(!anArtist.getGroupArray().contains(aGroup));
-		//Although the group is deleted, the array should still be 
-		//cleaned up correctly
-		//assertTrue(!aGroup.getArtistArray().contains(anArtist));
-		context.commitChanges();
+        //The things to test
+        assertFalse(anArtist.getGroupArray().contains(aGroup));
+        //Although the group is deleted, the array should still be 
+        //cleaned up correctly
+        //assertFalse(aGroup.getArtistArray().contains(anArtist));
+        context.commitChanges();
 
-	}
+    }
 
-	public void testNullifyToManyNonFlattened() {
-		//ArtGroup childGroupsArray
-		ArtGroup parentGroup =
-			(ArtGroup) context.createAndRegisterNewObject("ArtGroup");
-		parentGroup.setName("Parent");
+    public void testNullifyToManyNonFlattened() {
+        //ArtGroup childGroupsArray
+        ArtGroup parentGroup = (ArtGroup) context.createAndRegisterNewObject("ArtGroup");
+        parentGroup.setName("Parent");
 
-		ArtGroup childGroup =
-			(ArtGroup) context.createAndRegisterNewObject("ArtGroup");
-		childGroup.setName("Child");
-		parentGroup.addToChildGroupsArray(childGroup);
+        ArtGroup childGroup = (ArtGroup) context.createAndRegisterNewObject("ArtGroup");
+        childGroup.setName("Child");
+        parentGroup.addToChildGroupsArray(childGroup);
 
-		//Preconditions - good to check to be sure
-		assertEquals(parentGroup, childGroup.getToParentGroup());
-		assertTrue(parentGroup.getChildGroupsArray().contains(childGroup));
+        //Preconditions - good to check to be sure
+        assertEquals(parentGroup, childGroup.getToParentGroup());
+        assertTrue(parentGroup.getChildGroupsArray().contains(childGroup));
 
-		context.commitChanges();
-		context.deleteObject(parentGroup);
+        context.commitChanges();
+        context.deleteObject(parentGroup);
 
-		//The things we are testing.
-		assertNull(childGroup.getToParentGroup());
+        //The things we are testing.
+        assertNull(childGroup.getToParentGroup());
 
-		//Although deleted, the property should be null (good cleanup policy)
-		//assertTrue(!parentGroup.getChildGroupsArray().contains(childGroup));
-		context.commitChanges();
-	}
+        //Although deleted, the property should be null (good cleanup policy)
+        //assertFalse(parentGroup.getChildGroupsArray().contains(childGroup));
+        context.commitChanges();
+    }
 
-	public void testCascadeToOne() {
-		//Painting toPaintingInfo
-		Painting painting =
-			(Painting) context.createAndRegisterNewObject("Painting");
-		painting.setPaintingTitle("A Title");
+    public void testCascadeToOne() {
+        //Painting toPaintingInfo
+        Painting painting = (Painting) context.createAndRegisterNewObject("Painting");
+        painting.setPaintingTitle("A Title");
 
-		PaintingInfo info =
-			(PaintingInfo) context.createAndRegisterNewObject("PaintingInfo");
-		painting.setToPaintingInfo(info);
+        PaintingInfo info =
+            (PaintingInfo) context.createAndRegisterNewObject("PaintingInfo");
+        painting.setToPaintingInfo(info);
 
-		//Must commit before deleting.. this relationship is dependent,
-		// and everything must be committed for certain things to work.
-		context.commitChanges();
+        //Must commit before deleting.. this relationship is dependent,
+        // and everything must be committed for certain things to work.
+        context.commitChanges();
 
-		context.deleteObject(painting);
+        context.deleteObject(painting);
 
-		//info must also be deleted
-		assertEquals(PersistenceState.DELETED, info.getPersistenceState());
-		assertNull(info.getPainting());
-		assertNull(painting.getToPaintingInfo());
-		context.commitChanges();
-	}
+        //info must also be deleted
+        assertEquals(PersistenceState.DELETED, info.getPersistenceState());
+        assertNull(info.getPainting());
+        assertNull(painting.getToPaintingInfo());
+        context.commitChanges();
+    }
 
-	public void testCascadeToMany() {
-		//Artist artistExhibitArray
-		Artist anArtist = (Artist) context.createAndRegisterNewObject("Artist");
-		anArtist.setArtistName("A Name");
-		Exhibit anExhibit =
-			(Exhibit) context.createAndRegisterNewObject("Exhibit");
-		anExhibit.setClosingDate(new Date());
-		anExhibit.setOpeningDate(new Date());
-		
-		//Needs a gallery... required for data integrity
-		Gallery gallery =
-			(Gallery) context.createAndRegisterNewObject("Gallery");
-		gallery.setGalleryName("A Name");
-		
-		anExhibit.setToGallery(gallery);
-		
-		ArtistExhibit artistExhibit =
-			(ArtistExhibit) context.createAndRegisterNewObject("ArtistExhibit");
+    public void testCascadeToMany() {
+        //Artist artistExhibitArray
+        Artist anArtist = (Artist) context.createAndRegisterNewObject("Artist");
+        anArtist.setArtistName("A Name");
+        Exhibit anExhibit = (Exhibit) context.createAndRegisterNewObject("Exhibit");
+        anExhibit.setClosingDate(new java.sql.Timestamp(System.currentTimeMillis()));
+        anExhibit.setOpeningDate(new java.sql.Timestamp(System.currentTimeMillis()));
 
-		artistExhibit.setToArtist(anArtist);
-		artistExhibit.setToExhibit(anExhibit);
-		context.commitChanges();
+        //Needs a gallery... required for data integrity
+        Gallery gallery = (Gallery) context.createAndRegisterNewObject("Gallery");
+        gallery.setGalleryName("A Name");
 
-		context.deleteObject(anArtist);
+        anExhibit.setToGallery(gallery);
 
-		//Test that the link record was deleted, and removed from the relationship
-		assertEquals(
-			PersistenceState.DELETED,
-			artistExhibit.getPersistenceState());
-		assertTrue(!anArtist.getArtistExhibitArray().contains(artistExhibit));
-		context.commitChanges();
-	}
+        ArtistExhibit artistExhibit =
+            (ArtistExhibit) context.createAndRegisterNewObject("ArtistExhibit");
 
-	public void testDenyToOne() {
-		//DeleteRuleTest1 test2
-		DeleteRuleTest1 test1 =
-			(DeleteRuleTest1) context.createAndRegisterNewObject(
-				"DeleteRuleTest1");
-		DeleteRuleTest2 test2 =
-			(DeleteRuleTest2) context.createAndRegisterNewObject(
-				"DeleteRuleTest2");
-		test1.setTest2(test2);
-		context.commitChanges();
+        artistExhibit.setToArtist(anArtist);
+        artistExhibit.setToExhibit(anExhibit);
+        context.commitChanges();
 
-		try {
-			context.deleteObject(test1);
-			fail("Should have thrown an exception");
-		} catch (Exception e) {
-			//GOOD!
-		}
-		context.commitChanges();
+        context.deleteObject(anArtist);
 
-	}
+        //Test that the link record was deleted, and removed from the relationship
+        assertEquals(PersistenceState.DELETED, artistExhibit.getPersistenceState());
+        assertFalse(anArtist.getArtistExhibitArray().contains(artistExhibit));
+        context.commitChanges();
+    }
 
-	public void testDenyToMany() {
-		//Gallery paintingArray
-		Gallery gallery =
-			(Gallery) context.createAndRegisterNewObject("Gallery");
-		gallery.setGalleryName("A Name");
-		Painting painting =
-			(Painting) context.createAndRegisterNewObject("Painting");
-		painting.setPaintingTitle("A Title");
-		gallery.addToPaintingArray(painting);
-		context.commitChanges();
+    public void testDenyToOne() {
+        //DeleteRuleTest1 test2
+        DeleteRuleTest1 test1 =
+            (DeleteRuleTest1) context.createAndRegisterNewObject("DeleteRuleTest1");
+        DeleteRuleTest2 test2 =
+            (DeleteRuleTest2) context.createAndRegisterNewObject("DeleteRuleTest2");
+        test1.setTest2(test2);
+        context.commitChanges();
 
-		try {
-			context.deleteObject(gallery);
-			fail("Should have thrown an exception");
-		} catch (Exception e) {
-			//GOOD!
-		}
-		context.commitChanges();
-	}
+        try {
+            context.deleteObject(test1);
+            fail("Should have thrown an exception");
+        }
+        catch (Exception e) {
+            //GOOD!
+        }
+        context.commitChanges();
+
+    }
+
+    public void testDenyToMany() {
+        //Gallery paintingArray
+        Gallery gallery = (Gallery) context.createAndRegisterNewObject("Gallery");
+        gallery.setGalleryName("A Name");
+        Painting painting = (Painting) context.createAndRegisterNewObject("Painting");
+        painting.setPaintingTitle("A Title");
+        gallery.addToPaintingArray(painting);
+        context.commitChanges();
+
+        try {
+            context.deleteObject(gallery);
+            fail("Should have thrown an exception");
+        }
+        catch (Exception e) {
+            //GOOD!
+        }
+        context.commitChanges();
+    }
+
+    public void testNoActionToOne() {
+        DeleteRuleTest2 test2 =
+            (DeleteRuleTest2) context.createAndRegisterNewObject("DeleteRuleTest2");
+        DeleteRuleTest3 test3 =
+            (DeleteRuleTest3) context.createAndRegisterNewObject("DeleteRuleTest3");
+        test3.setToDeleteRuleTest2(test2);
+        context.commitChanges();
+
+        try {
+            context.deleteObject(test3);
+            context.commitChanges();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            fail("Shouldn't have thrown an exception");
+        }
+
+    }
+
+    public void testNoActionToMany() {
+        DeleteRuleTest2 test2 =
+            (DeleteRuleTest2) context.createAndRegisterNewObject("DeleteRuleTest2");
+        DeleteRuleTest3 test3 =
+            (DeleteRuleTest3) context.createAndRegisterNewObject("DeleteRuleTest3");
+        test3.setToDeleteRuleTest2(test2);
+        context.commitChanges();
+
+        try {
+			context.deleteObject(test2);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            fail("Shouldn't have thrown an exception");
+        }
+        
+        // don't commit, since this will cause a constraint exception
+    }
 
 }

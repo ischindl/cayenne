@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -93,11 +93,11 @@ public class DataMapValidator extends TreeNodeValidator {
         
         boolean unlinked = true;
         int nodeCount = 0;
-        Iterator it = domain.getDataNodeList().iterator();
+        Iterator it = domain.getDataNodes().iterator();
         while(it.hasNext()) {
         	DataNode node = (DataNode)it.next();
         	nodeCount++;
-        	if(node.getMapList().contains(map)) {
+        	if(node.getDataMaps().contains(map)) {
         		unlinked = false;
         		break;
         	}
@@ -122,7 +122,7 @@ public class DataMapValidator extends TreeNodeValidator {
         }
 
         // check for duplicate names in the parent context
-        Iterator it = domain.getMapList().iterator();
+        Iterator it = domain.getDataMaps().iterator();
         while (it.hasNext()) {
             DataMap otherMap = (DataMap) it.next();
             if (otherMap == map) {

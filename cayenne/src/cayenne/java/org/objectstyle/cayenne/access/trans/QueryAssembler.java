@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,6 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.access.QueryLogger;
 import org.objectstyle.cayenne.access.QueryTranslator;
-import org.objectstyle.cayenne.access.types.ExtendedType;
 import org.objectstyle.cayenne.map.DbAttribute;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.DbRelationship;
@@ -94,12 +93,12 @@ public abstract class QueryAssembler extends QueryTranslator {
      * <code>createStatement</code>. Usually there is no need
      * to invoke it explicitly. 
      */
-    public abstract String createSqlString() throws java.lang.Exception;
+    public abstract String createSqlString() throws Exception;
 
     public String aliasForTable(DbEntity ent, DbRelationship rel) {
         return aliasForTable(ent); //Default implementation
     }
-    
+
     /** 
      * Returns a name that can be used as column alias.
      * This can be one of the following:
@@ -133,7 +132,11 @@ public abstract class QueryAssembler extends QueryTranslator {
     public PreparedStatement createStatement(Level logLevel) throws Exception {
         long t1 = System.currentTimeMillis();
         String sqlStr = createSqlString();
-        QueryLogger.logQuery(logLevel, sqlStr, values, System.currentTimeMillis() - t1);
+        QueryLogger.logQuery(
+            logLevel,
+            sqlStr,
+            values,
+            System.currentTimeMillis() - t1);
         PreparedStatement stmt = con.prepareStatement(sqlStr);
         initStatement(stmt);
         return stmt;
@@ -161,17 +164,7 @@ public abstract class QueryAssembler extends QueryTranslator {
                 } else {
                     int type = attr.getType();
                     int precision = attr.getPrecision();
-
-                    if (val == null)
-                        stmt.setNull(i + 1, type);
-                    else {
-                        ExtendedType map =
-                            adapter.getTypeConverter().getRegisteredType(
-                                val.getClass().getName());
-                        Object jdbcVal =
-                            (map == null) ? val : map.toJdbcObject(val, type);
-                        stmt.setObject(i + 1, jdbcVal, type, precision);
-                    }
+					adapter.bindParameter(stmt, val, i + 1, type, precision);
                 }
             }
         }

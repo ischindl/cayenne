@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,13 +65,6 @@ import junit.framework.TestCase;
 public class EOModelFileFilterTst extends TestCase {
 	protected EOModelFileFilter filter;
 
-	/**
-	 * Constructor for EOModelFileFilterTst.
-	 */
-	public EOModelFileFilterTst(String name) {
-		super(name);
-	}
-	
 	public void setUp() throws Exception {
 		filter = new EOModelFileFilter();
 	}
@@ -81,7 +74,7 @@ public class EOModelFileFilterTst extends TestCase {
 	}
 	
 	public void testRejectIndexEOM() throws Exception {
-		assertTrue(!filter.accept(new File("index.eomodeld")));
+		assertFalse(filter.accept(new File("index.eomodeld")));
 	}
 	
 	public void testAcceptIndexEOM() throws Exception {
@@ -89,7 +82,7 @@ public class EOModelFileFilterTst extends TestCase {
 	}
 	
 	public void testRejectOther() throws Exception {
-		assertTrue(!filter.accept(new File("somefile.txt")));
+		assertFalse(filter.accept(new File("somefile.txt")));
 	}
 }
 

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,11 +63,6 @@ public class TernaryExpressionTst extends CayenneTestCase {
     // non-existent type
     private static final int defaultType = -37;
     protected TernaryExpression expr;
-    
-    public TernaryExpressionTst(String name) {
-        super(name);
-    }
-    
     
     protected void setUp() throws java.lang.Exception {
         expr = new TernaryExpression(defaultType);

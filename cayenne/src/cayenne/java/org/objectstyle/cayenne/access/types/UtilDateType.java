@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne.access.types;
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,16 +53,27 @@ package org.objectstyle.cayenne.access.types;
  * <http://objectstyle.org/>.
  *
  */
+package org.objectstyle.cayenne.access.types;
 
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Types;
 
-public class UtilDateType implements ExtendedType {
+/**
+ * ExtendedType that allows Java application to use java.util.Date
+ * transparently for all three database date/time types: TIME, DATE, TIMESTAMP.
+ * 
+ * @author Andrei Adamchik
+ */
+public class UtilDateType extends AbstractType {
+
     public String getClassName() {
-        return "java.util.Date";
+        return java.util.Date.class.getName();
     }
 
-    public Object toJdbcObject(Object val, int type) throws Exception {
+    protected Object convertToJdbcObject(Object val, int type)
+        throws Exception {
         if (type == Types.DATE)
             return new java.sql.Date(((java.util.Date) val).getTime());
         else if (type == Types.TIME)
@@ -72,19 +82,49 @@ public class UtilDateType implements ExtendedType {
             return new java.sql.Timestamp(((java.util.Date) val).getTime());
         else
             throw new IllegalArgumentException(
-                "Only date/time types can be used for '" + getClassName() + "'.");
+                "Only date/time types can be used for '"
+                    + getClassName()
+                    + "'.");
     }
 
-    public Object materializeObject(ResultSet rs, int index, int type) throws Exception {
+    public Object materializeObject(ResultSet rs, int index, int type)
+        throws Exception {
         Object val = rs.getObject(index);
 
         // all sql time/date classes are subclasses of java.util.Date,
         // so lets cast it to Date,
-        // if it is not date, ClasscastException will be thrown,
+        // if it is not date, ClassCastException will be thrown,
         // which is what we want
         return (rs.wasNull())
             ? null
             : new java.util.Date(((java.util.Date) val).getTime());
     }
+    
+    public Object materializeObject(CallableStatement cs, int index, int type)
+         throws Exception {
+         Object val = cs.getObject(index);
 
+         // all sql time/date classes are subclasses of java.util.Date,
+         // so lets cast it to Date,
+         // if it is not date, ClassCastException will be thrown,
+         // which is what we want
+         return (cs.wasNull())
+             ? null
+             : new java.util.Date(((java.util.Date) val).getTime());
+     }
+
+    public void setJdbcObject(
+        PreparedStatement st,
+        Object val,
+        int pos,
+        int type,
+        int precision)
+        throws Exception {
+        super.setJdbcObject(
+            st,
+            convertToJdbcObject(val, type),
+            pos,
+            type,
+            precision);
+    }
 }

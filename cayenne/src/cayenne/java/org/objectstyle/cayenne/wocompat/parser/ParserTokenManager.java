@@ -4,31 +4,11 @@ package org.objectstyle.cayenne.wocompat.parser;
 
 public class ParserTokenManager implements ParserConstants
 {
-private final int jjStopStringLiteralDfa_0(int pos, long active0)
-{
-   switch (pos)
-   {
-      default :
-         return -1;
-   }
-}
-private final int jjStartNfa_0(int pos, long active0)
-{
-   return jjMoveNfa_0(jjStopStringLiteralDfa_0(pos, active0), pos + 1);
-}
 private final int jjStopAtPos(int pos, int kind)
 {
    jjmatchedKind = kind;
    jjmatchedPos = pos;
    return pos + 1;
-}
-private final int jjStartNfaWithStates_0(int pos, int kind, int state)
-{
-   jjmatchedKind = kind;
-   jjmatchedPos = pos;
-   try { curChar = input_stream.readChar(); }
-   catch(java.io.IOException e) { return pos + 1; }
-   return jjMoveNfa_0(state, pos + 1);
 }
 private final int jjMoveStringLiteralDfa0_0()
 {
@@ -78,11 +58,6 @@ private final void jjCheckNAddStates(int start, int end)
    do {
       jjCheckNAdd(jjnextStates[start]);
    } while (start++ != end);
-}
-private final void jjCheckNAddStates(int start)
-{
-   jjCheckNAdd(jjnextStates[start]);
-   jjCheckNAdd(jjnextStates[start + 1]);
 }
 static final long[] jjbitVec0 = {
    0x0L, 0x0L, 0xffffffffffffffffL, 0xffffffffffffffffL
@@ -245,14 +220,6 @@ private final int jjStopStringLiteralDfa_1(int pos, long active0)
 private final int jjStartNfa_1(int pos, long active0)
 {
    return jjMoveNfa_1(jjStopStringLiteralDfa_1(pos, active0), pos + 1);
-}
-private final int jjStartNfaWithStates_1(int pos, int kind, int state)
-{
-   jjmatchedKind = kind;
-   jjmatchedPos = pos;
-   try { curChar = input_stream.readChar(); }
-   catch(java.io.IOException e) { return pos + 1; }
-   return jjMoveNfa_1(state, pos + 1);
 }
 private final int jjMoveStringLiteralDfa0_1()
 {
@@ -717,9 +684,9 @@ final void MoreLexicalActions()
          jjimageLen = 0;
         int oct;
         len = image.length();
-        oct = ((int)(image.charAt(len-1)-'0')) +
-              8 * ((int)(image.charAt(len-2)-'0')) +
-              64 * ((int)(image.charAt(len-3)-'0'));
+        oct = (image.charAt(len-1)-'0') +
+              8 * (image.charAt(len-2)-'0') +
+              64 * (image.charAt(len-3)-'0');
         image.setCharAt(len-4, (char)oct);
         image.setLength(len-3);
          break;
@@ -732,7 +699,7 @@ final void MoreLexicalActions()
         int c, base=1,hex=0;
         len = image.length();
         for(int i=0; i<4; ++i) {
-          c=(int)image.charAt(len-(i+1));
+          c=image.charAt(len-(i+1));
           if (c<='9') c-='0';
             else if (c<='F') c = (c -'A') + 10;
               else c =(c -'a') + 10;

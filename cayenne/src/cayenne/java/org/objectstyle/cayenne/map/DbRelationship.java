@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,6 +62,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.objectstyle.cayenne.CayenneRuntimeException;
+import org.objectstyle.cayenne.event.EventManager;
+import org.objectstyle.cayenne.event.EventSubject;
+import org.objectstyle.cayenne.map.event.RelationshipEvent;
 
 /**
  * A DbRelationship is a descriptor of a database inter-table relationship
@@ -71,23 +74,29 @@ import org.objectstyle.cayenne.CayenneRuntimeException;
  * @author Andrei Adamchik
  */
 public class DbRelationship extends Relationship {
+	//DbRelationship events
+    public static final EventSubject PROPERTY_DID_CHANGE =
+        EventSubject.getSubject(DbRelationship.class, "PropertyDidChange");
+
 	// The columns through which the join is implemented.
 	protected List joins = new ArrayList();
-
+	
 	// Is relationship from source to target points to dependent primary
 	//  key (primary key column of destination table that is also a FK to the source column)
 	protected boolean toDependentPK;
 
-	public DbRelationship() {}
+	public DbRelationship() {
+		super();
+	}
 
 	public DbRelationship(String name) {
 		super(name);
 	}
 
 	public DbRelationship(DbEntity src, DbEntity target, DbAttributePair pr) {
-		setSourceEntity(src);
-		setTargetEntity(target);
-		addJoin(pr);
+		this.setSourceEntity(src);
+		this.setTargetEntity(target);
+		this.addJoin(pr);
 	}
 
 	public Entity getTargetEntity() {
@@ -114,11 +123,11 @@ public class DbRelationship extends Relationship {
 	 * join semantics. Returns null if no such relationship exists. 
 	 */
 	public DbRelationship getReverseRelationship() {
-		Entity target = getTargetEntity();
-		Entity src = getSourceEntity();
+		Entity target = this.getTargetEntity();
+		Entity src = this.getSourceEntity();
 		DbAttributePair testJoin = new DbAttributePair(null, null);
 
-		Iterator it = target.getRelationshipList().iterator();
+		Iterator it = target.getRelationships().iterator();
 		while (it.hasNext()) {
 			DbRelationship rel = (DbRelationship) it.next();
 			if (rel.getTargetEntity() != src)
@@ -155,7 +164,7 @@ public class DbRelationship extends Relationship {
 			return false;
 		}
 
-        DbRelationship revRel = getReverseRelationship();
+		DbRelationship revRel = getReverseRelationship();
 		return (revRel != null) ? revRel.isToDependentPK() : false;
 	}
 
@@ -173,30 +182,32 @@ public class DbRelationship extends Relationship {
 		toDependentPK = flag;
 	}
 
-    /**
-     * Returns a list of joins. List is returned by reference, so 
-     * any modifications of the list will affect this relationship.
-     */
+	/**
+	 * Returns a list of joins. List is returned by reference, so 
+	 * any modifications of the list will affect this relationship.
+	 */
 	public List getJoins() {
 		return joins;
 	}
 
 	/** Adds a join. */
-	public void addJoin(DbAttributePair temp) {
-		joins.add(temp);
+	public void addJoin(DbAttributePair join) {
+		joins.add(join);
 	}
 
-	public void removeJoin(DbAttributePair temp) {
-		joins.remove(temp);
+	public void removeJoin(DbAttributePair join) {
+		joins.remove(join);
 	}
 
 	public void removeAllJoins() {
 		joins.clear();
 	}
 
-	public void setJoins(java.util.List new_joins) {
-		if (null != new_joins)
-			joins = new_joins;
+	public void setJoins(List newJoins) {
+		if (null != newJoins) {
+			this.removeAllJoins();
+			joins.addAll(newJoins);
+		}
 	}
 
 	/** Creates a snapshot of primary key attributes of a target
@@ -207,29 +218,55 @@ public class DbRelationship extends Relationship {
 	  * if snapshot is missing id components. */
 	public Map targetPkSnapshotWithSrcSnapshot(Map srcSnapshot) {
 
-		if (isToMany())
+		if (isToMany()) {
 			throw new CayenneRuntimeException("Only 'to one' relationships support this method.");
-
-		Map idMap = new HashMap();
-		int len = joins.size();
-		int nulls = 0;
-		for (int i = 0; i < len; i++) {
-			DbAttributePair join = (DbAttributePair) joins.get(i);
-			Object val = srcSnapshot.get(join.getSource().getName());
-			if (val == null)
-				nulls++;
-			else
-				idMap.put(join.getTarget().getName(), val);
 		}
 
-		if (nulls == 0)
+		Map idMap = new HashMap();
+
+		int numJoins = joins.size();
+		int foundNulls = 0;
+
+		for (int i = 0; i < numJoins; i++) {
+			DbAttributePair join = (DbAttributePair)joins.get(i);
+			Object val = srcSnapshot.get(join.getSource().getName());
+			if (val == null) {
+				foundNulls++;
+			}
+			else {
+				idMap.put(join.getTarget().getName(), val);
+			}
+		}
+
+		if (foundNulls == 0) {
 			return idMap;
-		else if (nulls == len)
+		}
+		else if (foundNulls == numJoins) {
 			return null;
-		else
+		}
+		else {
 			throw new CayenneRuntimeException("Some parts of FK are missing in snapshot.");
+		}
 	}
 
+	/** Common code to src?kSnapshotWithTargetSnapshot.  Both are functionally the
+	 * same, except for the name, and whether they operate on a toMany or a toOne.*/
+	private Map srcSnapshotWithTargetSnapshot(Map targetSnapshot) {
+		Map idMap = new HashMap();
+		int len = joins.size();
+		for (int i = 0; i < len; i++) {
+			DbAttributePair join = (DbAttributePair) joins.get(i);
+			Object val = targetSnapshot.get(join.getTarget().getName());
+			if (val == null) {
+				throw new CayenneRuntimeException("Some parts of FK are missing in snapshot.");
+			}
+			else {
+				idMap.put(join.getSource().getName(), val);
+			}
+		}
+
+		return idMap;
+	}
 	/** 
 	 * Creates a snapshot of foreign key attributes of a source
 	 * object of this relationship based on a snapshot of a target.
@@ -241,18 +278,30 @@ public class DbRelationship extends Relationship {
 
 		if (isToMany())
 			throw new CayenneRuntimeException("Only 'to one' relationships support this method.");
+		return srcSnapshotWithTargetSnapshot(targetSnapshot);
+	}
 
-		Map idMap = new HashMap();
-		int len = joins.size();
-		for (int i = 0; i < len; i++) {
-			DbAttributePair join = (DbAttributePair) joins.get(i);
-			Object val = targetSnapshot.get(join.getTarget().getName());
-			if (val == null)
-				throw new CayenneRuntimeException("Some parts of PK are missing in snapshot.");
-			else
-				idMap.put(join.getSource().getName(), val);
-		}
+	/** 
+	 * Creates a snapshot of primary key attributes of a source
+	 * object of this relationship based on a snapshot of a target.
+	 * Only "to-many" relationships are supported.
+	 * Throws CayenneRuntimeException if relationship is "to one" or
+	 * if snapshot is missing id components.
+	 */
+	public Map srcPkSnapshotWithTargetSnapshot(Map targetSnapshot) {
+		if (!isToMany())
+			throw new CayenneRuntimeException("Only 'to many' relationships support this method.");
+		return srcSnapshotWithTargetSnapshot(targetSnapshot);
+	}
+	
+	/** Set relationship multiplicity. */
+	public void setToMany(boolean toMany) {
+		this.toMany = toMany;
+		this.firePropertyDidChange();
+	}
 
-		return idMap;
+	protected void firePropertyDidChange() {
+		RelationshipEvent event=new RelationshipEvent(this, this, this.getSourceEntity());
+		EventManager.getDefaultManager().postEvent(event, PROPERTY_DID_CHANGE);
 	}
 }

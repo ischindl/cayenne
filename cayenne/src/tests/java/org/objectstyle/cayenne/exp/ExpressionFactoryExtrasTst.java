@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,17 +65,13 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
 
 public class ExpressionFactoryExtrasTst extends CayenneTestCase {
     protected TstTraversalHandler handler;    
-    
-    public ExpressionFactoryExtrasTst(String name) {
-        super(name);
-    }
-    
+
     
     protected void setUp() throws java.lang.Exception {                
         handler = new TstTraversalHandler();
     }
-    
-    
+
+
     public void testBinaryPathExp() throws Exception {
         String path = "path1.path2";
         Object o2 = new Object();
@@ -133,7 +129,7 @@ public class ExpressionFactoryExtrasTst extends CayenneTestCase {
             
             // populate map
             for(int i = 1; i <= n; i++) {
-                list.add(ExpressionFactory.binaryExp(Expression.EQUAL_TO, (Object)("k" + i), "v" + i));
+                list.add(ExpressionFactory.binaryExp(Expression.EQUAL_TO, ("k" + i), "v" + i));
             }
             
             Expression exp = ExpressionFactory.joinExp(Expression.AND, list);

@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002 The ObjectStyle Group
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,7 +66,7 @@ import javax.sql.DataSource;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.objectstyle.cayenne.ConfigException;
+import org.objectstyle.cayenne.ConfigurationException;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.dba.DbAdapter;
@@ -88,7 +88,7 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
     protected Map domains = new HashMap();
     protected ConfigStatus status;
     protected Configuration config;
-    protected Level logLevel = Level.DEBUG;
+    protected Level logLevel;
     protected long startTime;
 
     public RuntimeLoadDelegate(
@@ -96,7 +96,7 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
         ConfigStatus status,
         Level logLevel) {
         this.config = config;
-        this.logLevel = logLevel;
+		this.logLevel = logLevel;
 
         if (status == null) {
             status = new ConfigStatus();
@@ -144,8 +144,8 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
 
     public void shouldLoadDataDomain(String domainName) {
         if (domainName == null) {
-            logObj.log(logLevel, "error: unnamed <domain>.");
-            throw new ConfigException("Domain 'name' attribute must be not null.");
+            logObj.log(logLevel, "Error: unnamed <domain>.");
+            throw new ConfigurationException("Domain 'name' attribute must be not null.");
         }
 
         logObj.log(logLevel, "loaded domain: " + domainName);
@@ -159,12 +159,12 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
         List depMapNames) {
 
         if (mapName == null) {
-            throw new ConfigException("error: <map> without 'name'.");
+            throw new ConfigurationException("Error: <map> without 'name'.");
         }
 
         if (location == null) {
-            throw new ConfigException(
-                "error: map '" + mapName + "' without 'location'.");
+            throw new ConfigurationException(
+                "Error: map '" + mapName + "' without 'location'.");
         }
 
         List depMaps = new ArrayList();
@@ -174,32 +174,32 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
                 if (depMapName == null) {
                     logObj.log(
                         logLevel,
-                        "error: missing dependent map name for map: "
+                        "Error: missing dependent map name for map: "
                             + mapName);
-                    getStatus().getFailedMaps().put(mapName, location);
+                    getStatus().addFailedMap(mapName, location, "missing dependent map: " + domainName + "." + depMapName);
                     return;
                 }
 
                 logObj.log(
                     logLevel,
-                    "info: linking map to dependent map: " + depMapName);
+                    "Info: linking map to dependent map: " + depMapName);
 
                 try {
                     depMaps.add(findMap(domainName, depMapName));
                 } catch (FindException ex) {
                     logObj.log(
                         logLevel,
-                        "error: unknown dependent map: " + depMapName);
-                    getStatus().getFailedMaps().put(mapName, location);
+                        "Error: unknown dependent map: " + depMapName);
+                    getStatus().addFailedMap(mapName, location,  "missing dependent map: " + domainName + "." + depMapName);
                 }
             }
         }
 
-        InputStream mapIn = config.getMapConfig(location);
+        InputStream mapIn = config.getMapConfiguration(location);
 
         if (mapIn == null) {
-            logObj.log(logLevel, "warning: map location not found.");
-            getStatus().getFailedMaps().put(mapName, location);
+            logObj.log(logLevel, "Warning: map location not found.");
+            getStatus().addFailedMap(mapName, location, "map location not found");
             return;
         }
 
@@ -221,13 +221,13 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
             try {
                 findDomain(domainName).addMap(map);
             } catch (FindException ex) {
-                logObj.log(logLevel, "error: unknown domain: " + domainName);
-                getStatus().getFailedMaps().put(mapName, location);
+                logObj.log(logLevel, "Error: unknown domain: " + domainName);
+                getStatus().addFailedMap(mapName, location, "unknown parent domain: " + domainName);
             }
 
         } catch (DataMapException dmex) {
             logObj.log(logLevel, "Warning: map loading failed.", dmex);
-            getStatus().getFailedMaps().put(mapName, location);
+            getStatus().addFailedMap(mapName, location, "map loading failed - " + dmex.getMessage());
         }
     }
 
@@ -249,27 +249,42 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
                 + "'>.");
 
         if (nodeName == null) {
-            throw new ConfigException("error: <node> without 'name'.");
+            throw new ConfigurationException("Error: <node> without 'name'.");
         }
 
         if (dataSource == null) {
             logObj.log(
                 logLevel,
-                "warning: <node> '" + nodeName + "' has no 'datasource'.");
+                "Warning: <node> '" + nodeName + "' has no 'datasource'.");
         }
 
         if (factory == null) {
-            if (config.getOverrideFactory() != null) {
+            if (config.getDataSourceFactory() != null) {
                 logObj.log(
                     logLevel,
-                    "warning: <node> '" + nodeName + "' without 'factory'.");
+                    "Warning: <node> '" + nodeName + "' without 'factory'.");
             } else {
-                throw new ConfigException(
-                    "error: <node> '" + nodeName + "' without 'factory'.");
+                throw new ConfigurationException(
+                    "Error: <node> '" + nodeName + "' without 'factory'.");
             }
         }
 
-        DataNode node = new DataNode(nodeName);
+        // load DbAdapter
+        if (adapter == null) {
+            adapter = JdbcAdapter.class.getName();
+        }
+
+        DbAdapter dbAdapter = null;
+
+        try {
+            dbAdapter = (DbAdapter) Class.forName(adapter).newInstance();
+        } catch (Exception ex) {
+            logObj.log(logLevel, "instantiating adapter failed, using default adapter.", ex);
+            getStatus().addFailedAdapter(nodeName, adapter, "instantiating adapter failed - " + ex.getMessage());
+            dbAdapter = new JdbcAdapter();
+        }
+
+        DataNode node = dbAdapter.createDataNode(nodeName);
         node.setDataSourceFactory(factory);
         node.setDataSourceLocation(dataSource);
 
@@ -277,7 +292,7 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
         try {
             // use DomainHelper factory if it exists, if not - use factory specified
             // in configuration data
-            DataSourceFactory confFactory = config.getOverrideFactory();
+            DataSourceFactory confFactory = config.getDataSourceFactory();
             DataSourceFactory localFactory =
                 (confFactory != null)
                     ? confFactory
@@ -287,30 +302,18 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
                 logLevel,
                 "using factory: " + localFactory.getClass().getName());
 
-            localFactory.setParentConfig(config);
+            localFactory.initializeWithParentConfiguration(config);
             DataSource ds = localFactory.getDataSource(dataSource, logLevel);
             if (ds != null) {
                 logObj.log(logLevel, "loaded datasource.");
                 node.setDataSource(ds);
             } else {
-                logObj.log(logLevel, "warning: null datasource.");
+                logObj.log(logLevel, "Warning: null datasource.");
                 getStatus().getFailedDataSources().put(nodeName, dataSource);
             }
         } catch (Exception ex) {
-            logObj.log(logLevel, "error: DataSource load failed", ex);
-            getStatus().getFailedDataSources().put(nodeName, dataSource);
-        }
-
-        // load DbAdapter
-        if (adapter == null) {
-            adapter = JdbcAdapter.class.getName();
-        }
-
-        try {
-            node.setAdapter((DbAdapter) Class.forName(adapter).newInstance());
-        } catch (Exception ex) {
-            logObj.log(logLevel, "instantiating adapter failed.", ex);
-            getStatus().getFailedAdapters().put(nodeName, adapter);
+            logObj.log(logLevel, "Error: DataSource load failed", ex);
+            getStatus().addFailedDataSource(nodeName, dataSource, "DataSource load failed - " + ex.getMessage());
         }
 
         try {
@@ -318,8 +321,8 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
         } catch (FindException ex) {
             logObj.log(
                 logLevel,
-                "error: can't load node, unknown domain: " + domainName);
-            getStatus().getFailedDataSources().put(nodeName, nodeName);
+                "Error: can't load node, unknown domain: " + domainName);
+            getStatus().addFailedDataSource(nodeName, nodeName,  "can't load node, unknown domain: " + domainName);
         }
 
     }
@@ -331,7 +334,7 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
 
         if (mapName == null) {
             logObj.log(logLevel, "<map-ref> has no 'name'.");
-            throw new ConfigException("<map-ref> has no 'name'.");
+            throw new ConfigurationException("<map-ref> has no 'name'.");
         }
 
         logObj.log(logLevel, "loaded map-ref: " + mapName + ".");
@@ -341,16 +344,16 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
         try {
             map = findMap(domainName, mapName);
         } catch (FindException ex) {
-            logObj.log(logLevel, "error: unknown map: " + mapName);
-            getStatus().getFailedMapRefs().add(mapName);
+            logObj.log(logLevel, "Error: unknown map: " + mapName);
+            getStatus().addFailedMapRefs(mapName, "unknown map: " + mapName);
             return;
         }
 
         try {
             node = findNode(domainName, nodeName);
         } catch (FindException ex) {
-            logObj.log(logLevel, "error: unknown node: " + nodeName);
-            getStatus().getFailedMapRefs().add(mapName);
+            logObj.log(logLevel, "Error: unknown node: " + nodeName);
+			getStatus().addFailedMapRefs(mapName, "unknown node: " + nodeName);
             return;
         }
 
@@ -394,7 +397,7 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
      * @return Level
      */
     public Level getLogLevel() {
-        return logLevel;
+        return this.logLevel;
     }
 
     /**
@@ -403,7 +406,7 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
      */
     public void setLogLevel(Level logLevel) {
         this.logLevel = logLevel;
-    }
+	}
 
     /**
      * @see org.objectstyle.cayenne.conf.ConfigLoaderDelegate#finishedLoading()
@@ -412,11 +415,12 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
         // check for failures
         if (status.hasFailures()) {
             if (!config.isIgnoringLoadFailures()) {
-                StringBuffer msg = new StringBuffer();
-                msg.append("[").append(config.getClass().getName()).append(
-                    "] : Failed to load domain and/or its maps/nodes.");
-
-                throw new ConfigException(msg.toString());
+                StringBuffer msg = new StringBuffer(128);
+                msg.append("Load failures. Main configuration class: ");
+                msg.append(config.getClass().getName());
+                msg.append(", details: ");
+                msg.append(status.describeFailures());
+                throw new ConfigurationException(msg.toString());
             }
         }
 
@@ -425,9 +429,10 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
         while (it.hasNext()) {
             config.addDomain((DataDomain) it.next());
         }
+
         logObj.log(
             logLevel,
-            "Finished configuration loading. Took "
+            "finished configuration loading in "
                 + (System.currentTimeMillis() - startTime)
                 + " ms.");
     }
@@ -437,7 +442,7 @@ public class RuntimeLoadDelegate implements ConfigLoaderDelegate {
      */
     public void startedLoading() {
         startTime = System.currentTimeMillis();
-        logObj.log(logLevel, "Started configuration loading.");
+        logObj.log(logLevel, "started configuration loading.");
     }
 
     /**

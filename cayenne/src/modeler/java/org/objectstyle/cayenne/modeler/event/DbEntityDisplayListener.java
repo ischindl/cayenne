@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne.modeler.event;
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,14 +52,19 @@ package org.objectstyle.cayenne.modeler.event;
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
  *
- */ 
+ */
+package org.objectstyle.cayenne.modeler.event;
 
 import java.util.EventListener;
 
-/** Used when the current Db entity has changed. */
-public interface DbEntityDisplayListener extends EventListener
-{
-	/** Current entity used as a model has changed.*/
-	public void currentDbEntityChanged(EntityDisplayEvent e);
+/** 
+ * Interface for classes that are interested in DbEntity 
+ * display events. 
+ * 
+ * @author Misha Shengaout
+ * @author Andrei Adamchik
+ */
+public interface DbEntityDisplayListener extends EventListener {
+    /** Current entity used as a model has changed.*/
+    public void currentDbEntityChanged(EntityDisplayEvent e);
 }
-

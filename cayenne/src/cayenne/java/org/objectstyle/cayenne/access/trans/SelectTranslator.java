@@ -1,8 +1,8 @@
 /* ====================================================================
- * 
- * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * The ObjectStyle Group Software License, Version 1.0
+ *
+ * Copyright (c) 2002-2003 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,7 +10,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -18,15 +18,15 @@
  *    distribution.
  *
  * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
+ *    any, must include the following acknowlegement:
+ *       "This product includes software developed by the
  *        ObjectStyle Group (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
  *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
+ * 4. The names "ObjectStyle Group" and "Cayenne"
  *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
+ *    from this software without prior written permission. For written
  *    permission, please contact andrus@objectstyle.org.
  *
  * 5. Products derived from this software may not be called "ObjectStyle"
@@ -58,12 +58,12 @@ package org.objectstyle.cayenne.access.trans;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneRuntimeException;
-import org.objectstyle.cayenne.dba.TypesMapping;
+import org.objectstyle.cayenne.access.util.ResultDescriptor;
 import org.objectstyle.cayenne.map.Attribute;
 import org.objectstyle.cayenne.map.DbAttribute;
 import org.objectstyle.cayenne.map.DbAttributePair;
@@ -73,15 +73,15 @@ import org.objectstyle.cayenne.map.DerivedDbEntity;
 import org.objectstyle.cayenne.map.ObjAttribute;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
+import org.objectstyle.cayenne.query.PrefetchSelectQuery;
 import org.objectstyle.cayenne.query.SelectQuery;
 
-/** 
+/**
  * Class that serves as a translator of SELECT queries to JDBC statements.
- * 
+ *
  * @author Andrei Adamchik
  */
-public class SelectTranslator extends SelectQueryAssembler {
-    private static Logger logObj = Logger.getLogger(SelectTranslator.class);
+public class SelectTranslator extends QueryAssembler implements SelectQueryTranslator {
 
     private final Map aliasLookup = new HashMap();
     private final List columnList = new ArrayList();
@@ -91,64 +91,20 @@ public class SelectTranslator extends SelectQueryAssembler {
     private List groupByList;
     private int aliasCounter;
 
-    /** 
+    /**
      * If set to <code>true</code>, indicates that distinct
-     * select query is required no matter what the original query 
+     * select query is required no matter what the original query
      * settings where. This flag can be set when joins are created
-     * using "to-many" relationships. 
+     * using "to-many" relationships.
      */
     private boolean forceDistinct;
 
-    /** 
+    /**
      * Returns a list of DbAttributes representing columns
      * in this query.
      */
-    protected List getColumnList() {
+    protected List getColumns() {
         return columnList;
-    }
-
-    public int getFetchLimit() {
-        return getSelectQuery().getFetchLimit();
-    }
-
-    /** 
-     * Returns an ordered list of DbAttributes that describe the
-     * result columns in the in the ResultSet. ResultSet column names are ignored, 
-     * names specified in the query are used instead. */
-    public DbAttribute[] getSnapshotDesc(ResultSet rs) {
-        int len = columnList.size();
-        if (len == 0) {
-            throw new CayenneRuntimeException("Call 'createStatement' first");
-        }
-
-        DbAttribute[] desc = new DbAttribute[len];
-        columnList.toArray(desc);
-        return desc;
-    }
-
-    /** 
-     * Returns ordered list of Java class names that should be used for fetched values.
-     * ResultSet types are ignored, types specified in the query are used instead. 
-     */
-    public String[] getResultTypes(ResultSet rs) {
-        int len = columnList.size();
-        if (len == 0) {
-            throw new CayenneRuntimeException("Call 'createStatement' first.");
-        }
-
-        String[] types = new String[len];
-        for (int i = 0; i < len; i++) {
-            DbAttribute attr = (DbAttribute) columnList.get(i);
-            ObjAttribute objAttr = getRootEntity().getAttributeForDbAttribute(attr);
-
-            // use explicit type mapping specified in ObjAttribute,
-            // or use default JDBC mapping if no ObjAttribute exists
-            types[i] =
-                (objAttr != null)
-                    ? objAttr.getType()
-                    : TypesMapping.getJavaBySqlType(attr.getType());
-        }
-        return types;
     }
 
     /**
@@ -160,7 +116,7 @@ public class SelectTranslator extends SelectQueryAssembler {
         // build column list
         buildColumnList();
 
-        QualifierTranslator tr = adapter.getQualifierFactory().createTranslator(this);
+        QualifierTranslator tr = adapter.getQualifierTranslator(this);
 
         // build parent qualifier
         // Parent qualifier translation must PRECEED main qualifier
@@ -179,8 +135,9 @@ public class SelectTranslator extends SelectQueryAssembler {
         // build GROUP BY
         buildGroupByList();
 
-        // build ORDER BY,
-        String orderByStr = new OrderingTranslator(this).doTranslation();
+        // build ORDER BY
+        OrderingTranslator orderingTranslator = new OrderingTranslator(this); 
+        String orderByStr = orderingTranslator.doTranslation();
 
         // assemble
         StringBuffer queryBuf = new StringBuffer();
@@ -190,12 +147,30 @@ public class SelectTranslator extends SelectQueryAssembler {
             queryBuf.append("DISTINCT ");
         }
 
+        List selectColumnExpList = new ArrayList();
+        
+        for (int i = 0; i < columnList.size(); i++)
+        {
+            selectColumnExpList.add(getColumn(i));
+        }
+        
+        // append any column expressions used in the order by if this query 
+        // uses the DISTINCT modifier
+        if (forceDistinct || getSelectQuery().isDistinct()) {
+            List orderByColumnList = orderingTranslator.getOrderByColumnList();
+            for (int i = 0; i < orderByColumnList.size(); i++) {
+                String orderByColumnExp = (String) orderByColumnList.get(i);
+                if (selectColumnExpList.contains(orderByColumnExp) == false)
+                    selectColumnExpList.add(orderByColumnExp);
+            }
+        }
+        
         // append columns (unroll the loop's first element)
-        int columnCount = columnList.size();
-        appendColumn(queryBuf, 0); // assume there is at least 1 element
+        int columnCount = selectColumnExpList.size();
+        queryBuf.append((String) selectColumnExpList.get(0)); // assume there is at least 1 element
         for (int i = 1; i < columnCount; i++) {
             queryBuf.append(", ");
-            appendColumn(queryBuf, i);
+            queryBuf.append((String) selectColumnExpList.get(i));
         }
 
         // append from clause
@@ -285,7 +260,7 @@ public class SelectTranslator extends SelectQueryAssembler {
      * Creates a list of columns used in the query.
      */
     private void buildColumnList() {
-        newAliasForTable(getRootEntity().getDbEntity());
+        newAliasForTable(getRootDbEntity());
         appendAttributes();
     }
 
@@ -293,26 +268,26 @@ public class SelectTranslator extends SelectQueryAssembler {
      * Creates a list of columns used in the query's GROUP BY clause.
      */
     private void buildGroupByList() {
-        DbEntity dbEntity = getRootEntity().getDbEntity();
+        DbEntity dbEntity = getRootDbEntity();
         if (dbEntity instanceof DerivedDbEntity) {
             groupByList = ((DerivedDbEntity) dbEntity).getGroupByAttributes();
         }
     }
 
-    /** 
+    /**
      * Returns a list of DbAttributes used in query.
      */
     private void appendAttributes() {
-        ObjEntity oe = getRootEntity();
-        DbEntity dbe = oe.getDbEntity();
+        DbEntity dbe = getRootDbEntity();
         SelectQuery q = getSelectQuery();
 
         // extract custom attributes from the query
-        if (q.isFetchingCustAttributes()) {
-            List custAttrNames = q.getCustDbAttributes();
+        if (q.isFetchingCustomAttributes()) {
+            List custAttrNames = q.getCustomDbAttributes();
             int len = custAttrNames.size();
             for (int i = 0; i < len; i++) {
-                Attribute attr = dbe.getAttribute((String) custAttrNames.get(i));
+                Attribute attr =
+                    dbe.getAttribute((String) custAttrNames.get(i));
                 if (attr == null) {
                     throw new CayenneRuntimeException(
                         "Attribute does not exist: " + custAttrNames.get(i));
@@ -321,27 +296,36 @@ public class SelectTranslator extends SelectQueryAssembler {
             }
         } else {
             // build a list of attributes mentioned in ObjEntity + PK's + FK's + GROUP BY's
-
+			ObjEntity oe = getRootEntity();
+			
             // ObjEntity attrs
-            List attrs = oe.getAttributeList();
-            int len = attrs.size();
-            for (int i = 0; i < len; i++) {
-                ObjAttribute oa = (ObjAttribute) attrs.get(i);
-                Attribute dbAttr = oa.getDbAttribute();
-                if (dbAttr == null) {
-                    throw new CayenneRuntimeException(
-                        "ObjAttribute has no DbAttribute: " + oa.getName());
+            Iterator attrs = oe.getAttributes().iterator();
+            while (attrs.hasNext()) {
+                ObjAttribute oa = (ObjAttribute) attrs.next();
+                Iterator dbPathIterator = oa.getDbPathIterator();
+                while (dbPathIterator.hasNext()) {
+                    Object pathPart = dbPathIterator.next();
+                    if (pathPart instanceof DbRelationship) {
+                        DbRelationship rel = (DbRelationship) pathPart;
+                        dbRelationshipAdded(rel);
+                    } else if (pathPart instanceof DbAttribute) {
+                        DbAttribute dbAttr = (DbAttribute) pathPart;
+                        if (dbAttr == null) {
+                            throw new CayenneRuntimeException(
+                                "ObjAttribute has no DbAttribute: "
+                                    + oa.getName());
+                        }
+                        columnList.add(dbAttr);
+                    }
                 }
-                columnList.add(dbAttr);
             }
 
             // relationship keys
-            List rels = oe.getRelationshipList();
-            int rLen = rels.size();
-            for (int i = 0; i < rLen; i++) {
-                ObjRelationship rel = (ObjRelationship) rels.get(i);
+            Iterator rels = oe.getRelationships().iterator();
+            while (rels.hasNext()) {
+                ObjRelationship rel = (ObjRelationship) rels.next();
                 DbRelationship dbRel =
-                    (DbRelationship) rel.getDbRelationshipList().get(0);
+                    (DbRelationship) rel.getDbRelationships().get(0);
 
                 List joins = dbRel.getJoins();
                 int jLen = joins.size();
@@ -355,23 +339,46 @@ public class SelectTranslator extends SelectQueryAssembler {
             }
 
             // add remaining needed attrs from DbEntity
-            List dbattrs = dbe.getAttributeList();
-            int dLen = dbattrs.size();
-            for (int i = 0; i < dLen; i++) {
-                DbAttribute dba = (DbAttribute) dbattrs.get(i);
+            Iterator dbattrs = dbe.getAttributes().iterator();
+            while (dbattrs.hasNext()) {
+                DbAttribute dba = (DbAttribute) dbattrs.next();
                 if (dba.isPrimaryKey()) {
                     if (!columnList.contains(dba)) {
                         columnList.add(dba);
                     }
                 }
             }
+
+            //May require some special handling for prefetch selects
+            // if the prefetch is of a certain type
+            if (q instanceof PrefetchSelectQuery) {
+                PrefetchSelectQuery pq = (PrefetchSelectQuery) q;
+                ObjRelationship r = pq.getSingleStepToManyRelationship();
+                if ((r != null) && (r.getReverseRelationship() == null)) {
+                    //Prefetching a single step toMany relationship which
+                    // has no reverse obj relationship.  Add the FK attributes
+                    // of the relationship (wouldn't otherwise be included)
+                    DbRelationship dbRel =
+                        (DbRelationship) r.getDbRelationships().get(0);
+
+                    List joins = dbRel.getJoins();
+                    int jLen = joins.size();
+                    for (int j = 0; j < jLen; j++) {
+                        DbAttributePair join = (DbAttributePair) joins.get(j);
+                        DbAttribute target = join.getTarget();
+                        if (!columnList.contains(target)) {
+                            columnList.add(target);
+                        }
+                    }
+                }
+            }
         }
     }
 
-    private void appendColumn(StringBuffer queryBuf, int index) {
+    private String getColumn(int index) {
         DbAttribute attr = (DbAttribute) columnList.get(index);
         String alias = aliasForTable((DbEntity) attr.getEntity());
-        queryBuf.append(attr.getAliasedName(alias));
+        return attr.getAliasedName(alias);
     }
 
     private void appendGroupBy(StringBuffer queryBuf, int index) {
@@ -398,12 +405,14 @@ public class SelectTranslator extends SelectQueryAssembler {
         List joins = rel.getJoins();
         int len = joins.size();
         for (int i = 0; i < len; i++) {
-            if (andFlag)
-                queryBuf.append(" AND ");
-            else
-                andFlag = true;
-
             DbAttributePair join = (DbAttributePair) joins.get(i);
+
+            if (andFlag) {
+                queryBuf.append(" AND ");
+            } else {
+                andFlag = true;
+            }
+
             queryBuf
                 .append(srcAlias)
                 .append('.')
@@ -415,9 +424,9 @@ public class SelectTranslator extends SelectQueryAssembler {
         }
     }
 
-    /** 
+    /**
      * Stores a new relationship in an internal list.
-     * Later it will be used to create joins to relationship 
+     * Later it will be used to create joins to relationship
      * destination table.
      */
     public void dbRelationshipAdded(DbRelationship rel) {
@@ -431,7 +440,8 @@ public class SelectTranslator extends SelectQueryAssembler {
             dbRelList.add(rel);
 
             // add alias for the destination table of the relationship
-            String newAlias = newAliasForTable((DbEntity) rel.getTargetEntity());
+            String newAlias =
+                newAliasForTable((DbEntity) rel.getTargetEntity());
             aliasLookup.put(rel, newAlias);
         }
     }
@@ -454,7 +464,7 @@ public class SelectTranslator extends SelectQueryAssembler {
         return (String) aliasLookup.get(rel);
     }
 
-    /** 
+    /**
      * Overrides superclass implementation. Will return an alias that
      * should be used for a specified DbEntity in the query
      * (or null if this DbEntity is not included in the FROM clause).
@@ -480,7 +490,9 @@ public class SelectTranslator extends SelectQueryAssembler {
                     (tableList.get(i) != null)
                         ? ((DbEntity) tableList.get(i)).getName()
                         : "<null entity>";
-                msg.append("\n").append(aliasList.get(0)).append(" => ").append(dbeName);
+                msg.append("\n").append(aliasList.get(i)).append(
+                    " => ").append(
+                    dbeName);
             }
 
             throw new CayenneRuntimeException(msg.toString());
@@ -490,4 +502,26 @@ public class SelectTranslator extends SelectQueryAssembler {
     public boolean supportsTableAliases() {
         return true;
     }
+
+    public ResultDescriptor getResultDescriptor(ResultSet rs) {
+        if (columnList.size() == 0) {
+            throw new CayenneRuntimeException("Call 'createStatement' first");
+        }
+        
+		ResultDescriptor descriptor;
+			
+        if(getSelectQuery().isFetchingCustomAttributes()) {
+			descriptor = new ResultDescriptor(getAdapter().getExtendedTypes());
+        }
+        else {
+		    descriptor = new ResultDescriptor(
+                getAdapter().getExtendedTypes(),
+                getRootEntity());
+        }
+        
+        descriptor.addColumns(columnList);
+        descriptor.index();
+        return descriptor;
+    }
+
 }

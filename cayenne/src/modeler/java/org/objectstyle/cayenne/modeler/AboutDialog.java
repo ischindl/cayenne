@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,8 +92,8 @@ import org.objectstyle.cayenne.modeler.util.ModelerStrings;
  * @author Andrei Adamchik
  */
 public class AboutDialog extends CayenneDialog implements ActionListener {
-	private static final int WIDTH = 523;
-	private static final int HEIGHT = 450;
+	private static final int ABOUT_WIDTH = 523;
+	private static final int ABOUT_HEIGHT = 450;
 	private static String licenseString;
 
 	private boolean view_info = true;
@@ -114,7 +114,7 @@ public class AboutDialog extends CayenneDialog implements ActionListener {
 		ok.addActionListener(this);
 		view.addActionListener(this);
 
-		setSize(WIDTH, HEIGHT);
+		setSize(ABOUT_WIDTH, ABOUT_HEIGHT);
 		setResizable(false);
 		this.centerWindow();
 		this.getContentPane().doLayout();
@@ -216,8 +216,7 @@ public class AboutDialog extends CayenneDialog implements ActionListener {
 
 		ClassLoader cl = AboutDialog.class.getClassLoader();
 		URL url = cl.getResource(CayenneAction.RESOURCE_PATH + "logo.jpg");
-		ImageIcon logo_icon = new ImageIcon(url);
-		image = new JLabel(logo_icon);
+		image = new JLabel(new ImageIcon(url));
 		image.setBorder(border);
 		image_pane.add(image, BorderLayout.CENTER);
 		layout.setConstraints(image_pane, c);

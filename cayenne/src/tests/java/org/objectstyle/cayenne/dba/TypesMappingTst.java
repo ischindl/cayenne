@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,33 +58,10 @@ package org.objectstyle.cayenne.dba;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
-import java.sql.Types;
 import java.util.Iterator;
 import java.util.List;
 
 public class TypesMappingTst extends TypesMappingBase {
-
-    public TypesMappingTst(String name) {
-        super(name);
-    }
-
-    public void testFuzzyDataType() throws java.lang.Exception {
-        assertNotNull(createTypesMapping().getFuzzyDataType(Types.INTEGER));
-    }
-
-    public void testTypeInfo() throws java.lang.Exception {
-        TypesMapping typeMap = createTypesMapping();
-        // we can not make real assertions about database types,
-        // since the test suite might be run on different databases
-        // instead do some formal assertions
-        assertTrue(typeMap.getDatabaseTypes(Types.NUMERIC).length > 0);
-        assertTrue(typeMap.getDatabaseTypes(Types.INTEGER).length > 0);
-        assertTrue(typeMap.getDatabaseTypes(Types.CHAR).length > 0);
-        // at least 1 date type should be there 
-        assertTrue(
-            typeMap.getDatabaseTypes(Types.DATE).length > 0
-                || typeMap.getDatabaseTypes(Types.TIMESTAMP).length > 0);
-    }
 
     public void testTypeInfoCompleteness() throws java.lang.Exception {
         // check counts 

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -76,13 +76,17 @@ import org.scopemvc.core.Control;
  */
 public class OpenProjectAction extends ProjectAction {
     private static Logger logObj = Logger.getLogger(OpenProjectAction.class);
-    public static final String ACTION_NAME = "Open Project";
     protected ProjectOpener fileChooser = new ProjectOpener();
+
+	public static String getActionName() {
+		return "Open Project";
+	}
+
     /**
      * Constructor for OpenProjectAction.
      */
     public OpenProjectAction() {
-        super(ACTION_NAME);
+        super(getActionName());
     }
     public String getIconName() {
         return "icon-open.gif";
@@ -110,7 +114,7 @@ public class OpenProjectAction extends ProjectAction {
         }
     }
     /** Opens cayenne.xml file using file chooser. */
-    protected void openProject() {
+    public void openProject() {
         try {
             // Get the project file name (always cayenne.xml)
             File file = fileChooser.openProjectFile(Editor.getFrame());
@@ -122,7 +126,7 @@ public class OpenProjectAction extends ProjectAction {
         }
     }
     /** Opens specified project file. File must already exist. */
-    protected void openProject(File file) {
+    public void openProject(File file) {
         ModelerPreferences pref = ModelerPreferences.getPreferences();
         try {
             // Save dir path to the preferences

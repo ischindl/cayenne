@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,13 +55,14 @@
  */
 package org.objectstyle.cayenne;
 
+import java.util.Collections;
 import java.util.Map;
 
 /** 
- * A TempObjectId is used as a temporary
- * id for data objects in <code>New</code> persistence state.
- * When such objects are committed to the database, 
- * temporary id is replaced with a permanent id object. 
+ * An ObjectId for new objects that hasn't been committed
+ * to the external data store. On commit, a TempObjectId is 
+ * replaced with a permanent ObjectId tied to a primary key 
+ * of an object in the external data store. 
  * 
  * @author Andrei Adamchik
  */
@@ -84,7 +85,7 @@ public class TempObjectId extends ObjectId {
 
 	/** Returns null */
 	public Map getIdSnapshot() {
-		return (permId == null) ? null : permId.getIdSnapshot();
+		return (permId == null) ? Collections.EMPTY_MAP : permId.getIdSnapshot();
 	}
 
     /**

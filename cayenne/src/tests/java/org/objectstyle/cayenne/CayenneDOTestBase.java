@@ -3,7 +3,7 @@ package org.objectstyle.cayenne;
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,7 @@ package org.objectstyle.cayenne;
  *
  */ 
 
+import java.sql.Timestamp;
 import java.util.List;
 
 import org.apache.log4j.Level;
@@ -66,6 +67,7 @@ import org.objectstyle.art.Painting;
 import org.objectstyle.art.PaintingInfo;
 import org.objectstyle.cayenne.access.DataContext;
 import org.objectstyle.cayenne.access.DataDomain;
+import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.access.QueryLogger;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
@@ -84,17 +86,13 @@ public class CayenneDOTestBase extends CayenneTestCase {
     
     protected DataContext ctxt;
     
-    public CayenneDOTestBase(String name) {
-        super(name);
-    }
-    
     protected void setUp() throws Exception {
         CayenneTestDatabaseSetup setup = getDatabaseSetup();
         setup.cleanTableData();        
         DataDomain dom = getDomain();
         Level oldLevel = QueryLogger.getLoggingLevel();
-        QueryLogger.setLoggingLevel(Level.ERROR);
-        setup.createPkSupportForMapEntities(dom.getDataNodes()[0]);
+        // QueryLogger.setLoggingLevel(Level.ERROR);
+        setup.createPkSupportForMapEntities((DataNode)dom.getDataNodes().iterator().next());
         QueryLogger.setLoggingLevel(oldLevel);
         resetContext();
     }
@@ -105,8 +103,8 @@ public class CayenneDOTestBase extends CayenneTestCase {
     
     protected Exhibit newExhibit(Gallery gallery) {
         Exhibit e1 = (Exhibit)ctxt.createAndRegisterNewObject("Exhibit");
-        e1.setOpeningDate(new java.util.Date());
-        e1.setClosingDate(new java.util.Date());
+        e1.setOpeningDate(new Timestamp(System.currentTimeMillis()));
+        e1.setClosingDate(new Timestamp(System.currentTimeMillis()));
         e1.setToGallery(gallery);
         return e1;
     }

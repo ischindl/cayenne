@@ -32,6 +32,11 @@
 		<pathelement path="build/modeler/classes"/>
     </path>
     
+    <path id="classpath-regression">
+		<path refid="classpath-modeler"/>
+		<pathelement path="build/tests/classes"/>
+    </path>
+    
     <path id="classpath-tests-modeler">
 		<path refid="classpath-tests"/>
     </path>
@@ -112,14 +117,11 @@
                     destdir="${dist}/doc/api/${subproj}"
                     author="true"
                     use="true"
+                    stylesheetfile="doc/objectstyle-javadoc.css"
                     splitindex="true"
-                    windowtitle="Cayenne API">
-            <!-- Exclude PostgreSQL for the interim release -->
-            <excludepackage name="org.objectstyle.cayenne.dba.postgres"/>
+                    windowtitle="Cayenne API"
+                    overview="src/${subproj}/java/overview.html">
             
-            <doctitle><![CDATA[<h2><a href="http://objectstyle.org/cayenne/" target="_top">
-            		<img height="40" border="0" src="../../images/cayenne_logo_small.gif"><a> 
-            		API: ${subproj} (Version ${project.version})</h2>]]></doctitle>
             <bottom><![CDATA[<!--SFLOGO--> &nbsp; <i>Copyright &#169; 2001-2002 <a href=
             "http://objectstyle.org" target="_top">ObjectStyle.org</a> All Rights Reserved.</i>]]>
             </bottom>

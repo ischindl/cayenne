@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,9 +55,9 @@
  */
 package org.objectstyle.cayenne.access.trans;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.query.Ordering;
@@ -71,8 +71,9 @@ import org.objectstyle.cayenne.query.SelectQuery;
  * @author Craig Miskell
  */
 public class OrderingTranslator extends QueryAssemblerHelper {
-    private static Logger logObj = Logger.getLogger(OrderingTranslator.class);
 
+    protected List orderByColumnList = new ArrayList();
+    
     public OrderingTranslator(QueryAssembler queryAssembler) {
         super(queryAssembler);
     }
@@ -89,12 +90,14 @@ public class OrderingTranslator extends QueryAssemblerHelper {
             return null;
 
         StringBuffer buf = new StringBuffer();
-        List list = ((SelectQuery) q).getOrderingList();
+        List list = ((SelectQuery) q).getOrderings();
         int len = list.size();
 
         for (int i = 0; i < len; i++) {
             if (i > 0)
                 buf.append(", ");
+
+            StringBuffer ordComp = new StringBuffer();
 
             Ordering ord = (Ordering) list.get(i);
 
@@ -102,15 +105,16 @@ public class OrderingTranslator extends QueryAssemblerHelper {
             // - should the syntax used here be defined by the Db specific adaptor perhaps, or at least
             // possibly specified by the db adaptor (a DB specific OrderingTranslator hook)?
             if (ord.isCaseInsensitive()) {
-                buf.append("UPPER(");
+                ordComp.append("UPPER(");
+
             }
 
             Expression exp = ord.getSortSpec();
 
             if (exp.getType() == Expression.OBJ_PATH) {
-                appendObjPath(buf, exp);
+                appendObjPath(ordComp, exp);
             } else if (exp.getType() == Expression.DB_PATH) {
-                appendDbPath(buf, exp);
+                appendDbPath(ordComp, exp);
             } else {
                 throw new CayenneRuntimeException(
                     "Unsupported ordering expression: " + exp);
@@ -118,8 +122,12 @@ public class OrderingTranslator extends QueryAssemblerHelper {
 
             //Close UPPER() modifier
             if (ord.isCaseInsensitive()) {
-                buf.append(")");
+                ordComp.append(")");
             }
+
+            orderByColumnList.add(ordComp.toString());
+            
+            buf.append(ordComp.toString());
 
             // "ASC" is a noop, omit it from the query 
             if (!ord.isAscending()) {
@@ -128,5 +136,17 @@ public class OrderingTranslator extends QueryAssemblerHelper {
         }
 
         return buf.length() > 0 ? buf.toString() : null;
+    }
+
+    /**
+     * Returns the column expressions (not Expressions) used in
+     * the order by clause.  E.g., in the case of an case-insensitive 
+     * order by, an element of the list would be 
+     * <code>UPPER(&lt;column reference&gt;)</code>
+     *  
+     * @return
+     */    
+    public List getOrderByColumnList() {
+        return orderByColumnList;
     }
 }

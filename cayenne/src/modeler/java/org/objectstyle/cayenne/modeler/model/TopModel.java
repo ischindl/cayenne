@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,6 @@ package org.objectstyle.cayenne.modeler.model;
 import javax.swing.ActionMap;
 
 import org.objectstyle.cayenne.modeler.action.AboutAction;
-import org.objectstyle.cayenne.modeler.action.AddDataMapAction;
 import org.objectstyle.cayenne.modeler.action.CayenneAction;
 import org.objectstyle.cayenne.modeler.action.CreateAttributeAction;
 import org.objectstyle.cayenne.modeler.action.CreateDataMapAction;
@@ -68,6 +67,7 @@ import org.objectstyle.cayenne.modeler.action.CreateDomainAction;
 import org.objectstyle.cayenne.modeler.action.CreateNodeAction;
 import org.objectstyle.cayenne.modeler.action.CreateObjEntityAction;
 import org.objectstyle.cayenne.modeler.action.CreateRelationshipAction;
+import org.objectstyle.cayenne.modeler.action.CreateStoredProcedureAction;
 import org.objectstyle.cayenne.modeler.action.DerivedEntitySyncAction;
 import org.objectstyle.cayenne.modeler.action.ExitAction;
 import org.objectstyle.cayenne.modeler.action.GenerateClassesAction;
@@ -81,6 +81,7 @@ import org.objectstyle.cayenne.modeler.action.PackageMenuAction;
 import org.objectstyle.cayenne.modeler.action.ProjectAction;
 import org.objectstyle.cayenne.modeler.action.RemoveAction;
 import org.objectstyle.cayenne.modeler.action.SaveAction;
+import org.objectstyle.cayenne.modeler.action.ValidateAction;
 import org.objectstyle.cayenne.project.Project;
 import org.objectstyle.cayenne.project.ProjectPath;
 
@@ -123,6 +124,9 @@ public class TopModel {
         CayenneAction saveAction = new SaveAction();
         actionMap.put(saveAction.getKey(), saveAction);
 
+        CayenneAction validateAction = new ValidateAction();
+        actionMap.put(validateAction.getKey(), validateAction);
+
         CayenneAction removeAction = new RemoveAction();
         actionMap.put(removeAction.getKey(), removeAction);
 
@@ -147,14 +151,14 @@ public class TopModel {
         CayenneAction createDDEAction = new CreateDerivedDbEntityAction();
         actionMap.put(createDDEAction.getKey(), createDDEAction);
 
+        CayenneAction createSPAction = new CreateStoredProcedureAction();
+        actionMap.put(createSPAction.getKey(), createSPAction);
+
         CayenneAction createAttrAction = new CreateAttributeAction();
         actionMap.put(createAttrAction.getKey(), createAttrAction);
 
         CayenneAction createRelAction = new CreateRelationshipAction();
         actionMap.put(createRelAction.getKey(), createRelAction);
-
-        CayenneAction addMapToNodeAction = new AddDataMapAction();
-        actionMap.put(addMapToNodeAction.getKey(), addMapToNodeAction);
 
         CayenneAction entSyncAction = new ObjEntitySyncAction();
         actionMap.put(entSyncAction.getKey(), entSyncAction);

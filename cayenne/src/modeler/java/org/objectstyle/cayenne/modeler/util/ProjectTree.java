@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -97,6 +97,18 @@ public class ProjectTree extends JTree {
     }
 
     /**
+     * Reorders the model, preserving current selection.
+     */
+    public void reorder() {
+       // TreePath selection =
+      //      getSelectionModel().getSelectionPath().getPath();
+        getProjectModel().reorder();
+        
+        
+      //  expandPath(selection);
+    }
+
+    /**
      * Returns tree model cast to ProjectTreeModel.
      */
     public ProjectTreeModel getProjectModel() {
@@ -136,7 +148,8 @@ public class ProjectTree extends JTree {
                 ? String.valueOf(PropertyUtils.getProperty(value, "name"))
                 : "";
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             String objectClass =
                 (value == null) ? "(unknown)" : value.getClass().getName();
             logObj.warn("Exception reading property 'name', class " + objectClass, e);

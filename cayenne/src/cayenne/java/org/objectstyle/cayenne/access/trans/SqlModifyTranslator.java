@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,6 @@
  */ 
 package org.objectstyle.cayenne.access.trans;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.query.SqlModifyQuery;
@@ -63,7 +62,6 @@ import org.objectstyle.cayenne.query.SqlModifyQuery;
 
 /** Class works as a translator of raw SELECT queries to JDBC statements. */
 public class SqlModifyTranslator extends QueryAssembler {
-    private static Logger logObj = Logger.getLogger(SqlSelectTranslator.class);
 
     public String createSqlString() throws java.lang.Exception {
         return ((SqlModifyQuery)query).getSqlString();

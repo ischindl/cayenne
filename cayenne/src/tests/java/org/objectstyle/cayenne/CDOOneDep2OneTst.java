@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne;
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,21 +53,17 @@ package org.objectstyle.cayenne;
  * <http://objectstyle.org/>.
  *
  */
+package org.objectstyle.cayenne;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.art.Artist;
 import org.objectstyle.art.ArtistExhibit;
 import org.objectstyle.art.Exhibit;
 import org.objectstyle.art.Gallery;
 import org.objectstyle.art.Painting;
 import org.objectstyle.art.PaintingInfo;
+import org.objectstyle.cayenne.access.types.ByteArrayTypeTst;
 
 public class CDOOneDep2OneTst extends CayenneDOTestBase {
-    private static Logger logObj = Logger.getLogger(CDOOneDep2OneTst.class);
-
-    public CDOOneDep2OneTst(String name) {
-        super(name);
-    }
 
     public void testNewAdd1() throws Exception {
         Artist a1 = newArtist();
@@ -136,6 +131,7 @@ public class CDOOneDep2OneTst extends CayenneDOTestBase {
         assertNotNull(p21);
         assertEquals(altPaintingName, p21.getPaintingTitle());
         assertSame(pi2, p21.getToPaintingInfo());
+        ByteArrayTypeTst.assertByteArraysEqual(paintingImage, p21.getToPaintingInfo().getImageBlob());
 
         Painting p22 = newPainting();
 
@@ -145,6 +141,7 @@ public class CDOOneDep2OneTst extends CayenneDOTestBase {
         // test before save
         assertNull(p21.getToPaintingInfo());
         assertSame(pi2, p22.getToPaintingInfo());
+        assertSame(p22, pi2.getPainting());
         assertEquals(PersistenceState.MODIFIED, pi2.getPersistenceState());
 
         // do save II

@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne.access.types;
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,46 +53,124 @@ package org.objectstyle.cayenne.access.types;
  * <http://objectstyle.org/>.
  *
  */
+package org.objectstyle.cayenne.access.types;
 
 import java.lang.reflect.Method;
+import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.dba.TypesMapping;
 
-
-/** Handles Java types mapped to JDBC types in JDBC sepcification. */
-public class DefaultType implements ExtendedType {
-    private static Logger logObj = Logger.getLogger(DefaultType.class);
+/** 
+ * Default implementation of ExtendedType that works exactly per JDBC
+ * specification.
+ * 
+ * @author Andrei Adamchik
+ */
+public class DefaultType extends AbstractType {
 
     private static final Map readMethods = new HashMap();
+    private static final Map procReadMethods = new HashMap();
     private static Method readObjectMethod;
+    private static Method procReadObjectMethod;
 
     static {
         try {
             Class rsClass = ResultSet.class;
-            Class[] paramTypes = new Class[] {Integer.TYPE};
-            readMethods.put(TypesMapping.JAVA_LONG, rsClass.getMethod("getLong", paramTypes));
-            readMethods.put(TypesMapping.JAVA_BIGDECIMAL, rsClass.getMethod("getBigDecimal", paramTypes));
-            readMethods.put(TypesMapping.JAVA_BOOLEAN, rsClass.getMethod("getBoolean", paramTypes));
-            readMethods.put(TypesMapping.JAVA_BYTE, rsClass.getMethod("getByte", paramTypes));
-            readMethods.put(TypesMapping.JAVA_BYTES, rsClass.getMethod("getBytes", paramTypes));
-            readMethods.put(TypesMapping.JAVA_SQLDATE, rsClass.getMethod("getDate", paramTypes));
-            readMethods.put(TypesMapping.JAVA_DOUBLE, rsClass.getMethod("getDouble", paramTypes));
-            readMethods.put(TypesMapping.JAVA_FLOAT, rsClass.getMethod("getFloat", paramTypes));
-            readMethods.put(TypesMapping.JAVA_INTEGER, rsClass.getMethod("getInt", paramTypes));
-            readMethods.put(TypesMapping.JAVA_SHORT, rsClass.getMethod("getShort", paramTypes));
-            readMethods.put(TypesMapping.JAVA_STRING, rsClass.getMethod("getString", paramTypes));
-            readMethods.put(TypesMapping.JAVA_TIME, rsClass.getMethod("getTime", paramTypes));
-            readMethods.put(TypesMapping.JAVA_TIMESTAMP, rsClass.getMethod("getTimestamp", paramTypes));
+            Class[] paramTypes = new Class[] { Integer.TYPE };
+            readMethods.put(
+                TypesMapping.JAVA_LONG,
+                rsClass.getMethod("getLong", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_BIGDECIMAL,
+                rsClass.getMethod("getBigDecimal", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_BOOLEAN,
+                rsClass.getMethod("getBoolean", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_BYTE,
+                rsClass.getMethod("getByte", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_BYTES,
+                rsClass.getMethod("getBytes", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_SQLDATE,
+                rsClass.getMethod("getDate", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_DOUBLE,
+                rsClass.getMethod("getDouble", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_FLOAT,
+                rsClass.getMethod("getFloat", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_INTEGER,
+                rsClass.getMethod("getInt", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_SHORT,
+                rsClass.getMethod("getShort", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_STRING,
+                rsClass.getMethod("getString", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_TIME,
+                rsClass.getMethod("getTime", paramTypes));
+            readMethods.put(
+                TypesMapping.JAVA_TIMESTAMP,
+                rsClass.getMethod("getTimestamp", paramTypes));
 
             readObjectMethod = rsClass.getMethod("getObject", paramTypes);
-        } catch(Exception ex) {
-            throw new CayenneRuntimeException("Error initializing read methods.", ex);
+
+            // init procedure read methods
+            Class csClass = CallableStatement.class;
+            procReadMethods.put(
+                TypesMapping.JAVA_LONG,
+                csClass.getMethod("getLong", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_BIGDECIMAL,
+                csClass.getMethod("getBigDecimal", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_BOOLEAN,
+                csClass.getMethod("getBoolean", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_BYTE,
+                csClass.getMethod("getByte", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_BYTES,
+                csClass.getMethod("getBytes", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_SQLDATE,
+                csClass.getMethod("getDate", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_DOUBLE,
+                csClass.getMethod("getDouble", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_FLOAT,
+                csClass.getMethod("getFloat", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_INTEGER,
+                csClass.getMethod("getInt", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_SHORT,
+                csClass.getMethod("getShort", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_STRING,
+                csClass.getMethod("getString", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_TIME,
+                csClass.getMethod("getTime", paramTypes));
+            procReadMethods.put(
+                TypesMapping.JAVA_TIMESTAMP,
+                csClass.getMethod("getTimestamp", paramTypes));
+
+            procReadObjectMethod = csClass.getMethod("getObject", paramTypes);
+        } catch (Exception ex) {
+            throw new CayenneRuntimeException(
+                "Error initializing read methods.",
+                ex);
         }
     }
 
@@ -104,39 +181,54 @@ public class DefaultType implements ExtendedType {
 
     protected String className;
     protected Method readMethod;
-    protected Object[] args = new Object[1];
+    protected Method procReadMethod;
 
-
-    /** CreatesDefaultType to read objects from ResultSet
-      * using "getObject" method. */
+    /** 
+     * CreatesDefaultType to read objects from ResultSet
+     * using "getObject" method.
+     */
     public DefaultType() {
-        className = Object.class.getName();
-        readMethod = readObjectMethod;
+        this.className = Object.class.getName();
+        this.readMethod = readObjectMethod;
+        this.procReadMethod = procReadObjectMethod;
     }
 
     public DefaultType(String className) {
         this.className = className;
-        readMethod = (Method)readMethods.get(className);
+        this.readMethod = (Method) readMethods.get(className);
 
-        if(readMethod == null)
+        if (readMethod == null) {
             throw new CayenneRuntimeException(
-                "Unsupported default class: " + className
-                + ". If you want a non-standard class to map to JDBC type,"
-                + " you will need to implement ExtendedType interface yourself.");
+                "Unsupported default class: "
+                    + className
+                    + ". If you want a non-standard class to map to JDBC type,"
+                    + " you will need to implement ExtendedType interface yourself.");
+        }
+
+        this.procReadMethod = (Method) procReadMethods.get(className);
+        if (procReadMethod == null) {
+            throw new CayenneRuntimeException(
+                "Unsupported default class: "
+                    + className
+                    + ". If you want a non-standard class to map to JDBC type,"
+                    + " you will need to implement ExtendedType interface yourself.");
+        }
     }
 
     public String getClassName() {
         return className;
     }
 
-    public Object toJdbcObject(Object val, int type) throws Exception {
-        return val;
+    public Object materializeObject(ResultSet rs, int index, int type)
+        throws Exception {
+        Object val = readMethod.invoke(rs, new Object[] { new Integer(index)});
+        return (rs.wasNull()) ? null : val;
     }
 
-
-    public Object materializeObject(ResultSet rs, int index, int type) throws Exception {
-        args[0] = new Integer(index);
-        Object val = readMethod.invoke(rs, args);
-        return (rs.wasNull()) ? null : val;
+    public Object materializeObject(CallableStatement st, int index, int type)
+        throws Exception {
+        Object val =
+            procReadMethod.invoke(st, new Object[] { new Integer(index)});
+        return (st.wasNull()) ? null : val;
     }
 }

@@ -42,7 +42,7 @@ public class ClassGeneratorController extends BasicController {
         ObjEntity selectedEntity) {
         	
         // validate entities
-        Validator validator = new Validator(project);
+        Validator validator = project.getValidator();
         validator.validate();
 
         ClassGeneratorModel model =
@@ -52,7 +52,13 @@ public class ClassGeneratorController extends BasicController {
                 validator.validationResults());
 
         // by default generate pairs of classes
-        model.setPairs(true);
+        // this may come from preferences later
+        boolean setPairs = true;
+        
+        model.setPairs(setPairs);
+        if(setPairs) {
+        	model.updateDefaultSuperClassPackage();
+        }
 
         // figure out default out directory
         ModelerPreferences pref = ModelerPreferences.getPreferences();
@@ -67,17 +73,15 @@ public class ClassGeneratorController extends BasicController {
         return model;
     }
 
+
     /**
-      * @see org.scopemvc.controller.basic.BasicController#startup()
-      */
+     * Creates and runs the class generation dialog.
+     */
     public void startup() {
         setView(new ClassGeneratorDialog());
         super.startup();
     }
 
-    /**
-     * @see org.scopemvc.controller.basic.BasicController#doHandleControl(Control)
-     */
     protected void doHandleControl(Control control) throws ControlException {
         if (control.matchesID(CANCEL_CONTROL)) {
             shutdown();
@@ -122,6 +126,7 @@ public class ClassGeneratorController extends BasicController {
         DefaultClassGenerator generator = new DefaultClassGenerator(selected);
         generator.setDestDir(outputDir);
         generator.setMakePairs(model.isPairs());
+        generator.setSuperPkg(model.getSuperClassPackage());
 
         try {
             generator.execute();

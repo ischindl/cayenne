@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,8 +58,6 @@ package org.objectstyle.cayenne.modeler.datamap;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Arrays;
-import org.apache.log4j.Logger;
 
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
@@ -69,20 +67,20 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableColumn;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.dba.TypesMapping;
 import org.objectstyle.cayenne.map.DbAttribute;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.DerivedDbAttribute;
 import org.objectstyle.cayenne.map.DerivedDbEntity;
+import org.objectstyle.cayenne.map.event.AttributeEvent;
+import org.objectstyle.cayenne.map.event.DbAttributeListener;
 import org.objectstyle.cayenne.modeler.PanelFactory;
 import org.objectstyle.cayenne.modeler.control.EventController;
 import org.objectstyle.cayenne.modeler.event.AttributeDisplayEvent;
-import org.objectstyle.cayenne.modeler.event.AttributeEvent;
-import org.objectstyle.cayenne.modeler.event.DbAttributeListener;
 import org.objectstyle.cayenne.modeler.event.DbEntityDisplayListener;
 import org.objectstyle.cayenne.modeler.event.EntityDisplayEvent;
 import org.objectstyle.cayenne.modeler.util.CayenneTable;
+import org.objectstyle.cayenne.modeler.util.CayenneWidgetFactory;
 
 /** 
  * Detail view of the DbEntity attributes. 
@@ -91,137 +89,150 @@ import org.objectstyle.cayenne.modeler.util.CayenneTable;
  * @author Andrei Adamchik
  */
 public class DbAttributePane
-	extends JPanel
-	implements
-		DbEntityDisplayListener,
-		ListSelectionListener,
-		DbAttributeListener,
-		ExistingSelectionProcessor,
-		ActionListener {
+    extends JPanel
+    implements
+        DbEntityDisplayListener,
+        ListSelectionListener,
+        DbAttributeListener,
+        ExistingSelectionProcessor,
+        ActionListener {
 
-	private static Logger logObj = Logger.getLogger(DbAttributePane.class);
+    protected EventController mediator;
+    protected CayenneTable table;
+    protected JButton editParams;
 
-	protected EventController mediator;
-	protected CayenneTable table;
-	protected JButton editParams;
+    public DbAttributePane(EventController temp_mediator) {
+        super();
+        mediator = temp_mediator;
+        mediator.addDbEntityDisplayListener(this);
+        mediator.addDbAttributeListener(this);
 
-	public DbAttributePane(EventController temp_mediator) {
-		super();
-		mediator = temp_mediator;
-		mediator.addDbEntityDisplayListener(this);
-		mediator.addDbAttributeListener(this);
+        // Create and layout components
+        init();
 
-		// Create and layout components
-		init();
+        editParams.addActionListener(this);
+    }
 
-		editParams.addActionListener(this);
-	}
+    private void init() {
+        setLayout(new BorderLayout());
 
-	private void init() {
-		setLayout(new BorderLayout());
+        // Create table with two columns and no rows.
+        table = new CayenneTable();
+        editParams = new JButton("Edit Parameters");
+        JPanel panel =
+            PanelFactory.createTablePanel(table, new JButton[] { editParams });
+        add(panel, BorderLayout.CENTER);
+    }
 
-		// Create table with two columns and no rows.
-		table = new CayenneTable();
-		editParams = new JButton("Edit Parameters");
-		JPanel panel =
-			PanelFactory.createTablePanel(table, new JButton[] { editParams });
-		add(panel, BorderLayout.CENTER);
-	}
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == editParams) {
+            int row = table.getSelectedRow();
+            if (row >= 0) {
+                DbAttribute attr =
+                    ((DbAttributeTableModel) table.getModel()).getAttribute(
+                        row);
 
-	/**
-	 * @see java.awt.event.ActionListener#actionPerformed(ActionEvent)
-	 */
-	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == editParams) {
-			int row = table.getSelectedRow();
-			if (row >= 0) {
-				DbAttribute attr =
-					((DbAttributeTableModel) table.getModel()).getAttribute(
-						row);
+                EditDerivedParamsDialog dialog =
+                    new EditDerivedParamsDialog((DerivedDbAttribute) attr);
+                dialog.show();
+                dialog.dispose();
+            }
+        }
+    }
 
-				EditDerivedParamsDialog dialog =
-					new EditDerivedParamsDialog((DerivedDbAttribute) attr);
-				dialog.show();
-				dialog.dispose();
-			}
-		}
-	}
+    public void valueChanged(ListSelectionEvent e) {
+        processExistingSelection();
+    }
 
-	public void valueChanged(ListSelectionEvent e) {
-		processExistingSelection();
-	}
+    /**
+      * Selects a specified attribute.
+      */
+    public void selectAttribute(DbAttribute attr) {
+        if (attr == null) {
+            return;
+        }
 
-	public void processExistingSelection() {
-		DbAttribute att = null;
-		if (table.getSelectedRow() >= 0) {
-			DbAttributeTableModel model =
-				(DbAttributeTableModel) table.getModel();
-			att = model.getAttribute(table.getSelectedRow());
-			editParams.setEnabled(att instanceof DerivedDbAttribute);
-		}
+        DbAttributeTableModel model = (DbAttributeTableModel) table.getModel();
+        java.util.List attrs = model.getObjectList();
+        int attrPos = attrs.indexOf(attr);
+        if (attrPos >= 0) {
+            table.select(attrPos);
+        }
+    }
 
-		mediator.fireDbAttributeDisplayEvent(
-			new AttributeDisplayEvent(
-				this,
-				att,
-				mediator.getCurrentDbEntity(),
-				mediator.getCurrentDataMap(),
-				mediator.getCurrentDataDomain()));
-	}
+    public void processExistingSelection() {
+        DbAttribute att = null;
+        if (table.getSelectedRow() >= 0) {
+            DbAttributeTableModel model =
+                (DbAttributeTableModel) table.getModel();
+            att = model.getAttribute(table.getSelectedRow());
+            editParams.setEnabled(att instanceof DerivedDbAttribute);
+            
+            // scroll table
+            table.scroll(table.getSelectedRow(), 0);
+        }
 
-	public void dbAttributeChanged(AttributeEvent e) {
-		table.select(e.getAttribute());
-	}
+        mediator.fireDbAttributeDisplayEvent(
+            new AttributeDisplayEvent(
+                this,
+                att,
+                mediator.getCurrentDbEntity(),
+                mediator.getCurrentDataMap(),
+                mediator.getCurrentDataDomain()));
+    }
 
-	public void dbAttributeAdded(AttributeEvent e) {
-		rebuildTable((DbEntity) e.getEntity());
-		table.select(e.getAttribute());
-	}
+    public void dbAttributeChanged(AttributeEvent e) {
+        table.select(e.getAttribute());
+    }
 
-	public void dbAttributeRemoved(AttributeEvent e) {
-		DbAttributeTableModel model = (DbAttributeTableModel) table.getModel();
-		int ind = model.getObjectList().indexOf(e.getAttribute());
-		model.removeRow(e.getAttribute());
-		table.select(ind);
-	}
+    public void dbAttributeAdded(AttributeEvent e) {
+        rebuildTable((DbEntity) e.getEntity());
+        table.select(e.getAttribute());
+    }
 
-	public void currentDbEntityChanged(EntityDisplayEvent e) {
-		DbEntity entity = (DbEntity) e.getEntity();
-		if (entity != null && e.isEntityChanged()) {
-			rebuildTable(entity);
-		}
+    public void dbAttributeRemoved(AttributeEvent e) {
+        DbAttributeTableModel model = (DbAttributeTableModel) table.getModel();
+        int ind = model.getObjectList().indexOf(e.getAttribute());
+        model.removeRow(e.getAttribute());
+        table.select(ind);
+    }
 
-		// if an entity was selected on a tree, 
-		// unselect currently selected row
-		if (e.isUnselectAttributes()) {
-			table.clearSelection();
-		}
-	}
+    public void currentDbEntityChanged(EntityDisplayEvent e) {
+        DbEntity entity = (DbEntity) e.getEntity();
+        if (entity != null && e.isEntityChanged()) {
+            rebuildTable(entity);
+        }
 
-	protected void rebuildTable(DbEntity ent) {
-		editParams.setVisible(ent instanceof DerivedDbEntity);
-		editParams.setEnabled(false);
+        // if an entity was selected on a tree, 
+        // unselect currently selected row
+        if (e.isUnselectAttributes()) {
+            table.clearSelection();
+        }
+    }
 
-		DbAttributeTableModel model =
-			(ent instanceof DerivedDbEntity)
-				? new DerivedDbAttributeTableModel(ent, mediator, this)
-				: new DbAttributeTableModel(ent, mediator, this);
-		table.setModel(model);
-		table.setRowHeight(25);
-		table.setRowMargin(3);
-		TableColumn col =
-			table.getColumnModel().getColumn(model.nameColumnInd());
-		col.setMinWidth(150);
+    protected void rebuildTable(DbEntity ent) {
+        editParams.setVisible(ent instanceof DerivedDbEntity);
+        editParams.setEnabled(false);
 
-		col = table.getColumnModel().getColumn(model.typeColumnInd());
-		col.setMinWidth(90);
+        DbAttributeTableModel model =
+            (ent instanceof DerivedDbEntity)
+                ? new DerivedDbAttributeTableModel(ent, mediator, this)
+                : new DbAttributeTableModel(ent, mediator, this);
+        table.setModel(model);
+        table.setRowHeight(25);
+        table.setRowMargin(3);
+        TableColumn col =
+            table.getColumnModel().getColumn(model.nameColumnInd());
+        col.setMinWidth(150);
 
-    String[] types=TypesMapping.getDatabaseTypes();
-    Arrays.sort(types);
-		JComboBox comboBox = new JComboBox(types);
-		comboBox.setEditable(true);
-		col.setCellEditor(new DefaultCellEditor(comboBox));
+        col = table.getColumnModel().getColumn(model.typeColumnInd());
+        col.setMinWidth(90);
 
-		table.getSelectionModel().addListSelectionListener(this);
-	}
+        String[] types = TypesMapping.getDatabaseTypes();
+        JComboBox comboBox = CayenneWidgetFactory.createComboBox(types, true);
+        comboBox.setEditable(true);
+        col.setCellEditor(new DefaultCellEditor(comboBox));
+
+        table.getSelectionModel().addListSelectionListener(this);
+    }
 }

@@ -1,9 +1,8 @@
-package org.objectstyle.cayenne;
 /* ====================================================================
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,15 +53,14 @@ package org.objectstyle.cayenne;
  * <http://objectstyle.org/>.
  *
  */
+package org.objectstyle.cayenne;
 
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.art.Artist;
-import org.objectstyle.art.Painting;
-import org.objectstyle.art.PaintingInfo;
 import org.objectstyle.cayenne.access.DataContext;
 import org.objectstyle.cayenne.access.DataDomain;
+import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.query.SelectQuery;
@@ -70,22 +68,33 @@ import org.objectstyle.cayenne.unittest.CayenneTestCase;
 import org.objectstyle.cayenne.unittest.CayenneTestDatabaseSetup;
 
 public class CayenneDataObjectInCtxtTst extends CayenneTestCase {
-    private static Logger logObj = Logger.getLogger(CayenneDataObjectInCtxtTst.class);
-
     protected DataContext ctxt;
-
-    public CayenneDataObjectInCtxtTst(String name) {
-        super(name);
-    }
 
     public void setUp() throws java.lang.Exception {
         CayenneTestDatabaseSetup setup = getDatabaseSetup();
         setup.cleanTableData();
 
-		DataDomain dom = getDomain();
-        setup.createPkSupportForMapEntities(dom.getDataNodes()[0]);
+        DataDomain dom = getDomain();
+        setup.createPkSupportForMapEntities(
+            (DataNode) dom.getDataNodes().iterator().next());
 
         ctxt = dom.createDataContext();
+    }
+
+    public void testCommitChangesInBatch() throws Exception {
+        Artist a1 = (Artist) ctxt.createAndRegisterNewObject("Artist");
+        a1.setArtistName("abc1");
+
+        Artist a2 = (Artist) ctxt.createAndRegisterNewObject("Artist");
+        a2.setArtistName("abc2");
+
+        Artist a3 = (Artist) ctxt.createAndRegisterNewObject("Artist");
+        a3.setArtistName("abc3");
+
+        ctxt.commitChanges();
+
+        List artists = ctxt.performQuery(new SelectQuery(Artist.class));
+        assertEquals(3, artists.size());
     }
 
     public void testSetObjectId() throws Exception {
@@ -153,7 +162,7 @@ public class CayenneDataObjectInCtxtTst extends CayenneTestCase {
 
         ctxt.commitChanges();
         assertEquals(PersistenceState.TRANSIENT, o1.getPersistenceState());
-        assertTrue(!ctxt.getObjectStore().getObjects().contains(o1));
+        assertFalse(ctxt.getObjectStore().getObjects().contains(o1));
         assertNull(o1.getDataContext());
     }
 
@@ -167,15 +176,16 @@ public class CayenneDataObjectInCtxtTst extends CayenneTestCase {
 
     public void testFetchByAttr() throws Exception {
         String artistName = "artist with one painting";
-        TestCaseDataFactory.createArtistWithPainting(
-            artistName,
-            new String[] {},
-            false);
+        TestCaseDataFactory.createArtistWithPainting(artistName, new String[] {
+        }, false);
 
         SelectQuery q =
             new SelectQuery(
                 "Artist",
-                ExpressionFactory.binaryPathExp(Expression.EQUAL_TO, "artistName", artistName));
+                ExpressionFactory.binaryPathExp(
+                    Expression.EQUAL_TO,
+                    "artistName",
+                    artistName));
 
         List artists = ctxt.performQuery(q);
         assertEquals(1, artists.size());
@@ -186,10 +196,8 @@ public class CayenneDataObjectInCtxtTst extends CayenneTestCase {
 
     public void testUniquing() throws Exception {
         String artistName = "unique artist with no paintings";
-        TestCaseDataFactory.createArtistWithPainting(
-            artistName,
-            new String[] {},
-            false);
+        TestCaseDataFactory.createArtistWithPainting(artistName, new String[] {
+        }, false);
 
         Artist a1 = fetchArtist(artistName);
         Artist a2 = fetchArtist(artistName);
@@ -203,7 +211,7 @@ public class CayenneDataObjectInCtxtTst extends CayenneTestCase {
     private Artist newSavedArtist() {
         Artist o1 = new Artist();
         o1.setArtistName("a");
-        o1.setDateOfBirth(new java.util.Date());
+        o1.setDateOfBirth(new java.sql.Date(System.currentTimeMillis()));
         ctxt.registerNewObject(o1);
         ctxt.commitChanges();
         return o1;
@@ -218,24 +226,4 @@ public class CayenneDataObjectInCtxtTst extends CayenneTestCase {
         return (ats.size() > 0) ? (Artist) ats.get(0) : null;
     }
 
-    private Painting fetchPainting(String name) {
-        SelectQuery q =
-            new SelectQuery(
-                "Painting",
-                ExpressionFactory.binaryPathExp(Expression.EQUAL_TO, "paintingTitle", name));
-        List pts = ctxt.performQuery(q);
-        return (pts.size() > 0) ? (Painting) pts.get(0) : null;
-    }
-
-    private PaintingInfo fetchPaintingInfo(String name) {
-        SelectQuery q =
-            new SelectQuery(
-                "PaintingInfo",
-                ExpressionFactory.binaryPathExp(
-                    Expression.EQUAL_TO,
-                    "painting.paintingTitle",
-                    name));
-        List pts = ctxt.performQuery(q);
-        return (pts.size() > 0) ? (PaintingInfo) pts.get(0) : null;
-    }
 }

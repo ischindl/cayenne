@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,13 +58,23 @@ package org.objectstyle.cayenne.conf;
 
 import org.objectstyle.cayenne.access.DataDomain;
 
-/** Configuration object used for tests that does not require "cayenne.xml". */
+/**
+ * Configuration object used for tests that does not require "cayenne.xml".
+ */
 public class EmptyConfiguration extends DefaultConfiguration {
+
 	public EmptyConfiguration() {
-	    ignoringLoadFailures = true;
+		super();
+
+		// add "test-resources" directory to CLASSPATH
+		this.addClassPath("test-resources");
+
+		// ignore any loading failures
+		this.setIgnoringLoadFailures(true);
 	}
-	
-    public void addDomain(DataDomain domain) {
-        // noop
-    }
+
+	public void addDomain(DataDomain domain) {
+		// noop
+	}
+
 }

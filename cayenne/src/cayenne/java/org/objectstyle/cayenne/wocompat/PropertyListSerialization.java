@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -207,7 +207,7 @@ public class PropertyListSerialization {
 	}
 
 	/** 
-	 * Escapes all doublequotes.
+	 * Escapes all doublequotes and backslashes.
 	 */
 	protected static String escapeString(String str) {
 		char[] chars = str.toCharArray();
@@ -215,9 +215,9 @@ public class PropertyListSerialization {
 		StringBuffer buf = new StringBuffer(len + 3);
 
 		for (int i = 0; i < len; i++) {
-			if (chars[i] == '\"') {
+			if (chars[i] == '\"' || chars[i] == '\\') {
 				buf.append('\\');
-			}
+			}			
 			buf.append(chars[i]);
 		}
 
@@ -232,8 +232,9 @@ public class PropertyListSerialization {
 	protected static String quoteString(String str) {
 		boolean shouldQuote = false;
 		
-		// scan string for special chars
-		String special = " \"{}();,";
+		// scan string for special chars, 
+        // if we have them, string must be quoted
+		String special = " \\\"{}();,-\'";
 		char[] chars = str.toCharArray();
 		int len = chars.length;
 		for (int i = 0; i < len; i++) {

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002 The ObjectStyle Group 
+ * Copyright (c) 2002-2003 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,7 +68,7 @@ import java.util.Map;
 
 import org.apache.commons.collections.ExtendedProperties;
 import org.apache.log4j.Logger;
-import org.objectstyle.cayenne.access.DataSourceInfo;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.project.CayenneUserDir;
 
 /**
@@ -115,7 +115,7 @@ public class ConnectionProperties {
                     new ExtendedProperties(f.getAbsolutePath()));
             } else {
                 // lets touch this file so that users would get a clue of what it is
-                createSamplPropertiesFile(f);
+                createSamplePropertiesFile(f);
             }
         } catch (IOException e) {
             logObj.warn("Error loading connection properties. Ignoring..", e);
@@ -124,7 +124,7 @@ public class ConnectionProperties {
         return new ConnectionProperties(new ExtendedProperties());
     }
 
-    protected static void createSamplPropertiesFile(File f) throws IOException {
+    protected static void createSamplePropertiesFile(File f) throws IOException {
         BufferedWriter out = new BufferedWriter(new FileWriter(f));
 
         try {
@@ -201,7 +201,7 @@ public class ConnectionProperties {
     protected DataSourceInfo buildDataSourceInfo(ExtendedProperties props) {
         DataSourceInfo dsi = new DataSourceInfo();
 
-        dsi.setAdapterClass(props.getString(ADAPTER_KEY));
+        dsi.setAdapterClassName(props.getString(ADAPTER_KEY));
         dsi.setUserName(props.getString(USER_NAME_KEY));
         dsi.setPassword(props.getString(PASSWORD_KEY));
         dsi.setDataSourceUrl(props.getString(URL_KEY));
