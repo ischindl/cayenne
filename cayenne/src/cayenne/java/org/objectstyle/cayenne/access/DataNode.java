@@ -634,39 +634,46 @@ public class DataNode implements QueryEngine {
         CallableStatement statement =
             (CallableStatement) transl.createStatement(query.getLoggingLevel());
 
-        // stored procedure may contain a mixture of update counts and result sets,
-        // and out parameters. Read out parameters first, then
-        // iterate until we exhaust all results
-        boolean hasResultSet = statement.execute();
+        try {
+            // stored procedure may contain a mixture of update counts and result sets,
+            // and out parameters. Read out parameters first, then
+            // iterate until we exhaust all results
+            boolean hasResultSet = statement.execute();
 
-        // read out parameters
-        readStoredProcedureOutParameters(
-            statement,
-            transl.getProcedureResultDescriptor(),
-            query,
-            delegate);
+            // read out parameters
+            readStoredProcedureOutParameters(statement, transl
+                    .getProcedureResultDescriptor(), query, delegate);
 
-        // read the rest of the query
-        while (true) {
-            if (hasResultSet) {
-                ResultSet rs = statement.getResultSet();
+            // read the rest of the query
+            while (true) {
+                if (hasResultSet) {
+                    ResultSet rs = statement.getResultSet();
 
-                readResultSet(
-                    rs,
-                    transl.getResultDescriptor(rs),
-                    (GenericSelectQuery) query,
-                    delegate);
-            }
-            else {
-                int updateCount = statement.getUpdateCount();
-                if (updateCount == -1) {
-                    break;
+                    readResultSet(
+                            rs,
+                            transl.getResultDescriptor(rs),
+                            (GenericSelectQuery) query,
+                            delegate);
                 }
-                QueryLogger.logUpdateCount(query.getLoggingLevel(), updateCount);
-                delegate.nextCount(query, updateCount);
-            }
+                else {
+                    int updateCount = statement.getUpdateCount();
+                    if (updateCount == -1) {
+                        break;
+                    }
+                    QueryLogger.logUpdateCount(query.getLoggingLevel(), updateCount);
+                    delegate.nextCount(query, updateCount);
+                }
 
-            hasResultSet = statement.getMoreResults();
+                hasResultSet = statement.getMoreResults();
+            }
+        }
+        finally {
+            try {
+                statement.close();
+            }
+            catch (SQLException ex) {
+
+            }
         }
     }
 
