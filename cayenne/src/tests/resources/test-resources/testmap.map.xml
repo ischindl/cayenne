@@ -29,6 +29,15 @@
 		<db-attribute name="ARTIST_ID" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
 		<db-attribute name="GROUP_ID" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
 	</db-entity>
+	<db-entity name="BINARY_PK_TEST1">
+		<db-attribute name="ID" type="VARBINARY" isPrimaryKey="true" isMandatory="true" length="32"/>
+		<db-attribute name="NAME" type="VARCHAR" length="10"/>
+	</db-entity>
+	<db-entity name="BINARY_PK_TEST2">
+		<db-attribute name="DETAIL_NAME" type="VARCHAR" length="10"/>
+		<db-attribute name="FK_ID" type="VARBINARY" length="32"/>
+		<db-attribute name="ID" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
+	</db-entity>
 	<db-entity name="BLOB_TEST">
 		<db-attribute name="BLOB_COL" type="BLOB"/>
 		<db-attribute name="BLOB_TEST_ID" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
@@ -128,6 +137,14 @@
 		<db-attribute name="PAINTING_ID" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
 		<db-attribute name="TEXT_REVIEW" type="LONGVARCHAR"/>
 	</db-entity>
+	<db-entity name="SMALLINT_TEST">
+		<db-attribute name="ID" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
+		<db-attribute name="SMALLINT_COL" type="SMALLINT"/>
+	</db-entity>
+	<db-entity name="TINYINT_TEST">
+		<db-attribute name="ID" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
+		<db-attribute name="TINYINT_COL" type="TINYINT"/>
+	</db-entity>
 	<db-entity name="ARTIST_ASSETS" parentName="PAINTING">
 		<db-attribute-derived name="ARTIST_ID" type="INTEGER" isPrimaryKey="true" isGroupBy="true" spec="%@">
 			<db-attribute-ref name="ARTIST_ID"/>
@@ -154,6 +171,12 @@
 	</obj-entity>
 	<obj-entity name="ArtistPaintingCounts" className="org.objectstyle.art.ArtistPaintingCounts" dbEntityName="ARTIST_ASSETS">
 		<obj-attribute name="paintingsCount" type="java.lang.Integer" db-attribute-path="PAINTINGS_COUNT"/>
+	</obj-entity>
+	<obj-entity name="BinaryPKTest1" className="org.objectstyle.art.BinaryPKTest1" dbEntityName="BINARY_PK_TEST1">
+		<obj-attribute name="name" type="java.lang.String" db-attribute-path="NAME"/>
+	</obj-entity>
+	<obj-entity name="BinaryPKTest2" className="org.objectstyle.art.BinaryPKTest2" dbEntityName="BINARY_PK_TEST2">
+		<obj-attribute name="detailName" type="java.lang.String" db-attribute-path="DETAIL_NAME"/>
 	</obj-entity>
 	<obj-entity name="BlobTest" className="org.objectstyle.art.BlobTest" dbEntityName="BLOB_TEST">
 		<obj-attribute name="blobCol" type="byte[]" db-attribute-path="BLOB_COL"/>
@@ -242,8 +265,14 @@
 		<obj-attribute name="paintingTitle" type="java.lang.String" db-attribute-path="PAINTING_TITLE"/>
 		<obj-attribute name="textReview" type="java.lang.String" db-attribute-path="toPaintingInfo.TEXT_REVIEW"/>
 	</obj-entity>
+	<obj-entity name="SmallintTest" className="org.objectstyle.art.SmallintTest" dbEntityName="SMALLINT_TEST">
+		<obj-attribute name="smallintCol" type="java.lang.Short" db-attribute-path="SMALLINT_COL"/>
+	</obj-entity>
 	<obj-entity name="SubPainting" className="org.objectstyle.art.SubPainting" dbEntityName="PAINTING">
 		<obj-attribute name="paintingTitle" type="java.lang.String" db-attribute-path="PAINTING_TITLE"/>
+	</obj-entity>
+	<obj-entity name="TinyintTest" className="org.objectstyle.art.TinyintTest" dbEntityName="TINYINT_TEST">
+		<obj-attribute name="tinyintCol" type="java.lang.Byte" db-attribute-path="TINYINT_COL"/>
 	</obj-entity>
 	<db-relationship name="artistExhibitArray" source="ARTIST" target="ARTIST_EXHIBIT" toDependentPK="true" toMany="true">
 		<db-attribute-pair source="ARTIST_ID" target="ARTIST_ID"/>
@@ -256,6 +285,9 @@
 	</db-relationship>
 	<db-relationship name="artistGroupArray" source="ARTIST" target="ARTIST_GROUP" toDependentPK="false" toMany="true">
 		<db-attribute-pair source="ARTIST_ID" target="ARTIST_ID"/>
+	</db-relationship>
+	<db-relationship name="binaryPKDetails" source="BINARY_PK_TEST1" target="BINARY_PK_TEST2" toDependentPK="false" toMany="true">
+		<db-attribute-pair source="ID" target="FK_ID"/>
 	</db-relationship>
 	<db-relationship name="compoundFkArray" source="COMPOUND_PK_TEST" target="COMPOUND_FK_TEST" toDependentPK="false" toMany="true">
 		<db-attribute-pair source="KEY1" target="F_KEY1"/>
@@ -309,6 +341,9 @@
 	<db-relationship name="toArtist" source="ARTIST_ASSETS" target="ARTIST" toDependentPK="false" toMany="false">
 		<db-attribute-pair source="ARTIST_ID" target="ARTIST_ID"/>
 	</db-relationship>
+	<db-relationship name="toBinaryPKMaster" source="BINARY_PK_TEST2" target="BINARY_PK_TEST1" toDependentPK="false" toMany="false">
+		<db-attribute-pair source="FK_ID" target="ID"/>
+	</db-relationship>
 	<db-relationship name="toChildGroups" source="ARTGROUP" target="ARTGROUP" toDependentPK="false" toMany="true">
 		<db-attribute-pair source="GROUP_ID" target="PARENT_GROUP_ID"/>
 	</db-relationship>
@@ -355,6 +390,9 @@
 	</obj-relationship>
 	<obj-relationship name="artistExhibitArray" source="Exhibit" target="ArtistExhibit" toMany="true" deleteRule="Cascade">
 		<db-relationship-ref source="EXHIBIT" target="ARTIST_EXHIBIT" name="artistExhibitArray"/>
+	</obj-relationship>
+	<obj-relationship name="binaryPKDetails" source="BinaryPKTest1" target="BinaryPKTest2" toMany="true">
+		<db-relationship-ref source="BINARY_PK_TEST1" target="BINARY_PK_TEST2" name="binaryPKDetails"/>
 	</obj-relationship>
 	<obj-relationship name="childGroupsArray" source="ArtGroup" target="ArtGroup" toMany="true" deleteRule="Nullify">
 		<db-relationship-ref source="ARTGROUP" target="ARTGROUP" name="toChildGroups"/>
@@ -420,6 +458,9 @@
 	</obj-relationship>
 	<obj-relationship name="toArtist" source="ROPainting" target="Artist" toMany="false" deleteRule="Nullify">
 		<db-relationship-ref source="PAINTING" target="ARTIST" name="toArtist"/>
+	</obj-relationship>
+	<obj-relationship name="toBinaryPKMaster" source="BinaryPKTest2" target="BinaryPKTest1" toMany="false">
+		<db-relationship-ref source="BINARY_PK_TEST2" target="BINARY_PK_TEST1" name="toBinaryPKMaster"/>
 	</obj-relationship>
 	<obj-relationship name="toCompoundPk" source="CompoundFkTest" target="CompoundPkTest" toMany="false">
 		<db-relationship-ref source="COMPOUND_FK_TEST" target="COMPOUND_PK_TEST" name="toCompoundPk"/>

@@ -60,7 +60,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.objectstyle.cayenne.util.Util;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /** 
  * An ObjectId is a globally unique identifier of DataObjects.
@@ -80,6 +81,9 @@ public class ObjectId implements Serializable {
 	// Values: database values of the corresponding attribute
 	protected Map objectIdKeys;
 	protected Class objectClass;
+
+	// cache hasCode, since ObjectId is immutable
+	private int hashCode = Integer.MIN_VALUE;
 	
 	/**
 	 * Convenience constructor for entities that have a 
@@ -122,10 +126,48 @@ public class ObjectId implements Serializable {
 		}
 
 		ObjectId id = (ObjectId) object;
+
 		// use the class name because two Objectid's should be equal
 		// even if their objClass'es were loaded by different class loaders.
-		return objectClass.getName().equals(id.objectClass.getName()) &&
-				Util.nullSafeEquals(id.objectIdKeys, this.objectIdKeys);
+		if (!objectClass.getName().equals(id.objectClass.getName())) {
+			return false;
+		}
+
+		if (id.objectIdKeys == null && objectIdKeys == null) {
+			return true;
+		}
+
+		if (id.objectIdKeys == null || objectIdKeys == null) {
+			return false;
+		}
+
+		if (id.objectIdKeys.size() != objectIdKeys.size()) {
+			return false;
+		}
+
+		EqualsBuilder builder = new EqualsBuilder();
+		Iterator entries = objectIdKeys.entrySet().iterator();
+		while (entries.hasNext()) {
+			Map.Entry entry = (Map.Entry) entries.next();
+
+			Object key = entry.getKey();
+			Object value = entry.getValue();
+			if (value == null) {
+				if (id.objectIdKeys.get(key) != null
+					|| !id.objectIdKeys.containsKey(key)) {
+					return false;
+				}
+			}
+			else {
+				// takes care of comparing primitive arrays, such as byte[]
+				builder.append(value, id.objectIdKeys.get(key));
+				if (!builder.isEquals()) {
+					return false;
+				}
+			}
+		}
+        
+		return true;
 	}
 
 	/**
@@ -174,10 +216,30 @@ public class ObjectId implements Serializable {
      * @see java.lang.Object#hashCode()
      */
     public int hashCode() {
-    	int mapHash = (objectIdKeys != null) ? objectIdKeys.hashCode() : 0;
-		// use the class name because two Objectid's should be equal
-		// even if their objClass'es were loaded by different class loaders.
-        return objectClass.getName().hashCode() + mapHash;
+		if (this.hashCode == Integer.MIN_VALUE) {
+			// build and cache hashCode
+
+			HashCodeBuilder builder = new HashCodeBuilder(3, 5);
+
+			// use the class name because two Objectid's should be equal
+			// even if their objClass'es were loaded by different class loaders.
+			builder.append(objectClass.getName().hashCode());
+
+			if (objectIdKeys != null) {
+				Iterator entries = objectIdKeys.entrySet().iterator();
+				while (entries.hasNext()) {
+					Map.Entry entry = (Map.Entry) entries.next();
+
+					// HashCodeBuilder will take care of processing object if it 
+					// happens to be a primitive array such as byte[]
+					builder.append(entry.getKey()).append(entry.getValue());
+				}
+			}
+
+			this.hashCode = builder.toHashCode();
+		}
+
+		return this.hashCode;
     }
     
 	/**
