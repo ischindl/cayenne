@@ -1,38 +1,39 @@
 /* ====================================================================
  *
- * The ObjectStyle Group Software License, Version 1.0
- *
- * Copyright (c) 2002 The ObjectStyle Group
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- *
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:
- *       "This product includes software developed by the
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne"
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,12 +47,11 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 
 package org.objectstyle.cayenne.modeler.action;
@@ -60,19 +60,40 @@ import java.awt.Component;
 import java.awt.HeadlessException;
 import java.awt.event.ActionEvent;
 import java.io.File;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
 
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
 
-import org.objectstyle.cayenne.modeler.ModelerPreferences;
-import org.objectstyle.cayenne.modeler.Editor;
-import org.objectstyle.cayenne.modeler.event.*;
-import org.objectstyle.cayenne.modeler.util.EOModelFileFilter;
-import org.objectstyle.cayenne.modeler.util.EOModelSelectFilter;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.objectstyle.cayenne.access.DataDomain;
+import org.objectstyle.cayenne.access.DataNode;
+import org.objectstyle.cayenne.conf.DriverDataSourceFactory;
+import org.objectstyle.cayenne.conf.JNDIDataSourceFactory;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
+import org.objectstyle.cayenne.dba.DbAdapter;
 import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.Entity;
+import org.objectstyle.cayenne.map.event.DataNodeEvent;
+import org.objectstyle.cayenne.map.event.EntityEvent;
+import org.objectstyle.cayenne.modeler.AdapterMapping;
+import org.objectstyle.cayenne.modeler.Application;
+import org.objectstyle.cayenne.modeler.ProjectController;
+import org.objectstyle.cayenne.modeler.dialog.ErrorDebugDialog;
+import org.objectstyle.cayenne.modeler.event.DataMapDisplayEvent;
+import org.objectstyle.cayenne.modeler.event.DataNodeDisplayEvent;
+import org.objectstyle.cayenne.modeler.pref.FSPath;
+import org.objectstyle.cayenne.modeler.util.CayenneAction;
+import org.objectstyle.cayenne.modeler.util.FileFilters;
+import org.objectstyle.cayenne.project.NamedObjectFactory;
+import org.objectstyle.cayenne.project.ProjectDataSource;
+import org.objectstyle.cayenne.project.ProjectPath;
 import org.objectstyle.cayenne.wocompat.EOModelProcessor;
 
 /**
@@ -81,155 +102,281 @@ import org.objectstyle.cayenne.wocompat.EOModelProcessor;
  * @author Andrei Adamchik
  */
 public class ImportEOModelAction extends CayenneAction {
-	static Logger logObj =
-		Logger.getLogger(ImportEOModelAction.class.getName());
 
-	public static final String ACTION_NAME = "Import EOModel";
+    private static final Logger logObj = Logger.getLogger(ImportEOModelAction.class);
 
-	protected JFileChooser eoModelChooser;
+    public static String getActionName() {
+        return "Import EOModel";
+    }
 
-	public ImportEOModelAction() {
-		super(ACTION_NAME);
-	}
+    protected JFileChooser eoModelChooser;
 
-	/**
-	 * @see java.awt.event.ActionListener#actionPerformed(ActionEvent)
-	 */
-	public void performAction(ActionEvent event) {
-		importEOModel();
-	}
+    public ImportEOModelAction(Application application) {
+        super(getActionName(), application);
+    }
 
-	/** 
-	 * Lets user select an EOModel, then imports it as a DataMap.
-	 */
-	protected void importEOModel() {
-		JFileChooser fileChooser = getEOModelChooser();
-		int status = fileChooser.showOpenDialog(Editor.getFrame());
+    public void performAction(ActionEvent event) {
+        importEOModel();
+    }
 
-		if (status == JFileChooser.APPROVE_OPTION) {
-			// save preferences
-			File file = fileChooser.getSelectedFile();
-			if (file.isFile()) {
-				file = file.getParentFile();
-			}
+    /**
+     * Allows user to select an EOModel, then imports it as a DataMap.
+     */
+    protected void importEOModel() {
+        JFileChooser fileChooser = getEOModelChooser();
+        int status = fileChooser.showOpenDialog(Application.getFrame());
 
-			ModelerPreferences.getPreferences().setProperty(
-				ModelerPreferences.LAST_EOM_DIR,
-				file.getParent());
+        if (status == JFileChooser.APPROVE_OPTION) {
 
-			try {
-				String path = file.getCanonicalPath();
-				DataMap map = new EOModelProcessor().loadEOModel(path);
-				addDataMap(map);
-			} catch (Exception ex) {
-				logObj.log(Level.INFO, "EOModel Loading Exception", ex);
-			}
+            // save preferences
+            FSPath lastDir = getApplication()
+                    .getFrameController()
+                    .getLastEOModelDirectory();
+            lastDir.updateFromChooser(fileChooser);
 
-		}
-	}
+            File file = fileChooser.getSelectedFile();
+            if (file.isFile()) {
+                file = file.getParentFile();
+            }
 
-	/** 
-	 * Adds DataMap into the project.
-	 */
-	protected void addDataMap(DataMap map) {
-		DataMap currentMap = getMediator().getCurrentDataMap();
-		Mediator mediator = getMediator();
+            DataMap currentMap = getProjectController().getCurrentDataMap();
 
-		if (currentMap != null) {
-			// merge with existing map
-			// loader.loadDataMapFromDB(schema_name, null, map);
-			currentMap.mergeWithDataMap(map);
-			map = currentMap;
-		}
+            try {
+                String path = file.getCanonicalPath();
 
-		// If this is adding to existing data map, remove it
-		// and re-add to the BroseView
-		if (currentMap != null) {
-			mediator.fireDataMapEvent(
-				new DataMapEvent(Editor.getFrame(), map, DataMapEvent.REMOVE));
-			mediator.fireDataMapEvent(
-				new DataMapEvent(Editor.getFrame(), map, DataMapEvent.ADD));
-			mediator.fireDataMapDisplayEvent(
-				new DataMapDisplayEvent(
-					Editor.getFrame(),
-					map,
-					mediator.getCurrentDataDomain(),
-					mediator.getCurrentDataNode()));
-		} else {
-			mediator.addDataMap(Editor.getFrame(), map);
-		}
-	}
+                EOModelProcessor processor = new EOModelProcessor();
 
-	/** 
-	 * Returns EOModel chooser.
-	 */
-	public JFileChooser getEOModelChooser() {
+                // load DataNode if we are not merging with an existing map
+                if (currentMap == null) {
+                    loadDataNode(processor.loadModeIndex(path));
+                }
 
-		if (eoModelChooser == null) {
-			eoModelChooser = new EOModelChooser("Select EOModel");
-		}
+                // load DataMap
+                DataMap map = processor.loadEOModel(path);
+                addDataMap(map, currentMap);
 
-		String startDir =
-			ModelerPreferences.getPreferences().getString(ModelerPreferences.LAST_EOM_DIR);
+            }
+            catch (Exception ex) {
+                logObj.log(Level.INFO, "EOModel Loading Exception", ex);
+                ErrorDebugDialog.guiException(ex);
+            }
 
-		if (startDir == null) {
-			startDir =
-				ModelerPreferences.getPreferences().getString(ModelerPreferences.LAST_DIR);
-		}
+        }
+    }
 
-		if (startDir != null) {
-			File startDirFile = new File(startDir);
-			if (startDirFile.exists()) {
-				eoModelChooser.setCurrentDirectory(startDirFile);
-			}
-		}
+    protected void loadDataNode(Map eomodelIndex) {
+        // if this is JDBC or JNDI node and connection dictionary is specified, load a
+        // DataNode, otherwise ignore it (meaning that pre 5.* EOModels will not have a
+        // node).
 
-		return eoModelChooser;
-	}
+        String adapter = (String) eomodelIndex.get("adaptorName");
+        Map connection = (Map) eomodelIndex.get("connectionDictionary");
 
-	/** 
-	 * Custom file chooser that will pop up again if a bad directory is selected.
-	 */
-	class EOModelChooser extends JFileChooser {
-		protected FileFilter selectFilter;
-		protected JDialog cachedDialog;
+        if (adapter != null && connection != null) {
+            CreateNodeAction nodeBuilder = (CreateNodeAction) getApplication().getAction(
+                    CreateNodeAction.getActionName());
 
-		public EOModelChooser(String title) {
-			super.setFileFilter(new EOModelFileFilter());
-			super.setDialogTitle(title);
-			super.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+            // this should make created node current, resulting in the new map being added
+            // to the node automatically once it is loaded
+            DataNode node = nodeBuilder.buildDataNode();
 
-			this.selectFilter = new EOModelSelectFilter();
-		}
+            // configure node...
+            if ("JNDI".equalsIgnoreCase(adapter)) {
+                node.setDataSourceFactory(JNDIDataSourceFactory.class.getName());
+                node.setDataSourceLocation((String) connection.get("serverUrl"));
+            }
+            else {
+                // guess adapter from plugin or driver
+                AdapterMapping adapterDefaults = getApplication().getAdapterMapping();
+                String cayenneAdapter = adapterDefaults.adapterForEOFPluginOrDriver(
+                        (String) connection.get("plugin"),
+                        (String) connection.get("driver"));
+                if (cayenneAdapter != null) {
+                    try {
+                        Class adapterClass = getApplication()
+                                .getClassLoadingService()
+                                .loadClass(cayenneAdapter);
+                        node.setAdapter((DbAdapter) adapterClass.newInstance());
+                    }
+                    catch (Throwable ex) {
+                        // ignore...
+                    }
+                }
 
-		public int showOpenDialog(Component parent) {
-			int status = super.showOpenDialog(parent);
-			if (status != JFileChooser.APPROVE_OPTION) {
-				cachedDialog = null;
-				return status;
-			}
+                node.setDataSourceFactory(DriverDataSourceFactory.class.getName());
 
-			// make sure invalid directory is not selected
-			File file = this.getSelectedFile();
-			if (selectFilter.accept(file)) {
-				cachedDialog = null;
-				return JFileChooser.APPROVE_OPTION;
-			} else {
-				if (file.isDirectory()) {
-					this.setCurrentDirectory(file);
-				}
+                DataSourceInfo dsi = ((ProjectDataSource) node.getDataSource())
+                        .getDataSourceInfo();
+                
+                
+                
+                dsi.setDataSourceUrl(keyAsString(connection, "URL"));
+                dsi.setJdbcDriver(keyAsString(connection, "driver"));
+                dsi.setPassword(keyAsString(connection, "password"));
+                dsi.setUserName(keyAsString(connection, "username"));
+            }
 
-				return this.showOpenDialog(parent);
-			}
-		}
+            // send events after the node creation is complete
+            getProjectController().fireDataNodeEvent(
+                    new DataNodeEvent(this, node, DataNodeEvent.ADD));
+            getProjectController().fireDataNodeDisplayEvent(
+                    new DataNodeDisplayEvent(this, getProjectController()
+                            .getCurrentDataDomain(), node));
+        }
+    }
+    
+    // CAY-246 - if user name or password is all numeric, it will
+    // be returned as number, so we can't cast dictionary keys to String
+    private String keyAsString(Map map, String key) {
+        Object value = map.get(key);
+        return (value != null) ? value.toString() : null;
+    }
 
-		protected JDialog createDialog(Component parent)
-			throws HeadlessException {
+    /**
+     * Returns <code>true</code> if path contains a DataDomain object.
+     */
+    public boolean enableForPath(ProjectPath path) {
+        if (path == null) {
+            return false;
+        }
 
-			if (cachedDialog == null) {
-				cachedDialog = super.createDialog(parent);
-			}
-			return cachedDialog;
-		}
-	}
+        return path.firstInstanceOf(DataDomain.class) != null;
+    }
+
+    /**
+     * Adds DataMap into the project.
+     */
+    protected void addDataMap(DataMap map, DataMap currentMap) {
+
+        ProjectController mediator = getProjectController();
+
+        if (currentMap != null) {
+            // merge with existing map... have to memorize map state before and after
+            // to do the right events
+
+            Collection originalOE = new ArrayList(currentMap.getObjEntities());
+            Collection originalDE = new ArrayList(currentMap.getDbEntities());
+
+            currentMap.mergeWithDataMap(map);
+            map = currentMap;
+
+            // postprocess changes
+            Collection newOE = new ArrayList(currentMap.getObjEntities());
+            Collection newDE = new ArrayList(currentMap.getDbEntities());
+
+            EntityEvent entityEvent = new EntityEvent(Application.getFrame(), null);
+
+            Collection addedOE = CollectionUtils.subtract(newOE, originalOE);
+            Iterator it = addedOE.iterator();
+            while (it.hasNext()) {
+                Entity e = (Entity) it.next();
+                entityEvent.setEntity(e);
+                entityEvent.setId(EntityEvent.ADD);
+                mediator.fireObjEntityEvent(entityEvent);
+            }
+
+            Collection removedOE = CollectionUtils.subtract(originalOE, newOE);
+            it = removedOE.iterator();
+            while (it.hasNext()) {
+                Entity e = (Entity) it.next();
+                entityEvent.setEntity(e);
+                entityEvent.setId(EntityEvent.REMOVE);
+                mediator.fireObjEntityEvent(entityEvent);
+            }
+
+            Collection addedDE = CollectionUtils.subtract(newDE, originalDE);
+            it = addedDE.iterator();
+            while (it.hasNext()) {
+                Entity e = (Entity) it.next();
+                entityEvent.setEntity(e);
+                entityEvent.setId(EntityEvent.ADD);
+                mediator.fireDbEntityEvent(entityEvent);
+            }
+
+            Collection removedDE = CollectionUtils.subtract(originalDE, newDE);
+            it = removedDE.iterator();
+            while (it.hasNext()) {
+                Entity e = (Entity) it.next();
+                entityEvent.setEntity(e);
+                entityEvent.setId(EntityEvent.REMOVE);
+                mediator.fireDbEntityEvent(entityEvent);
+            }
+
+            mediator.fireDataMapDisplayEvent(new DataMapDisplayEvent(Application
+                    .getFrame(), map, mediator.getCurrentDataDomain(), mediator
+                    .getCurrentDataNode()));
+        }
+        else {
+            // fix DataMap name, as there maybe a map with the same name already
+            DataDomain domain = mediator.getCurrentDataDomain();
+            map.setName(NamedObjectFactory.createName(DataMap.class, domain, map
+                    .getName()));
+
+            // side effect of this operation is that if a node was created, this DataMap
+            // will be linked with it...
+            mediator.addDataMap(Application.getFrame(), map);
+        }
+    }
+
+    /**
+     * Returns EOModel chooser.
+     */
+    public JFileChooser getEOModelChooser() {
+
+        if (eoModelChooser == null) {
+            eoModelChooser = new EOModelChooser("Select EOModel");
+        }
+
+        FSPath lastDir = getApplication().getFrameController().getLastEOModelDirectory();
+        lastDir.updateChooser(eoModelChooser);
+
+        return eoModelChooser;
+    }
+
+    /**
+     * Custom file chooser that will pop up again if a bad directory is selected.
+     */
+    class EOModelChooser extends JFileChooser {
+
+        protected FileFilter selectFilter;
+        protected JDialog cachedDialog;
+
+        public EOModelChooser(String title) {
+            super.setFileFilter(FileFilters.getEOModelFilter());
+            super.setDialogTitle(title);
+            super.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+
+            this.selectFilter = FileFilters.getEOModelSelectFilter();
+        }
+
+        public int showOpenDialog(Component parent) {
+            int status = super.showOpenDialog(parent);
+            if (status != JFileChooser.APPROVE_OPTION) {
+                cachedDialog = null;
+                return status;
+            }
+
+            // make sure invalid directory is not selected
+            File file = this.getSelectedFile();
+            if (selectFilter.accept(file)) {
+                cachedDialog = null;
+                return JFileChooser.APPROVE_OPTION;
+            }
+            else {
+                if (file.isDirectory()) {
+                    this.setCurrentDirectory(file);
+                }
+
+                return this.showOpenDialog(parent);
+            }
+        }
+
+        protected JDialog createDialog(Component parent) throws HeadlessException {
+
+            if (cachedDialog == null) {
+                cachedDialog = super.createDialog(parent);
+            }
+            return cachedDialog;
+        }
+    }
 }

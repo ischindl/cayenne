@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,12 +47,11 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 
 package org.objectstyle.cayenne.conn;
@@ -59,8 +59,7 @@ package org.objectstyle.cayenne.conn;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -71,8 +70,6 @@ import javax.sql.DataSource;
 import javax.sql.PooledConnection;
 
 import org.apache.log4j.Logger;
-import org.objectstyle.cayenne.util.RequestDequeue;
-import org.objectstyle.cayenne.util.RequestQueue;
 
 /**
  * PoolManager is a pooling DataSource impementation. 
@@ -84,22 +81,15 @@ import org.objectstyle.cayenne.util.RequestQueue;
  * @author Andrei Adamchik
  */
 public class PoolManager implements DataSource, ConnectionEventListener {
-    static Logger logObj = Logger.getLogger(PoolManager.class.getName());
-
-    /** 
-     * Defines a maximum number of threads that could wait in the
-     * connection queue at any given moment. In the future this 
-     * parameter should be made configurable.
-     */
-    public static final int MAX_QUEUE_SIZE = 25;
-
+    private static Logger logObj = Logger.getLogger(PoolManager.class);
+    
     /** 
      * Defines a maximum time in milliseconds that a connection
      * request could wait in the connection queue. After this period
      * expires, an exception will be thrown in the calling method.
      * In the future this parameter should be made configurable.
      */
-    public static final int MAX_QUEUE_WAIT = 30000;
+    public static final int MAX_QUEUE_WAIT = 20000;
 
     protected ConnectionPoolDataSource poolDataSource;
     protected int minConnections;
@@ -111,7 +101,9 @@ public class PoolManager implements DataSource, ConnectionEventListener {
 
     protected List unusedPool;
     protected List usedPool;
-    protected RequestQueue threadQueue;
+
+    private PoolMaintenanceThread poolMaintenanceThread;
+
 
     /** 
      * Creates new PoolManager using org.objectstyle.cayenne.conn.PoolDataSource
@@ -126,9 +118,35 @@ public class PoolManager implements DataSource, ConnectionEventListener {
         String password)
         throws SQLException {
 
+        this(jdbcDriver, dataSourceUrl, minCons, maxCons, userName, password, null);
+    }
+
+    public PoolManager(
+        String jdbcDriver,
+        String dataSourceUrl,
+        int minCons,
+        int maxCons,
+        String userName,
+        String password,
+        ConnectionEventLoggingDelegate logger)
+        throws SQLException {
+
+        if (logger != null) {
+            DataSourceInfo info = new DataSourceInfo();
+            info.setJdbcDriver(jdbcDriver);
+            info.setDataSourceUrl(dataSourceUrl);
+            info.setMinConnections(minCons);
+            info.setMaxConnections(maxCons);
+            info.setUserName(userName);
+            info.setPassword(password);
+            logger.logPoolCreated(info);
+        }
+
         this.jdbcDriver = jdbcDriver;
         this.dataSourceUrl = dataSourceUrl;
-        PoolDataSource poolDS = new PoolDataSource(jdbcDriver, dataSourceUrl);
+        DriverDataSource driverDS = new DriverDataSource(jdbcDriver, dataSourceUrl);
+        driverDS.setLogger(logger);
+        PoolDataSource poolDS = new PoolDataSource(driverDS);
         init(poolDS, minCons, maxCons, userName, password);
     }
 
@@ -183,45 +201,74 @@ public class PoolManager implements DataSource, ConnectionEventListener {
         this.maxConnections = maxCons;
         this.poolDataSource = poolDataSource;
 
-        // init pool
-        threadQueue = new RequestQueue(MAX_QUEUE_SIZE, MAX_QUEUE_WAIT);
-        usedPool = Collections.synchronizedList(new ArrayList(maxConnections));
-        unusedPool = Collections.synchronizedList(new ArrayList(maxConnections));
+        // init pool... use linked lists to use the queue in the FIFO manner
+        usedPool = new LinkedList();
+        unusedPool = new LinkedList();
         growPool(minConnections, userName, password);
+
+        startMaintenanceThread();
+    }
+    
+    protected synchronized void startMaintenanceThread() {
+        disposeOfMaintenanceThread();
+        this.poolMaintenanceThread = new PoolMaintenanceThread(this);
+        this.poolMaintenanceThread.start();
     }
 
-    /** Creates and returns new PooledConnection object. */
+    /** 
+     * Creates and returns new PooledConnection object, adding itself as a listener 
+     * for connection events. 
+     */
     protected PooledConnection newPooledConnection(String userName, String password)
         throws SQLException {
-        return (userName != null)
-            ? poolDataSource.getPooledConnection(userName, password)
-            : poolDataSource.getPooledConnection();
+        PooledConnection connection =
+            (userName != null)
+                ? poolDataSource.getPooledConnection(userName, password)
+                : poolDataSource.getPooledConnection();
+        connection.addConnectionEventListener(this);
+        return connection;
     }
 
     /** Closes all existing connections, removes them from the pool. */
-    public synchronized void dispose() throws SQLException {
+    public void dispose() throws SQLException {
+        synchronized (this) {
+            // clean connections from the pool
+            ListIterator unusedIterator = unusedPool.listIterator();
+            while (unusedIterator.hasNext()) {
+                PooledConnection con = (PooledConnection) unusedIterator.next();
+                // close connection
+                con.close();
+                // remove connection from the list
+                unusedIterator.remove();
+            }
 
-        // clean connections from the pool
-        ListIterator unusedIterator = unusedPool.listIterator();
-        while (unusedIterator.hasNext()) {
-            PooledConnection con = (PooledConnection) unusedIterator.next();
-            // close connection
-            con.close();
-            // remove connection from the list
-            unusedIterator.remove();
+            // clean used connections
+            ListIterator usedIterator = usedPool.listIterator();
+            while (usedIterator.hasNext()) {
+                PooledConnection con = (PooledConnection) usedIterator.next();
+                // stop listening for connection events
+                con.removeConnectionEventListener(this);
+                // close connection
+                con.close();
+                // remove connection from the list
+                usedIterator.remove();
+            }
         }
 
-        // clean used connections
-        ListIterator usedIterator = usedPool.listIterator();
-        while (usedIterator.hasNext()) {
-            PooledConnection con = (PooledConnection) usedIterator.next();
-            // stop listening for connection events
-            con.removeConnectionEventListener(this);
-            // close connection
-            con.close();
-            // remove connection from the list
-            usedIterator.remove();
+        disposeOfMaintenanceThread();
+    }
+    
+    protected void disposeOfMaintenanceThread() {
+        if (poolMaintenanceThread != null) {
+            this.poolMaintenanceThread.dispose();
         }
+    }
+
+    /**
+     * @return true if at least one more connection can be added to the pool.
+     */
+    protected synchronized boolean canGrowPool() {
+        return getPoolSize() < maxConnections;
     }
 
     /** 
@@ -240,21 +287,22 @@ public class PoolManager implements DataSource, ConnectionEventListener {
         int startPoolSize = getPoolSize();
         for (; i < addConnections && startPoolSize + i < maxConnections; i++) {
             PooledConnection newConnection = newPooledConnection(userName, password);
-            newConnection.addConnectionEventListener(this);
             unusedPool.add(newConnection);
         }
 
         return i;
     }
 
-    protected synchronized void shrinkPool(int closeConnections) throws SQLException {
-        int close =
-            unusedPool.size() < closeConnections ? unusedPool.size() : closeConnections;
-        int lastInd = unusedPool.size() - close;
-
-        for (int i = unusedPool.size() - 1; i >= lastInd; i--) {
+    protected synchronized void shrinkPool(int closeConnections) {
+        int idleSize = unusedPool.size();
+        for (int i = 0; i < closeConnections && i < idleSize; i++) {
             PooledConnection con = (PooledConnection) unusedPool.remove(i);
-            con.close();
+
+            try {
+                con.close();
+            } catch (SQLException ex) {
+                logObj.info("Error closing connection. Ignoring.", ex);
+            }
         }
     }
 
@@ -338,33 +386,91 @@ public class PoolManager implements DataSource, ConnectionEventListener {
     }
 
     /** Returns connection from the pool. */
-    public Connection getConnection(String userName, String password)
-        throws SQLException {
+    public synchronized Connection getConnection(String userName, String password)
+            throws SQLException {
 
-        // increase pool if needed
-        // if further increase is not possible
-        // (say we exceed the maximum number of connections)
-        // this will throw an SQL exception...
-        if (unusedPool.size() == 0) {
-            int size = growPool(1, userName, password);
+        PooledConnection pooledConnection = uncheckPooledConnection(userName, password);
 
-            // can't grow anymore, put on hold
-            if (size == 0) {
-                RequestDequeue result = threadQueue.queueThread();
-                if (result.isDequeueSuccess()) {
-                    return ((PooledConnection) result.getDequeueEventObject()).getConnection();
-                } else if (result.isQueueFull()) {
-                    throw new SQLException("Can't obtain connection. Too many requests waiting in the queue.");
-                } else {
-                    throw new SQLException("Can't obtain connection. Request timed out.");
+        try {
+            return uncheckConnection(pooledConnection);
+        }
+        catch (SQLException ex) {
+            logObj.info("Error getting connection", ex);
+
+            try {
+                pooledConnection.close();
+            }
+            catch (SQLException ignored) {
+            }
+
+            logObj.info("Reconnecting...");
+            
+            // do one reconnect attempt...
+            pooledConnection = uncheckPooledConnection(userName, password);
+            try {
+                return uncheckConnection(pooledConnection);
+            }
+            catch (SQLException reconnectEx) {
+                try {
+                    pooledConnection.close();
                 }
+                catch (SQLException ignored) {
+                }
+                
+                throw reconnectEx;
+            }
+        }
+    }
+    
+    private Connection uncheckConnection(PooledConnection pooledConnection)
+            throws SQLException {
+        Connection c = pooledConnection.getConnection();
+
+        // only do that on successfully unchecked connection...
+        usedPool.add(pooledConnection);
+        return c;
+    }
+    
+    private PooledConnection uncheckPooledConnection(String userName, String password)
+            throws SQLException {
+        // wait for returned connections or the maintenance thread 
+        // to bump the pool size...
+
+        if (unusedPool.size() == 0) {
+            
+            // first try to open a new connection
+            if (canGrowPool()) {
+                return newPooledConnection(userName, password);
+            }
+            
+            // can't open no more... will have to wait for others to return a connection
+            
+            // note that if we were woken up 
+            // before the full wait period expired, and no connections are
+            // available yet, go back to sleep. Otherwise we don't give a maintenance
+            // thread a chance to increase pool size
+            long waitTill =
+                System.currentTimeMillis()
+                + MAX_QUEUE_WAIT;
+
+            do {
+                try {
+                    wait(MAX_QUEUE_WAIT);
+                } catch (InterruptedException iex) {
+                    // ignoring
+                }
+
+            } while (unusedPool.size() == 0 && waitTill > System.currentTimeMillis());
+
+            if (unusedPool.size() == 0) {
+                throw new SQLException(
+                    "Can't obtain connection. Request timed out. Total used connections: "
+                        + usedPool.size());
             }
         }
 
-        int lastObjectInd = unusedPool.size() - 1;
-        PooledConnection pooledConn = (PooledConnection) unusedPool.remove(lastObjectInd);
-        usedPool.add(pooledConn);
-        return pooledConn.getConnection();
+        // get first connection... lets cycle them in FIFO manner
+        return (PooledConnection) unusedPool.remove(0);
     }
 
     public int getLoginTimeout() throws java.sql.SQLException {
@@ -389,18 +495,16 @@ public class PoolManager implements DataSource, ConnectionEventListener {
     public synchronized void connectionClosed(ConnectionEvent event) {
         // return connection to the pool
         PooledConnection closedConn = (PooledConnection) event.getSource();
-
+        
         // remove this connection from the list of connections
         // managed by this pool...
         int usedInd = usedPool.indexOf(closedConn);
         if (usedInd >= 0) {
+            usedPool.remove(usedInd);
+            unusedPool.add(closedConn);
 
-            // check connection request queue and assign connection to the
-            // first requestor in line
-            if (!threadQueue.dequeueFirst(closedConn)) {
-                usedPool.remove(usedInd);
-                unusedPool.add(closedConn);
-            }
+            // notify threads waiting for connections
+            notifyAll();
         }
         // else ....
         // other possibility is that this is a bad connection, so just ignore its closing event,
@@ -413,7 +517,7 @@ public class PoolManager implements DataSource, ConnectionEventListener {
      * to notify PoolManager that connection is in invalid state.
      */
     public synchronized void connectionErrorOccurred(ConnectionEvent event) {
-        // later on we should analize the error to see if this
+        // later on we should analyze the error to see if this
         // is fatal... right now just kill this PooledConnection
 
         PooledConnection errorSrc = (PooledConnection) event.getSource();
@@ -433,5 +537,59 @@ public class PoolManager implements DataSource, ConnectionEventListener {
         // do not close connection,
         // let the code that catches the exception handle it
         // ....
+    }
+
+    static class PoolMaintenanceThread extends Thread {
+        protected boolean shouldDie;
+        protected PoolManager pool;
+
+        PoolMaintenanceThread(PoolManager pool) {
+            super.setName("PoolManagerCleanup-" + pool.hashCode());
+            super.setDaemon(true);
+            this.pool = pool;
+        }
+
+        public void run() {
+            // periodically wakes up to check if the pool should grow or shrink 
+            while (true) {
+
+                try {
+                    // don't do it too often
+                    sleep(600000);
+                } catch (InterruptedException iex) {
+                    // ignore...
+                }
+
+                if (shouldDie) {
+                    break;
+                }
+
+                synchronized (pool) {
+                    // TODO: implement a smarter algorithm for pool management... 
+                    // right now it will simply close one connection if the count is
+                    // above median and there are any idle connections.
+
+                    int unused = pool.getCurrentlyUnused();
+                    int used = pool.getCurrentlyInUse();
+                    int total = unused + used;
+                    int median =
+                        pool.minConnections
+                            + 1
+                            + (pool.maxConnections - pool.minConnections) / 2;
+
+                    if (unused > 0 && total > median) {
+                        pool.shrinkPool(1);
+                        logObj.debug("decreased pool size to " + (total - 1) + " connections.");
+                    }
+                }
+            }
+        }
+
+        /**
+         * Stops the thread.
+         */
+        public void dispose() {
+            shouldDie = true;
+        }
     }
 }

@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,25 +47,19 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne;
 
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.art.Artist;
-import org.objectstyle.art.Painting;
-import org.objectstyle.cayenne.exp.Expression;
+import org.objectstyle.art.Painting1;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
-import org.objectstyle.cayenne.map.DbEntity;
-import org.objectstyle.cayenne.map.DbRelationship;
-import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.query.SelectQuery;
 
 /**
@@ -73,40 +68,28 @@ import org.objectstyle.cayenne.query.SelectQuery;
  * @author Andrei Adamchik
  */
 public class CDOMany2OneNoRevTst extends CayenneDOTestBase {
-	static Logger logObj = Logger.getLogger(CDOMany2OneNoRevTst.class);
-	
-    /**
-     * Constructor for CDOMany2OneNoRevTst.
-     * @param name
-     */
-    public CDOMany2OneNoRevTst(String name) {
-        super(name);
-    }
 
     /**
      * @see org.objectstyle.cayenne.CayenneDOTestBase#newPainting()
      */
-    protected Painting newPainting() {
-        Painting p1 = (Painting) ctxt.createAndRegisterNewObject("Painting1");
+    protected Painting1 newPainting1() {
+        Painting1 p1 = (Painting1) ctxt.createAndRegisterNewObject("Painting1");
         p1.setPaintingTitle(paintingName);
         return p1;
     }
 
-    protected Painting fetchPainting() {    	
+    protected Painting1 fetchPainting1() {
         SelectQuery q =
             new SelectQuery(
                 "Painting1",
-                ExpressionFactory.binaryPathExp(
-                    Expression.EQUAL_TO,
-                    "paintingTitle",
-                    paintingName));
+                ExpressionFactory.matchExp("paintingTitle", paintingName));
         List pts = ctxt.performQuery(q);
-        return (pts.size() > 0) ? (Painting) pts.get(0) : null;
+        return (pts.size() > 0) ? (Painting1) pts.get(0) : null;
     }
 
     public void testNewAdd() throws Exception {
         Artist a1 = newArtist();
-        Painting p1 = newPainting();
+        Painting1 p1 = newPainting1();
 
         // *** TESTING THIS *** 
         p1.setToArtist(a1);
@@ -116,10 +99,10 @@ public class CDOMany2OneNoRevTst extends CayenneDOTestBase {
 
         // do save
         ctxt.commitChanges();
-        resetContext();
+        ctxt = createDataContext();
 
         // test database data
-        Painting p2 = fetchPainting();
+        Painting1 p2 = fetchPainting1();
         Artist a2 = p2.getToArtist();
         assertNotNull(a2);
         assertEquals(artistName, a2.getArtistName());

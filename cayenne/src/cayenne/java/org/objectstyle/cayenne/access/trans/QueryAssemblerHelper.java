@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,21 +47,29 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.access.trans;
 
-import java.util.*;
-import org.apache.log4j.Logger;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-import org.objectstyle.cayenne.*;
+import org.objectstyle.cayenne.CayenneRuntimeException;
+import org.objectstyle.cayenne.DataObject;
+import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.exp.Expression;
-import org.objectstyle.cayenne.map.*;
+import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.map.DbEntity;
+import org.objectstyle.cayenne.map.DbJoin;
+import org.objectstyle.cayenne.map.DbRelationship;
+import org.objectstyle.cayenne.map.ObjAttribute;
+import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.ObjRelationship;
 
 /** 
  * Translates parts of the query to SQL.
@@ -69,11 +78,11 @@ import org.objectstyle.cayenne.map.*;
  * @author Andrei Adamchik
  */
 public abstract class QueryAssemblerHelper {
-    static Logger logObj = Logger.getLogger(QueryAssemblerHelper.class.getName());
 
     protected QueryAssembler queryAssembler;
 
-    public QueryAssemblerHelper() {}
+    public QueryAssemblerHelper() {
+    }
 
     /** Creates QueryAssemblerHelper. Sets queryAssembler property. */
     public QueryAssemblerHelper(QueryAssembler queryAssembler) {
@@ -103,7 +112,7 @@ public abstract class QueryAssemblerHelper {
     }
 
     public DbEntity getDbEntity() {
-        return getQueryAssembler().getRootEntity().getDbEntity();
+        return getQueryAssembler().getRootDbEntity();
     }
 
     /** Processes parts of the OBJ_PATH expression. */
@@ -122,18 +131,25 @@ public abstract class QueryAssemblerHelper {
                 // it needs special handling
                 if (!it.hasNext()) {
                     processRelTermination(buf, rel);
-                } else {
+                }
+                else {
                     // find and add joins ....
-                    processRelParts(rel);
+                    Iterator relit = rel.getDbRelationships().iterator();
+                    while (relit.hasNext()) {
+                        queryAssembler.dbRelationshipAdded((DbRelationship) relit.next());
+                    }
                 }
                 lastRelationship = rel;
-            } else {
+            }
+            else {
                 ObjAttribute objAttr = (ObjAttribute) pathComp;
                 if (lastRelationship != null) {
+                    List lastDbRelList = lastRelationship.getDbRelationships();
                     DbRelationship lastDbRel =
-                        (DbRelationship) lastRelationship.getDbRelationshipList().get(0);
+                        (DbRelationship) lastDbRelList.get(lastDbRelList.size() - 1);
                     processColumn(buf, objAttr.getDbAttribute(), lastDbRel);
-                } else {
+                }
+                else {
                     processColumn(buf, objAttr.getDbAttribute());
                 }
             }
@@ -152,11 +168,13 @@ public abstract class QueryAssemblerHelper {
                 // it needs special handling
                 if (!it.hasNext()) {
                     processRelTermination(buf, rel);
-                } else {
+                }
+                else {
                     // find and add joins ....
                     queryAssembler.dbRelationshipAdded(rel);
                 }
-            } else {
+            }
+            else {
                 DbAttribute dbAttr = (DbAttribute) pathComp;
                 processColumn(buf, dbAttr);
             }
@@ -176,11 +194,25 @@ public abstract class QueryAssemblerHelper {
     protected void processColumn(
         StringBuffer buf,
         DbAttribute dbAttr,
-        DbRelationship rel) {
-        String alias =
-            (queryAssembler.supportsTableAliases())
-                ? queryAssembler.aliasForTable((DbEntity) dbAttr.getEntity(), rel)
-                : null;
+        DbRelationship relationship) {
+        String alias = null;
+
+        if (queryAssembler.supportsTableAliases()) {
+
+            if (relationship != null) {
+                alias = queryAssembler.aliasForTable(
+                        (DbEntity) dbAttr.getEntity(),
+                        relationship);
+            }
+
+            // sometimes lookup for relationship fails (any specific case other than
+            // relationship being null?), so lookup by entity. Note that as CAY-194
+            // shows, lookup by DbEntity may produce incorrect results for 
+            // reflexive relationships.
+            if (alias == null) {
+                alias = queryAssembler.aliasForTable((DbEntity) dbAttr.getEntity());
+            }
+        }
 
         buf.append(dbAttr.getAliasedName(alias));
     }
@@ -214,10 +246,15 @@ public abstract class QueryAssemblerHelper {
      * is being appended.
      * 
      */
-    protected void appendLiteral(StringBuffer buf, Object val, DbAttribute attr) {
+    protected void appendLiteral(
+        StringBuffer buf,
+        Object val,
+        DbAttribute attr,
+        Expression parentExpression) {
         if (val == null) {
             buf.append("NULL");
-        } else if (val instanceof DataObject) {
+        }
+        else if (val instanceof DataObject) {
             ObjectId id = ((DataObject) val).getObjectId();
 
             // check if this id is acceptable to be a parameter
@@ -244,9 +281,14 @@ public abstract class QueryAssemblerHelper {
             }
 
             // checks have been passed, use id value
-            appendLiteralDirect(buf, snap.get(snap.keySet().iterator().next()), attr);
-        } else {
-            appendLiteralDirect(buf, val, attr);
+            appendLiteralDirect(
+                buf,
+                snap.get(snap.keySet().iterator().next()),
+                attr,
+                parentExpression);
+        }
+        else {
+            appendLiteralDirect(buf, val, attr, parentExpression);
         }
     }
 
@@ -260,10 +302,11 @@ public abstract class QueryAssemblerHelper {
      * @param val object that should be appended as a literal to the query. 
      * Must be of one of "standard JDBC" types. Can not be null.
      */
-    private final void appendLiteralDirect(
+    protected void appendLiteralDirect(
         StringBuffer buf,
         Object val,
-        DbAttribute attr) {
+        DbAttribute attr,
+        Expression parentExpression) {
         buf.append('?');
 
         // we are hoping that when processing parameter list, 
@@ -286,39 +329,59 @@ public abstract class QueryAssemblerHelper {
         // naive algorithm:
 
         // if at least one of the sibling operands is a
-        // OBJ_PATH expression, use its attribute type as
+        // OBJ_PATH or DB_PATH expression, use its attribute type as
         // a final answer.
 
+        // find attribute or relationship matching the value
+        DbAttribute attribute = null;
+        DbRelationship relationship = null;
         for (int i = 0; i < len; i++) {
             Object op = e.getOperand(i);
+
             if (op instanceof Expression) {
-                Expression ope = (Expression) op;
-                if (ope.getType() == Expression.OBJ_PATH) {
-
-                    Iterator it = getObjEntity().resolvePathComponents(ope);
-                    while (it.hasNext()) {
-                        Object pathComp = it.next();
-
-                        if (pathComp instanceof ObjAttribute) {
-                            return ((ObjAttribute) pathComp).getDbAttribute();
+                Expression expression = (Expression) op;
+                if (expression.getType() == Expression.OBJ_PATH) {
+                    Object last = getObjEntity().lastPathComponent(expression);
+                    if (last instanceof ObjAttribute) {
+                        attribute = ((ObjAttribute) last).getDbAttribute();
+                        break;
+                    }
+                    else if (last instanceof ObjRelationship) {
+                        ObjRelationship objRelationship = (ObjRelationship) last;
+                        List dbPath = objRelationship.getDbRelationships();
+                        if (dbPath.size() > 0) {
+                            relationship = (DbRelationship) dbPath.get(dbPath.size() - 1);
+                            break;
                         }
+                    }
+                }
+                else if (expression.getType() == Expression.DB_PATH) {
+                    Object last = getDbEntity().lastPathComponent(expression);
+                    if (last instanceof DbAttribute) {
+                        attribute = (DbAttribute) last;
+                        break;
+                    }
+                    else if (last instanceof DbRelationship) {
+                        relationship = (DbRelationship) last;
+                        break;
                     }
                 }
             }
         }
 
-        return null;
-    }
-
-    /** 
-     *  Processes ObjRelationship. Decomposes it into DbRelationships 
-     *  and appends parts to the query buffer. 
-     */
-    protected void processRelParts(ObjRelationship rel) {
-        Iterator it = rel.getDbRelationshipList().iterator();
-        while (it.hasNext()) {
-            queryAssembler.dbRelationshipAdded((DbRelationship) it.next());
+        if (attribute != null) {
+            return attribute;
         }
+
+        if (relationship != null) {
+            // Can't properly handle multiple joins....
+            if (relationship.getJoins().size() == 1) {
+                DbJoin join = (DbJoin) relationship.getJoins().get(0);
+                return join.getSource();
+            }
+        }
+
+        return null;
     }
 
     /** Processes case when an OBJ_PATH expression ends with relationship.
@@ -327,32 +390,23 @@ public abstract class QueryAssemblerHelper {
       * relationship, column expresion for the source foreign key is added.
       */
     protected void processRelTermination(StringBuffer buf, ObjRelationship rel) {
-        if (rel.isToMany()) {
-            // append joins
-            processRelParts(rel);
+
+        Iterator dbRels = rel.getDbRelationships().iterator();
+
+        // scan DbRelationships
+        while (dbRels.hasNext()) {
+            DbRelationship dbRel = (DbRelationship) dbRels.next();
+
+            // if this is a last relationship in the path,
+            // it needs special handling
+            if (!dbRels.hasNext()) {
+                processRelTermination(buf, dbRel);
+            }
+            else {
+                // find and add joins ....
+                queryAssembler.dbRelationshipAdded(dbRel);
+            }
         }
-
-        List dbRels = rel.getDbRelationshipList();
-
-        // get last DbRelationship on the list
-        DbRelationship dbRel = (DbRelationship) dbRels.get(dbRels.size() - 1);
-        List joins = dbRel.getJoins();
-        if (joins.size() != 1) {
-            StringBuffer msg = new StringBuffer();
-            msg
-                .append("OBJ_PATH expressions are only supported ")
-                .append("for a single-join relationships. ")
-                .append("This relationship has ")
-                .append(joins.size())
-                .append(" joins.");
-
-            throw new CayenneRuntimeException(msg.toString());
-        }
-
-        DbAttributePair join = (DbAttributePair) joins.get(0);
-
-        DbAttribute att = join.getSource();
-        processColumn(buf, att);
     }
 
     /** 
@@ -362,6 +416,7 @@ public abstract class QueryAssemblerHelper {
      * relationship, column expresion for the source foreign key is added.
      */
     protected void processRelTermination(StringBuffer buf, DbRelationship rel) {
+
         if (rel.isToMany()) {
             // append joins
             queryAssembler.dbRelationshipAdded(rel);
@@ -381,12 +436,12 @@ public abstract class QueryAssemblerHelper {
             throw new CayenneRuntimeException(msg.toString());
         }
 
-        DbAttributePair join = (DbAttributePair) joins.get(0);
+        DbJoin join = (DbJoin) joins.get(0);
 
         DbAttribute att = null;
 
         if (rel.isToMany()) {
-            DbEntity ent = (DbEntity) join.getTarget().getEntity();
+            DbEntity ent = (DbEntity) join.getRelationship().getTargetEntity();
             List pk = ent.getPrimaryKey();
             if (pk.size() != 1) {
                 StringBuffer msg = new StringBuffer();
@@ -401,7 +456,8 @@ public abstract class QueryAssemblerHelper {
             }
 
             att = (DbAttribute) pk.get(0);
-        } else {
+        }
+        else {
             att = join.getSource();
         }
 

@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,30 +47,32 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 
 package org.objectstyle.cayenne.gen;
 
 import java.io.Writer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.ObjEntity;
 
-/** 
- * Generates Java classes source code using VTL (Velocity template engine) for
- * the ObjEntities in the DataMap. This class is abstract and does not deal with 
- * filesystem issues directly. Concrete subclasses should provide ways to store
- * generated files by implementing "openWriter" and "closeWriter" methods.
+/**
+ * Generates Java source code for ObjEntities in the DataMap. This class is
+ * abstract and does not deal with filesystem issues directly. Concrete
+ * subclasses should provide ways to store generated files by implementing
+ * {@link #openWriter(ObjEntity, String, String)} and
+ * {@link #closeWriter(Writer)}methods.
  * 
- * @author Andrei Adamchik 
+ * @author Andrei Adamchik
  */
 public abstract class MapClassGenerator {
 
@@ -84,7 +87,7 @@ public abstract class MapClassGenerator {
     public MapClassGenerator() {}
 
     public MapClassGenerator(DataMap map) {
-        this(map.getObjEntitiesAsList());
+        this(new ArrayList(map.getObjEntities()));
     }
 
     public MapClassGenerator(List objEntities) {
@@ -103,36 +106,41 @@ public abstract class MapClassGenerator {
         return SUPERCLASS_TEMPLATE;
     }
 
-    /** Provides child ClassGenerator with a Writer object
-      * to store generated source code of the Java class corresponding 
-      * to the <code>entity</code> parameter. 
-      * 
-      * @return Writer to store generated class source code or
-      * null if this class generation should be skipped. 
-      */
+    /**
+     * Creates a Writer to output source code for a given ObjEntity and Java
+     * class.
+     * 
+     * @return Writer to store generated class source code or null if this class
+     *         generation should be skipped.
+     */
     public abstract Writer openWriter(
         ObjEntity entity,
         String pkgName,
         String className)
         throws Exception;
 
-    /** Closes writer after class code has been successfully written by ClassGenerator. */
+    /**
+     * Closes writer after class code has been successfully written by
+     * ClassGenerator.
+     */
     public abstract void closeWriter(Writer out) throws Exception;
 
-    /** Runs class generation. Produces a pair of Java classes for
-      * each ObjEntity in the map. Uses default Cayenne templates for classes. */
+    /**
+     * Runs class generation. Produces a pair of Java classes for each ObjEntity
+     * in the map. Uses default Cayenne templates for classes.
+     */
     public void generateClassPairs() throws Exception {
         generateClassPairs(SUBCLASS_TEMPLATE, SUPERCLASS_TEMPLATE, SUPERCLASS_PREFIX);
     }
 
-    /** 
-      * Runs class generation. Produces a pair of Java classes for
-      * each ObjEntity in the map. This allows developers to use generated 
-      * <b>subclass</b> for their custom code, while generated <b>superclass</b>
-      * will contain Cayenne code. Superclass will be generated in the same package, 
-      * its class name will be derived from the class name by adding a 
-      * <code>superPrefix</code>. 
-      */
+    /**
+     * Runs class generation. Produces a pair of Java classes for each ObjEntity
+     * in the map. This allows developers to use generated <b>subclass </b> for
+     * their custom code, while generated <b>superclass </b> will contain
+     * Cayenne code. Superclass will be generated in the same package, its class
+     * name will be derived from the class name by adding a
+     * <code>superPrefix</code>.
+     */
     public void generateClassPairs(
         String classTemplate,
         String superTemplate,
@@ -239,6 +247,11 @@ public abstract class MapClassGenerator {
         // init generator
         gen.setPackageName(pkg);
         gen.setClassName(cname);
+        if(entity.getSuperClassName()!=null) {
+        	gen.setSuperClassName(entity.getSuperClassName());
+        } else {
+        	gen.setSuperClassName("org.objectstyle.cayenne.CayenneDataObject");
+        }
         gen.setSuperPackageName(spkg);
     }
 

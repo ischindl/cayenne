@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,100 +47,150 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.modeler.action;
 
 import java.awt.event.ActionEvent;
 
-import org.objectstyle.cayenne.modeler.event.*;
-import org.objectstyle.cayenne.map.*;
-import org.objectstyle.cayenne.util.NamedObjectFactory;
+import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.map.DbEntity;
+import org.objectstyle.cayenne.map.DerivedDbAttribute;
+import org.objectstyle.cayenne.map.DerivedDbEntity;
+import org.objectstyle.cayenne.map.Entity;
+import org.objectstyle.cayenne.map.ObjAttribute;
+import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.Procedure;
+import org.objectstyle.cayenne.map.ProcedureParameter;
+import org.objectstyle.cayenne.map.event.AttributeEvent;
+import org.objectstyle.cayenne.map.event.MapEvent;
+import org.objectstyle.cayenne.map.event.ProcedureParameterEvent;
+import org.objectstyle.cayenne.modeler.Application;
+import org.objectstyle.cayenne.modeler.ProjectController;
+import org.objectstyle.cayenne.modeler.event.AttributeDisplayEvent;
+import org.objectstyle.cayenne.modeler.event.ProcedureParameterDisplayEvent;
+import org.objectstyle.cayenne.modeler.util.CayenneAction;
+import org.objectstyle.cayenne.project.NamedObjectFactory;
+import org.objectstyle.cayenne.project.ProjectPath;
 
 /**
  * @author Andrei Adamchik
  */
 public class CreateAttributeAction extends CayenneAction {
-	public static final String ACTION_NAME = "Create Attribute";
 
-	/**
-	 * Constructor for CreateAttributeAction.
-	 * @param name
-	 */
-	public CreateAttributeAction() {
-		super(ACTION_NAME);
-	}
+    public static String getActionName() {
+    	return "Create Attribute";
+    }
 
-	public String getIconName() {
-		return "icon-attribute.gif";
-	}
+    /**
+     * Constructor for CreateAttributeAction.
+     * @param name
+     */
+    public CreateAttributeAction(Application application) {
+        super(getActionName(), application);
+    }
 
-	/**
-	 * @see org.objectstyle.cayenne.modeler.action.CayenneAction#performAction(ActionEvent)
-	 */
-	public void performAction(ActionEvent e) {
-		ObjEntity objEnt = getMediator().getCurrentObjEntity();
-		if (objEnt != null) {
-			createObjAttribute(objEnt);
-		} else {
-			DbEntity dbEnt = getMediator().getCurrentDbEntity();
-			if (dbEnt != null) {
-				createDbAttribute(dbEnt);
-			}
-		}
-	}
+    public String getIconName() {
+        return "icon-attribute.gif";
+    }
 
-	public void createObjAttribute(ObjEntity objEnt) {
-		Mediator mediator = getMediator();
+    /**
+     * Creates ObjAttribute, DbAttribute or ProcedureParameter depending on context.
+     */
+    public void performAction(ActionEvent e) {
+        if (getProjectController().getCurrentProcedure() != null) {
+            createProcedureParameter();
+        }
+        else if (getProjectController().getCurrentObjEntity() != null) {
+            createObjAttribute();
+        }
+        else if (getProjectController().getCurrentDbEntity() != null) {
+            createDbAttribute();
+        }
+    }
 
-		ObjAttribute attr =
-			(ObjAttribute) NamedObjectFactory.createObject(
-				ObjAttribute.class,
-				objEnt);
-		objEnt.addAttribute(attr);
-		mediator.fireObjAttributeEvent(
-			new AttributeEvent(this, attr, objEnt, AttributeEvent.ADD));
+    public void createProcedureParameter() {
+        Procedure procedure = getProjectController().getCurrentProcedure();
 
-		mediator.fireObjAttributeDisplayEvent(
-			new AttributeDisplayEvent(
-				this,
-				attr,
-				objEnt,
-				mediator.getCurrentDataMap(),
-				mediator.getCurrentDataDomain()));
-	}
+        ProcedureParameter parameter =
+            (ProcedureParameter) NamedObjectFactory.createObject(
+                ProcedureParameter.class,
+                procedure);
+        procedure.addCallParameter(parameter);
 
-	public void createDbAttribute(DbEntity dbEnt) {
-		Class attrClass = null;
-		
-		if(dbEnt instanceof DerivedDbEntity) {
-			if(((DerivedDbEntity)dbEnt).getParentEntity() == null) {
-				return;
-			}
-			attrClass = DerivedDbAttribute.class;
-		}
-		else {
-			attrClass =  DbAttribute.class;
-		}
-		
-		DbAttribute attr =
-			(DbAttribute) NamedObjectFactory.createObject(attrClass, dbEnt);
-		dbEnt.addAttribute(attr);
-		
-		Mediator mediator = getMediator();
-		mediator.fireDbAttributeEvent(
-			new AttributeEvent(this, attr, dbEnt, AttributeEvent.ADD));
-		mediator.fireDbAttributeDisplayEvent(
-			new AttributeDisplayEvent(
-				this,
-				attr,
-				dbEnt,
-				mediator.getCurrentDataMap(),
-				mediator.getCurrentDataDomain()));
-	}
+        ProjectController mediator = getProjectController();
+        mediator.fireProcedureParameterEvent(
+            new ProcedureParameterEvent(this, parameter, MapEvent.ADD));
+        mediator.fireProcedureParameterDisplayEvent(
+            new ProcedureParameterDisplayEvent(
+                this,
+                parameter,
+                procedure,
+                mediator.getCurrentDataMap(),
+                mediator.getCurrentDataDomain()));
+    }
+
+    public void createObjAttribute() {
+        ProjectController mediator = getProjectController();
+        ObjEntity objEntity = mediator.getCurrentObjEntity();
+
+        ObjAttribute attr =
+            (ObjAttribute) NamedObjectFactory.createObject(ObjAttribute.class, objEntity);
+        objEntity.addAttribute(attr);
+        mediator.fireObjAttributeEvent(
+            new AttributeEvent(this, attr, objEntity, AttributeEvent.ADD));
+
+        mediator.fireObjAttributeDisplayEvent(
+            new AttributeDisplayEvent(
+                this,
+                attr,
+                objEntity,
+                mediator.getCurrentDataMap(),
+                mediator.getCurrentDataDomain()));
+    }
+
+    public void createDbAttribute() {
+        Class attrClass = null;
+
+        DbEntity dbEntity = getProjectController().getCurrentDbEntity();
+        if (dbEntity instanceof DerivedDbEntity) {
+            if (((DerivedDbEntity) dbEntity).getParentEntity() == null) {
+                return;
+            }
+            attrClass = DerivedDbAttribute.class;
+        }
+        else {
+            attrClass = DbAttribute.class;
+        }
+
+        DbAttribute attr =
+            (DbAttribute) NamedObjectFactory.createObject(attrClass, dbEntity);
+        dbEntity.addAttribute(attr);
+
+        ProjectController mediator = getProjectController();
+        mediator.fireDbAttributeEvent(
+            new AttributeEvent(this, attr, dbEntity, AttributeEvent.ADD));
+        mediator.fireDbAttributeDisplayEvent(
+            new AttributeDisplayEvent(
+                this,
+                attr,
+                dbEntity,
+                mediator.getCurrentDataMap(),
+                mediator.getCurrentDataDomain()));
+    }
+
+    /**
+     * Returns <code>true</code> if path contains an Entity object.
+     */
+    public boolean enableForPath(ProjectPath path) {
+        if (path == null) {
+            return false;
+        }
+
+        return path.firstInstanceOf(Entity.class) != null;
+    }
 }

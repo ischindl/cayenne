@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,15 +47,15 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.project.validator;
 
+import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.map.DataMap;
@@ -64,59 +65,97 @@ import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.ObjAttribute;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
-import org.objectstyle.cayenne.project.ProjectTraversal;
+import org.objectstyle.cayenne.map.Procedure;
+import org.objectstyle.cayenne.map.ProcedureParameter;
+import org.objectstyle.cayenne.project.ProjectPath;
+import org.objectstyle.cayenne.query.ProcedureQuery;
+import org.objectstyle.cayenne.query.SQLTemplate;
+import org.objectstyle.cayenne.query.SelectQuery;
 
 /**
- * Validator of a single node in a project object tree. 
- * <i>Do not confuse with org.objectstyle.cayenne.access.DataNode.</i>
+ * Validator of a single node in a project object tree. <i>Do not confuse with
+ * org.objectstyle.cayenne.access.DataNode. </i>
  * 
  * @author Andrei Adamchik
  */
 public abstract class TreeNodeValidator {
-    
+
+    private static Logger logObj = Logger.getLogger(TreeNodeValidator.class);
+
     // initialize singleton validators
     protected static final DomainValidator domainValidator = new DomainValidator();
     protected static final DataNodeValidator nodeValidator = new DataNodeValidator();
     protected static final DataMapValidator mapValidator = new DataMapValidator();
-    protected static final ObjEntityValidator objEntityValidator =
-        new ObjEntityValidator();
-    protected static final ObjAttributeValidator objAttrValidator =
-        new ObjAttributeValidator();
-    protected static final ObjRelationshipValidator objRelValidator =
-        new ObjRelationshipValidator();
+    protected static final ObjEntityValidator objEntityValidator = new ObjEntityValidator();
+    protected static final ObjAttributeValidator objAttrValidator = new ObjAttributeValidator();
+    protected static final ObjRelationshipValidator objRelValidator = new ObjRelationshipValidator();
     protected static final DbEntityValidator dbEntityValidator = new DbEntityValidator();
-    protected static final DbAttributeValidator dbAttrValidator =
-        new DbAttributeValidator();
-    protected static final DbRelationshipValidator dbRelValidator =
-        new DbRelationshipValidator();
+    protected static final DbAttributeValidator dbAttrValidator = new DbAttributeValidator();
+    protected static final DbRelationshipValidator dbRelValidator = new DbRelationshipValidator();
+
+    protected static final ProcedureValidator procedureValidator = new ProcedureValidator();
+
+    protected static final ProcedureParameterValidator procedureParameterValidator = new ProcedureParameterValidator();
+    protected static final SelectQueryValidator selectQueryValidator = new SelectQueryValidator();
+
+    protected static final ProcedureQueryValidator procedureQueryValidator = new ProcedureQueryValidator();
+
+    protected static final SQLTemplateValidator sqlTemplateValidator = new SQLTemplateValidator();
 
     /**
-     * Validates an object, appending any validation messages 
-     * to the validator provided.
+     * Validates an object, appending any validation messages to the validator provided.
      */
-    public static void validate(Object[] path, Validator validator) {
-        Object validatedObj = ProjectTraversal.objectFromPath(path);
+    public static void validate(ProjectPath path, Validator validator) {
+        Object validatedObj = path.getObject();
         TreeNodeValidator validatorObj = null;
         if (validatedObj instanceof ObjAttribute) {
             validatorObj = objAttrValidator;
-        } else if (validatedObj instanceof ObjRelationship) {
+        }
+        else if (validatedObj instanceof ObjRelationship) {
             validatorObj = objRelValidator;
-        } else if (validatedObj instanceof ObjEntity) {
+        }
+        else if (validatedObj instanceof ObjEntity) {
             validatorObj = objEntityValidator;
-        } else if (validatedObj instanceof DbAttribute) {
+        }
+        else if (validatedObj instanceof DbAttribute) {
             validatorObj = dbAttrValidator;
-        } else if (validatedObj instanceof DbRelationship) {
+        }
+        else if (validatedObj instanceof DbRelationship) {
             validatorObj = dbRelValidator;
-        } else if (validatedObj instanceof DbEntity) {
+        }
+        else if (validatedObj instanceof DbEntity) {
             validatorObj = dbEntityValidator;
-        } else if (validatedObj instanceof DataNode) {
+        }
+        else if (validatedObj instanceof DataNode) {
             validatorObj = nodeValidator;
-        } else if (validatedObj instanceof DataMap) {
+        }
+        else if (validatedObj instanceof DataMap) {
             validatorObj = mapValidator;
-        } else if (validatedObj instanceof DataDomain) {
+        }
+        else if (validatedObj instanceof DataDomain) {
             validatorObj = domainValidator;
-        } else {
+        }
+        else if (validatedObj instanceof Procedure) {
+            validatorObj = procedureValidator;
+        }
+        else if (validatedObj instanceof ProcedureParameter) {
+            validatorObj = procedureParameterValidator;
+        }
+        else if (validatedObj instanceof SelectQuery) {
+            validatorObj = selectQueryValidator;
+        }
+        else if (validatedObj instanceof SQLTemplate) {
+            validatorObj = sqlTemplateValidator;
+        }
+        else if (validatedObj instanceof ProcedureQuery) {
+            validatorObj = procedureQueryValidator;
+        }
+        else {
             // ignore unknown nodes
+            String className = (validatedObj != null)
+                    ? validatedObj.getClass().getName()
+                    : "(null object)";
+            logObj.info("Validation not supported for object of class: " + className);
             return;
         }
 
@@ -131,11 +170,10 @@ public abstract class TreeNodeValidator {
     }
 
     /**
-     * Validates an object, appending any warnings or errors to the validator. 
-     * Object to be validated is the last object in a <code>treeNodePath</code> 
-     * array argument.
-     * Concrete implementations would expect an object of a specific type.
-     * Otherwise, ClassCastException will be thrown.
+     * Validates an object, appending any warnings or errors to the validator. Object to
+     * be validated is the last object in a <code>treeNodePath</code> array argument.
+     * Concrete implementations would expect an object of a specific type. Otherwise,
+     * ClassCastException will be thrown.
      */
-    public abstract void validateObject(Object[] treeNodePath, Validator validator);
+    public abstract void validateObject(ProjectPath treeNodePath, Validator validator);
 }

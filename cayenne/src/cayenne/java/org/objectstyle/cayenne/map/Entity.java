@@ -1,38 +1,39 @@
 /* ====================================================================
+ *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,217 +47,344 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.map;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.SortedMap;
 import java.util.StringTokenizer;
 
-import org.apache.log4j.Logger;
+import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionException;
+import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.util.CayenneMap;
 
-/** 
+/**
  * An Entity is an abstract descriptor for an entity mapping concept.
  * Entity can represent either a descriptor of database table or
- * a persistent object. 
- * 
- * @author Andrei Adamchik 
+ * a persistent object.
+ *
+ * @author Andrei Adamchik
  */
 public abstract class Entity extends MapObject {
-	static Logger logObj = Logger.getLogger(Entity.class);
-	
-	public static final String PATH_SEPARATOR = ".";
+    public static final String PATH_SEPARATOR = ".";
 
-	protected CayenneMap attributes = new CayenneMap(this);
-	protected CayenneMap relationships = new CayenneMap(this);
+    // ====================================================
+    // Attributes
+    // ====================================================
+    protected CayenneMap attributes = new CayenneMap(this);
+    //  read-through reference for public access
+    protected SortedMap attributesMapRef = Collections.unmodifiableSortedMap(attributes);
+    //  read-through reference for public access
+    protected Collection attributesRef =
+        Collections.unmodifiableCollection(attributes.values());
 
-	public DataMap getDataMap() {
-		return (DataMap) getParent();
-	}
+    // ====================================================
+    // Relationships
+    // ====================================================
+    protected CayenneMap relationships = new CayenneMap(this);
+    //  read-through reference for public access
+    protected SortedMap relationshipsMapRef =
+        Collections.unmodifiableSortedMap(relationships);
+    //  read-through reference for public access
+    protected Collection relationshipsRef =
+        Collections.unmodifiableCollection(relationships.values());
 
-	public void setDataMap(DataMap dataMap) {
-		setParent(dataMap);
-	}
+    /**
+     * @return parent DataMap of this entity.
+     */
+    public DataMap getDataMap() {
+        return (DataMap) getParent();
+    }
 
-	/** 
-	 * Returns attribute with name <code>attrName</code>.
-	 * Will return null if no attribute with this name exists. 
-	 */
-	public Attribute getAttribute(String attrName) {
-		return (Attribute) attributes.get(attrName);
-	}
+    /**
+     * Sets parent DataMap of this entity.
+     */
+    public void setDataMap(DataMap dataMap) {
+        this.setParent(dataMap);
+    }
 
-	/** 
-	 * Adds new attribute to the entity. If attribute has no name,
-	 * IllegalArgumentException is thrown.
-	 * 
-	 * Also sets <code>attr</code>'s entity to be this entity. 
-	 */
-	public void addAttribute(Attribute attr) {
-		if (attr.getName() == null) {
-			throw new IllegalArgumentException("Attempt to insert unnamed attribute.");
-		}
+    /**
+     * Returns a named query associated with this entity.
+     * 
+     * @since 1.1 Return type is changed to Query from SelectQuery.
+     * @deprecated Since 1.1 Queries are stored at the DataMap level.
+     */
+    public Query getQuery(String queryName) {
+        return getDataMap().getQuery(getName() + ":" + queryName);
+    }
 
-		attributes.put(attr.getName(), attr);
-	}
+    /**
+     * Creates a named association of a SelectQuery with this entity. Throws
+     * IllegalArgumentException if query root can not be resolved to this
+     * entity.
+     * 
+     * @deprecated Since 1.1 Queries are stored at the DataMap level.
+     */
+    public void addQuery(String queryName, Query query) {
+        query.setName(getName() + ":" + queryName);
+        getDataMap().addQuery(query);
+    }
 
-	/** Removes an attribute named <code>attrName</code>.*/
-	public void removeAttribute(String attrName) {
-		attributes.remove(attrName);
-	}
+    /**
+     * Removes a named query from this Entity.
+     * 
+     * @deprecated Since 1.1 Queries are stored at the DataMap level.
+     */
+    public void removeQuery(String queryName) {
+        getDataMap().removeQuery(getName() + ":" + queryName);
+    }
 
-	public void clearAttributes() {
-		attributes.clear();
-	}
+    /**
+     * @deprecated Since 1.1 Queries are stored at the DataMap level.
+     */
+    public void clearQueries() {
+        // TODO: for backwards compatibility
+        // we must scan all queries that start with this entity
+        // name and only clean those.
+        getDataMap().clearQueries();
+    }
 
-	/** 
-	 * Returns relationship with name <code>relName</code>.
-	 * Will return null if no relationship with this name 
-	 * exists in the entity. 
-	 */
-	public Relationship getRelationship(String relName) {
-		return (Relationship) relationships.get(relName);
-	}
+    /**
+     * Helper method that checks that a Query belongs to this entity by
+     * validating query root object.
+     *
+     * @throws IllegalArgumentException if query does not belong to this entity.
+     * @deprecated Unused since 1.1
+     */
+    protected abstract void validateQueryRoot(Query query)
+        throws IllegalArgumentException;
 
-	/** Adds new relationship to the entity. */
-	public void addRelationship(Relationship rel) {
-		relationships.put(rel.getName(), rel);
-	}
+    /**
+     * Returns attribute with name <code>attrName</code>.
+     * Will return null if no attribute with this name exists.
+     */
+    public Attribute getAttribute(String attrName) {
+        return (Attribute) attributes.get(attrName);
+    }
 
-	/** Removes a relationship named <code>attrName</code>.*/
-	public void removeRelationship(String relName) {
-		relationships.remove(relName);
-	}
+    /**
+     * Adds new attribute to the entity. If attribute has no name,
+     * IllegalArgumentException is thrown.
+     *
+     * Also sets <code>attr</code>'s entity to be this entity.
+     */
+    public void addAttribute(Attribute attr) {
+        if (attr.getName() == null) {
+            throw new IllegalArgumentException("Attempt to insert unnamed attribute.");
+        }
 
-	public void clearRelationships() {
-		relationships.clear();
-	}
+        attributes.put(attr.getName(), attr);
+    }
 
-	public Map getRelationshipMap() {
-		return Collections.unmodifiableMap(relationships);
-	}
+    /** Removes an attribute named <code>attrName</code>.*/
+    public void removeAttribute(String attrName) {
+        attributes.remove(attrName);
+    }
 
-	/** Returns a list of Relationship's that exist in this entity. */
-	public List getRelationshipList() {
-		ArrayList list = new ArrayList();
-		Iterator it = relationships.keySet().iterator();
-		while (it.hasNext()) {
-			list.add(relationships.get(it.next()));
-		}
+    public void clearAttributes() {
+        attributes.clear();
+    }
 
-		return list;
-	}
+    /**
+     * Returns relationship with name <code>relName</code>.
+     * Will return null if no relationship with this name
+     * exists in the entity.
+     */
+    public Relationship getRelationship(String relName) {
+        return (Relationship) relationships.get(relName);
+    }
 
-	/** Returns entity attributes as an unmodifiable map. */
-	public Map getAttributeMap() {
-		return Collections.unmodifiableMap(attributes);
-	}
+    /** Adds new relationship to the entity. */
+    public void addRelationship(Relationship rel) {
+        relationships.put(rel.getName(), rel);
+    }
 
-	/** Returns entity attributes as a list. */
-	public List getAttributeList() {
-		ArrayList list = new ArrayList();
-		Iterator it = attributes.keySet().iterator();
-		while (it.hasNext()) {
-			list.add(attributes.get(it.next()));
-		}
+    /** Removes a relationship named <code>attrName</code>.*/
+    public void removeRelationship(String relName) {
+        relationships.remove(relName);
+    }
 
-		return list;
-	}
+    public void clearRelationships() {
+        relationships.clear();
+    }
 
-	/** 
-	 * Processes expression <code>objPathExp</code> and returns an Iterator
-	 * of path components that contains a sequence of Attributes and Relationships.
-	 * Note that if path is invalid and can not be resolved from this entity,
-	 * this method will still return an Iterator, but an attempt to read the first
-	 * invalid path component will result in ExpressionException.
-	 *
-	 * @see org.objectstyle.cayenne.exp.Expression#OBJ_PATH for definition of OBJ_PATH.
-	 *
-	 * @throws org.objectstyle.cayenne.exp.ExpressionException Exception is thrown if
-	 * <code>objPathExp</code> is not of type OBJ_PATH
-	 */
-	public Iterator resolvePathComponents(Expression pathExp)
-		throws ExpressionException {
-		if (pathExp.getType() != Expression.OBJ_PATH
-			&& pathExp.getType() != Expression.DB_PATH) {
-			StringBuffer msg = new StringBuffer();
-			msg
-				.append("Invalid expression type: '")
-				.append(pathExp.getType())
-				.append("' ('")
-				.append(Expression.OBJ_PATH)
-				.append(" or ")
-				.append(Expression.DB_PATH)
-				.append("' is expected).");
+    /**
+     * Returns a map of relationships sorted by name.
+     */
+    public SortedMap getRelationshipMap() {
+        return relationshipsMapRef;
+    }
 
-			throw new ExpressionException(msg.toString());
-		}
+    /**
+     * Returns a relationship that has a specified entity as a target.
+     * If there is more than one relationship for the same target,
+     * it is unpredictable which one will be returned.
+     * 
+     * @since 1.1
+     */
+    public Relationship getAnyRelationship(Entity targetEntity) {
+        Collection relationships = getRelationships();
+        if (relationships.isEmpty()) {
+            return null;
+        }
 
-		return new PathIterator(this, (String) pathExp.getOperand(0));
-	}
+        Iterator it = relationships.iterator();
+        while (it.hasNext()) {
+            Relationship r = (Relationship) it.next();
+            if (r.getTargetEntity() == targetEntity) {
+                return r;
+            }
+        }
+        return null;
+    }
 
-	// Used to return an iterator to callers of 'resolvePathComponents'
-	protected final class PathIterator implements Iterator {
-		private StringTokenizer toks;
-		private Entity currentEnt;
+    /**
+     * Returns a collection of Relationships that exist in this entity.
+     */
+    public Collection getRelationships() {
+        return relationshipsRef;
+    }
 
-		PathIterator(Entity ent, String path) {
-			this.toks = new StringTokenizer(path, PATH_SEPARATOR);
-			this.currentEnt = ent;
-		}
+    /**
+     * Returns entity attributes as an unmodifiable map. Since 1.1 returns
+     * a SortedMap.
+     */
+    public SortedMap getAttributeMap() {
+        return attributesMapRef;
+    }
 
-		public boolean hasNext() {
-			return toks.hasMoreTokens();
-		}
+    /**
+     * Returns entity attributes.
+     */
+    public Collection getAttributes() {
+        return attributesRef;
+    }
 
-		public Object next() {
-			String pathComp = toks.nextToken();
+    /**
+     * Translates Expression rooted in this entity to an analogous expression 
+     * rooted in related entity.
+     * 
+     * @since 1.1
+     */
+    public abstract Expression translateToRelatedEntity(
+        Expression expression,
+        String relationshipPath);
 
-			// see if this is an attribute
-			Attribute attr = currentEnt.getAttribute(pathComp);
-			if (attr != null) {
-				// do a sanity check...
-				if (toks.hasMoreTokens()) {
-					throw new ExpressionException(
-						"Attribute must be the last component of the path: '"
-							+ pathComp
-							+ "'.");
-				}
+    /**
+     * Convenience method returning the last component in the path iterator.
+     * 
+     * @since 1.1
+     * @see #resolvePathComponents(Expression)
+     */
+    public Object lastPathComponent(Expression pathExp) {
+        Object last = null;
+        Iterator it = resolvePathComponents(pathExp);
+        while (it.hasNext()) {
+            last = it.next();
+        }
 
-				return attr;
-			}
+        return last;
+    }
 
-			Relationship rel = currentEnt.getRelationship(pathComp);
-			if (rel != null) {
-				currentEnt = rel.getTargetEntity();
-				return rel;
-			}
+    /**
+     * Processes expression <code>pathExp</code> and returns an Iterator
+     * of path components that contains a sequence of Attributes and Relationships.
+     * Note that if path is invalid and can not be resolved from this entity,
+     * this method will still return an Iterator, but an attempt to read the first
+     * invalid path component will result in ExpressionException.
+     */
+    public abstract Iterator resolvePathComponents(Expression pathExp)
+        throws ExpressionException;
 
-			// build error message
-			StringBuffer buf = new StringBuffer();
-			buf
-				.append("Can't resolve path component: [")
-				.append(currentEnt.getName())
-				.append('.')
-				.append(pathComp)
-				.append("].");
-			throw new ExpressionException(buf.toString());
-		}
+    /**
+     * Returns an Iterator over the path components that contains a sequence of 
+     * Attributes and Relationships. Note that if path is invalid and can not be 
+     * resolved from this entity, this method will still return an Iterator, 
+     * but an attempt to read the first invalid path component will result in 
+     * ExpressionException.
+     */
+    public Iterator resolvePathComponents(String path) throws ExpressionException {
+        return new PathIterator(path);
+    }
 
-		public void remove() {
-			throw new UnsupportedOperationException("'remove' operation is not supported.");
-		}
-	}
+    // An iterator resolving mapping components represented by the path string.
+    // This entity is assumed to be the root of the path.
+    final class PathIterator implements Iterator {
+
+        private StringTokenizer toks;
+        private Entity currentEnt;
+        private String path;
+
+        PathIterator(String path) {
+            super();
+            this.currentEnt = Entity.this;
+            this.toks = new StringTokenizer(path, PATH_SEPARATOR);
+            this.path = path;
+        }
+
+        public boolean hasNext() {
+            return toks.hasMoreTokens();
+        }
+
+        public Object next() {
+            String pathComp = toks.nextToken();
+
+            // see if this is an attribute
+            Attribute attr = currentEnt.getAttribute(pathComp);
+            if (attr != null) {
+                // do a sanity check...
+                if (toks.hasMoreTokens()) {
+                    throw new ExpressionException(
+                        "Attribute must be the last component of the path: '"
+                            + pathComp
+                            + "'.",
+                        path,
+                        null);
+                }
+
+                return attr;
+            }
+
+            Relationship rel = currentEnt.getRelationship(pathComp);
+            if (rel != null) {
+                currentEnt = rel.getTargetEntity();
+                return rel;
+            }
+
+            // build error message
+            StringBuffer buf = new StringBuffer();
+            buf
+                .append("Can't resolve path component: [")
+                .append(currentEnt.getName())
+                .append('.')
+                .append(pathComp)
+                .append("].");
+            throw new ExpressionException(buf.toString(), path, null);
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException("'remove' operation is not supported.");
+        }
+    }
+
+    final MappingNamespace getNonNullNamespace() {
+        MappingNamespace parent = (MappingNamespace) getParent();
+        if (parent == null) {
+            throw new CayenneRuntimeException(
+                "Entity '"
+                    + getName()
+                    + "' has no parent MappingNamespace (such as DataMap)");
+        }
+
+        return parent;
+    }
 }

@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,104 +47,108 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.project;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 
-import javax.sql.DataSource;
-
-import org.apache.log4j.Logger;
-import org.objectstyle.cayenne.access.DataSourceInfo;
+import org.objectstyle.cayenne.ConfigurationException;
+import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.conf.DataSourceFactory;
-import org.objectstyle.cayenne.conf.DefaultConfiguration;
+import org.objectstyle.cayenne.conf.FileConfiguration;
+import org.objectstyle.cayenne.conf.RuntimeLoadDelegate;
+import org.objectstyle.cayenne.util.ResourceLocator;
 
 /**
- * Subclass of Configuration used in the project model.
+ * Subclass of FileConfiguration used in the project model.
  *
  * @author Misha Shengaout
  * @author Andrei Adamchik
  */
-public class ProjectConfiguration extends DefaultConfiguration {
-    static Logger logObj = Logger.getLogger(ProjectConfiguration.class.getName());
+public class ProjectConfiguration extends FileConfiguration {
 
-    /** Main project file. */
-    protected File projectFile;
-
-    public ProjectConfiguration(File projectFile) {
-        this.projectFile = projectFile;
-
-        if (projectFile.isFile()) {
-            try {
-                init();
-            } catch (Exception e) {
-                throw new ProjectException("Error initializing configuration.", e);
-            }
-        }
-    }
-
-    /** Returns project directory. */
-    public File getProjectDir() {
-        String parent = (projectFile != null) ? projectFile.getParent() : null;
-        return (parent != null) ? new File(parent) : null;
-    }
-
-    /** 
-     * Returns domain configuration as a stream or null if it
-     * can not be found. 
+    /**
+     * Override parent implementation to ignore loading failures.
+     * @see FileConfiguration#FileConfiguration(File)
      */
-    public InputStream getDomainConfig() {
-        try {
-            if (projectFile != null && projectFile.exists() && projectFile.isFile()) {
-                return new FileInputStream(projectFile);
-            }
-        } catch (Exception ex) {
-            logObj.warn("Error reading domain configuration", ex);
-        }
+    public ProjectConfiguration(File projectFile) {
+        super(projectFile);
 
-        return null;
-    }
+        // ignore loading failures
+        this.setIgnoringLoadFailures(true);
 
-    /** Returns DataMap configuration from a specified location or null if it
-      * can not be found. */
-    public InputStream getMapConfig(String location) {
-        try {
-            if (projectFile != null) {
-                File mapFile = new File(projectFile.getParent(), location);
-                if (mapFile.exists()) {
-                    return new FileInputStream(mapFile);
-                }
-            }
-        } catch (Exception ex) {
-            logObj.warn("Error reading data map", ex);
-        }
-        return null;
+        // configure deterministic file opening rules
+        ResourceLocator locator = this.getResourceLocator();
+        locator.setSkipAbsolutePath(false);
+        locator.setSkipClasspath(true);
+        locator.setSkipCurrentDirectory(true);
+        locator.setSkipHomeDirectory(true);
+
+        // install custom loader
+        setLoaderDelegate(new ProjectLoader());
     }
 
     /**
-     * @see org.objectstyle.cayenne.conf.Configuration#getOverrideFactory()
+     * Override parent implementation to prevent loading of
+     * nonexisting files.
+     * @see FileConfiguration#canInitialize()
      */
-    protected DataSourceFactory getOverrideFactory() {
+    public boolean canInitialize() {
+        return (super.canInitialize() && this.getProjectFile().isFile());
+    }
+
+    /**
+     * Override parent implementation to allow for null files.
+     * @see FileConfiguration#setProjectFile(File)
+     */
+    protected void setProjectFile(File projectFile) {
+        if ((projectFile != null) && (projectFile.exists())) {
+            super.setProjectFile(projectFile);
+        }
+        else {
+            super.projectFile = projectFile;
+            this.setDomainConfigurationName(Configuration.DEFAULT_DOMAIN_FILE);
+        }
+    }
+
+    /**
+     * Returns a DataSource factory for projects.
+     * 
+     * @see org.objectstyle.cayenne.project.ProjectDataSourceFactory
+     */
+    public DataSourceFactory getDataSourceFactory() {
         try {
-            return new ProjectDataSourceFactory(getProjectDir());
-        } catch (Exception e) {
+            return new ProjectDataSourceFactory(this.getProjectDirectory());
+        }
+        catch (Exception e) {
             throw new ProjectException("Error creating DataSourceFactory.", e);
         }
     }
 
-    /**
-     * Returns the projectFile.
-     * @return File
-     */
-    public File getProjectFile() {
-        return projectFile;
+    final class ProjectLoader extends RuntimeLoadDelegate {
+
+        public ProjectLoader() {
+            super(
+                ProjectConfiguration.this,
+                ProjectConfiguration.this.getLoadStatus(),
+                ProjectConfiguration.getLoggingLevel());
+        }
+
+        public void shouldLoadDataDomain(String domainName) {
+            super.shouldLoadDataDomain(domainName);
+
+            try {
+                // disable class indexing 
+                findDomain(domainName).getEntityResolver().setIndexedByClass(false);
+            }
+            catch (Exception ex) {
+                throw new ConfigurationException("Domain is not loaded: " + domainName);
+            }
+        }
     }
 }

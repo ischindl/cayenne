@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,37 +47,60 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.dba.sybase;
 
-import java.util.HashMap;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
 
-import org.objectstyle.cayenne.access.DataNode;
-import org.objectstyle.cayenne.access.OperationSorter;
+import org.objectstyle.cayenne.access.types.ByteArrayType;
+import org.objectstyle.cayenne.access.types.ByteType;
 import org.objectstyle.cayenne.access.types.CharType;
+import org.objectstyle.cayenne.access.types.ExtendedTypeMap;
+import org.objectstyle.cayenne.access.types.ShortType;
 import org.objectstyle.cayenne.dba.JdbcAdapter;
 import org.objectstyle.cayenne.dba.PkGenerator;
 
 /** 
- * DbAdapter implementation for 
- * <a href="http://www.sybase.com">Sybase RDBMS</a>.
+ * DbAdapter implementation for <a href="http://www.sybase.com">Sybase RDBMS</a>.
  *
  * @author Andrei Adamchik
  */
 public class SybaseAdapter extends JdbcAdapter {
-    protected HashMap sorters = new HashMap();
 
-    public SybaseAdapter() {
-        super();
-        typeConverter.registerType(new CharType());
+    /**
+     * Returns word "go".
+     * 
+     * @since 1.0.4
+     */
+    public String getBatchTerminator() {
+        return "go";
     }
     
+    /**
+     * Installs appropriate ExtendedTypes as converters for passing values
+     * between JDBC and Java layers.
+     */
+    protected void configureExtendedTypes(ExtendedTypeMap map) {
+        super.configureExtendedTypes(map);
+
+        // create specially configured CharType handler
+        map.registerType(new CharType(true, false));
+
+        // create specially configured ByteArrayType handler
+        map.registerType(new ByteArrayType(true, false));
+
+        // address Sybase driver inability to handle java.lang.Short and java.lang.Byte
+        map.registerType(new ShortType(true));
+        map.registerType(new ByteType(true));
+    }
+
     /** 
      * Creates and returns a primary key generator. 
      * Overrides superclass implementation to return an
@@ -85,16 +109,25 @@ public class SybaseAdapter extends JdbcAdapter {
     protected PkGenerator createPkGenerator() {
         return new SybasePkGenerator();
     }
-    
-    
-    public OperationSorter getOpSorter(DataNode node) {
-        synchronized (sorters) {
-            OperationSorter sorter = (OperationSorter) sorters.get(node);
-            if (sorter == null) {
-                sorter = new OperationSorter(node, node.getDataMaps());
-                sorters.put(node, sorter);
+
+    public void bindParameter(
+        PreparedStatement statement,
+        Object object,
+        int pos,
+        int sqlType,
+        int precision)
+        throws SQLException, Exception {
+
+        // Sybase driver doesn't like CLOBs and BLOBs as parameters
+        if (object == null) {
+            if (sqlType == Types.CLOB) {
+                sqlType = Types.VARCHAR;
             }
-            return sorter;
+            else if (sqlType == Types.BLOB) {
+                sqlType = Types.VARBINARY;
+            }
         }
+
+        super.bindParameter(statement, object, pos, sqlType, precision);
     }
 }

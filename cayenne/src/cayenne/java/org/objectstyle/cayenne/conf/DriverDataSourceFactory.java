@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,12 +47,11 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.conf;
 
@@ -61,14 +61,18 @@ import javax.sql.DataSource;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.objectstyle.cayenne.ConfigException;
-import org.objectstyle.cayenne.access.DataSourceInfo;
+import org.objectstyle.cayenne.ConfigurationException;
 import org.objectstyle.cayenne.access.QueryLogger;
+import org.objectstyle.cayenne.access.util.ConnectionEventLogger;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.conn.PoolManager;
 import org.objectstyle.cayenne.util.AbstractHandler;
-import org.objectstyle.cayenne.util.ResourceLocator;
 import org.objectstyle.cayenne.util.Util;
-import org.xml.sax.*;
+import org.xml.sax.Attributes;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
 /** 
@@ -79,58 +83,47 @@ import org.xml.sax.helpers.DefaultHandler;
  * @author Andrei Adamchik
  */
 public class DriverDataSourceFactory implements DataSourceFactory {
-    static Logger logObj = Logger.getLogger(DriverDataSourceFactory.class.getName());
-
-    private static boolean applyWebAppPatch;
-
-    static {
-        // determine what kind of servlet environment is accessible
-        try {
-            Class.forName("javax.servlet.ServletContext");
-            applyWebAppPatch = true;
-        } catch (Exception ex) {
-            applyWebAppPatch = false;
-        }
-
-    }
+    private static Logger logObj =
+        Logger.getLogger(DriverDataSourceFactory.class);
 
     protected XMLReader parser;
     protected DataSourceInfo driverInfo;
     protected Level logLevel = Level.DEBUG;
-    protected ResourceLocator locator;
-    protected Configuration parentConfig;
+    protected Configuration parentConfiguration;
 
+    /**
+     * Default constructor
+     * @throws Exception
+     */
     public DriverDataSourceFactory() throws Exception {
-        parser = Util.createXmlReader();
-
-        // CLASSPATH and filesystem locator
-        // (by default ResourceLocator is configured to find files 
-        // everywhere it can
-        locator = new ResourceLocator();
-
-        // Configuration statically defines what 
-        // ClassLoader to use for resources. This
-        // allows applications to control where resources 
-        // are loaded from.
-        locator.setClassLoader(Configuration.getResourceLoader());
+        super();
+        this.parser = Util.createXmlReader();
     }
 
-    public void setParentConfig(Configuration conf) {
-        this.parentConfig = conf;
+    /**
+     * @see DataSourceFactory#initializeWithParentConfiguration(Configuration)
+     */
+    public void initializeWithParentConfiguration(Configuration conf) {
+        this.parentConfiguration = conf;
     }
 
-    /** Returns DataSource object corresponding to <code>location</code>.
-      * Location is expected to be a path of a file relative to the current
-      * directory or a user home directory. */
+    /**
+     * @see DataSourceFactory#getDataSource(String)
+     */
     public DataSource getDataSource(String location) throws Exception {
-        return getDataSource(location, Level.DEBUG);
+        return this.getDataSource(location, Level.DEBUG);
     }
 
-    public DataSource getDataSource(String location, Level logLevel) throws Exception {
+    /**
+     * @see DataSourceFactory#getDataSource(String, Level)
+     */
+    public DataSource getDataSource(String location, Level logLevel)
+        throws Exception {
         this.logLevel = logLevel;
-        load(location);
-
-        QueryLogger.logConnect(logLevel, driverInfo);
+        this.load(location);
+        
+        ConnectionEventLogger logger = new ConnectionEventLogger(Level.INFO);
+        
         try {
             PoolManager pm =
                 new PoolManager(
@@ -139,8 +132,9 @@ public class DriverDataSourceFactory implements DataSourceFactory {
                     driverInfo.getMinConnections(),
                     driverInfo.getMaxConnections(),
                     driverInfo.getUserName(),
-                    driverInfo.getPassword());
-            QueryLogger.logConnectSuccess(logLevel);
+                    driverInfo.getPassword(),
+                    logger);
+
             return pm;
         } catch (Exception ex) {
             QueryLogger.logConnectFailure(logLevel, ex);
@@ -148,48 +142,37 @@ public class DriverDataSourceFactory implements DataSourceFactory {
         }
     }
 
-    /** Returns DataSourceInfo property. */
+    /**
+     * Returns DataSourceInfo property.
+     */
     protected DataSourceInfo getDriverInfo() {
-        return driverInfo;
+        return this.driverInfo;
     }
 
     protected InputStream getInputStream(String location) {
-        InputStream in = getWebAppInputStream(location);
-
-        // if not a web app, return to normal behavior
-        return (in != null) ? in : locator.findResourceStream(location);
-    }
-
-    protected InputStream getWebAppInputStream(String location) {
-        // webapp patch - first lookup in WEB-INF
-        if (parentConfig != null) {
-            if (applyWebAppPatch
-                && (parentConfig instanceof BasicServletConfiguration)) {
-                BasicServletConfiguration servlConf =
-                    (BasicServletConfiguration) parentConfig;
-                return servlConf.getMapConfig(location);
-            }
+        if (this.parentConfiguration == null) {
+            throw new ConfigurationException("No parent Configuration set - cannot continue.");
         }
 
-        return null;
+        return this.parentConfiguration.getResourceLocator()
+        			.findResourceStream(location);
     }
 
-    /** Loads driver information from the file at <code>location</code>.
-      * Called internally from "getDataSource" */
+    /**
+     * Loads driver information from the file at <code>location</code>.
+     * Called internally from "getDataSource"
+     */
     protected void load(String location) throws Exception {
-        logObj.log(logLevel, "loading driver information from (" + location + ").");
+        logObj.log(
+            logLevel,
+            "loading driver information from '" + location + "'.");
 
-        InputStream in = getInputStream(location);
+        InputStream in = this.getInputStream(location);
         if (in == null) {
-            logObj.log(logLevel, "location not found in filesystem.");
-            in = ResourceLocator.findResourceInClasspath(location);
-        } else {
-            logObj.log(logLevel, "location found in filesystem.");
-        }
-
-        if (in == null) {
-            logObj.log(logLevel, "error: location not found.");
-            throw new ConfigException(
+            logObj.log(
+                logLevel,
+                "Error: location '" + location + "' not found.");
+            throw new ConfigurationException(
                 "Can't find DataSource configuration file at " + location);
         }
 
@@ -258,9 +241,15 @@ public class DriverDataSourceFactory implements DataSourceFactory {
             Attributes atts)
             throws SAXException {
             if (localName.equals("login")) {
-                new LoginHandler(this.parser, this).init(localName, atts, driverInfo);
+                new LoginHandler(this.parser, this).init(
+                    localName,
+                    atts,
+                    driverInfo);
             } else if (localName.equals("url")) {
-                new UrlHandler(this.parser, this).init(localName, atts, driverInfo);
+                new UrlHandler(this.parser, this).init(
+                    localName,
+                    atts,
+                    driverInfo);
             } else if (localName.equals("connectionPool")) {
                 new ConnectionHandler(this.parser, this).init(
                     localName,
@@ -290,7 +279,10 @@ public class DriverDataSourceFactory implements DataSourceFactory {
             super(parser, parentHandler);
         }
 
-        public void init(String name, Attributes atts, DataSourceInfo driverInfo)
+        public void init(
+            String name,
+            Attributes atts,
+            DataSourceInfo driverInfo)
             throws SAXException {
             driverInfo.setDataSourceUrl(atts.getValue("value"));
             if (driverInfo.getDataSourceUrl() == null) {
@@ -312,7 +304,10 @@ public class DriverDataSourceFactory implements DataSourceFactory {
             super(parser, parentHandler);
         }
 
-        public void init(String name, Attributes atts, DataSourceInfo driverInfo)
+        public void init(
+            String name,
+            Attributes atts,
+            DataSourceInfo driverInfo)
             throws SAXException {
             logObj.log(logLevel, "loading user name and password.");
             driverInfo.setUserName(atts.getValue("userName"));
@@ -328,11 +323,16 @@ public class DriverDataSourceFactory implements DataSourceFactory {
          *                      parser at the end of the element. 
          *                      Must not be <code>null</code>.
          */
-        public ConnectionHandler(XMLReader parser, ContentHandler parentHandler) {
+        public ConnectionHandler(
+            XMLReader parser,
+            ContentHandler parentHandler) {
             super(parser, parentHandler);
         }
 
-        public void init(String name, Attributes atts, DataSourceInfo driverInfo)
+        public void init(
+            String name,
+            Attributes atts,
+            DataSourceInfo driverInfo)
             throws SAXException {
             try {
                 String min = atts.getValue("min");
@@ -344,7 +344,9 @@ public class DriverDataSourceFactory implements DataSourceFactory {
                     driverInfo.setMaxConnections(Integer.parseInt(max));
             } catch (NumberFormatException nfex) {
                 logObj.log(logLevel, "Error loading numeric attribute", nfex);
-                throw new SAXException("Error reading numeric attribute.", nfex);
+                throw new SAXException(
+                    "Error reading numeric attribute.",
+                    nfex);
             }
         }
     }

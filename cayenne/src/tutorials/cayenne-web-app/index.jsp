@@ -1,17 +1,7 @@
 <%@ page language="java" %>
-<%@ page import="org.objectstyle.cayenne.access.DataContext" %>
-<%@ page import="org.objectstyle.cayenne.access.DataDomain" %>
-<%@ page import="org.objectstyle.cayenne.conf.ServletConfiguration" %>
-<%@ page import="javax.servlet.http.HttpSession" %>
 <%@ taglib uri="/WEB-INF/struts-bean.tld" prefix="bean" %>
 <%@ taglib uri="/WEB-INF/struts-html.tld" prefix="html" %>
 <%@ taglib uri="/WEB-INF/struts-logic.tld" prefix="logic" %>
-
-<%
-	DataContext ctxt = ServletConfiguration.getDefaultContext(request.getSession());
-	session.setAttribute("context", ctxt);
-%>
-
 
 <html:html locale="true">
 

@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,78 +47,55 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.project;
 
-import org.objectstyle.cayenne.CayenneTestCase;
+import java.util.List;
+
+import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.unit.CayenneTestCase;
 
 /**
  * @author Andrei Adamchik
  */
 public class ProjectTraversalTst extends CayenneTestCase {
 
-    /**
-     * Constructor for ProjectTraversalTst.
-     * @param arg0
-     */
-    public ProjectTraversalTst(String arg0) {
-        super(arg0);
+    public void testTraverse1() throws Exception {
+        TstProjectTraversalHelper helper = new TstProjectTraversalHelper();
+        DataMap map = new DataMap("m1");
+        new ProjectTraversal(helper).traverse(map);
+        List view = helper.getNodes();
+        assertNotNull(view);
+        assertEquals(1, view.size());
+        assertSame(map, view.get(0));
     }
 
-   public void testObjectFromPath1() throws Exception {
-        Object[] path = new Object[] { new Object(), new Object()};
-        assertSame(path[1], ProjectTraversal.objectFromPath(path));
-    }
-
-    public void testObjectFromPath2() throws Exception {
-        Object[] path = new Object[] { new Object()};
-        assertSame(path[0], ProjectTraversal.objectFromPath(path));
-    }
-
-    public void testObjectFromPath3() throws Exception {
-        Object[] path = new Object[] {};
-
-        try {
-            ProjectTraversal.objectFromPath(path);
-            fail("Must throw exception on empty list");
-        } catch (ProjectException ex) {}
-    }
-
-    public void testObjectParentFromPath1() throws Exception {
-        Object[] path = new Object[] { new Object(), new Object()};
-        assertSame(path[0], ProjectTraversal.objectParentFromPath(path));
-    }
-
-    public void testObjectParentFromPath2() throws Exception {
-        Object[] path = new Object[] { new Object()};
-        assertNull(ProjectTraversal.objectParentFromPath(path));
+    public void testTraverse2() throws Exception {
+        TstProjectTraversalHelper helper = new TstProjectTraversalHelper();
+        DataMap map = new DataMap("m1");
+        ObjEntity ent = new ObjEntity("e1");
+        map.addObjEntity(ent);
+        new ProjectTraversal(helper).traverse(map);
+        List view = helper.getNodes();
+        assertNotNull(view);
+        assertEquals(2, view.size());
+        assertSame(map, view.get(0));
+        assertSame(ent, view.get(1));
     }
     
-    
-   public void testBuildPath1() throws Exception {
-    	Object obj1 = new Object();
-    	Object[] path = ProjectTraversal.buildPath(obj1, null);
-    	assertNotNull(path);
-    	assertEquals(1, path.length);
-    	assertSame(obj1, path[0]);
-    }
-    
-    public void testBuildPath2() throws Exception {
-    	Object obj1 = new Object();
-    	Object[] tstPath = new Object[] {new Object(), new Object()};
-    	
-    	Object[] path = ProjectTraversal.buildPath(obj1, tstPath);
-    	assertNotNull(path);
-    	assertEquals(3, path.length);
-    	assertSame(obj1, path[2]);
-    	assertSame(tstPath[1], path[1]);
-    	assertSame(tstPath[0], path[0]);
+    public void testTraverse3() throws Exception {
+        TstProjectTraversalHelper helper = new TstProjectTraversalHelper();
+        Project p = new DataMapProject(null);
+        new ProjectTraversal(helper).traverse(p);
+        List nodes = helper.getNodes();
+        assertNotNull(nodes);
+        assertEquals("Unexpected number of nodes.." + nodes, 2, nodes.size());
+        assertSame(p, nodes.get(0));
     }
 }
-

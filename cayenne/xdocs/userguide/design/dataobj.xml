@@ -1,30 +1,25 @@
 <document>
 <title>User Guide - Design</title>
-<navigator>
-	<up>/userguide/index.html</up>
-	<prev>/userguide/design/index.html</prev>
-	<next>/userguide/design/query.html</next>
-</navigator>
+<toc name="toc-user-guide" chapter="4. Design"/>
 <body>
     <section name="4. Design">
-        <subsection name="4.2 Data Objects" anchor="do">
+        <subsection name="4.3 Data Objects" anchor="do">
             <p>Cayenne's main function is to provide object-based access
-            to relational data sources. Data objects in Cayenne are fully portable and contain
+            to relational data sources. DataObjects in Cayenne are fully portable and contain
             only data and business logic. It is a task of the framework to perform operations 
             required to provide objects persistence.</p>
             
-            <p>All objects that represent database data in Cayenne must implement <a href=
+            <p>All objects that represent persistent data in Cayenne must implement <a href=
             "../../api/cayenne/org/objectstyle/cayenne/DataObject.html">DataObject</a> interface.
             Default implementation of DataObject is <a href=
             "../../api/cayenne/org/objectstyle/cayenne/CayenneDataObject.html">CayenneDataObject</a>.
-            Normally application classes that are used for data access would extend 
-            CayenneDataObject. Class diagram of DataObject and its components is shown below
-            (details explained in the following subsections):
+            In most cases application classes that are used for data access would extend 
+            CayenneDataObject. DataContext provides persistence services to DataObjects:
             </p>
             
-            <img src="/images/dataobject-class.gif" alt="Cayenne DataObject Class Diagram"/> 
+            <img src="/images/data-objects.gif" width="420" height="331" alt="Cayenne DataObjects"/> 
 
-            <subsection name="4.2.1 ObjectId">
+            <subsection name="4.3.1 ObjectId">
             	<p>Each object in Cayenne is identified by <a href=
             	"../../api/cayenne/org/objectstyle/cayenne/ObjectId.html">ObjectId</a>. 
             	ObjectId is an abstraction similar to the Primary Key concept in
@@ -43,7 +38,7 @@
             	</panel>
             </subsection>
             
-            <subsection name="4.2.2 Object Persistence States">
+            <subsection name="4.3.2 Object Persistence States">
             	<p>DataObjects can be in 
             	one of the few persistence states. Transitions between the states occur when
             	user (or Cayenne framework on user's behalf) performs certain operations. 

@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,19 +47,26 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.access;
 
+import java.sql.SQLException;
 import java.util.List;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.objectstyle.cayenne.access.jdbc.ParameterBinding;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
+import org.objectstyle.cayenne.query.Query;
+import org.objectstyle.cayenne.util.Util;
+
 /** 
- * A QueryLogger is intended to log special events during query exectutions.
+ * A QueryLogger is intended to log special events during query executions.
  * This includes generated SQL statements, result counts, connection events etc.
  * It is a single consistent place for that kind of logging and should be used
  * by all Cayenne classes that work with the database directly.
@@ -74,26 +82,35 @@ import java.util.List;
  * @author Andrei Adamchik
  */
 public class QueryLogger {
-    static org.apache.log4j.Logger logObj =
-        org.apache.log4j.Logger.getLogger(QueryLogger.class);
+    private static final Logger logObj = Logger.getLogger(QueryLogger.class);
 
-    /** Utility method that appends SQL literal for the specified object to the buffer.
-    *  This value will be quoted as needed. Conversion of the value is done based on Java class.
+    public static final Level DEFAULT_LOG_LEVEL = Query.DEFAULT_LOG_LEVEL;
+    public static final int TRIM_VALUES_THRESHOLD = 300;
+
+    /** 
+     * Utility method that appends SQL literal for the specified object to the buffer.
     *
-    *  <p>Note: this is not intended to build SQL queries, rather this is used in logging routines only.</p> 
+    * <p>Note: this method is not intended to build SQL queries, rather this is used 
+    * in logging routines only. In particular it will trim large values to avoid 
+    * flooding the logs.</p> 
     *
     *  @param buf buffer to append value
     *  @param anObject object to be transformed to SQL literal.
     */
     public static void sqlLiteralForObject(StringBuffer buf, Object anObject) {
         // 0. Null
-        if (anObject == null)
+        if (anObject == null) {
             buf.append("NULL");
+        }
         // 1. String literal
         else if (anObject instanceof String) {
             buf.append('\'');
             // lets escape quotes
             String literal = (String) anObject;
+            if (literal.length() > TRIM_VALUES_THRESHOLD) {
+                literal = literal.substring(0, TRIM_VALUES_THRESHOLD) + "...";
+            }
+
             int curPos = 0;
             int endPos = 0;
 
@@ -127,84 +144,139 @@ public class QueryLogger {
         }
         // 6. byte[]
         else if (anObject instanceof byte[]) {
-            buf.append('\'');
+            buf.append("< ");
             byte[] b = (byte[]) anObject;
-            for (int i = 0; i < b.length; i++) {
-                buf.append(b[i]);
+
+            int len = b.length;
+            boolean trimming = false;
+            if (len > TRIM_VALUES_THRESHOLD) {
+                len = TRIM_VALUES_THRESHOLD;
+                trimming = true;
             }
-            buf.append('\'');
-        } else {
-            throw new org.objectstyle.cayenne.CayenneRuntimeException(
-                "Unsupported type : " + anObject.getClass().getName());
+
+            for (int i = 0; i < len; i++) {
+                appendFormattedByte(buf, b[i]);
+                buf.append(' ');
+            }
+
+            if (trimming) {
+                buf.append("...");
+            }
+            buf.append('>');
         }
+        else if (anObject instanceof Boolean) {
+            buf.append('\'').append(anObject).append('\'');
+
+        }
+        else if (anObject instanceof ParameterBinding) {
+            sqlLiteralForObject(buf, ((ParameterBinding) anObject).getValue());
+        }
+        else {
+            // unknown
+            buf
+                .append("[")
+                .append(anObject.getClass().getName())
+                .append(": ")
+                .append(anObject)
+                .append("]");
+        }
+    }
+
+    /**
+     * Prints a byte value to a StringBuffer as a double digit hex value.
+     */
+    protected static void appendFormattedByte(StringBuffer buffer, byte byteValue) {
+        final String digits = "0123456789ABCDEF";
+
+        buffer.append(digits.charAt((byteValue >>> 4) & 0xF));
+        buffer.append(digits.charAt(byteValue & 0xF));
     }
 
     /** 
      * Returns current logging level.
      */
-    public static org.apache.log4j.Level getLoggingLevel() {
-        return logObj.getLevel();
+    public static Level getLoggingLevel() {
+        Level level = logObj.getLevel();
+        return (level != null) ? level : DEFAULT_LOG_LEVEL;
     }
 
     /**
      * Sets logging level.
      */
-    public static void setLoggingLevel(org.apache.log4j.Level level) {
+    public static void setLoggingLevel(Level level) {
         logObj.setLevel(level);
     }
 
     /**
      * Logs database connection event using container data source.
      */
-    public static void logConnect(org.apache.log4j.Level logLevel, String dataSource) {
-        if (logObj.isEnabledFor(logLevel)) {
+    public static void logConnect(Level logLevel, String dataSource) {
+        if (isLoggable(logLevel)) {
             logObj.log(logLevel, "Connecting. JNDI path: " + dataSource);
+        }
+    }
+
+    public static void logConnect(
+        Level logLevel,
+        String url,
+        String userName,
+        String password) {
+        if (isLoggable(logLevel)) {
+            StringBuffer buf = new StringBuffer("Opening connection: ");
+
+            // append URL on the same line to make log somewhat grep-friendly
+            buf.append(url);
+            buf.append("\n\tLogin: ").append(userName);
+            buf.append("\n\tPassword: *******");
+
+            logObj.log(logLevel, buf.toString());
         }
     }
 
     /**
      * Logs database connection event.
      */
-    public static void logConnect(org.apache.log4j.Level logLevel, DataSourceInfo dsi) {
-        if (logObj.isEnabledFor(logLevel)) {
-            StringBuffer buf = new StringBuffer("Connecting. DataSource information:");
+    public static void logPoolCreated(Level logLevel, DataSourceInfo dsi) {
+        if (isLoggable(logLevel)) {
+            StringBuffer buf = new StringBuffer("Created connection pool: ");
 
             if (dsi != null) {
-                buf.append("\nDriver class: ").append(dsi.getJdbcDriver());
+                // append URL on the same line to make log somewhat grep-friendly
+                buf.append(dsi.getDataSourceUrl());
 
-                if (dsi.getAdapterClass() != null) {
-                    buf.append("\nCayenne DbAdapter: ").append(dsi.getAdapterClass());
+                if (dsi.getAdapterClassName() != null) {
+                    buf.append("\n\tCayenne DbAdapter: ").append(
+                        dsi.getAdapterClassName());
                 }
+
+                buf.append("\n\tDriver class: ").append(dsi.getJdbcDriver());
 
                 if (dsi.getMinConnections() >= 0) {
-                    buf.append("\nMin. Pool Size: ").append(dsi.getMinConnections());
+                    buf.append("\n\tMin. connections in the pool: ").append(
+                        dsi.getMinConnections());
                 }
                 if (dsi.getMaxConnections() >= 0) {
-                    buf.append("\nMax. Pool Size: ").append(dsi.getMaxConnections());
+                    buf.append("\n\tMax. connections in the pool: ").append(
+                        dsi.getMaxConnections());
                 }
-                buf.append("\nDatabase URL: ").append(dsi.getDataSourceUrl());
-                buf.append("\nLogin: ").append(dsi.getUserName());
-                buf.append("\nPassword: *******");
-            } else {
-                buf.append(" unavailable");
+            }
+            else {
+                buf.append(" pool information unavailable");
             }
 
             logObj.log(logLevel, buf.toString());
         }
     }
 
-    public static void logConnectSuccess(org.apache.log4j.Level logLevel) {
+    public static void logConnectSuccess(Level logLevel) {
         logObj.log(logLevel, "+++ Connecting: SUCCESS.");
     }
 
-    public static void logConnectFailure(org.apache.log4j.Level logLevel, Throwable th) {
+    public static void logConnectFailure(Level logLevel, Throwable th) {
         logObj.log(logLevel, "*** Connecting: FAILURE.", th);
     }
 
-    public static void logQuery(
-        org.apache.log4j.Level logLevel,
-        String queryStr,
-        List params) {
+    public static void logQuery(Level logLevel, String queryStr, List params) {
         logQuery(logLevel, queryStr, params, -1);
     }
 
@@ -216,14 +288,14 @@ public class QueryLogger {
      * executing query in prepared statement.
      */
     public static void logQuery(
-        org.apache.log4j.Level logLevel,
+        Level logLevel,
         String queryStr,
         List params,
         long time) {
-        if (logObj.isEnabledFor(logLevel)) {
+        if (isLoggable(logLevel)) {
             StringBuffer buf = new StringBuffer(queryStr);
             if (params != null && params.size() > 0) {
-                buf.append(" [params: ");
+                buf.append(" [bind: ");
                 sqlLiteralForObject(buf, params.get(0));
 
                 int len = params.size();
@@ -236,65 +308,136 @@ public class QueryLogger {
             }
 
             // log preparation time only if it is something significant
-            if (time > 10) {
+            if (time > 5) {
                 buf.append(" - prepared in ").append(time).append(" ms.");
             }
-            
+
             logObj.log(logLevel, buf.toString());
         }
     }
 
-    public static void logSelectCount(org.apache.log4j.Level logLevel, int count) {
+    public static void logQueryParameters(
+        Level logLevel,
+        String label,
+        List parameters) {
+
+        if (isLoggable(logLevel) && parameters.size() > 0) {
+            int len = parameters.size();
+            StringBuffer buf = new StringBuffer("[");
+            buf.append(label).append(": ");
+
+            sqlLiteralForObject(buf, parameters.get(0));
+
+            for (int i = 1; i < len; i++) {
+                buf.append(", ");
+                sqlLiteralForObject(buf, parameters.get(i));
+            }
+
+            buf.append(']');
+            logObj.log(logLevel, buf.toString());
+        }
+    }
+
+    public static void logSelectCount(Level logLevel, int count) {
         logSelectCount(logLevel, count, -1);
     }
 
-    public static void logSelectCount(
-        org.apache.log4j.Level logLevel,
-        int count,
-        long time) {
-        StringBuffer buf = new StringBuffer();
+    public static void logSelectCount(Level logLevel, int count, long time) {
+        if (isLoggable(logLevel)) {
+            StringBuffer buf = new StringBuffer();
 
-        if (count == 1) {
-            buf.append("=== returned 1 row.");
-        } else {
-            buf.append("=== returned ").append(count).append(" rows.");
+            if (count == 1) {
+                buf.append("=== returned 1 row.");
+            }
+            else {
+                buf.append("=== returned ").append(count).append(" rows.");
+            }
+
+            if (time >= 0) {
+                buf.append(" - took ").append(time).append(" ms.");
+            }
+
+            logObj.log(logLevel, buf.toString());
         }
-
-        if (time >= 0) {
-            buf.append(" - took ").append(time).append(" ms.");
-        }
-
-        logObj.log(logLevel, buf.toString());
     }
 
-    public static void logUpdateCount(org.apache.log4j.Level logLevel, int count) {
-        String countStr =
-            (count == 1) ? "=== updated 1 row." : "=== updated " + count + " rows.";
-        logObj.log(logLevel, countStr);
+    public static void logUpdateCount(Level logLevel, int count) {
+        if (isLoggable(logLevel)) {
+            String countStr =
+                (count == 1) ? "=== updated 1 row." : "=== updated " + count + " rows.";
+            logObj.log(logLevel, countStr);
+        }
     }
 
-    public static void logCommitTransaction(org.apache.log4j.Level logLevel) {
+    /**
+     * @deprecated Since 1.1 use {@link #logCommitTransaction(Level,String)}.
+     */
+    public static void logCommitTransaction(Level logLevel) {
         logObj.log(logLevel, "+++ transaction committed.");
     }
 
-    public static void logRollbackTransaction(org.apache.log4j.Level logLevel) {
-        logObj.log(logLevel, "*** transaction rolledback.");
+    /**
+     * @deprecated Since 1.1 use {@link #logRollbackTransaction(Level,String)}.
+     */
+    public static void logRollbackTransaction(Level logLevel) {
+        logObj.log(logLevel, "*** transaction rolled back.");
     }
 
-    public static void logQueryError(org.apache.log4j.Level logLevel, Throwable th) {
+    /**
+     * @since 1.1
+     */
+    public static void logBeginTransaction(Level logLevel, String transactionLabel) {
+        if (isLoggable(logLevel)) {
+            logObj.log(logLevel, "--- " + transactionLabel);
+        }
+    }
+
+    /**
+     * @since 1.1
+     */
+    public static void logCommitTransaction(Level logLevel, String transactionLabel) {
+        if (isLoggable(logLevel)) {
+            logObj.log(logLevel, "+++ " + transactionLabel);
+        }
+    }
+
+    /**
+     * @since 1.1
+     */
+    public static void logRollbackTransaction(Level logLevel, String transactionLabel) {
+        if (isLoggable(logLevel)) {
+            logObj.log(logLevel, "*** " + transactionLabel);
+        }
+    }
+
+    public static void logQueryError(Level logLevel, Throwable th) {
+        if (th != null) {
+            th = Util.unwindException(th);
+        }
+
         logObj.log(logLevel, "*** error.", th);
+
+        if (th instanceof SQLException) {
+            SQLException sqlException = ((SQLException) th).getNextException();
+            while (sqlException != null) {
+                logObj.log(logLevel, "*** nested SQL error.", sqlException);
+                sqlException = sqlException.getNextException();
+            }
+        }
     }
 
-    public static void logQueryStart(org.apache.log4j.Level logLevel, int count) {
-        String countStr =
-            (count == 1)
-                ? "--- will run 1 query."
-                : "--- will run " + count + " queries.";
-        logObj.log(logLevel, countStr);
-
+    public static void logQueryStart(Level logLevel, int count) {
+        if (isLoggable(logLevel)) {
+            String countStr =
+                (count == 1)
+                    ? "--- will run 1 query."
+                    : "--- will run " + count + " queries.";
+            logObj.log(logLevel, countStr);
+        }
     }
 
-    public static boolean isLoggable(org.apache.log4j.Level logLevel) {
+    public static boolean isLoggable(Level logLevel) {
         return logObj.isEnabledFor(logLevel);
     }
+
 }

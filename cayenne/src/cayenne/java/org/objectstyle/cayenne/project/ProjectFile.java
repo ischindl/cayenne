@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,12 +47,11 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.project;
 
@@ -59,10 +59,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.util.Util;
 
 /**
@@ -72,34 +69,10 @@ import org.objectstyle.cayenne.util.Util;
  * @author Andrei Adamchik
  */
 public abstract class ProjectFile {
-	static Logger logObj = Logger.getLogger(ProjectFile.class);
-	
-    protected static final List fileTypes = new ArrayList();
 
     protected String location;
     protected File tempFile;
-    protected Project project;
-
-    static {
-        fileTypes.add(new RootProjectFile());
-        fileTypes.add(new DataMapFile());
-        fileTypes.add(new DataNodeFile());
-    }
-
-    /**
-     * Returns a ProjectFile that can handle a given object,
-     * or null if no such object can be created. This is a common
-     * factory method that takes care of instantiating the right wrapper.
-     */
-    public static ProjectFile projectFileForObject(Project project, Object obj) {
-        for (int i = 0; i < fileTypes.size(); i++) {
-            ProjectFile f = (ProjectFile) fileTypes.get(i);
-            if (f.canHandle(obj)) {
-                return f.createProjectFile(project, obj);
-            }
-        }
-        return null;
-    }
+    protected Project projectObj;
 
     public ProjectFile() {}
 
@@ -108,7 +81,7 @@ public abstract class ProjectFile {
      */
     public ProjectFile(Project project, String location) {
         this.location = location;
-        this.project = project;
+        this.projectObj = project;
     }
 
     /**
@@ -124,12 +97,9 @@ public abstract class ProjectFile {
     }
 
     /**
-    * Builds a filename from the initial name and extension.
+    * Returns saved location of a file.
     */
     public String getOldLocation() {
-        if (location == null) {
-            throw new NullPointerException("Null old name.");
-        }
         return location;
     }
 
@@ -173,13 +143,6 @@ public abstract class ProjectFile {
     public boolean canHandleObject() {
     	return canHandle(getObject());
     }
-
-    /**
-     * Returns an instance of ProjectFile that will handle a 
-     * wrapped object. This method is an example of "prototype"
-     * pattern, used here due to the lack of Class inheritance in Java.
-     */
-    public abstract ProjectFile createProjectFile(Project project, Object obj);
 
     /**
      * Replaces internally stored filename with the current object name.
@@ -238,10 +201,12 @@ public abstract class ProjectFile {
     /**
      * Returns a file which is a canonical representation of the 
      * file to store a wrapped object. If an object was renamed, 
-     * the <b>old</b> name is returned.
+     * the <b>old</b> name is returned. Returns null if this file 
+     * has never been saved before. 
      */
     public File resolveOldFile() {
-        return getProject().resolveFile(getOldLocation());
+    	String oldLocation = getOldLocation();
+        return (oldLocation != null) ? getProject().resolveFile(oldLocation) : null;
     }
 
     /**
@@ -284,7 +249,7 @@ public abstract class ProjectFile {
       * @return Project
       */
     public Project getProject() {
-        return project;
+        return projectObj;
     }
 
     public boolean isRenamed() {

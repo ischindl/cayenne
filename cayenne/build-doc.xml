@@ -4,48 +4,30 @@
 <!--         Cayenne documentation buildfile.          -->
 <!--             (called from build.xml)               -->
 <!-- ================================================= -->
-<project name="cayenne-doc" default="doc" basedir=".">	  
+<project default="doc">	  
     <path id="classpath">
     	<pathelement path="${ant.home}/lib/ant.jar"/>
-        <fileset dir="otherlib">
+        <fileset dir="${otherlib.dir}">
             <include name="**.jar"/>
         </fileset>
     </path>
-    
 
-    <!-- ============================================= -->
-    <!-- Deploys Cayenne web site in a local directory -->
-    <!-- ============================================= -->
-    <target name="release-site" depends="nositedir,prepare,doc">
-         <mkdir dir="${site.dir}/cayenne"/>         
-         
-         <!-- copy all but HTML -->
-         <copy todir="${site.dir}/cayenne">
-             <fileset dir="${dist}/doc"> 
-             	<exclude name="**/*.html"/>
-             </fileset>
-         </copy>
-         
-         <!-- do replacement in HTML files -->
-         <copy todir="${site.dir}/cayenne">
-             <fileset dir="${dist}/doc"> 
-             	<include name="**/*.html"/>
-             </fileset>
-             
-             <filterset begintoken="!--" endtoken="--">
-				<filter token="SFLOGO" value="${sf.logo}"/>
-			 </filterset>
-         </copy>
-    </target>
-    
-    
     <!-- ========================================== -->
     <!-- Creates documentation directories.         -->
     <!-- ========================================== -->
     <target name="prepare">
         <tstamp/>
         <mkdir dir="${dist}/doc"/>
+        <mkdir dir="${dist}/doc/grammar"/>
         <mkdir dir="${dist}/doc/dtd"/>
+        
+        <!-- Assemble project.xml -->
+        <loadfile property="project.toc" srcFile="xdocs/stylesheets/toc.xml"/>
+        <copy tofile="build/project.xml" file="xdocs/stylesheets/project.xml">
+        	<filterset begintoken="&lt;!--@" endtoken="@--&gt;">
+				<filter token="TOC" value="${project.toc}"/>
+			</filterset>
+        </copy>
     </target>    
 
 
@@ -65,18 +47,7 @@
     <!-- ========================================== -->
     <!-- Builds Cayenne documenatation.             -->
     <!-- ========================================== -->
-    <target name="doc" depends="prepare,doc-img">
-        <!-- copy all licenses & release notes -->
-        <copy todir="${dist}/doc">
-            <fileset dir="doc/licenses">
-               <include name="**"/>
-            </fileset>
-            
-            <fileset dir="doc/release-notes">
-               <include name="RELEASE-NOTES-*.txt"/>
-            </fileset>
-        </copy>
-
+    <target name="doc" depends="prepare,doc-img,grammars">
         <taskdef name="anakia" classname="org.apache.velocity.anakia.AnakiaTask">
             <classpath refid="classpath"/>
         </taskdef>
@@ -84,7 +55,7 @@
         <!-- Build site -->
         <anakia basedir="xdocs" destdir="${dist}/doc"
              extension=".html" style="cayenne.vsl"
-             projectFile="stylesheets/project.xml"
+             projectFile="../build/project.xml"
              excludes="**/stylesheets/**"
              includes="**/*.xml"
              lastModifiedCheck="true"
@@ -97,7 +68,35 @@
                 <include name="**/*.dtd"/>
             </fileset>
         </copy>
-    </target>    
+        
+		<!-- copy all licenses & release notes -->
+		<copy todir="${dist}/doc/licenses">
+            <fileset dir="doc/licenses" includes="**/**"/>
+		</copy>
+		
+		<copy tofile="${dist}/doc/RELEASE-NOTES.txt" 
+			file="doc/release-notes/RELEASE-NOTES-${project.version}.txt"/>
+		<copy tofile="${dist}/doc/UPGRADE.txt" 
+			file="doc/upgrade/UPGRADE-${project.version}.txt"/>
+		
+		<!-- Assemble License HTML page -->
+		<loadfile property="license.text" srcFile="doc/licenses/LICENSE"/>
+        <move tofile="${dist}/doc/license.html.tmp" file="${dist}/doc/license.html">
+        	<filterset begintoken="&lt;!--@" endtoken="@--&gt;">
+				<filter token="LICENSE" value="${license.text}"/>
+			</filterset>
+        </move>
+        <move tofile="${dist}/doc/license.html" file="${dist}/doc/license.html.tmp"/>
+    </target>
+    
+    <!-- ========================================== -->
+    <!-- Builds documentation for the JavaCC Grammars.               -->
+    <!-- ========================================== -->
+    <target name="grammars" depends="prepare">
+		<ant antfile="build-cayenne.xml" target="jjdoc">
+			<property name="parser.doc.dir" value="${dist}/doc/grammar"/>
+		</ant>
+    </target>
     
     <!-- ========================================== -->
     <!-- Copies documentation images in the target  -->
@@ -109,14 +108,22 @@
             <fileset dir="xdocs/images">
                 <include name="**/*.gif"/>
                 <include name="**/*.jpeg"/>
+                <include name="**/*.png"/>
                 <include name="**/*.jpg"/>
                 <include name="**/*.css"/>
             </fileset>
         </copy>
-    </target>
-
-    <target name="nositedir" unless="site.dir">
-    	<fail>"site.dir" must be defined.</fail>
+        
+        <!-- copy modeler buttons -->
+        <mkdir dir="${dist}/doc/images/modeler"/>
+        <copy todir="${dist}/doc/images/modeler" filtering="no" flatten="yes">
+            <fileset dir="src/modeler/java">
+                <include name="**/*.gif"/>
+                <include name="**/*.jpeg"/>
+                <include name="**/*.png"/>
+                <include name="**/*.jpg"/>
+            </fileset>
+        </copy>
     </target>
 </project>
 

@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,222 +47,345 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 
 package org.objectstyle.cayenne.gen;
 
 import java.io.Writer;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.apache.velocity.context.Context;
+import org.apache.velocity.runtime.RuntimeConstants;
+import org.apache.velocity.runtime.log.NullLogSystem;
+import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.Relationship;
+import org.objectstyle.cayenne.util.NameConverter;
 import org.objectstyle.cayenne.util.ResourceLocator;
 
-/** Generates Java class source code using VTL (Velocity template engine) based on
-  * template and ObjEntity.
-  *
-  * @author Andrei Adamchik
-  */
+/**
+ * Class generation engine for ObjEntities based on <a
+ * href="http://jakarta.apache.org/velocity/" target="_blank">Velocity templates
+ * </a>. Instance of ClassGenerator is available inside Velocity template under
+ * the key "classGen".
+ * 
+ * @author Andrei Adamchik
+ */
 public class ClassGenerator {
-	private static boolean initDone;
 
-	/** 
-	 * Allows to configure ClassGenerator to load class 
-	 * templates using ClassLoader of a specified class. 
-	 * It is a responsibility of a class caller to invoke this
-	 * method before ClassGenerator is used.
-	 * 
-	 * <p>This method affects Velocity configuration when called 
-	 * for the first time, since Velocity.init() is done only
-	 * once. Subsequent calls have no effect on ClassLoader behavior.
-	 * </p>
-	 */
-	public static final void bootstrapVelocity(Class cl) {
-		if (initDone) {
-			return;
-		}
+    private static boolean initDone;
 
-		try {
-			String classLoaderUrl = ResourceLocator.classBaseUrl(cl);
+    private static Set reservedKeywords = new HashSet(Arrays.asList(new Object[] {
+            "abstract", "default", "if", "private", "this", "boolean", "do",
+            "implements", "protected", "throw", "break", "double", "import", "public",
+            "throws", "byte", "else", "instanceof", "return", "transient", "case",
+            "extends", "int", "short", "try", "catch", "final", "interface", "static",
+            "void", "char", "finally", "long", "strictfp", "volatile", "class", "float",
+            "native", "super", "while", "const", "for", "new", "switch", "continue",
+            "goto", "package", "synchronized"
+    }));
 
-			// use ClasspathResourceLoader for velocity templates lookup
-			// if Cayenne URL is not null, load resource from this URL
-			Properties props = new Properties();
-			String loaderProp = null;
-			// init special loaders
-			if (classLoaderUrl != null && classLoaderUrl.startsWith("jar:")) {
-				loaderProp = "jar";
-				props.put(
-					"jar.resource.loader.class",
-					"org.apache.velocity.runtime.resource.loader.JarResourceLoader");
-				props.put("jar.resource.loader.path", classLoaderUrl);
-			} else if (classLoaderUrl != null && classLoaderUrl.startsWith("file:")) {
+    /**
+     * Configures ClassGenerator to load class templates using ClassLoader of a
+     * specified class. It is a responsibility of a class caller to invoke this
+     * method before ClassGenerator is used.
+     * 
+     * <p>
+     * This method affects Velocity configuration when called for the first
+     * time, since Velocity.init() is done only once. Subsequent calls have no
+     * effect on ClassLoader behavior.
+     * </p>
+     */
+    public synchronized static final void bootstrapVelocity(Class cl) {
+        if (initDone) {
+            return;
+        }
 
-				loaderProp = "file";
-				props.put("file.resource.loader.path", classLoaderUrl);
-			}
+        // TODO: use an internal RuntimeInstance like SQLTemplateProcessor does...
+        
+        try {
+            String classLoaderUrl = ResourceLocator.classBaseUrl(cl);
 
-			// always add Filesystem loader for default templates
-			if (loaderProp.indexOf("file") < 0) {
-				loaderProp += ",file";
-			}
+            // use ClasspathResourceLoader for velocity templates lookup
+            // if Cayenne URL is not null, load resource from this URL
+            Properties props = new Properties();
+            
+            // set null logger
+            props.put(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, NullLogSystem.class
+                    .getName());
 
-			// use custome file loader
-			props.put(
-				"file.resource.loader.class",
-				"org.objectstyle.cayenne.gen.AbsFileResourceLoader");
+            String loaderProp = null;
+            // init special loaders
+            if (classLoaderUrl != null && classLoaderUrl.startsWith("jar:")) {
+                loaderProp = "jar";
+                props.put("jar.resource.loader.class", JarResourceLoader.class.getName());
+                props.put("jar.resource.loader.path", classLoaderUrl);
+            }
+            else if (classLoaderUrl != null && classLoaderUrl.startsWith("file:")) {
+                loaderProp = "file";
+                props.put("file.resource.loader.path", classLoaderUrl.substring(5));
+            }
 
-			// always add Classpath loader for default templates
-			loaderProp = (loaderProp != null) ? loaderProp + ",class" : "class";
-			props.put("resource.loader", loaderProp);
+            // always add Filesystem loader for default templates
+            if (loaderProp != null) {
+                if (loaderProp.indexOf("file") < 0) {
+                    loaderProp += ",file";
+                }
+            }
 
-			Velocity.init(props);
-		} catch (Exception ex) {
-			throw new CayenneRuntimeException("Can't initialize VTL", ex);
-		} finally {
-			initDone = true;
-		}
-	}
+            // use custom file loader
+            props
+                    .put("file.resource.loader.class", AbsFileResourceLoader.class
+                            .getName());
 
-	protected Template classTemplate;
-	protected Context velCtxt;
+            // always add Classpath loader for default templates
+            loaderProp = (loaderProp != null) ? loaderProp + ",class" : "class";
+            props.put("resource.loader", loaderProp);
 
-	protected ObjEntity entity;
+            Velocity.init(props);
+        }
+        catch (Exception ex) {
+            throw new CayenneRuntimeException("Can't initialize VTL", ex);
+        }
+        finally {
+            initDone = true;
+        }
+    }
 
-	// template substitution values
-	protected String packageName;
-	protected String className;
-	protected String superPrefix;
-	protected String prop;
-	protected String superPackageName;
+    protected Template classTemplate;
+    protected Context velCtxt;
+    protected ObjEntity entity;
 
-	/** Loads Velocity template used for class generation. */
-	public ClassGenerator(String template) throws Exception {
-		if (!initDone) {
-			bootstrapVelocity(this.getClass());
-		}
-		velCtxt = new VelocityContext();
-		velCtxt.put("classGen", this);
-		classTemplate = Velocity.getTemplate(template);
-	}
+    // template substitution values
+    protected String packageName;
+    protected String className;
+    protected String superPrefix;
+    protected String prop;
+    protected String superPackageName;
+    protected String superClassName;
 
-	/** Generates code for <code>entity</code> ObjEntity. Source code is written to
-	  * <code>out</code> Writer.*/
-	public void generateClass(Writer out, ObjEntity entity) throws Exception {
-		this.entity = entity;
-		classTemplate.merge(velCtxt, out);
-	}
+    /**
+     * Creates a new ClassGenerator that uses a specified Velocity template.
+     */
+    public ClassGenerator(String template) throws Exception {
+        if (!initDone) {
+            bootstrapVelocity(this.getClass());
+        }
+        velCtxt = new VelocityContext();
+        velCtxt.put("classGen", this);
 
-	/** 
-	 * Returns Java package name of the class associated with 
-	 * this generator. 
-	 */
-	public String getPackageName() {
-		return packageName;
-	}
-	public void setPackageName(String packageName) {
-		this.packageName = packageName;
-	}
+        classTemplate = Velocity.getTemplate(template);
+    }
 
-	/**
-	 * Returns <code>superPackageName</code> property that defines
-	 * a superclass's package name.
-	 */
-	public String getSuperPackageName() {
-		return superPackageName;
-	}
+    /**
+     * Generates Java code for the ObjEntity. Output is written to the provided
+     * Writer.
+     */
+    public void generateClass(Writer out, ObjEntity entity) throws Exception {
+        this.entity = entity;
+        classTemplate.merge(velCtxt, out);
+    }
 
-	/**
-	 * Sets <code>superPackageName</code> property that defines
-	 * a superclass's package name.
-	 */
-	public void setSuperPackageName(String superPackageName) {
-		this.superPackageName = superPackageName;
-	}
+    /**
+     * Returns Java package name of the class associated with this generator.
+     */
+    public String getPackageName() {
+        return packageName;
+    }
 
-	/** Returns class name (without a package)
-	  * of the class associated with this generator. */
-	public String getClassName() {
-		return className;
-	}
-	public void setClassName(String className) {
-		this.className = className;
-	}
+    public void setPackageName(String packageName) {
+        this.packageName = packageName;
+    }
 
-	public void setSuperPrefix(String superPrefix) {
-		this.superPrefix = superPrefix;
-	}
+    /**
+     * Returns <code>superPackageName</code> property that defines a
+     * superclass's package name.
+     */
+    public String getSuperPackageName() {
+        return superPackageName;
+    }
 
-	public String formatJavaType(String type) {
-		if (type != null) {
-			if (type.startsWith("java.lang.") && type.indexOf(10, '.') < 0) {
-				return type.substring("java.lang.".length());
-			}
+    /**
+     * Sets <code>superPackageName</code> property that defines a superclass's
+     * package name.
+     */
+    public void setSuperPackageName(String superPackageName) {
+        this.superPackageName = superPackageName;
+    }
 
-			if (packageName != null
-				&& type.startsWith(packageName + '.')
-				&& type.indexOf(packageName.length() + 1, '.') < 0) {
-				return type.substring(packageName.length() + 1);
-			}
-		}
+    /**
+     * Returns class name (without a package) of the class associated with this
+     * generator.
+     */
+    public String getClassName() {
+        return className;
+    }
 
-		return type;
-	}
+    /**
+     * Sets class name of the class associated with this
+     * generator. Class name must not include a package.
+     */
+    public void setClassName(String className) {
+        this.className = className;
+    }
 
-	/** Returns prefix used to distinguish between superclass
-	  * and subclass when generating classes in pairs. */
-	public String getSuperPrefix() {
-		return superPrefix;
-	}
+    public void setSuperPrefix(String superPrefix) {
+        this.superPrefix = superPrefix;
+    }
 
-	/** Sets current class property name. This method
-	  * is called during template parsing for each of the 
-	  * class properties. 
-	  */
-	public void setProp(String prop) {
-		this.prop = prop;
-	}
-	public String getProp() {
-		return prop;
-	}
+    public String formatJavaType(String type) {
+        if (type != null) {
+            if (type.startsWith("java.lang.") && type.indexOf(10, '.') < 0) {
+                return type.substring("java.lang.".length());
+            }
 
-	/** Returns current property name with capitalized first letter */
-	public String getCappedProp() {
-		if (prop == null || prop.length() == 0)
-			return prop;
+            if (packageName != null
+                    && type.startsWith(packageName + '.')
+                    && type.indexOf(packageName.length() + 1, '.') < 0) {
+                return type.substring(packageName.length() + 1);
+            }
+        }
 
-		char c = Character.toUpperCase(prop.charAt(0));
-		return (prop.length() == 1) ? Character.toString(c) : c + prop.substring(1);
-	}
+        return type;
+    }
 
-	/** 
-	 * Returns <code>true</code> if a class associated with 
-	 * this generator  is located in a package.
-	 */
-	public boolean isUsingPackage() {
-		return packageName != null;
-	}
+    public String formatVariableName(String variableName) {
+        if (reservedKeywords.contains(variableName)) {
+            return "_" + variableName;
+        } else {
+            return variableName;
+        }
+    }
 
-	/** 
-	 * Returns <code>true</code> if a superclass class associated with 
-	 * this generator is located in a package.
-	 */
-	public boolean isUsingSuperPackage() {
-		return superPackageName != null;
-	}
+    /**
+     * Returns prefix used to distinguish between superclass and subclass when
+     * generating classes in pairs.
+     */
+    public String getSuperPrefix() {
+        return superPrefix;
+    }
 
-	/** Returns entity for the class associated with this generator. */
-	public ObjEntity getEntity() {
-		return entity;
-	}
+    /**
+     * Sets current class property name. This method is called during template
+     * parsing for each of the class properties.
+     */
+    public void setProp(String prop) {
+        this.prop = prop;
+    }
+
+    public String getProp() {
+        return prop;
+    }
+    
+    /**
+     * Capitalizes the first letter of the property name.
+     * 
+     * @since 1.1
+     */
+    public String capitalized(String name) {
+        if (name == null || name.length() == 0)
+            return name;
+
+        char c = Character.toUpperCase(name.charAt(0));
+        return (name.length() == 1) ? Character.toString(c) : c + name.substring(1);
+    }
+    
+    /**
+     * Converts property name to Java constants naming convention.
+     * 
+     * @since 1.1
+     */
+    public String capitalizedAsConstant(String name) {
+        if (name == null || name.length() == 0)
+            return name;
+
+        return NameConverter.javaToUnderscored(name);
+    }
+
+    /** Returns current property name with capitalized first letter */
+    public String getCappedProp() {
+        return capitalized(prop);
+    }
+    
+    /**
+     * @return a current property name converted to a format used by java static
+     *         final variables - all capitalized with underscores.
+     * 
+     * @since 1.0.3
+     */
+    public String getPropAsConstantName() {
+        return capitalizedAsConstant(prop);
+    }
+
+    /**
+     * Returns true if current entity contains at least one List property.
+     * 
+     * @since 1.1
+     */
+    public boolean isContainingListProperties() {
+        if (entity == null) {
+            return false;
+        }
+        
+        Iterator it = entity.getRelationships().iterator();
+        while(it.hasNext()) {
+            Relationship r = (Relationship) it.next();
+            if(r.isToMany()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns <code>true</code> if a class associated with this generator is
+     * located in a package.
+     */
+    public boolean isUsingPackage() {
+        return packageName != null;
+    }
+
+    /**
+     * Returns <code>true</code> if a superclass class associated with this
+     * generator is located in a package.
+     */
+    public boolean isUsingSuperPackage() {
+        return superPackageName != null;
+    }
+
+    /** Returns entity for the class associated with this generator. */
+    public ObjEntity getEntity() {
+        return entity;
+    }
+
+    /**
+     * Returns the fully qualified super class of the data object class
+     * associated with this generator
+     */
+    public String getSuperClassName() {
+        return superClassName;
+    }
+
+    /**
+     * Sets the fully qualified super class of the data object class associated
+     * with this generator
+     */
+    public void setSuperClassName(String value) {
+        this.superClassName = value;
+    }
+
 }

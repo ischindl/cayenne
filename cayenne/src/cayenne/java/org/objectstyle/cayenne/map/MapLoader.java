@@ -1,38 +1,39 @@
 /* ====================================================================
+ *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,30 +47,27 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.map;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.dba.TypesMapping;
-import org.objectstyle.cayenne.util.PropertyComparator;
+import org.objectstyle.cayenne.exp.Expression;
+import org.objectstyle.cayenne.project.DataMapFile;
 import org.objectstyle.cayenne.util.ResourceLocator;
 import org.objectstyle.cayenne.util.Util;
 import org.xml.sax.Attributes;
@@ -79,17 +77,19 @@ import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-/** 
- * Default MapLoader. Its responsibilities include reading DataMaps 
+/**
+ * Default MapLoader. Its responsibilities include reading DataMaps
  * from XML files and saving DataMap objects back to XML.
- * 
+ *
  * @author Misha Shengaout
  * @author Andrei Adamchik
+ * @author Andriy Shapochka
  */
 public class MapLoader extends DefaultHandler {
-    static Logger logObj = Logger.getLogger(MapLoader.class);
+    private static final Logger logObj = Logger.getLogger(MapLoader.class);
 
     public static final String DATA_MAP_TAG = "data-map";
+    public static final String PROPERTY_TAG = "property";
     public static final String DB_ENTITY_TAG = "db-entity";
     public static final String OBJ_ENTITY_TAG = "obj-entity";
     public static final String DB_ATTRIBUTE_TAG = "db-attribute";
@@ -100,186 +100,325 @@ public class MapLoader extends DefaultHandler {
     public static final String DB_RELATIONSHIP_TAG = "db-relationship";
     public static final String DB_RELATIONSHIP_REF_TAG = "db-relationship-ref";
     public static final String DB_ATTRIBUTE_PAIR_TAG = "db-attribute-pair";
+    public static final String PROCEDURE_TAG = "procedure";
+    public static final String PROCEDURE_PARAMETER_TAG = "procedure-parameter";
+
+    // Query-related
+    public static final String QUERY_TAG = "query";
+    public static final String QUERY_RESULT_COLUMN_TAG = "result-column";
+    public static final String QUERY_SQL_TAG = "sql";
+    public static final String QUERY_QUALIFIER_TAG = "qualifier";
+    public static final String QUERY_ORDERING_TAG = "ordering";
+    public static final String QUERY_PREFETCH_TAG = "prefetch";
+
     public static final String TRUE = "true";
     public static final String FALSE = "false";
 
-    /* Reading from XML */
+    public static final String DB_KEY_GENERATOR_TAG = "db-key-generator";
+    public static final String DB_GENERATOR_TYPE_TAG = "db-generator-type";
+    public static final String DB_GENERATOR_NAME_TAG = "db-generator-name";
+    public static final String DB_KEY_CACHE_SIZE_TAG = "db-key-cache-size";
+
+    // Reading from XML
     private DataMap dataMap;
     private DbEntity dbEntity;
     private ObjEntity objEntity;
     private DbRelationship dbRelationship;
     private ObjRelationship objRelationship;
     private DbAttribute attrib;
-    private HashMap dbRelationshipMap;
+    private Procedure procedure;
+    private QueryBuilder queryBuilder;
+    private String sqlKey;
+    private String descending;
+    private String ignoreCase;
 
-    /* Saving to XML */
-    private ArrayList objRelationships;
-    private ArrayList dbRelationships;
-    private ArrayList dbRelationshipRefs;
+    private String currentTag;
+    private StringBuffer charactersBuffer;
+    private Map mapProperties;
 
-    /**
-     * Returns <code>true</code> if this relationship's <code>toDependentPk</code>
-     * property can be potentially set to <code>true</code>. 
-     * This means that destination and
-     * source attributes are primary keys of their corresponding entities.
+    /** 
+     * Prints DataMap encoded as XML to a provided PrintWriter.
+     * 
+     * @deprecated Since 1.1 use DataMap.encodeAsXML().
      */
-    public static boolean isValidForDepPk(DbRelationship rel) {
-        Iterator it = rel.getJoins().iterator();
-        // handle case with no joins
-        if (!it.hasNext()) {
-            return false;
-        }
-
-        while (it.hasNext()) {
-            DbAttributePair join = (DbAttributePair) it.next();
-            if (!join.getTarget().isPrimaryKey() || !join.getSource().isPrimaryKey()) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /** Loads the data map from the input source (usually file). */
-    public synchronized DataMap loadDataMap(InputSource src) throws DataMapException {
-        return loadDataMap(src, new ArrayList());
-    }
-
-    public synchronized DataMap loadDataMap(InputSource src, List deps)
+    public synchronized void storeDataMap(PrintWriter out, DataMap map)
         throws DataMapException {
+        map.encodeAsXML(out);
+    }
+
+    /** 
+     * Loads a DataMap from XML input source. 
+     */
+    public synchronized DataMap loadDataMap(InputSource src) throws DataMapException {
+        if (src == null) {
+            throw new NullPointerException("Null InputSource.");
+        }
+
         try {
-            String systemId = src.getSystemId();
-            if (null == systemId) {
-                systemId = "Untitled";
-            }
-
-            String mapName = systemId.substring(systemId.lastIndexOf('/') + 1);
+            String mapName = mapNameFromLocation(src.getSystemId());
             dataMap = new DataMap(mapName);
-            Iterator it = deps.iterator();
-            while (it.hasNext()) {
-                dataMap.addDependency((DataMap) it.next());
-            }
-
-            dbRelationshipMap = new HashMap();
             XMLReader parser = Util.createXmlReader();
 
             parser.setContentHandler(this);
             parser.setErrorHandler(this);
             parser.parse(src);
-
-        } catch (SAXException e) {
-            logObj.log(Level.INFO, "Wrapped Exception.", e.getException());
-            logObj.log(Level.INFO, "SAX Exception cause.", e.getCause());
-
+        }
+        catch (SAXException e) {
             dataMap = null;
-            throw new DataMapException("Wrong DataMap format.", e);
-
-        } catch (Exception e) {
-            logObj.log(Level.INFO, "Exception.", e);
+            throw new DataMapException(
+                "Wrong DataMap format, last processed tag: <" + currentTag,
+                Util.unwindException(e));
+        }
+        catch (Exception e) {
             dataMap = null;
-            throw new DataMapException("Error loading DataMap.", e);
+            throw new DataMapException(
+                "Error loading DataMap, last processed tag: <" + currentTag,
+                Util.unwindException(e));
         }
         return dataMap;
     }
 
-    /** 
-     * Creates, configures and returns ResourceLocator object used 
+    /**
+     * @deprecated since 1.1 explicit DataMap dependencies are not supported, and 
+     * {@link #loadDataMap(InputSource)} should be used.
+     */
+    public synchronized DataMap loadDataMap(InputSource src, List deps)
+        throws DataMapException {
+        DataMap map = loadDataMap(src);
+
+        Iterator it = deps.iterator();
+        while (it.hasNext()) {
+            map.addDependency((DataMap) it.next());
+        }
+
+        return map;
+    }
+
+    /**
+     * Loads DataMap from file specified by <code>uri</code> parameter.
+     *
+     * @throws DataMapException if source URI does not resolve to a valid map files
+     */
+    public DataMap loadDataMap(String uri) throws DataMapException {
+        // configure resource locator
+        ResourceLocator locator = configLocator();
+        InputStream in = locator.findResourceStream(uri);
+        if (in == null) {
+            throw new DataMapException("Can't find data map " + uri);
+        }
+
+        try {
+            InputSource inSrc = new InputSource(in);
+            inSrc.setSystemId(uri);
+            return loadDataMap(inSrc);
+        }
+        finally {
+            try {
+                in.close();
+            }
+            catch (IOException ioex) {
+            }
+        }
+    }
+
+    /**
+     * Helper method to guess the map name from its location.
+     */
+    protected String mapNameFromLocation(String location) {
+        if (location == null) {
+            return "Untitled";
+        }
+
+        int lastSlash = location.lastIndexOf('/');
+        if (lastSlash < 0) {
+            lastSlash = location.lastIndexOf('\\');
+        }
+
+        if (lastSlash >= 0 && lastSlash + 1 < location.length()) {
+            location = location.substring(lastSlash + 1);
+        }
+
+        if (location.endsWith(DataMapFile.LOCATION_SUFFIX)) {
+            location =
+                location.substring(
+                    0,
+                    location.length() - DataMapFile.LOCATION_SUFFIX.length());
+        }
+
+        return location;
+    }
+
+    /**
+     * Creates, configures and returns ResourceLocator object used
      * to lookup DataMap files.
      */
     protected ResourceLocator configLocator() {
         ResourceLocator locator = new ResourceLocator();
-        locator.setSkipAbsPath(true);
+        locator.setSkipAbsolutePath(true);
         locator.setSkipClasspath(false);
-        locator.setSkipCurDir(false);
-        locator.setSkipHomeDir(false);
+        locator.setSkipCurrentDirectory(false);
+        locator.setSkipHomeDirectory(false);
 
-        // Configuration superclass statically defines what 
+        // Configuration superclass statically defines what
         // ClassLoader to use for resources. This
-        // allows applications to control where resources 
+        // allows applications to control where resources
         // are loaded from.
         locator.setClassLoader(Configuration.getResourceLoader());
 
         return locator;
     }
 
-    /** 
-     * Loads the array a DataMap for the map file URI.
-     * This is a convenience method that would resolve string URI
-     * to InputSource and then call <code>loadDataMap</code>.
-     *
-     * @throws DataMapException if source URI does not resolve to a valid map files
-     * @throws NullPointerException if <code>src</code> parameter is null.
-     */
-    public DataMap loadDataMap(String src) throws DataMapException {
-        // configure resource locator
-        ResourceLocator locator = configLocator();
-        InputStream in = locator.findResourceStream(src);
-        if (in == null) {
-            throw new DataMapException("Can't find data map " + src);
-        }
-
-        try {
-            return loadDataMap(new InputSource(in));
-        } finally {
-            try {
-                in.close();
-            } catch (IOException ioex) {}
-        }
-
-    }
-
     public void startElement(
-        String namespace_uri,
-        String local_name,
-        String q_name,
-        Attributes atts)
+        String namespaceUri,
+        String localName,
+        String qName,
+        Attributes attributes)
         throws SAXException {
-        if (local_name
-            .equals(DATA_MAP_TAG)) {} else if (local_name
-            .equals(DB_ENTITY_TAG)) {
-            processStartDbEntity(atts);
-        } else if (local_name.equals(DB_ATTRIBUTE_TAG)) {
-            processStartDbAttribute(atts);
-        } else if (local_name.equals(DB_ATTRIBUTE_DERIVED_TAG)) {
-            processStartDerivedDbAttribute(atts);
-        } else if (local_name.equals(DB_ATTRIBUTE_REF_TAG)) {
-            processStartDbAttributeRef(atts);
-        } else if (local_name.equals(OBJ_ENTITY_TAG)) {
-            processStartObjEntity(atts);
-        } else if (local_name.equals(OBJ_ATTRIBUTE_TAG)) {
-            processStartObjAttribute(atts);
-        } else if (local_name.equals(DB_RELATIONSHIP_TAG)) {
-            processStartDbRelationship(atts);
-        } else if (local_name.equals(DB_ATTRIBUTE_PAIR_TAG)) {
-            processStartDbAttributePair(atts);
-        } else if (local_name.equals(OBJ_RELATIONSHIP_TAG)) {
-            processStartObjRelationship(atts);
-        } else if (local_name.equals(DB_RELATIONSHIP_REF_TAG)) {
-            processStartDbRelationshipRef(atts);
+        
+        rememberCurrentTag(localName);
+        if (localName.equals(DATA_MAP_TAG)) {
+        }
+        else if (localName.equals(DB_ENTITY_TAG)) {
+            processStartDbEntity(attributes);
+        }
+        else if (localName.equals(DB_ATTRIBUTE_TAG)) {
+            processStartDbAttribute(attributes);
+        }
+        else if (localName.equals(DB_ATTRIBUTE_DERIVED_TAG)) {
+            processStartDerivedDbAttribute(attributes);
+        }
+        else if (localName.equals(DB_ATTRIBUTE_REF_TAG)) {
+            processStartDbAttributeRef(attributes);
+        }
+        else if (localName.equals(OBJ_ENTITY_TAG)) {
+            processStartObjEntity(attributes);
+        }
+        else if (localName.equals(OBJ_ATTRIBUTE_TAG)) {
+            processStartObjAttribute(attributes);
+        }
+        else if (localName.equals(DB_RELATIONSHIP_TAG)) {
+            processStartDbRelationship(attributes);
+        }
+        else if (localName.equals(DB_ATTRIBUTE_PAIR_TAG)) {
+            processStartDbAttributePair(attributes);
+        }
+        else if (localName.equals(OBJ_RELATIONSHIP_TAG)) {
+            processStartObjRelationship(attributes);
+        }
+        else if (localName.equals(DB_RELATIONSHIP_REF_TAG)) {
+            processStartDbRelationshipRef(attributes);
+        }
+        else if (localName.equals(PROCEDURE_PARAMETER_TAG)) {
+            processStartProcedureParameter(attributes);
+        }
+        else if (localName.equals(PROCEDURE_TAG)) {
+            processStartProcedure(attributes);
+        }
+        else if (localName.equals(QUERY_TAG)) {
+            processStartQuery(attributes);
+        }
+        else if (localName.equals(QUERY_RESULT_COLUMN_TAG)) {
+            processStartQueryResultColumn(attributes);
+        }
+        else if (localName.equals(QUERY_SQL_TAG)) {
+            charactersBuffer = new StringBuffer();
+            processStartQuerySQL(attributes);
+        }
+        else if (localName.equals(QUERY_ORDERING_TAG)) {
+            charactersBuffer = new StringBuffer();
+            processStartQueryOrdering(attributes);
+        }
+        else if (localName.equals(QUERY_PREFETCH_TAG)) {
+            charactersBuffer = new StringBuffer();
+        }
+        else if (localName.equals(QUERY_QUALIFIER_TAG)) {
+            charactersBuffer = new StringBuffer();
+        }
+        else if (localName.equals(DB_KEY_GENERATOR_TAG)) {
+            processStartDbKeyGenerator(attributes);
+        }
+        else if (localName.equals(DB_GENERATOR_TYPE_TAG)) {
+            charactersBuffer = new StringBuffer();
+        }
+        else if (localName.equals(DB_GENERATOR_NAME_TAG)) {
+            charactersBuffer = new StringBuffer();
+        }
+        else if (localName.equals(DB_KEY_CACHE_SIZE_TAG)) {
+            charactersBuffer = new StringBuffer();
+        }
+        // properties can belong to query or DataMap
+        else if (localName.equals(PROPERTY_TAG)) {
+            if (queryBuilder != null) {
+                processStartQueryProperty(attributes);
+            }
+            else {
+                processStartDataMapProperty(attributes);
+            }
         }
     }
 
     public void endElement(String namespaceURI, String local_name, String qName)
         throws SAXException {
-        if (local_name
-            .equals(DATA_MAP_TAG)) {} else if (local_name
-            .equals(DB_ENTITY_TAG)) {
+        if (local_name.equals(DATA_MAP_TAG)) {
+            processEndDataMap();
+        }
+        else if (local_name.equals(DB_ENTITY_TAG)) {
             processEndDbEntity();
-        } else if (local_name.equals(OBJ_ENTITY_TAG)) {
+        }
+        else if (local_name.equals(OBJ_ENTITY_TAG)) {
             processEndObjEntity();
-        } else if (local_name.equals(DB_ATTRIBUTE_TAG)) {
+        }
+        else if (local_name.equals(DB_ATTRIBUTE_TAG)) {
             processEndDbAttribute();
-        } else if (local_name.equals(DB_ATTRIBUTE_DERIVED_TAG)) {
+        }
+        else if (local_name.equals(DB_ATTRIBUTE_DERIVED_TAG)) {
             processEndDbAttribute();
-        } else if (local_name.equals(DB_RELATIONSHIP_TAG)) {
+        }
+        else if (local_name.equals(DB_RELATIONSHIP_TAG)) {
             processEndDbRelationship();
-        } else if (local_name.equals(OBJ_RELATIONSHIP_TAG)) {
+        }
+        else if (local_name.equals(OBJ_RELATIONSHIP_TAG)) {
             processEndObjRelationship();
         }
+        else if (local_name.equals(DB_KEY_GENERATOR_TAG)) {
+        }
+        else if (local_name.equals(DB_GENERATOR_TYPE_TAG)) {
+            processEndDbGeneratorType();
+        }
+        else if (local_name.equals(DB_GENERATOR_NAME_TAG)) {
+            processEndDbGeneratorName();
+        }
+        else if (local_name.equals(DB_KEY_CACHE_SIZE_TAG)) {
+            processEndDbKeyCacheSize();
+        }
+        else if (local_name.equals(PROCEDURE_PARAMETER_TAG)) {
+            processEndProcedureParameter();
+        }
+        else if (local_name.equals(PROCEDURE_TAG)) {
+            processEndProcedure();
+        }
+        else if (local_name.equals(QUERY_TAG)) {
+            processEndQuery();
+        }
+        else if (local_name.equals(QUERY_SQL_TAG)) {
+            processEndQuerySQL();
+        }
+        else if (local_name.equals(QUERY_QUALIFIER_TAG)) {
+            processEndQualifier();
+        }
+        else if (local_name.equals(QUERY_ORDERING_TAG)) {
+            processEndQueryOrdering();
+        }
+        else if (local_name.equals(QUERY_PREFETCH_TAG)) {
+            processEndQueryPrefetch();
+        }
+
+        resetCurrentTag();
+        charactersBuffer = null;
     }
 
     public void warning(SAXParseException e) throws SAXException {
-        System.out.println(
+        logObj.warn(
             "**Parsing warning**\n"
                 + "Line:"
                 + e.getLineNumber()
@@ -289,7 +428,7 @@ public class MapLoader extends DefaultHandler {
     }
 
     public void error(SAXParseException e) throws SAXException {
-        System.out.println(
+        logObj.error(
             "**Parsing error**\n"
                 + "Line:"
                 + e.getLineNumber()
@@ -299,358 +438,13 @@ public class MapLoader extends DefaultHandler {
     }
 
     public void fatalError(SAXParseException e) throws SAXException {
-        System.out.println(
+        logObj.fatal(
             "**Parsing fatal error**\n"
                 + "Line:"
                 + e.getLineNumber()
                 + "\nMessage:"
                 + e.getMessage());
         throw new SAXException("Warning!");
-    }
-
-    /* * * STORE TO XML PART * * */
-
-    /** Archives provided <code>map</code> to XML and stores it to <code>out</code> PrintStream. */
-    public synchronized void storeDataMap(PrintWriter out, DataMap map)
-        throws DataMapException {
-        objRelationships = new ArrayList();
-        dbRelationshipRefs = new ArrayList();
-        dbRelationships = new ArrayList();
-        out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        out.println("<data-map>");
-        storeDbEntities(out, map);
-        storeObjEntities(out, map);
-        storeDbRelationships(out);
-        storeObjRelationships(out);
-        out.println("</data-map>");
-        objRelationships = null;
-        dbRelationships = null;
-        dbRelationshipRefs = null;
-    }
-
-    private void storeDbEntities(PrintWriter out, DataMap map) {
-
-        Iterator iter = sortedRegularDbEntities(map).iterator();
-        while (iter.hasNext()) {
-            DbEntity dbe = (DbEntity) iter.next();
-            out.print("\t<db-entity name=\"" + dbe.getName() + '\"');
-            if (dbe.getSchema() != null && dbe.getSchema().trim().length() > 0) {
-                out.print(" schema=\"");
-                out.print(dbe.getSchema());
-                out.print('\"');
-            }
-            if (dbe.getCatalog() != null && dbe.getCatalog().trim().length() > 0) {
-                out.print(" catalog=\"");
-                out.print(dbe.getCatalog());
-                out.print('\"');
-            }
-
-            out.println('>');
-
-            storeDbAttribute(out, dbe);
-            out.println("\t</db-entity>");
-            dbRelationships.addAll(dbe.getRelationshipList());
-        }
-
-        Iterator diter = sortedDerivedDbEntities(map).iterator();
-        while (diter.hasNext()) {
-            DerivedDbEntity dbe = (DerivedDbEntity) diter.next();
-            out.print("\t<db-entity name=\"" + dbe.getName() + '\"');
-            if (dbe.getSchema() != null && dbe.getSchema().trim().length() > 0) {
-                out.print(" schema=\"");
-                out.print(dbe.getSchema());
-                out.print('\"');
-            }
-            if (dbe.getCatalog() != null && dbe.getCatalog().trim().length() > 0) {
-                out.print(" catalog=\"");
-                out.print(dbe.getCatalog());
-                out.print('\"');
-            }
-
-            DbEntity parent = dbe.getParentEntity();
-            String name = (parent != null) ? parent.getName() : "";
-            out.print(" parentName=\"");
-            out.print(name);
-            out.print('\"');
-
-            out.println('>');
-
-            storeDbAttribute(out, dbe);
-            out.println("\t</db-entity>");
-            dbRelationships.addAll(dbe.getRelationshipList());
-        }
-    }
-
-    private void storeDbAttribute(PrintWriter out, DbEntity dbEntity) {
-        Iterator iter = sortedAttributes(dbEntity).iterator();
-
-        while (iter.hasNext()) {
-            DbAttribute attr = (DbAttribute) iter.next();
-            if (attr instanceof DerivedDbAttribute) {
-                storeDerivedDbAttribute(out, (DerivedDbAttribute) attr);
-            } else {
-                storeRegularDbAttribute(out, attr);
-            }
-        }
-
-    }
-
-    private void storeDerivedDbAttribute(PrintWriter out, DerivedDbAttribute attr) {
-        out.print("\t\t<db-attribute-derived name=\"" + attr.getName() + '\"');
-
-        String type = TypesMapping.getSqlNameByType(attr.getType());
-        if (type != null) {
-            out.print(" type=\"" + type + '\"');
-        }
-
-        // If attribute is part of primary key
-        if (attr.isPrimaryKey()) {
-            out.print(" isPrimaryKey=\"true\"");
-        }
-
-        if (attr.isMandatory())
-            out.print(" isMandatory=\"true\"");
-
-        if (attr.getMaxLength() > 0) {
-            out.print(" length=\"");
-            out.print(attr.getMaxLength());
-            out.print('\"');
-        }
-
-        if (attr.getPrecision() > 0) {
-            out.print(" precision=\"");
-            out.print(attr.getPrecision());
-            out.print('\"');
-        }
-
-        if (((DerivedDbEntity) attr.getEntity()).getGroupByAttributes().contains(attr)) {
-            out.print(" isGroupBy=\"true\"");
-        }
-
-        String spec = attr.getExpressionSpec();
-        if (spec != null && spec.trim().length() > 0) {
-            out.print(" spec=\"");
-            out.print(spec);
-            out.print('\"');
-        }
-
-        List params = attr.getParams();
-
-        if (params.size() > 0) {
-            out.println(">");
-
-            Iterator refs = params.iterator();
-            while (refs.hasNext()) {
-                DbAttribute ref = (DbAttribute) refs.next();
-                out.println("\t\t\t<db-attribute-ref name=\"" + ref.getName() + "\"/>");
-            }
-            out.println("\t\t</db-attribute-derived>");
-        } else {
-            out.println("/>");
-        }
-    }
-
-    private void storeRegularDbAttribute(PrintWriter out, DbAttribute attr) {
-        out.print("\t\t<db-attribute name=\"" + attr.getName() + '\"');
-
-        String type = TypesMapping.getSqlNameByType(attr.getType());
-        if (type != null) {
-            out.print(" type=\"" + type + '\"');
-        }
-
-        // If attribute is part of primary key
-        if (attr.isPrimaryKey()) {
-            out.print(" isPrimaryKey=\"true\"");
-        }
-
-        if (attr.isMandatory()) {
-            out.print(" isMandatory=\"true\"");
-        }
-
-        if (attr.getMaxLength() > 0) {
-            out.print(" length=\"");
-            out.print(attr.getMaxLength());
-            out.print('\"');
-        }
-
-        if (attr.getPrecision() > 0) {
-            out.print(" precision=\"");
-            out.print(attr.getPrecision());
-            out.print('\"');
-        }
-
-        out.println("/>");
-    }
-
-    private void storeObjEntities(PrintWriter out, DataMap map) {
-        Iterator iter = sortedObjEntities(map).iterator();
-        while (iter.hasNext()) {
-            ObjEntity temp = (ObjEntity) iter.next();
-            out.print("\t<obj-entity name=\"");
-            out.print(temp.getName());
-
-            if (temp.getClassName() != null) {
-                out.print("\" className=\"");
-                out.print(temp.getClassName());
-            }
-
-            if (temp.isReadOnly()) {
-                out.print("\" readOnly=\"true");
-            }
-
-            out.print('\"');
-
-            if (temp.getDbEntity() != null) {
-                out.print(" dbEntityName=\"");
-                out.print(temp.getDbEntity().getName());
-                out.print('\"');
-            }
-
-            out.println('>');
-            storeObjAttribute(out, temp);
-
-            out.println("\t</obj-entity>");
-            Collection objRels = temp.getRelationshipMap().values();
-            objRelationships.addAll(objRels);
-
-            ArrayList dbRels = new ArrayList();
-            Iterator relIt = objRels.iterator();
-            while (relIt.hasNext()) {
-                ObjRelationship objRel = (ObjRelationship) relIt.next();
-                dbRelationshipRefs.addAll(objRel.getDbRelationshipList());
-            }
-        }
-    }
-
-    private void storeObjAttribute(PrintWriter out, ObjEntity obj_entity) {
-        Iterator iter = sortedAttributes(obj_entity).iterator();
-        while (iter.hasNext()) {
-            ObjAttribute temp = (ObjAttribute) iter.next();
-            out.print("\t\t<obj-attribute name=\"" + temp.getName() + '\"');
-
-            if (temp.getType() != null) {
-                out.print(" type=\"");
-                out.print(temp.getType());
-                out.print('\"');
-            }
-
-            // If this obj attribute is mapped to db attribute
-            if (temp.getDbAttribute() != null) {
-                out.print(" db-attribute-name=\"");
-                out.print(temp.getDbAttribute().getName());
-                out.print('\"');
-            }
-            out.println("/>");
-        }
-    }
-
-    private void storeObjRelationships(PrintWriter out) throws DataMapException {
-        Iterator iter = sortedRelationships(objRelationships).iterator();
-        while (iter.hasNext()) {
-            ObjRelationship rel = (ObjRelationship) iter.next();
-            ObjEntity srcEnt = (ObjEntity) rel.getSourceEntity();
-            if (srcEnt == null) {
-                logObj.warn(
-                    "No source entity, ignoring ObjRelationship " + rel.getName());
-                return;
-            }
-
-            ObjEntity targetEnt = (ObjEntity) rel.getTargetEntity();
-            if (targetEnt == null) {
-                logObj.warn(
-                    "No target entity, ignoring ObjRelationship " + rel.getName());
-                return;
-            }
-
-            out.print("\t<obj-relationship name=\"" + rel.getName() + '\"');
-            out.print(" source=\"" + srcEnt.getName() + '\"');
-            out.print(" target=\"" + targetEnt.getName() + '\"');
-            out.print(" toMany=\"" + (rel.isToMany() ? TRUE : FALSE) + '\"');
-            out.println('>');
-            storeDbRelationshipRef(out, rel);
-            out.println("\t</obj-relationship>");
-        }
-    }
-
-    private void storeDbRelationshipRef(PrintWriter out, ObjRelationship obj_rel)
-        throws DataMapException {
-        Iterator iter = obj_rel.getDbRelationshipList().iterator();
-        while (iter.hasNext()) {
-            DbRelationship rel = (DbRelationship) iter.next();
-            if (!dbRelationships.contains(rel)) {
-                throw new DataMapException(
-                    "Broken reference. Obj Relationship "
-                        + obj_rel.getSourceEntity().getName()
-                        + "->"
-                        + obj_rel.getTargetEntity().getName()
-                        + " uses DbRelationship "
-                        + rel.getSourceEntity().getName()
-                        + "->"
-                        + rel.getTargetEntity().getName()
-                        + " which doesn't exist anymore.");
-            }
-
-            out.print("\t\t<");
-            out.print(DB_RELATIONSHIP_REF_TAG);
-            out.print(" source=\"");
-            out.print(rel.getSourceEntity().getName());
-            out.print("\" target=\"");
-            out.print(rel.getTargetEntityName());
-            out.print("\" name=\"");
-            out.print(rel.getName());
-            out.println("\"/>");
-        } // End while()
-    }
-
-    private void storeDbRelationships(PrintWriter out) throws DataMapException {
-        Iterator iter = sortedRelationships(dbRelationships).iterator();
-        while (iter.hasNext()) {
-            DbRelationship temp = (DbRelationship) iter.next();
-            out.print("\t<");
-            out.print(DB_RELATIONSHIP_TAG);
-            out.print(" name=\"");
-            out.print(temp.getName());
-            out.print("\" source=\"");
-            out.print(temp.getSourceEntity().getName());
-            out.print("\" target=\"");
-            out.print(temp.getTargetEntityName());
-            out.print("\" toDependentPK=\"");
-            out.print(temp.isToDependentPK() ? TRUE : FALSE);
-            out.print("\" toMany=\"");
-            out.print(temp.isToMany() ? TRUE : FALSE);
-            out.println("\">");
-            storeDbAttributePair(out, temp);
-            out.print("\t</");
-            out.print(DB_RELATIONSHIP_TAG);
-            out.println('>');
-        }
-    }
-
-    private void storeDbAttributePair(PrintWriter out, DbRelationship dbRel)
-        throws DataMapException {
-        Iterator iter = dbRel.getJoins().iterator();
-        while (iter.hasNext()) {
-            DbAttributePair pair = (DbAttributePair) iter.next();
-
-            // sanity check 
-            if (pair.getSource() == null) {
-                throw new DataMapException(
-                    "DbAttributePair has no source attribute. Relationship name: "
-                        + dbRel.getName());
-            }
-
-            if (pair.getTarget() == null) {
-                throw new DataMapException(
-                    "DbAttributePair has no target attribute. Relationship name: "
-                        + dbRel.getName());
-            }
-
-            out.print("\t\t<");
-            out.print(DB_ATTRIBUTE_PAIR_TAG);
-            out.print(" source=\"");
-            out.print(pair.getSource().getName());
-            out.println("\" target=\"" + pair.getTarget().getName() + "\"/>");
-        }
     }
 
     private void processStartDbEntity(Attributes atts) throws SAXException {
@@ -660,7 +454,8 @@ public class MapLoader extends DefaultHandler {
         if (parentName != null) {
             dbEntity = new DerivedDbEntity(name);
             ((DerivedDbEntity) dbEntity).setParentEntityName(parentName);
-        } else {
+        }
+        else {
             dbEntity = new DbEntity(name);
         }
 
@@ -679,7 +474,8 @@ public class MapLoader extends DefaultHandler {
             DbEntity parent = ((DerivedDbEntity) dbEntity).getParentEntity();
             DbAttribute ref = (DbAttribute) parent.getAttribute(name);
             ((DerivedDbAttribute) attrib).addParam(ref);
-        } else {
+        }
+        else {
             throw new SAXException(
                 "Referenced attributes are not supported by regular DbAttributes. "
                     + " Offending attribute name '"
@@ -747,6 +543,15 @@ public class MapLoader extends DefaultHandler {
         }
     }
 
+    private void processStartDbKeyGenerator(Attributes atts) throws SAXException {
+        DbKeyGenerator pkGenerator = new DbKeyGenerator();
+        dbEntity.setPrimaryKeyGenerator(pkGenerator);
+    }
+    
+    private void processStartQuerySQL(Attributes atts) throws SAXException {
+        this.sqlKey = atts.getValue("", "adapter-class");
+    }
+
     private void processStartObjEntity(Attributes atts) {
         objEntity = new ObjEntity(atts.getValue("", "name"));
         objEntity.setClassName(atts.getValue("", "className"));
@@ -754,10 +559,18 @@ public class MapLoader extends DefaultHandler {
         String readOnly = atts.getValue("", "readOnly");
         objEntity.setReadOnly(TRUE.equalsIgnoreCase(readOnly));
 
-        String temp = atts.getValue("", "dbEntityName");
-        if (null != temp) {
-            DbEntity db_temp = dataMap.getDbEntity(temp);
-            objEntity.setDbEntity(db_temp);
+        String lockType = atts.getValue("", "lock-type");
+        if ("optimistic".equals(lockType)) {
+            objEntity.setDeclaredLockType(ObjEntity.LOCK_TYPE_OPTIMISTIC);
+        }
+
+        String superEntityName = atts.getValue("", "superEntityName");
+        if (superEntityName != null) {
+            objEntity.setSuperEntityName(superEntityName);
+        }
+        else {
+            objEntity.setDbEntityName(atts.getValue("", "dbEntityName"));
+            objEntity.setSuperClassName(atts.getValue("", "superClassName"));
         }
 
         dataMap.addObjEntity(objEntity);
@@ -767,174 +580,82 @@ public class MapLoader extends DefaultHandler {
         String name = atts.getValue("", "name");
         String type = atts.getValue("", "type");
 
+        String lock = atts.getValue("", "lock");
+
         ObjAttribute oa = new ObjAttribute(name);
         oa.setType(type);
+        oa.setUsedForLocking(TRUE.equalsIgnoreCase(lock));
         objEntity.addAttribute(oa);
-        oa.setDbAttributeName(atts.getValue("", "db-attribute-name"));
+        String dbPath = atts.getValue("", "db-attribute-path");
+        if (dbPath == null) {
+            dbPath = atts.getValue("", "db-attribute-name");
+        }
+        oa.setDbAttributePath(dbPath);
     }
 
     private void processStartDbRelationship(Attributes atts) throws SAXException {
-        String temp = atts.getValue("", "source");
-        if (null == temp) {
-            throw new SAXException(
-                "MapLoaderImpl::processStartDbRelationship(),"
-                    + " Unable to parse source. Attributes:\n"
-                    + printAttributes(atts).toString());
-        }
-
-        DbEntity source = dataMap.getDbEntity(temp);
-        if (null == source) {
-            System.out.println(
-                "MapLoaderImpl::processStartDbRelationship(),"
-                    + " Unable to find source "
-                    + temp);
-            return;
-        }
-        temp = atts.getValue("", "target");
-        if (null == temp) {
-            throw new SAXException(
-                "MapLoaderImpl::processStartDbRelationship(),"
-                    + " Unable to parse target. Attributes:\n"
-                    + printAttributes(atts).toString());
-        }
-
-        DbEntity target = dataMap.getDbEntity(temp, true);
-        if (null == target) {
-            throw new SAXException(
-                "MapLoaderImpl::processStartDbRelationship(),"
-                    + " Unable to find target "
-                    + temp);
-        }
-
-        temp = atts.getValue("", "toMany");
-        boolean toMany = temp != null && temp.equalsIgnoreCase(TRUE);
-
-        temp = atts.getValue("", "toDependentPK");
-        boolean toDependentPK = temp != null && temp.equalsIgnoreCase(TRUE);
-
         String name = atts.getValue("", "name");
-        if (null == name) {
+        if (name == null) {
             throw new SAXException(
                 "MapLoaderImpl::processStartDbRelationship(),"
                     + " Unable to parse name. Attributes:\n"
                     + printAttributes(atts).toString());
         }
 
-        dbRelationship = new DbRelationship();
+        String sourceName = atts.getValue("", "source");
+        if (sourceName == null) {
+            throw new SAXException("MapLoaderImpl::processStartDbRelationship() - null source entity");
+        }
+
+        DbEntity source = dataMap.getDbEntity(sourceName);
+        if (source == null) {
+            logObj.debug(
+                "MapLoaderImpl::processStartDbRelationship() - Unable to find source "
+                    + sourceName);
+            return;
+        }
+
+        String toManyString = atts.getValue("", "toMany");
+        boolean toMany = toManyString != null && toManyString.equalsIgnoreCase(TRUE);
+
+        String toDependPkString = atts.getValue("", "toDependentPK");
+        boolean toDependentPK =
+            toDependPkString != null && toDependPkString.equalsIgnoreCase(TRUE);
+
+        dbRelationship = new DbRelationship(name);
         dbRelationship.setSourceEntity(source);
-        dbRelationship.setTargetEntity(target);
+        dbRelationship.setTargetEntityName(atts.getValue("", "target"));
         dbRelationship.setToMany(toMany);
-        dbRelationship.setName(name);
         dbRelationship.setToDependentPK(toDependentPK);
-        // Save the reference to this db relationship for later resolution
-        // in the ObjRelationship
-        dbRelationshipMap.put(
-            new SourceTarget(source.getName(), target.getName(), name),
-            dbRelationship);
 
         source.addRelationship(dbRelationship);
     }
 
     private void processStartDbRelationshipRef(Attributes atts) throws SAXException {
-        String source = atts.getValue("", "source");
-        if (null == source) {
-            throw new SAXException(
-                "MapLoaderImpl::processStartDbRelationshipRef(),"
-                    + " Unable to parse source. Attributes:\n"
-                    + printAttributes(atts).toString());
-        }
-        String target = atts.getValue("", "target");
-        if (null == target) {
-            throw new SAXException(
-                "MapLoaderImpl::processStartDbRelationshipRef(),"
-                    + " Unable to parse target. Attributes:\n"
-                    + printAttributes(atts).toString());
-        }
+        // db-relationship-ref element is deprecated and is supported for backwards 
+        // compatibility only
 
         String name = atts.getValue("", "name");
-
-        SourceTarget key = new SourceTarget(source, target, name);
-        DbRelationship temp = (DbRelationship) dbRelationshipMap.get(key);
-        if (null == temp) {
+        if (name == null) {
             throw new SAXException(
                 "MapLoaderImpl::processStartDbRelationshipRef()"
-                    + ", Unresolved reference from "
-                    + source
-                    + " to "
-                    + target);
+                    + ", Null DbRelationship name for "
+                    + objRelationship.getName());
         }
-        objRelationship.addDbRelationship(temp);
+
+        String path = objRelationship.getDbRelationshipPath();
+        path = (path != null) ? path + "." + name : name;
+        objRelationship.setDbRelationshipPath(path);
     }
 
     private void processStartDbAttributePair(Attributes atts) throws SAXException {
-        String source = atts.getValue("", "source");
-        if (null == source) {
-            throw new SAXException(
-                " Unable to parse target. Attributes:\n"
-                    + printAttributes(atts).toString());
-        }
-        String target = atts.getValue("", "target");
-        if (null == target) {
-            throw new SAXException(
-                " Unable to parse source. Attributes:\n"
-                    + printAttributes(atts).toString());
-        }
-        DbAttribute dbSrc =
-            (DbAttribute) dbRelationship.getSourceEntity().getAttribute(source);
-        if (dbSrc == null) {
-            throw new SAXException(
-                "Unable to parse source. Undefined join source:\n"
-                    + source
-                    + ", source entity: "
-                    + dbRelationship.getSourceEntity().getName());
-        }
-        DbAttribute dbTarget =
-            (DbAttribute) dbRelationship.getTargetEntity().getAttribute(target);
-        if (dbTarget == null) {
-            throw new SAXException(
-                "Unable to parse source. Undefined join target:\n"
-                    + target
-                    + ", target entity: "
-                    + dbRelationship.getTargetEntity().getName());
-        }
-
-        DbAttributePair pair = new DbAttributePair(dbSrc, dbTarget);
-        dbRelationship.addJoin(pair);
+        DbJoin join = new DbJoin(dbRelationship);
+        join.setSourceName(atts.getValue("", "source"));
+        join.setTargetName(atts.getValue("", "target"));
+        dbRelationship.addJoin(join);
     }
 
     private void processStartObjRelationship(Attributes atts) throws SAXException {
-        String temp = atts.getValue("", "source");
-        if (null == temp) {
-            throw new SAXException(
-                "MapLoaderImpl::processStartObjRelationship(),"
-                    + " Unable to parse source. Attributes:\n"
-                    + printAttributes(atts).toString());
-        }
-        ObjEntity source = dataMap.getObjEntity(temp);
-        if (null == source) {
-            throw new SAXException(
-                "MapLoaderImpl::processStartObjRelationship(),"
-                    + " Unable to find source "
-                    + temp);
-        }
-        temp = atts.getValue("", "target");
-        if (null == temp) {
-            throw new SAXException(
-                "MapLoaderImpl::processStartObjRelationship(),"
-                    + " Unable to parse target. Attributes:\n"
-                    + printAttributes(atts).toString());
-        }
-        ObjEntity target = dataMap.getObjEntity(temp, true);
-        if (null == target) {
-            throw new SAXException(
-                "MapLoaderImpl::processStartObjRelationship(),"
-                    + " Unable to find target "
-                    + temp);
-        }
-        temp = atts.getValue("", "toMany");
-        boolean to_many = false;
-        if (temp != null && temp.equalsIgnoreCase(TRUE))
-            to_many = true;
         String name = atts.getValue("", "name");
         if (null == name) {
             throw new SAXException(
@@ -942,9 +663,225 @@ public class MapLoader extends DefaultHandler {
                     + " Unable to parse target. Attributes:\n"
                     + printAttributes(atts).toString());
         }
-        objRelationship = new ObjRelationship(source, target, to_many);
-        objRelationship.setName(name);
+
+        String sourceName = atts.getValue("", "source");
+        if (sourceName == null) {
+            throw new SAXException(
+                "MapLoaderImpl::processStartObjRelationship(),"
+                    + " Unable to parse source. Attributes:\n"
+                    + printAttributes(atts).toString());
+        }
+
+        ObjEntity source = dataMap.getObjEntity(sourceName);
+        if (source == null) {
+            throw new SAXException(
+                "MapLoaderImpl::processStartObjRelationship(),"
+                    + " Unable to find source "
+                    + sourceName);
+        }
+
+        String deleteRuleName = atts.getValue("", "deleteRule");
+        int deleteRule =
+            (deleteRuleName != null)
+                ? DeleteRule.deleteRuleForName(deleteRuleName)
+                : DeleteRule.NO_ACTION;
+
+        objRelationship = new ObjRelationship(name);
+        objRelationship.setSourceEntity(source);
+        objRelationship.setTargetEntityName(atts.getValue("", "target"));
+        objRelationship.setDeleteRule(deleteRule);
+        objRelationship.setUsedForLocking(
+            TRUE.equalsIgnoreCase(atts.getValue("", "lock")));
+        objRelationship.setDbRelationshipPath((atts.getValue("", "db-relationship-path")));
         source.addRelationship(objRelationship);
+    }
+
+    private void processStartProcedure(Attributes attributes) throws SAXException {
+
+        String name = attributes.getValue("", "name");
+        if (null == name) {
+            throw new SAXException(
+                "MapLoaderImpl::processStartProcedure()," + " no procedure name.");
+        }
+
+        String schema = attributes.getValue("", "schema");
+        String catalog = attributes.getValue("", "catalog");
+        String returningValue = attributes.getValue("", "returningValue");
+
+        procedure = new Procedure(name);
+        procedure.setReturningValue(
+            returningValue != null && returningValue.equalsIgnoreCase(TRUE));
+        procedure.setSchema(schema);
+        procedure.setCatalog(catalog);
+        dataMap.addProcedure(procedure);
+    }
+
+    private void processStartProcedureParameter(Attributes attributes)
+        throws SAXException {
+
+        String name = attributes.getValue("", "name");
+        if (name == null) {
+            throw new SAXException(
+                "MapLoaderImpl::processStartProcedureParameter(),"
+                    + " no procedure parameter name.");
+        }
+
+        ProcedureParameter parameter = new ProcedureParameter(name);
+
+        String type = attributes.getValue("", "type");
+        if (type != null) {
+            parameter.setType(TypesMapping.getSqlTypeByName(type));
+        }
+
+        String length = attributes.getValue("", "length");
+        if (length != null) {
+            parameter.setMaxLength(Integer.parseInt(length));
+        }
+
+        String precision = attributes.getValue("", "precision");
+        if (precision != null) {
+            parameter.setPrecision(Integer.parseInt(precision));
+        }
+
+        String direction = attributes.getValue("", "direction");
+        if ("in".equals(direction)) {
+            parameter.setDirection(ProcedureParameter.IN_PARAMETER);
+        }
+        else if ("out".equals(direction)) {
+            parameter.setDirection(ProcedureParameter.OUT_PARAMETER);
+        }
+        else if ("in_out".equals(direction)) {
+            parameter.setDirection(ProcedureParameter.IN_OUT_PARAMETER);
+        }
+
+        procedure.addCallParameter(parameter);
+    }
+
+    private void processStartQuery(Attributes attributes) throws SAXException {
+        String name = attributes.getValue("", "name");
+        if (null == name) {
+            throw new SAXException("MapLoader::processStartQuery(), no query name.");
+        }
+
+        String builder = attributes.getValue("", "factory");
+
+        // TODO: this is a hack to migrate between 1.1M6 and 1.1M7...
+        // remove this at some point
+        if (builder == null) {
+            builder = SelectQueryBuilder.class.getName();
+        }
+        else if (builder.equals("org.objectstyle.cayenne.query.SelectQueryBuilder")) {
+            builder = SelectQueryBuilder.class.getName();
+        }
+
+        try {
+            queryBuilder = (QueryBuilder) Class.forName(builder).newInstance();
+        }
+        catch (Exception ex) {
+            throw new SAXException(
+                    "MapLoader::processStartQuery(), invalid query builder: " + builder);
+        }
+
+        String rootType = attributes.getValue("", "root");
+        String rootName = attributes.getValue("", "root-name");
+        String resultType = attributes.getValue("", "result-type");
+        String selecting = attributes.getValue("", "selecting");
+
+        queryBuilder.setName(name);
+        queryBuilder.setRoot(dataMap, rootType, rootName);
+        queryBuilder.setSelecting(selecting);
+        queryBuilder.setResultType(resultType);
+    }
+
+    private void processStartQueryProperty(Attributes attributes) throws SAXException {
+        String name = attributes.getValue("", "name");
+        if (null == name) {
+            throw new SAXException("MapLoader::processStartQueryProperty(), no property name.");
+        }
+
+        String value = attributes.getValue("", "value");
+        if (null == value) {
+            throw new SAXException("MapLoader::processStartQueryProperty(), no property value.");
+        }
+
+        queryBuilder.addProperty(name, value);
+    }
+    
+    private void processStartDataMapProperty(Attributes attributes) throws SAXException {
+        String name = attributes.getValue("", "name");
+        if (null == name) {
+            throw new SAXException("MapLoader::processStartDataMapProperty(), no property name.");
+        }
+
+        String value = attributes.getValue("", "value");
+        if (null == value) {
+            throw new SAXException("MapLoader::processStartDataMapProperty(), no property value.");
+        }
+
+        if(mapProperties == null) {
+            mapProperties = new TreeMap();
+        }
+        
+        mapProperties.put(name, value);
+    }
+
+    private void processStartQueryResultColumn(Attributes attributes)
+        throws SAXException {
+        String label = attributes.getValue("", "label");
+        if (label == null) {
+            throw new SAXException("MapLoader::processStartQueryResultColumn(), no label.");
+        }
+
+        String dbType = attributes.getValue("", "db-type");
+        if (dbType == null) {
+            throw new SAXException("MapLoader::processStartQueryResultColumn(), no db-type.");
+        }
+
+        String javaType = attributes.getValue("", "java-type");
+        if (javaType == null) {
+            throw new SAXException("MapLoader::processStartQueryResultColumn(), no java-type.");
+        }
+
+        queryBuilder.addResultColumn(label, dbType, javaType);
+    }
+
+    private void processEndQueryPrefetch() throws SAXException {
+        queryBuilder.addPrefetch(charactersBuffer.toString());
+    }
+
+    private void processStartQueryOrdering(Attributes attributes) throws SAXException {
+        descending = attributes.getValue("", "descending");
+        ignoreCase = attributes.getValue("", "ignore-case");
+    }
+
+    private void processEndQuery() throws SAXException {
+        dataMap.addQuery(queryBuilder.getQuery());
+        queryBuilder = null;
+    }
+
+    private void processEndQuerySQL() throws SAXException {
+        queryBuilder.addSql(charactersBuffer.toString(), sqlKey);
+        sqlKey = null;
+    }
+
+    private void processEndQualifier() throws SAXException {
+        String qualifier = charactersBuffer.toString();
+        if (qualifier.trim().length() == 0) {
+            return;
+        }
+
+        // qualifier can belong to ObjEntity or a query
+        if (objEntity != null) {
+            objEntity.setDeclaredQualifier(Expression.fromString(qualifier));
+        }
+        else {
+            queryBuilder.setQualifier(qualifier);
+        }
+    }
+
+    private void processEndQueryOrdering() throws SAXException {
+        String path = charactersBuffer.toString();
+        queryBuilder.addOrdering(path, descending, ignoreCase);
     }
 
     private void processEndDbAttribute() throws SAXException {
@@ -955,20 +892,61 @@ public class MapLoader extends DefaultHandler {
         dbEntity = null;
     }
 
+    private void processEndProcedure() {
+        procedure = null;
+    }
+
+    private void processEndProcedureParameter() {
+    }
+
+    private void processEndDbGeneratorType() {
+        if (dbEntity == null)
+            return;
+        DbKeyGenerator pkGenerator = dbEntity.getPrimaryKeyGenerator();
+        if (pkGenerator == null)
+            return;
+        pkGenerator.setGeneratorType(charactersBuffer.toString());
+        if (pkGenerator.getGeneratorType() == null) {
+            dbEntity.setPrimaryKeyGenerator(null);
+        }
+    }
+
+    private void processEndDbGeneratorName() {
+        if (dbEntity == null)
+            return;
+        DbKeyGenerator pkGenerator = dbEntity.getPrimaryKeyGenerator();
+        if (pkGenerator == null)
+            return;
+        pkGenerator.setGeneratorName(charactersBuffer.toString());
+    }
+
+    private void processEndDbKeyCacheSize() {
+        if (dbEntity == null)
+            return;
+        DbKeyGenerator pkGenerator = dbEntity.getPrimaryKeyGenerator();
+        if (pkGenerator == null)
+            return;
+        try {
+            pkGenerator.setKeyCacheSize(new Integer(charactersBuffer.toString().trim()));
+        }
+        catch (Exception ex) {
+            pkGenerator.setKeyCacheSize(null);
+        }
+    }
+    
+    private void processEndDataMap() {
+        if(mapProperties != null) {
+            dataMap.initWithProperties(mapProperties);
+        }
+        
+        mapProperties = null;
+    }
+
     private void processEndObjEntity() {
         objEntity = null;
     }
 
     private void processEndDbRelationship() {
-        // validation check: if "toDepPK" is set and source target is NOT a PK, unset it
-        if (dbRelationship.isToDependentPK() && !isValidForDepPk(dbRelationship)) {
-            logObj.warn(
-                "Relationship '"
-                    + dbRelationship.getName()
-                    + "': 'toDependentPK' is incorrectly set to true, unsetting...");
-            dbRelationship.setToDependentPK(false);
-        }
-        
         dbRelationship = null;
     }
 
@@ -988,90 +966,18 @@ public class MapLoader extends DefaultHandler {
         return sb;
     }
 
-    protected List sortedRegularDbEntities(DataMap map) {
-        Iterator it = map.getDbEntitiesAsList().iterator();
-        ArrayList derived = new ArrayList();
-        while (it.hasNext()) {
-            Object ent = it.next();
-            if (!(ent instanceof DerivedDbEntity)) {
-                derived.add(ent);
-            }
+    public void characters(char[] text, int start, int length)
+        throws org.xml.sax.SAXException {
+        if (charactersBuffer != null) {
+            charactersBuffer.append(text, start, length);
         }
-        if (derived.size() > 1) {
-            Collections.sort(derived, new PropertyComparator("name", DbEntity.class));
-        }
-        return derived;
     }
 
-    protected List sortedDerivedDbEntities(DataMap map) {
-        Iterator it = map.getDbEntitiesAsList().iterator();
-        ArrayList derived = new ArrayList();
-        while (it.hasNext()) {
-            Object ent = it.next();
-            if (ent instanceof DerivedDbEntity) {
-                derived.add(ent);
-            }
-        }
-        if (derived.size() > 1) {
-            Collections.sort(derived, new PropertyComparator("name", DbEntity.class));
-        }
-        return derived;
+    private void rememberCurrentTag(String tag) {
+        currentTag = tag;
     }
 
-    protected List sortedObjEntities(DataMap map) {
-        ArrayList list = new ArrayList(map.getObjEntitiesAsList());
-        Collections.sort(list, new PropertyComparator("name", ObjEntity.class));
-        return list;
-    }
-
-    protected List sortedAttributes(Entity ent) {
-        ArrayList list = new ArrayList(ent.getAttributeList());
-        Collections.sort(list, new PropertyComparator("name", Attribute.class));
-        return list;
-    }
-
-    protected List sortedRelationships(Entity ent) {
-        ArrayList list = new ArrayList(ent.getRelationshipList());
-        Collections.sort(list, new PropertyComparator("name", Relationship.class));
-        return list;
-    }
-
-    protected List sortedRelationships(List rels) {
-        ArrayList list = new ArrayList(rels);
-        Collections.sort(list, new PropertyComparator("name", Relationship.class));
-        return list;
-    }
-}
-
-/** Used for creating the key in DbRelationship map */
-class SourceTarget {
-    public String source;
-    public String target;
-    public String name;
-
-    public SourceTarget(String temp1, String temp2, String temp3) {
-        source = temp1;
-        target = temp2;
-        name = temp3;
-    }
-
-    public int hashCode() {
-        int code = source.hashCode() * 100000 + target.hashCode() * 10000;
-        if (null != name) {
-            code += name.hashCode();
-        }
-        return code;
-    }
-
-    public boolean equals(Object obj) {
-        if (!(obj instanceof SourceTarget))
-            return false;
-        SourceTarget other = (SourceTarget) obj;
-        if (source.equals(other.source)
-            && target.equals(other.target)
-            && name.equals(other.name)) {
-            return true;
-        }
-        return false;
+    private void resetCurrentTag() {
+        currentTag = null;
     }
 }

@@ -1,38 +1,39 @@
 /* ====================================================================
+ *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,61 +47,164 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 
 package org.objectstyle.cayenne.dba;
 
+import java.net.URL;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Iterator;
-import org.apache.log4j.Logger;
 
 import org.objectstyle.cayenne.CayenneRuntimeException;
-import org.objectstyle.cayenne.access.*;
-import org.objectstyle.cayenne.access.trans.*;
+import org.objectstyle.cayenne.access.DataNode;
+import org.objectstyle.cayenne.access.OperationObserver;
+import org.objectstyle.cayenne.access.QueryTranslator;
+import org.objectstyle.cayenne.access.trans.DeleteTranslator;
+import org.objectstyle.cayenne.access.trans.InsertTranslator;
+import org.objectstyle.cayenne.access.trans.ProcedureTranslator;
+import org.objectstyle.cayenne.access.trans.QualifierTranslator;
+import org.objectstyle.cayenne.access.trans.QueryAssembler;
+import org.objectstyle.cayenne.access.trans.SelectTranslator;
+import org.objectstyle.cayenne.access.trans.SqlModifyTranslator;
+import org.objectstyle.cayenne.access.trans.SqlSelectTranslator;
+import org.objectstyle.cayenne.access.trans.UpdateTranslator;
+import org.objectstyle.cayenne.access.types.ByteArrayType;
+import org.objectstyle.cayenne.access.types.CharType;
+import org.objectstyle.cayenne.access.types.ExtendedType;
 import org.objectstyle.cayenne.access.types.ExtendedTypeMap;
-import org.objectstyle.cayenne.map.*;
-import org.objectstyle.cayenne.query.*;
+import org.objectstyle.cayenne.access.types.UtilDateType;
+import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.map.DbEntity;
+import org.objectstyle.cayenne.map.DbJoin;
+import org.objectstyle.cayenne.map.DbRelationship;
+import org.objectstyle.cayenne.map.DerivedDbEntity;
+import org.objectstyle.cayenne.query.BatchQuery;
+import org.objectstyle.cayenne.query.DeleteQuery;
+import org.objectstyle.cayenne.query.InsertQuery;
+import org.objectstyle.cayenne.query.ProcedureQuery;
+import org.objectstyle.cayenne.query.Query;
+import org.objectstyle.cayenne.query.SelectQuery;
+import org.objectstyle.cayenne.query.SqlModifyQuery;
+import org.objectstyle.cayenne.query.SqlSelectQuery;
+import org.objectstyle.cayenne.query.UpdateQuery;
+import org.objectstyle.cayenne.util.ResourceLocator;
+import org.objectstyle.cayenne.util.Util;
 
-/** 
- * A generic DbAdapter implementation. 
- * Can be used as a default adapter or as
- * a superclass of a concrete adapter implementation.  
+/**
+ * A generic DbAdapter implementation. Can be used as a default adapter or as
+ * a superclass of a concrete adapter implementation.
  *
  * @author Andrei Adamchik
  */
 public class JdbcAdapter implements DbAdapter {
-    static Logger logObj = Logger.getLogger(JdbcAdapter.class.getName());
-
     protected PkGenerator pkGenerator;
     protected TypesHandler typesHandler;
-    protected ExtendedTypeMap typeConverter;
-    protected QualifierTranslatorFactory qualifierFactory;
+    protected ExtendedTypeMap extendedTypes;
+    protected boolean supportsBatchUpdates;
+    protected boolean supportsFkConstraints;
+    protected boolean supportsUniqueConstraints;
 
+    /**
+     * Creates new JdbcAdapter with a set of default parameters.
+     */
     public JdbcAdapter() {
-        // create Pk generator
-        pkGenerator = createPkGenerator();
-        typesHandler = TypesHandler.getHandler(this.getClass());
-        typeConverter = new ExtendedTypeMap();
-        qualifierFactory = new QualifierTranslatorFactory();
+        // init defaults
+        this.setSupportsBatchUpdates(false);
+        this.setSupportsUniqueConstraints(true);
+        this.setSupportsFkConstraints(true);
+
+        this.pkGenerator = this.createPkGenerator();
+        this.typesHandler = TypesHandler.getHandler(findAdapterResource("/types.xml"));
+        this.extendedTypes = new ExtendedTypeMap();
+        this.configureExtendedTypes(extendedTypes);
     }
 
-    /** 
+    /**
+     * Returns default separator - a semicolon.
+     * @since 1.0.4
+     */
+    public String getBatchTerminator() {
+        return ";";
+    }
+
+    /**
+     * Locates and returns a named adapter resource. A resource can be an XML
+     * file, etc. 
+     * 
+     * <p>This implementation is based on the premise 
+     * that each adapter is located in its own Java package and all
+     * resources are in the same package as well. Resource lookup
+     * is recursive, so that if DbAdapter is a subclass of another
+     * adapter, parent adapter package is searched as a failover.</p>
+     * 
+     * @since 1.1
+     */
+    public URL findAdapterResource(String name) {
+        Class adapterClass = this.getClass();
+
+        while (adapterClass != null
+            && JdbcAdapter.class.isAssignableFrom(adapterClass)) {
+
+            String path = Util.getPackagePath(adapterClass.getName()) + name;
+            URL url = ResourceLocator.findURLInClasspath(path);
+            if (url != null) {
+                return url;
+            }
+
+            adapterClass = adapterClass.getSuperclass();
+        }
+
+        return null;
+    }
+
+    /**
+     * Installs appropriate ExtendedTypes as converters for passing values
+     * between JDBC and Java layers. Called from default constructor.
+     */
+    protected void configureExtendedTypes(ExtendedTypeMap map) {
+        // Create a default CHAR handler with some generic settings.
+        // Subclasses may need to install their own CharType or reconfigure
+        // this one to work better with the target database.
+        map.registerType(new CharType(false, true));
+
+        // enable java.util.Dates as "persistent" values
+        map.registerType(new UtilDateType());
+
+        // enable "small" BLOBs
+        map.registerType(new ByteArrayType(false, true));
+    }
+
+    /**
      * Creates and returns a primary key generator. This factory
      * method should be overriden by JdbcAdapter subclasses to
-     * provide custom implementations of PKGenerator. 
+     * provide custom implementations of PKGenerator.
      */
     protected PkGenerator createPkGenerator() {
         return new JdbcPkGenerator();
     }
 
-    /** Returns primary key generator associated with this DbAdapter. */
+    /** 
+     * Returns primary key generator associated with this DbAdapter. 
+     */
     public PkGenerator getPkGenerator() {
         return pkGenerator;
+    }
+
+    /**
+     * Sets new primary key generator.
+     * 
+     * @since 1.1
+     */
+    public void setPkGenerator(PkGenerator pkGenerator) {
+        this.pkGenerator = pkGenerator;
     }
 
     public QueryTranslator getQueryTranslator(Query query) throws Exception {
@@ -111,13 +215,14 @@ public class JdbcAdapter implements DbAdapter {
             t.setQuery(query);
             t.setAdapter(this);
             return t;
-        } catch (Exception ex) {
+        }
+        catch (Exception ex) {
             throw new CayenneRuntimeException(
                 "Can't load translator class: " + queryClass);
         }
     }
 
-    /** 
+    /**
      * Returns a class of the query translator that
      * should be used to translate the query <code>q</code>
      * to SQL. Exists mainly for the benefit of subclasses
@@ -126,40 +231,75 @@ public class JdbcAdapter implements DbAdapter {
     protected Class queryTranslatorClass(Query q) {
         if (q == null) {
             throw new NullPointerException("Null query.");
-        } else if (q instanceof SelectQuery) {
+        }
+        else if (q instanceof SelectQuery) {
             return SelectTranslator.class;
-        } else if (q instanceof UpdateQuery) {
+        }
+        else if (q instanceof UpdateQuery) {
             return UpdateTranslator.class;
-        } else if (q instanceof InsertQuery) {
+        }
+        else if (q instanceof InsertQuery) {
             return InsertTranslator.class;
-        } else if (q instanceof DeleteQuery) {
+        }
+        else if (q instanceof DeleteQuery) {
             return DeleteTranslator.class;
-        } else if (q instanceof SqlSelectQuery) {
+        }
+        else if (q instanceof SqlSelectQuery) {
             return SqlSelectTranslator.class;
-        } else if (q instanceof SqlModifyQuery) {
+        }
+        else if (q instanceof SqlModifyQuery) {
             return SqlModifyTranslator.class;
-        } else {
+        }
+        else if (q instanceof ProcedureQuery) {
+            return ProcedureTranslator.class;
+        }
+        else {
             throw new CayenneRuntimeException(
                 "Unrecognized query class..." + q.getClass().getName());
         }
     }
 
-    /** Returns true. */
+    /** 
+     * Returns true. 
+     */
     public boolean supportsFkConstraints() {
-        return true;
+        return supportsFkConstraints;
+    }
+
+    /**
+     * @since 1.1
+     */
+    public void setSupportsFkConstraints(boolean flag) {
+        this.supportsFkConstraints = flag;
     }
 
     /** 
+     * Returns true. 
+     * 
+     * @since 1.1
+     */
+    public boolean supportsUniqueConstraints() {
+        return supportsUniqueConstraints;
+    }
+
+    /**
+     * @since 1.1
+     */
+    public void setSupportsUniqueConstraints(boolean flag) {
+        this.supportsUniqueConstraints = flag;
+    }
+
+    /**
      * Returns a SQL string to drop a table corresponding
-     * to <code>ent</code> DbEntity. 
+     * to <code>ent</code> DbEntity.
      */
     public String dropTable(DbEntity ent) {
-        return "DROP TABLE " + ent.getName();
+        return "DROP TABLE " + ent.getFullyQualifiedName();
     }
 
-    /** 
+    /**
      * Returns a SQL string that can be used to create database table
-     * corresponding to <code>ent</code> parameter. 
+     * corresponding to <code>ent</code> parameter.
      */
     public String createTable(DbEntity ent) {
         // later we may support view creation
@@ -170,15 +310,16 @@ public class JdbcAdapter implements DbAdapter {
         }
 
         StringBuffer buf = new StringBuffer();
-        buf.append("CREATE TABLE ").append(ent.getName()).append(" (");
+        buf.append("CREATE TABLE ").append(ent.getFullyQualifiedName()).append(" (");
 
         // columns
-        Iterator it = ent.getAttributeList().iterator();
+        Iterator it = ent.getAttributes().iterator();
         boolean first = true;
         while (it.hasNext()) {
             if (first) {
                 first = false;
-            } else {
+            }
+            else {
                 buf.append(", ");
             }
 
@@ -187,11 +328,25 @@ public class JdbcAdapter implements DbAdapter {
             // attribute may not be fully valid, do a simple check
             if (at.getType() == TypesMapping.NOT_DEFINED) {
                 throw new CayenneRuntimeException(
-                    "Undefined type for attribute '" + ent.getName() + "." + at.getName() + "'.");
+                    "Undefined type for attribute '"
+                        + ent.getFullyQualifiedName()
+                        + "."
+                        + at.getName()
+                        + "'.");
             }
 
-            String type = this.externalTypesForJdbcType(at.getType())[0];
+            String[] types = externalTypesForJdbcType(at.getType());
+            if (types == null || types.length == 0) {
+                throw new CayenneRuntimeException(
+                    "Undefined type for attribute '"
+                        + ent.getFullyQualifiedName()
+                        + "."
+                        + at.getName()
+                        + "': "
+                        + at.getType());
+            }
 
+            String type = types[0];
             buf.append(at.getName()).append(' ').append(type);
 
             // append size and precision (if applicable)
@@ -215,10 +370,12 @@ public class JdbcAdapter implements DbAdapter {
                 }
             }
 
-            if (at.isMandatory())
-                buf.append(" NOT");
-
-            buf.append(" NULL");
+            if (at.isMandatory()) {
+                buf.append(" NOT NULL");
+            }
+            else {
+                buf.append(" NULL");
+            }
         }
 
         // primary key clause
@@ -246,34 +403,68 @@ public class JdbcAdapter implements DbAdapter {
         return buf.toString();
     }
 
-    /** 
+    /**
+     * Returns a DDL string to create a unique constraint over a set 
+     * of columns.
+     * 
+     * @since 1.1
+     */
+    public String createUniqueConstraint(DbEntity source, Collection columns) {
+        if (columns == null || columns.isEmpty()) {
+            throw new CayenneRuntimeException("Can't create UNIQUE constraint - no columns specified.");
+        }
+
+        StringBuffer buf = new StringBuffer();
+
+        buf.append("ALTER TABLE ").append(source.getFullyQualifiedName()).append(
+            " ADD UNIQUE (");
+
+        Iterator it = columns.iterator();
+        DbAttribute first = (DbAttribute) it.next();
+        buf.append(first.getName());
+
+        while (it.hasNext()) {
+            DbAttribute next = (DbAttribute) it.next();
+            buf.append(", ");
+            buf.append(next.getName());
+        }
+
+        buf.append(")");
+
+        return buf.toString();
+    }
+
+    /**
      * Returns a SQL string that can be used to create
-     * a foreign key constraint for the relationship. 
+     * a foreign key constraint for the relationship.
      */
     public String createFkConstraint(DbRelationship rel) {
         StringBuffer buf = new StringBuffer();
         StringBuffer refBuf = new StringBuffer();
 
-        buf.append("ALTER TABLE ").append(rel.getSourceEntity().getName()).append(
-            " ADD FOREIGN KEY (");
+        buf
+            .append("ALTER TABLE ")
+            .append(((DbEntity) rel.getSourceEntity()).getFullyQualifiedName())
+            .append(" ADD FOREIGN KEY (");
 
         Iterator jit = rel.getJoins().iterator();
         boolean first = true;
         while (jit.hasNext()) {
-            DbAttributePair join = (DbAttributePair) jit.next();
+            DbJoin join = (DbJoin) jit.next();
             if (!first) {
                 buf.append(", ");
                 refBuf.append(", ");
-            } else
+            }
+            else
                 first = false;
 
-            buf.append(join.getSource().getName());
-            refBuf.append(join.getTarget().getName());
+            buf.append(join.getSourceName());
+            refBuf.append(join.getTargetName());
         }
 
         buf
             .append(") REFERENCES ")
-            .append(rel.getTargetEntity().getName())
+            .append(((DbEntity) rel.getTargetEntity()).getFullyQualifiedName())
             .append(" (")
             .append(refBuf.toString())
             .append(')');
@@ -284,21 +475,13 @@ public class JdbcAdapter implements DbAdapter {
         return typesHandler.externalTypesForJdbcType(type);
     }
 
-    /** Returns null - by default no operation sorter is used. */
-    public OperationSorter getOpSorter(DataNode node) {
-        return null;
-    }
-
-    public ExtendedTypeMap getTypeConverter() {
-        return typeConverter;
-    }
-
-    public QualifierTranslatorFactory getQualifierFactory() {
-        return qualifierFactory;
+    public ExtendedTypeMap getExtendedTypes() {
+        return extendedTypes;
     }
 
     public DbAttribute buildAttribute(
         String name,
+        String typeName,
         int type,
         int size,
         int precision,
@@ -326,5 +509,60 @@ public class JdbcAdapter implements DbAdapter {
 
     public String tableTypeForView() {
         return "VIEW";
+    }
+
+    /**
+     * Creates and returns a default implementation of a qualifier translator.
+     */
+    public QualifierTranslator getQualifierTranslator(QueryAssembler queryAssembler) {
+        return new QualifierTranslator(queryAssembler);
+    }
+
+    /**
+     * Creates an instance of DataNode class.
+     */
+    public DataNode createDataNode(String name) {
+        DataNode node = new DataNode(name);
+        node.setAdapter(this);
+        return node;
+    }
+
+    public void bindParameter(
+        PreparedStatement statement,
+        Object object,
+        int pos,
+        int sqlType,
+        int precision)
+        throws SQLException, Exception {
+
+        if (object == null) {
+            statement.setNull(pos, sqlType);
+        }
+        else {
+            ExtendedType typeProcessor =
+                getExtendedTypes().getRegisteredType(object.getClass());
+            typeProcessor.setJdbcObject(statement, object, pos, sqlType, precision);
+        }
+    }
+
+    public boolean supportsBatchUpdates() {
+        return this.supportsBatchUpdates;
+    }
+
+    public void setSupportsBatchUpdates(boolean flag) {
+        this.supportsBatchUpdates = flag;
+    }
+
+    /**
+     * Always returns <code>true</code>, letting DataNode
+     * to handle the query.
+     */
+    public boolean shouldRunBatchQuery(
+        DataNode node,
+        Connection con,
+        BatchQuery query,
+        OperationObserver delegate)
+        throws SQLException, Exception {
+        return true;
     }
 }

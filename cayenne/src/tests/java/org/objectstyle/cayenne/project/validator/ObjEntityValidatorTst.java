@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,12 +47,11 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.project.validator;
 
@@ -59,45 +59,104 @@ import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.project.ProjectPath;
 
 /**
  * @author Andrei Adamchik
+ * @author Craig Miskell
  */
 public class ObjEntityValidatorTst extends ValidatorTestBase {
+    protected DataDomain domain;
+    protected DataMap map;
 
-    /**
-     * Constructor for ObjEntityValidatorTst.
-     * @param arg0
-     */
-    public ObjEntityValidatorTst(String arg0) {
-        super(arg0);
+    protected void setUp() throws Exception {
+        super.setUp();
+        domain = new DataDomain("d1");
+
+        map = new DataMap("m1");
+        domain.addMap(map);
+
     }
 
     public void testValidateNoName() throws Exception {
-        DataDomain d1 = new DataDomain("d1");
-
-        DataMap m1 = new DataMap("m1");
-        d1.addMap(m1);
-
         ObjEntity oe1 = new ObjEntity("oe1");
-        oe1.setDbEntity(new DbEntity("de1"));
-        oe1.setClassName("java.class.name");
-        m1.addObjEntity(oe1);
+        DbEntity de1 = new DbEntity("de1");
+        oe1.setDbEntityName("de1");
+        oe1.setClassName("some.javaclass.name");
+        map.addObjEntity(oe1);
+        map.addDbEntity(de1);
 
         validator.reset();
         new ObjEntityValidator().validateObject(
-            new Object[] { conf, d1, m1, oe1 },
+            new ProjectPath(new Object[] { project, domain, map, oe1 }),
             validator);
-        assertValidator(ValidationResult.VALID);
+        assertValidator(ValidationInfo.VALID);
 
         // now remove the name
         oe1.setName(null);
-        
+
         validator.reset();
         new ObjEntityValidator().validateObject(
-            new Object[] { conf, d1, m1, oe1 },
+            new ProjectPath(new Object[] { project, domain, map, oe1 }),
             validator);
-        assertValidator(ValidationResult.ERROR);
+        assertValidator(ValidationInfo.ERROR);
+    }
+
+    public void testValidateNoClassName() throws Exception {
+        ObjEntity oe1 = new ObjEntity("oe1");
+        oe1.setDbEntity(new DbEntity("de1"));
+        oe1.setClassName(null);
+        map.addObjEntity(oe1);
+
+        validator.reset();
+        new ObjEntityValidator().validateObject(
+            new ProjectPath(new Object[] { project, domain, map, oe1 }),
+            validator);
+        assertValidator(ValidationInfo.WARNING);
+        //WARNING is ok - null class name will give that, but ERROR is bad
+
+    }
+
+    public void testValidateMultipleNullClassNames() throws Exception {
+        ObjEntity oe1 = new ObjEntity("oe1");
+        ObjEntity oe2 = new ObjEntity("oe2");
+        DbEntity de1 = new DbEntity("de1");
+        DbEntity de2 = new DbEntity("de2");
+
+        oe1.setDbEntity(de1);
+        oe1.setClassName(null);
+
+        oe2.setDbEntity(de2);
+        oe2.setClassName(null);
+
+        map.addObjEntity(oe1);
+        map.addObjEntity(oe2);
+        map.addDbEntity(de1);
+        map.addDbEntity(de2);
+
+        validator.reset();
+        new ObjEntityValidator().validateObject(
+            new ProjectPath(new Object[] { project, domain, map, oe1 }),
+            validator);
+        assertValidator(ValidationInfo.WARNING);
+        //WARNING is ok - null class name will give that, but ERROR is bad
+
+        //Give one a class name - still valid
+        oe1.setClassName("some.javaclassclass.name");
+        validator.reset();
+        new ObjEntityValidator().validateObject(
+            new ProjectPath(new Object[] { project, domain, map, oe1 }),
+            validator);
+        assertValidator(ValidationInfo.VALID); //Must be valid - this class has a name
+
+        //Give the other the same class name - no longer valid
+        oe2.setClassName("some.javaclassclass.name");
+        validator.reset();
+        new ObjEntityValidator().validateObject(
+            new ProjectPath(new Object[] { project, domain, map, oe1 }),
+            validator);
+        assertValidator(ValidationInfo.WARNING);
+        // WARNING - it is OK to save multiple entities with the
     }
 
 }

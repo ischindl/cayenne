@@ -1,39 +1,40 @@
 package org.objectstyle.cayenne.util;
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -47,12 +48,11 @@ package org.objectstyle.cayenne.util;
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */ 
 
 import java.io.File;
@@ -60,21 +60,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import org.apache.log4j.Logger;
 
-import org.objectstyle.cayenne.CayenneTestCase;
+import org.objectstyle.cayenne.unit.CayenneTestCase;
 
 
 public class UtilTst extends CayenneTestCase {
-    static Logger logObj = Logger.getLogger(UtilTst.class.getName());
-
     private File fTmpFileInCurrentDir;
     private String fTmpFileName;
     private File fTmpFileCopy;
-
-    public UtilTst(String name) {
-        super(name);
-    }
 
     protected void setUp() throws java.lang.Exception {
         fTmpFileName =
@@ -84,7 +77,7 @@ public class UtilTst extends CayenneTestCase {
 
         // right some garbage to the temp file, so that it is not empty
         FileWriter fout = new FileWriter(fTmpFileInCurrentDir);
-        fout.write("This is total grabage..");
+        fout.write("This is total garbage..");
         fout.close();
 
         fTmpFileCopy = new File(fTmpFileName + ".copy");
@@ -102,10 +95,10 @@ public class UtilTst extends CayenneTestCase {
 
     }
 
-    
-    public void testCopyFile() throws java.lang.Exception {
-        assertTrue("Temp file " + fTmpFileCopy + " is on the way, please delete it manually.", !fTmpFileCopy.exists());
 
+    public void testCopyFile() throws java.lang.Exception {
+        assertFalse("Temp file " + fTmpFileCopy + " is on the way, please delete it manually.",
+        			fTmpFileCopy.exists());
         assertTrue(Util.copy(fTmpFileInCurrentDir, fTmpFileCopy));
         assertTrue(fTmpFileCopy.exists());
         assertEquals(fTmpFileCopy.length(), fTmpFileInCurrentDir.length());
@@ -113,18 +106,22 @@ public class UtilTst extends CayenneTestCase {
 
 
     public void testCopyFileUrl() throws java.lang.Exception {
-        assertTrue("Temp file " + fTmpFileCopy + " is on the way, please delete it manually.", !fTmpFileCopy.exists());
-
+        assertFalse("Temp file " + fTmpFileCopy + " is on the way, please delete it manually.",
+        				fTmpFileCopy.exists());
         assertTrue(Util.copy(fTmpFileInCurrentDir.toURL(), fTmpFileCopy));
         assertTrue(fTmpFileCopy.exists());
         assertEquals(fTmpFileCopy.length(), fTmpFileInCurrentDir.length());
     }
 
 
-    public void testCopyJarUrl() throws java.lang.Exception {
+    public void testCopyJarUrl() throws Exception {
         URL fileInJar = ClassLoader.getSystemResource("test-resources/testfile1.txt");
         assertNotNull(fileInJar);
-        assertTrue(fileInJar.toExternalForm().startsWith("jar:"));
+        
+        // skipping test if file not in jar
+        if(!fileInJar.toExternalForm().startsWith("jar:")) {
+        	return;
+        }
 
         assertTrue(Util.copy(fileInJar, fTmpFileCopy));
         assertTrue(fTmpFileCopy.exists());
@@ -150,7 +147,8 @@ public class UtilTst extends CayenneTestCase {
 
     public void testDeleteFile() throws java.lang.Exception {
         // delete file
-        assertTrue("Temp file " + fTmpFileCopy + " is on the way, please delete it manually.", !fTmpFileCopy.exists());
+        assertFalse("Temp file " + fTmpFileCopy + " is on the way, please delete it manually.",
+        			fTmpFileCopy.exists());
         Util.copy(fTmpFileInCurrentDir, fTmpFileCopy);
         assertTrue(Util.delete(fTmpFileCopy.getPath(), false));
 
@@ -159,21 +157,21 @@ public class UtilTst extends CayenneTestCase {
         File tmpDir = new File(tmpDirName);
         assertTrue(tmpDir.mkdir());
         assertTrue(Util.delete(tmpDirName, false));
-        assertTrue(!tmpDir.exists());
+        assertFalse(tmpDir.exists());
 
         // delete dir with files with recurions
         assertTrue(tmpDir.mkdir());
         assertTrue(new File(tmpDir, "aaa").createNewFile());
         assertTrue(Util.delete(tmpDirName, true));
-        assertTrue(!tmpDir.exists());
+        assertFalse(tmpDir.exists());
 
         // fail delete dir with files with no recurions
         assertTrue(tmpDir.mkdir());
         assertTrue(new File(tmpDir, "aaa").createNewFile());
-        assertTrue(!Util.delete(tmpDirName, false));
+        assertFalse(Util.delete(tmpDirName, false));
         assertTrue(tmpDir.exists());
         assertTrue(Util.delete(tmpDirName, true));
-        assertTrue(!tmpDir.exists());
+        assertFalse(tmpDir.exists());
     }
 
 

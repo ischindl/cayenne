@@ -1,67 +1,13 @@
 <document>
-<title>User Guide - Design</title>
-<navigator>
-	<up>/userguide/index.html</up>
-	<prev>/userguide/quickstart/index.html</prev>
-	<next>/userguide/design/dataobj.html</next>
-</navigator>
-<body>
-    <section name="4. Design">
-        <subsection name="4.1 Object Relational Mapping" anchor="or_map">
-            <p>Normally mapping is done between Java class and a database table. This 
-            way instance of such class (an object) will map to a single database row.
-            Some properties of such object (properties in a "JavaBeans" sense) would map 
-            to table columns. For example String, and numeric properties. Other properties
-            would map to database primary-foreign key relationships. Summarizing possible 
-            mappings we have the following correspondence:</p>
-            
-            <ul>
-                <li>Java class -&gt; database table</li>
-                <li>"simple" class property -&gt; table column</li>
-                <li>"complex" class property -&gt; related table via a database relationship</li>
-            </ul>
-            <ul>
-                <li>Java object -&gt; row in a table</li>
-                <li>"simple" object property value -&gt; value of column in a row</li>
-                <li>"complex" object property value -&gt; another object or list of objects</li>
-            </ul>
-        
-            <p>This way O/R 
-            framework allows programmer to get access to an "object tree" - objects 
-            interconnected via relationship properties. Object tree is a view of a subset
-            of database data and relationships between this data - all without 
-            the need to write SQL code in Java applications. The most important
-            property of the object tree is its ability to be synchronized with the database.
-            This works both ways - object tree can get updated when the database data has changed
-            or database will be updated when an object tree was changed by the Java application.</p>
-            
-            <p>The above statement doesn't mean that Caynne would automatically poll the database for 
-            the updated data, or automatically save the data. This would have killed the performance 
-            of the application and made it unpredictable. Instead Java application is always in full 
-            control of these operations.</p>
-            
-            <p>The following diagram shows how mapping is organized in Cayenne:
-            </p>
-            
-            <img src="/images/map-class.gif" alt="Cayenne Map Class Diagram"/> 
-            
-            <p>Cayenne mapping is implemented as 2 layers: database layer and Java layer. 
-            Java layer uses database layer to tie Java classes to the database
-            tables. Main benefit of using 2 mapping layers is loose coupling of database metadata 
-            information and Java class information. For instance, database layer may describe the 
-            full structure of the database to allow database schema generation, while Java layer would
-            only map to a subset of tables. Another case is when a relationship between Java classes
-            spans a chain of relationships between database tables. This mapping scenario will be supported
-            by Cayenne in the future.
-            </p>  
-            
-            <p>Cayenne organizes mapping information into <a href=
-            "../../api/cayenne/org/objectstyle/cayenne/map/DataMap.html">DataMap's</a>. Normally a DataMap is
-            saved in XML format. Other formats are also possible. For instance Cayenne can create DataMaps
-            using WebObjects EOModel format. 
-            Normally DataMaps are created and maintained using CayenneModeler GUI tool.
-            </p>
-        </subsection>
-    </section>
-</body>
+	<title>User Guide - Design</title>
+	<toc name="toc-user-guide" chapter="4. Design"/>
+	<body>
+		<section name="4. Design">
+			<p>This chapter describes design ideas and architecture of Cayenne. 
+				It is not required to start using Cayenne, and there is no 
+				hands-on information here. So new users can skip it initially 
+				and come back later to gain better understanding of how Cayenne 
+				operates under the hood.</p>
+		</section>
+	</body>
 </document>

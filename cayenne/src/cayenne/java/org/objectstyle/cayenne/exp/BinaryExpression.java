@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,14 +47,15 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
- */ 
+ */
 package org.objectstyle.cayenne.exp;
+
+import java.io.PrintWriter;
 
 /** 
  * Generic binary expression. Describes an expression in a 
@@ -65,39 +67,67 @@ package org.objectstyle.cayenne.exp;
 public class BinaryExpression extends Expression {
     protected Object leftOperand;
     protected Object rightOperand;
-    public BinaryExpression() {}
-    
+
+    public BinaryExpression() {
+    }
+
     public BinaryExpression(int type) {
         this.type = type;
     }
-    
+
+    protected void flattenTree() {
+
+    }
+
+    protected boolean pruneNodeForPrunedChild(Object prunedChild) {
+        return true;
+    }
+
     public final int getOperandCount() {
         return 2;
     }
-    
-    
-    public Object getOperand(int index) {
-        if(index == 0)
-            return leftOperand;
-        else if(index == 1)
-            return rightOperand;
-        
-        throw new IllegalArgumentException("Invalid operand index for BinaryExpression: " + index);
+
+    /**
+     * Creates a copy of this expression node, without copying children.
+     * 
+     * @since 1.1
+     */
+    public Expression shallowCopy() {
+        return new BinaryExpression(type);
     }
-    
-    
+
+    public Object getOperand(int index) {
+        if (index == 0)
+            return leftOperand;
+        else if (index == 1)
+            return rightOperand;
+
+        throw new IllegalArgumentException(
+            "Invalid operand index for BinaryExpression: " + index);
+    }
+
     public void setOperand(int index, Object value) {
-        if(index == 0) {
+        if (index == 0) {
             leftOperand = value;
             return;
         }
-        else if(index == 1) {
+        else if (index == 1) {
             rightOperand = value;
             return;
         }
-        
-        throw new IllegalArgumentException("Invalid operand index for BinaryExpression: " + index);
+
+        throw new IllegalArgumentException(
+            "Invalid operand index for BinaryExpression: " + index);
     }
-    
-    
+
+    /**
+     * @since 1.1
+     */
+    public void encodeAsString(PrintWriter pw) {
+        // this class will be deprecated soon, so using
+        // a deprecated "toStringBuffer" is OK
+        StringBuffer buffer = new StringBuffer();
+        toStringBuffer(buffer);
+        pw.print(buffer.toString());
+    }
 }

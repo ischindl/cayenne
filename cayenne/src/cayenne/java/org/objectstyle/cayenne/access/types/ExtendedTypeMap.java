@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,54 +47,48 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 
 package org.objectstyle.cayenne.access.types;
 
-import java.util.*;
-import org.apache.log4j.Logger;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
-/** Handles both standard Java class mapping to JDBC types as well as
-  * custom mapping.
-  * Standard mapping is defined in JDBC documentation (for example at
-  * <a href="http://java.sun.com/j2se/1.3/docs/guide/jdbc/getstart/mapping.html">
-  * http://java.sun.com/j2se/1.3/docs/guide/jdbc/getstart/mapping.html</a>)
-  * But it is often rather convenient to have an arbitrary class mapped to 
-  * a JDBC type. For example java.util.Date can be used for mapping to DATE,
-  * TIME and TIMESTAMP. 
-  * 
-  * <p>Class uses singleton model, since mapping is usually shared within
-  * the application. </p>
-  */
+/** 
+ * Contains a map of ExtendedType objects, that serve as handlers for converting
+ * values between Java application and JDBC layer.
+ * 
+ * <p>Class uses singleton model, since mapping is usually shared within the
+ * application.</p>
+ * 
+ * @author Andrei Adamchik
+ */
 public class ExtendedTypeMap {
-    static Logger logObj = Logger.getLogger(ExtendedTypeMap.class.getName());
-
-    protected HashMap typeMap = new HashMap();
+    protected Map typeMap = new HashMap();
     protected DefaultType defaultType = new DefaultType();
 
-
     public ExtendedTypeMap() {
-        initDefaultTypes();
+        this.initDefaultTypes();
     }
 
-    /** Registers default extended types. This method is called from
-      * constructor and exists mainly for the benefit of subclasses that
-      * can override it and configure their own extended types. */
+    /** 
+     * Registers default extended types. This method is called from
+     * constructor and exists mainly for the benefit of subclasses that can
+     * override it and configure their own extended types.
+     */
     protected void initDefaultTypes() {
         // register default types
         Iterator it = DefaultType.defaultTypes();
-        while(it.hasNext()) {
-            registerType(new DefaultType((String)it.next()));
+        while (it.hasNext()) {
+            registerType(new DefaultType((String) it.next()));
         }
-
-        // register java.util.Date handler
-        registerType(new UtilDateType());
     }
 
     /** Adds new type to the list of registered types. */
@@ -105,8 +100,33 @@ public class ExtendedTypeMap {
         return defaultType;
     }
 
+    /**
+     * Returns a type registered for the class name. If no such type exists,
+     * returns the default type. It is guaranteed that this method returns a
+     * non-null ExtendedType instance. Note that for array types class name must
+     * be in the form 'MyClass[]'.
+     */
     public ExtendedType getRegisteredType(String javaClassName) {
-        ExtendedType type = (ExtendedType)typeMap.get(javaClassName);
+        ExtendedType type = (ExtendedType) typeMap.get(javaClassName);
+        return (type != null) ? type : defaultType;
+    }
+
+    /**
+      * Returns a type registered for the class name. If no such type exists,
+      * returns the default type. It is guaranteed that this method returns a
+      * non-null ExtendedType instance.
+      */
+    public ExtendedType getRegisteredType(Class javaClass) {
+        String name = null;
+
+        if (javaClass.isArray()) {
+            // only support single dimensional arrays now
+            name = javaClass.getComponentType() + "[]";
+        } else {
+            name = javaClass.getName();
+        }
+
+        ExtendedType type = (ExtendedType) typeMap.get(name);
         return (type != null) ? type : defaultType;
     }
 
@@ -126,12 +146,12 @@ public class ExtendedTypeMap {
         Set keys = typeMap.keySet();
         int len = keys.size();
         String[] types = new String[len];
-        
+
         Iterator it = keys.iterator();
-        for(int i = 0; i < len; i++) {
-            types[i] = (String)it.next();
+        for (int i = 0; i < len; i++) {
+            types[i] = (String) it.next();
         }
-        
+
         return types;
     }
 }

@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,31 +47,29 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.access.util;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.log4j.Level;
 import org.objectstyle.cayenne.CayenneRuntimeException;
-import org.objectstyle.cayenne.DataObject;
-import org.objectstyle.cayenne.ObjectId;
-import org.objectstyle.cayenne.PersistenceState;
-import org.objectstyle.cayenne.TempObjectId;
 import org.objectstyle.cayenne.access.DataContext;
-import org.objectstyle.cayenne.access.DataNode;
-import org.objectstyle.cayenne.access.DefaultOperationObserver;
-import org.objectstyle.cayenne.access.ObjectStore;
-import org.objectstyle.cayenne.access.OperationSorter;
+import org.objectstyle.cayenne.access.event.DataContextEvent;
+import org.objectstyle.cayenne.access.event.DataContextTransactionEventListener;
+import org.objectstyle.cayenne.access.event.DataObjectTransactionEventListener;
+import org.objectstyle.cayenne.event.EventManager;
 import org.objectstyle.cayenne.query.Query;
+import org.objectstyle.cayenne.util.Util;
 
 /**
  * ContextCommitObserver is used as an observer for DataContext 
@@ -78,12 +77,15 @@ import org.objectstyle.cayenne.query.Query;
  * 
  * @author Andrei Adamchik
  */
-public class ContextCommitObserver extends DefaultOperationObserver {
+public class ContextCommitObserver
+    extends DefaultOperationObserver
+    implements DataContextTransactionEventListener {
 
     protected List updObjects;
     protected List delObjects;
     protected List insObjects;
-    
+    protected List objectsToNotify;
+
     protected DataContext context;
 
     public ContextCommitObserver(
@@ -92,81 +94,99 @@ public class ContextCommitObserver extends DefaultOperationObserver {
         List insObjects,
         List updObjects,
         List delObjects) {
+            
         super.setLoggingLevel(logLevel);
+
         this.context = context;
         this.insObjects = insObjects;
         this.updObjects = updObjects;
         this.delObjects = delObjects;
+        this.objectsToNotify = new ArrayList();
+
+        // Build a list of objects that need to be notified about posted
+        // DataContext events. When notifying about a successful completion
+        // of a transaction we cannot build this list anymore, since all
+        // the work will be done by then.
+        Iterator collIter =
+            (Arrays.asList(new List[] { delObjects, updObjects, insObjects }))
+                .iterator();
+        while (collIter.hasNext()) {
+            Iterator objIter = ((Collection) collIter.next()).iterator();
+            while (objIter.hasNext()) {
+                Object element = objIter.next();
+                if (element instanceof DataObjectTransactionEventListener) {
+                    this.objectsToNotify.add(element);
+                }
+            }
+        }
     }
 
+    /**
+     * @deprecated Since 1.1 this method is no longer used by Cayenne.
+     */
     public boolean useAutoCommit() {
         return false;
     }
 
-    /** Update the state of all objects we were synchronizing
-     *  in this transaction.
-     */
-    public void transactionCommitted() {
-        super.transactionCommitted();
-
-        Iterator insIt = insObjects.iterator();
-        ObjectStore objectStore = context.getObjectStore();
-        
-        synchronized (objectStore) {
-            while (insIt.hasNext()) {
-
-                // replace temp id's w/perm.
-                DataObject nextObject = (DataObject) insIt.next();
-                TempObjectId tempId = (TempObjectId) nextObject.getObjectId();
-                ObjectId permId = tempId.getPermId();
-
-                objectStore.changeObjectKey(tempId, permId);
-                nextObject.setObjectId(permId);
-                Map snapshot = context.takeObjectSnapshot(nextObject);
-                objectStore.addSnapshot(permId, snapshot);
-
-                nextObject.setPersistenceState(PersistenceState.COMMITTED);
-            }
-        }
-
-        Iterator delIt = delObjects.iterator();
-        while (delIt.hasNext()) {
-            DataObject nextObject = (DataObject) delIt.next();
-            ObjectId anId = nextObject.getObjectId();
-
-            objectStore.removeObject(anId);
-            nextObject.setPersistenceState(PersistenceState.TRANSIENT);
-            nextObject.setDataContext(null);
-        }
-
-        Iterator updIt = updObjects.iterator();
-        while (updIt.hasNext()) {
-            DataObject nextObject = (DataObject) updIt.next();
-            // refresh this object's snapshot, check if id data has changed
-            Map snapshot = context.takeObjectSnapshot(nextObject);
-
-            objectStore.addSnapshot(nextObject.getObjectId(), snapshot);
-            nextObject.setPersistenceState(PersistenceState.COMMITTED);
-        }
-    }
-
     public void nextQueryException(Query query, Exception ex) {
         super.nextQueryException(query, ex);
-        throw new CayenneRuntimeException("Raising from query exception.", ex);
+        throw new CayenneRuntimeException(
+            "Raising from query exception.",
+            Util.unwindException(ex));
     }
 
     public void nextGlobalException(Exception ex) {
         super.nextGlobalException(ex);
         throw new CayenneRuntimeException(
             "Raising from underlyingQueryEngine exception.",
-            ex);
+            Util.unwindException(ex));
     }
 
-    /** 
-     * Performs query sorting to satisfy DB referential integrity rules.
-     */
-    public List orderQueries(DataNode aNode, List queryList) {
-        OperationSorter sorter = aNode.getAdapter().getOpSorter(aNode);
-        return (sorter != null) ? sorter.sortedQueries(queryList) : queryList;
+    public void registerForDataContextEvents() {
+        EventManager mgr = EventManager.getDefaultManager();
+        mgr.addListener(
+            this,
+            "dataContextWillCommit",
+            DataContextEvent.class,
+            DataContext.WILL_COMMIT,
+            this.context);
+        mgr.addListener(
+            this,
+            "dataContextDidCommit",
+            DataContextEvent.class,
+            DataContext.DID_COMMIT,
+            this.context);
+        mgr.addListener(
+            this,
+            "dataContextDidRollback",
+            DataContextEvent.class,
+            DataContext.DID_ROLLBACK,
+            this.context);
+    }
+
+    public void unregisterFromDataContextEvents() {
+        EventManager mgr = EventManager.getDefaultManager();
+        mgr.removeListener(this, DataContext.WILL_COMMIT);
+        mgr.removeListener(this, DataContext.DID_COMMIT);
+        mgr.removeListener(this, DataContext.DID_ROLLBACK);
+    }
+
+    public void dataContextWillCommit(DataContextEvent event) {
+        Iterator iter = objectsToNotify.iterator();
+        while (iter.hasNext()) {
+            ((DataObjectTransactionEventListener) iter.next()).willCommit(
+                event);
+        }
+    }
+
+    public void dataContextDidCommit(DataContextEvent event) {
+        Iterator iter = objectsToNotify.iterator();
+        while (iter.hasNext()) {
+            ((DataObjectTransactionEventListener) iter.next()).didCommit(event);
+        }
+    }
+
+    public void dataContextDidRollback(DataContextEvent event) {
+        // do nothing for now
     }
 }

@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,30 +47,32 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.project;
 
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
 
 import org.objectstyle.cayenne.access.DataDomain;
-import org.objectstyle.cayenne.conf.Configuration;
+import org.objectstyle.cayenne.access.DataNode;
+import org.objectstyle.cayenne.map.Attribute;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.Entity;
+import org.objectstyle.cayenne.map.MapObject;
+import org.objectstyle.cayenne.map.Procedure;
+import org.objectstyle.cayenne.map.Relationship;
+import org.objectstyle.cayenne.query.Query;
+import org.objectstyle.cayenne.util.Util;
 
 /**
  * ProjectTraversal allows to traverse Cayenne project tree in a
- * "depth-first" order starting from DataDomains and down to
- * attributes and relationships. Iterator elements are of type 
- * Object[] and contain a sequence of objects defining a "path" 
- * from the top of the tree to current node.
+ * "depth-first" order starting from an arbitrary level to its children. 
  * 
  * <p><i>Current implementation is not very efficient
  * and would actually first read the whole tree, before returning 
@@ -78,134 +81,311 @@ import org.objectstyle.cayenne.map.Entity;
  * @author Andrei Adamchik
  */
 public class ProjectTraversal {
-    protected Project project;
 
-    /**
-     * Returns an object corresponding to the node represented
-     * by the path. This is the last object in the path.
-     */
-    public static Object objectFromPath(Object[] treeNodePath) {
-        if (treeNodePath == null) {
-            throw new NullPointerException("Null path to validated object.");
-        }
+    protected static final Comparator mapObjectComparator = new MapObjectComparator();
+    protected static final Comparator dataMapComparator = new DataMapComparator();
+    protected static final Comparator dataDomainComparator = new DataDomainComparator();
+    protected static final Comparator dataNodeComparator = new DataNodeComparator();
+    protected static final Comparator queryComparator = new QueryComparator();
 
-        if (treeNodePath.length == 0) {
-            throw new ProjectException("Validation path is empty.");
-        }
+    protected ProjectTraversalHandler handler;
+    protected boolean sort;
 
-        // return last object
-        return treeNodePath[treeNodePath.length - 1];
+    public ProjectTraversal(ProjectTraversalHandler handler) {
+        this(handler, false);
     }
 
     /**
-     * Returns an object corresponding to the parent node 
-     * of the node represented by the path. This is the object 
-     * next to last object in the path.
+     * Creates ProjectTraversal instance with a given handler and 
+     * sort policy. If <code>sort</code> is true, children of each
+     * node will be sorted using a predefined Comparator for a given 
+     * type of child nodes.
      */
-    public static Object objectParentFromPath(Object[] treeNodePath) {
-        if (treeNodePath == null) {
-            throw new NullPointerException("Null path to validated object.");
-        }
-
-        if (treeNodePath.length == 0) {
-            throw new ProjectException("Validation path is empty.");
-        }
-
-        // return next to last object
-        return (treeNodePath.length > 1) ? treeNodePath[treeNodePath.length - 2] : null;
+    public ProjectTraversal(ProjectTraversalHandler handler, boolean sort) {
+        this.handler = handler;
+        this.sort = sort;
     }
 
     /**
-     * Expands path array, appending a treeNode at the end.
+     * Performs traversal starting from the root node. Root node can be
+     * of any type supported in Cayenne projects (Configuration, DataMap, DataNode, etc...)
      */
-    public static Object[] buildPath(Object treeNode, Object[] parentTreeNodePath) {
-        if (parentTreeNodePath == null || parentTreeNodePath.length == 0) {
-            return new Object[] { treeNode };
-        }
+    public void traverse(Object rootNode) {
+        this.traverse(rootNode, new ProjectPath());
+    }
 
-        Object[] newPath = new Object[parentTreeNodePath.length + 1];
-        System.arraycopy(parentTreeNodePath, 0, newPath, 0, parentTreeNodePath.length);
-        newPath[parentTreeNodePath.length] = treeNode;
-        return newPath;
+    public void traverse(Object rootNode, ProjectPath path) {
+        if (rootNode instanceof Project) {
+            this.traverseProject((Project) rootNode, path);
+        }
+        else if (rootNode instanceof DataDomain) {
+            this.traverseDomains(Collections.singletonList(rootNode).iterator(), path);
+        }
+        else if (rootNode instanceof DataMap) {
+            this.traverseMaps(Collections.singletonList(rootNode).iterator(), path);
+        }
+        else if (rootNode instanceof Entity) {
+            this.traverseEntities(Collections.singletonList(rootNode).iterator(), path);
+        }
+        else if (rootNode instanceof Attribute) {
+            this.traverseAttributes(Collections.singletonList(rootNode).iterator(), path);
+        }
+        else if (rootNode instanceof Relationship) {
+            this.traverseRelationships(
+                Collections.singletonList(rootNode).iterator(),
+                path);
+        }
+        else if (rootNode instanceof DataNode) {
+            this.traverseNodes(Collections.singletonList(rootNode).iterator(), path);
+        }
+        else {
+            String nodeClass =
+                (rootNode != null) ? rootNode.getClass().getName() : "(null)";
+            throw new IllegalArgumentException("Unsupported root node: " + nodeClass);
+        }
+    }
+
+    /** 
+     * Performs traversal starting from the Project and down to its children.
+     */
+    public void traverseProject(Project project, ProjectPath path) {
+        ProjectPath projectPath = path.appendToPath(project);
+        handler.projectNode(projectPath);
+
+        if (handler.shouldReadChildren(project, path)) {
+            Iterator it = project.getChildren().iterator();
+            while (it.hasNext()) {
+                this.traverse(it.next(), projectPath);
+            }
+        }
     }
 
     /**
-     * Constructor for ProjectTreeTraversal.
-     */
-    public ProjectTraversal(Project project) {
-        this.project = project;
+      * Performs traversal starting from a list of domains.
+      */
+    public void traverseDomains(Iterator domains, ProjectPath path) {
+
+        if (sort) {
+            domains = Util.sortedIterator(domains, ProjectTraversal.dataDomainComparator);
+        }
+
+        while (domains.hasNext()) {
+            DataDomain domain = (DataDomain) domains.next();
+            ProjectPath domainPath = path.appendToPath(domain);
+            handler.projectNode(domainPath);
+
+            if (handler.shouldReadChildren(domain, path)) {
+                this.traverseMaps(domain.getDataMaps().iterator(), domainPath);
+                this.traverseNodes(domain.getDataNodes().iterator(), domainPath);
+            }
+        }
+    }
+
+    public void traverseNodes(Iterator nodes, ProjectPath path) {
+        if (sort) {
+            nodes = Util.sortedIterator(nodes, ProjectTraversal.dataNodeComparator);
+        }
+
+        while (nodes.hasNext()) {
+            DataNode node = (DataNode) nodes.next();
+            ProjectPath nodePath = path.appendToPath(node);
+            handler.projectNode(nodePath);
+
+            if (handler.shouldReadChildren(node, path)) {
+                this.traverseMaps(node.getDataMaps().iterator(), nodePath);
+            }
+        }
+    }
+
+    public void traverseMaps(Iterator maps, ProjectPath path) {
+        if (sort) {
+            maps = Util.sortedIterator(maps, ProjectTraversal.dataMapComparator);
+        }
+
+        while (maps.hasNext()) {
+            DataMap map = (DataMap) maps.next();
+            ProjectPath mapPath = path.appendToPath(map);
+            handler.projectNode(mapPath);
+
+            if (handler.shouldReadChildren(map, path)) {
+                this.traverseEntities(map.getObjEntities().iterator(), mapPath);
+                this.traverseEntities(map.getDbEntities().iterator(), mapPath);
+                this.traverseProcedures(map.getProcedures().iterator(), mapPath);
+                this.traverseQueries(map.getQueries().iterator(), mapPath);
+            }
+        }
     }
 
     /**
-     * Returns an iterator over project nodes.
+     * Performs recusrive traversal of an Iterator of Cayenne Query objects.
      */
-    public Iterator treeNodes() {
-        return buildNodesList().iterator();
+    public void traverseQueries(Iterator queries, ProjectPath path) {
+        if (sort) {
+            queries =
+                Util.sortedIterator(queries, ProjectTraversal.queryComparator);
+        }
+
+        while (queries.hasNext()) {
+            Query query = (Query) queries.next();
+            ProjectPath queryPath = path.appendToPath(query);
+            handler.projectNode(queryPath);
+        }
     }
+    
+    /**
+     * Performs recusrive traversal of an Iterator of Cayenne Procedure objects.
+     */
+    public void traverseProcedures(Iterator procedures, ProjectPath path) {
+        if (sort) {
+            procedures =
+                Util.sortedIterator(procedures, ProjectTraversal.mapObjectComparator);
+        }
 
-    protected List buildNodesList() {
-        ArrayList list = new ArrayList();
-        Configuration config = project.getConfig();
-        Object[] path = buildPath(config, null);
-        list.add(path);
-        addDomains(list, config.getDomainList(), path);
-        return list;
-    }
+        while (procedures.hasNext()) {
+            Procedure procedure = (Procedure) procedures.next();
+            ProjectPath procedurePath = path.appendToPath(procedure);
+            handler.projectNode(procedurePath);
 
-    protected void addDomains(List list, List domains, Object[] path) {
-        Iterator it = domains.iterator();
-        while (it.hasNext()) {
-            DataDomain domain = (DataDomain) it.next();
-            Object[] domainPath = buildPath(domain, path);
-            list.add(domainPath);
-
-            addNodes(list, domain.getDataNodeList(), domainPath);
-            addMaps(list, domain.getMapList(), domainPath);
+            if (handler.shouldReadChildren(procedure, path)) {
+                this.traverseProcedureParameters(
+                    procedure.getCallParameters().iterator(),
+                    procedurePath);
+            }
         }
     }
 
-    protected void addNodes(List list, List nodes, Object[] path) {
-        Iterator it = nodes.iterator();
-        while (it.hasNext()) {
-            list.add(buildPath(it.next(), path));
+    public void traverseEntities(Iterator entities, ProjectPath path) {
+        if (sort) {
+            entities =
+                Util.sortedIterator(entities, ProjectTraversal.mapObjectComparator);
+        }
+
+        while (entities.hasNext()) {
+            Entity ent = (Entity) entities.next();
+            ProjectPath entPath = path.appendToPath(ent);
+            handler.projectNode(entPath);
+
+            if (handler.shouldReadChildren(ent, path)) {
+                this.traverseAttributes(ent.getAttributes().iterator(), entPath);
+                this.traverseRelationships(ent.getRelationships().iterator(), entPath);
+            }
         }
     }
 
-    protected void addMaps(List list, List maps, Object[] path) {
-        Iterator it = maps.iterator();
-        while (it.hasNext()) {
-            DataMap map = (DataMap) it.next();
-            Object[] mapPath = buildPath(map, path);
-            list.add(mapPath);
+    public void traverseAttributes(Iterator attributes, ProjectPath path) {
+        if (sort) {
+            attributes =
+                Util.sortedIterator(attributes, ProjectTraversal.mapObjectComparator);
+        }
 
-            addEntities(list, map.getDbEntitiesAsList(), mapPath);
-            addEntities(list, map.getObjEntitiesAsList(), mapPath);
+        while (attributes.hasNext()) {
+            handler.projectNode(path.appendToPath(attributes.next()));
         }
     }
 
-    protected void addEntities(List list, List entities, Object[] path) {
-        Iterator it = entities.iterator();
-        while (it.hasNext()) {
-            Entity ent = (Entity) it.next();
-            Object[] entPath = buildPath(ent, path);
-            list.add(entPath);
+    public void traverseRelationships(Iterator relationships, ProjectPath path) {
+        if (sort) {
+            relationships =
+                Util.sortedIterator(relationships, ProjectTraversal.mapObjectComparator);
+        }
 
-            addAttributes(list, ent.getAttributeList(), entPath);
-            addRelationships(list, ent.getRelationshipList(), entPath);
+        while (relationships.hasNext()) {
+            handler.projectNode(path.appendToPath(relationships.next()));
         }
     }
 
-    protected void addAttributes(List list, List attributes, Object[] path) {
-        Iterator it = attributes.iterator();
-        while (it.hasNext()) {
-            list.add(buildPath(it.next(), path));
+    public void traverseProcedureParameters(Iterator parameters, ProjectPath path) {
+        // Note: !! do not try to sort parameters - they are positional by definition
+
+        while (parameters.hasNext()) {
+            handler.projectNode(path.appendToPath(parameters.next()));
         }
     }
 
-    protected void addRelationships(List list, List relationships, Object[] path) {
-        Iterator it = relationships.iterator();
-        while (it.hasNext()) {
-            list.add(buildPath(it.next(), path));
+    static class QueryComparator implements Comparator {
+        public int compare(Object o1, Object o2) {
+            String name1 = ((Query) o1).getName();
+            String name2 = ((Query) o2).getName();
+
+            if (name1 == null) {
+                return (name2 != null) ? -1 : 0;
+            }
+            else if (name2 == null) {
+                return 1;
+            }
+            else {
+                return name1.compareTo(name2);
+            }
+        }
+    }
+    
+    static class MapObjectComparator implements Comparator {
+        public int compare(Object o1, Object o2) {
+            String name1 = ((MapObject) o1).getName();
+            String name2 = ((MapObject) o2).getName();
+
+            if (name1 == null) {
+                return (name2 != null) ? -1 : 0;
+            }
+            else if (name2 == null) {
+                return 1;
+            }
+            else {
+                return name1.compareTo(name2);
+            }
+        }
+    }
+
+    static class DataMapComparator implements Comparator {
+        public int compare(Object o1, Object o2) {
+            String name1 = ((DataMap) o1).getName();
+            String name2 = ((DataMap) o2).getName();
+
+            if (name1 == null) {
+                return (name2 != null) ? -1 : 0;
+            }
+            else if (name2 == null) {
+                return 1;
+            }
+            else {
+                return name1.compareTo(name2);
+            }
+        }
+
+    }
+
+    static class DataDomainComparator implements Comparator {
+        public int compare(Object o1, Object o2) {
+            String name1 = ((DataDomain) o1).getName();
+            String name2 = ((DataDomain) o2).getName();
+
+            if (name1 == null) {
+                return (name2 != null) ? -1 : 0;
+            }
+            else if (name2 == null) {
+                return 1;
+            }
+            else {
+                return name1.compareTo(name2);
+            }
+        }
+
+    }
+
+    static class DataNodeComparator implements Comparator {
+        public int compare(Object o1, Object o2) {
+            String name1 = ((DataNode) o1).getName();
+            String name2 = ((DataNode) o2).getName();
+
+            if (name1 == null) {
+                return (name2 != null) ? -1 : 0;
+            }
+            else if (name2 == null) {
+                return 1;
+            }
+            else {
+                return name1.compareTo(name2);
+            }
         }
     }
 }

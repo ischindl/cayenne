@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,29 +47,28 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.perform;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+
 import javax.sql.DataSource;
 
-import org.apache.log4j.Logger;
-import org.objectstyle.TestConstants;
-import org.objectstyle.cayenne.ConnectionSetup;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
-import org.objectstyle.cayenne.access.DataSourceInfo;
 import org.objectstyle.cayenne.conf.Configuration;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.conn.PoolDataSource;
 import org.objectstyle.cayenne.conn.PoolManager;
 import org.objectstyle.cayenne.dba.DbAdapter;
 import org.objectstyle.cayenne.map.DataMap;
-import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.MapLoader;
 import org.objectstyle.perform.PerformanceTest;
 import org.objectstyle.perform.PerformanceTestRunner;
@@ -76,13 +76,11 @@ import org.objectstyle.perform.PerformanceTestSuite;
 import org.objectstyle.perform.ResultRenderer;
 
 /** Runs performance tests. */
-public class PerformMain implements TestConstants {
-    static Logger logObj = Logger.getLogger(PerformMain.class.getName());
-
+public class PerformMain {
     public static DataDomain sharedDomain;
 
     public static void main(String[] args) {
-        Configuration.configCommonLogging();
+        Configuration.configureCommonLogging();
         prepareDomain();
 
         if (args.length == 0) {
@@ -185,7 +183,7 @@ public class PerformMain implements TestConstants {
 
     public static void prepareDomain() {
         try {
-            DataSourceInfo dsi = new ConnectionSetup(true).buildConnectionInfo();
+            DataSourceInfo dsi = new ConnectionSetup().buildConnectionInfo();
 
             PoolDataSource poolDS =
                 new PoolDataSource(dsi.getJdbcDriver(), dsi.getDataSourceUrl());
@@ -199,30 +197,25 @@ public class PerformMain implements TestConstants {
                     dsi.getPassword());
 
             // map
-            DataMap map = new MapLoader().loadDataMap(TEST_MAP_PATH);
+            DataMap map = new MapLoader().loadDataMap("test-resources/testmap.map.xml");
 
             // node
-            DataNode node = new DataNode("node");
-            node.setDataSource(ds);
-            
             Class adapterClass = DataNode.DEFAULT_ADAPTER_CLASS;
 
-            if (dsi.getAdapterClass() != null) {
-                adapterClass = Class.forName(dsi.getAdapterClass());
+            if (dsi.getAdapterClassName() != null) {
+                adapterClass = Class.forName(dsi.getAdapterClassName());
             }
  
-            node.setAdapter((DbAdapter) adapterClass.newInstance());
-            
+            DbAdapter adapter = (DbAdapter) adapterClass.newInstance();
+			DataNode node = adapter.createDataNode("node");
+			node.setDataSource(ds);
             node.addDataMap(map);
 
             // generate pk's
-            DataMap[] dataMaps = node.getDataMaps();
-            int len = dataMaps.length;
-            for (int i = 0; i < len; i++) {
-                DbEntity[] ents = dataMaps[i].getDbEntities();
-                node.getAdapter().getPkGenerator().createAutoPk(
-                    node,
-                    dataMaps[i].getDbEntitiesAsList());
+            Iterator dataMaps = node.getDataMaps().iterator();
+			while (dataMaps.hasNext()) {
+				Collection ents = ((DataMap)dataMaps.next()).getDbEntities();
+                node.getAdapter().getPkGenerator().createAutoPk(node, new ArrayList(ents));
             }
 
             // domain

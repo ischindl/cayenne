@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,78 +47,117 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
- */ 
+ */
 package org.objectstyle.cayenne.exp;
 
 /** 
- * Class that allows to walk through Expression nodes tree. 
- * It will notify registered handler when going through
- * individual nodes. 
+ * Implements a depth-first algorithm for Expression tree traversal. 
+ * Delegates any actions that need to be performed at certain points
+ * during traversal to a TraversalHandler instance. 
+ * 
+ * @deprecated Since 1.1 expressions implement a visitor-pattern-like
+ * method traverse that do the traversal.
  * 
  * @author Andrei Adamchik
  */
 public class ExpressionTraversal {
     private TraversalHandler handler;
-    
-    
+
+    public ExpressionTraversal() {
+
+    }
+
+    /**
+     * @since 1.0.6
+     */
+    public ExpressionTraversal(TraversalHandler handler) {
+        setHandler(handler);
+    }
+
     /** Sets traversal handler. The whole expression traversal process
       * is done for the benefit of handler, since ExpressionTraversal
       * object itself does not use Expression information, it just parses it. */
     public void setHandler(TraversalHandler handler) {
         this.handler = handler;
     }
-    
-    /** Returns TraversalHandler. */
+
+    /** 
+     * Returns TraversalHandler used to process expressions being traversed. 
+     */
     public TraversalHandler getHandler() {
         return handler;
     }
-    
-    
-    /** Will walk through the expression node tree. 
-      * When passing through points of interest, will invoke callback
-      * methods on TraversalHandler. */
-    public void traverseExpression(Expression expr) {
-        traverseExpression(expr, null);
-    } 
-    
-    
+
+    /** 
+     * Walks the expression tree, depth-first. When passing through 
+     * points of interest, invokes callback methods on TraversalHandler. 
+     */
+    public void traverseExpression(Expression expression) {
+        if(handler == null) {
+            throw new NullPointerException("Null handler.");
+        }
+        
+        traverseExpression(expression, null);
+    }
+
     protected void traverseExpression(Object expObj, Expression parentExp) {
         // see if "expObj" is a leaf node
-        if(!(expObj instanceof Expression)) {
+        if (!(expObj instanceof Expression)) {
             handler.objectNode(expObj, parentExp);
             return;
         }
-        
-        Expression exp = (Expression)expObj;
-        
-        // announce start node
+
+        Expression exp = (Expression) expObj;
         int count = exp.getOperandCount();
-        switch(count) {
-            case 2: handler.startBinaryNode(exp, parentExp); break;
-            case 1: handler.startUnaryNode(exp, parentExp); break;
-            case 3: handler.startTernaryNode(exp, parentExp); break;
+
+        // announce start node
+        if (exp instanceof ListExpression) {
+            handler.startListNode(exp, parentExp);
         }
-        
+        else {
+            switch (count) {
+                case 2 :
+                    handler.startBinaryNode(exp, parentExp);
+                    break;
+                case 1 :
+                    handler.startUnaryNode(exp, parentExp);
+                    break;
+                case 3 :
+                    handler.startTernaryNode(exp, parentExp);
+                    break;
+            }
+        }
+
         // traverse each child
         int count_1 = count - 1;
-        for(int i = 0; i <= count_1; i++) {
+        for (int i = 0; i <= count_1; i++) {
             traverseExpression(exp.getOperand(i), exp);
-            
+
             // announce finished child
             handler.finishedChild(exp, i, i < count_1);
         }
-        
-        switch(count) {
-            case 2: handler.endBinaryNode(exp, parentExp); break;
-            case 1: handler.endUnaryNode(exp, parentExp); break;
-            case 3: handler.endTernaryNode(exp, parentExp); break;
+
+        // announce the end of traversal
+        if (exp instanceof ListExpression) {
+            handler.endListNode(exp, parentExp);
+        }
+        else {
+            switch (count) {
+                case 2 :
+                    handler.endBinaryNode(exp, parentExp);
+                    break;
+                case 1 :
+                    handler.endUnaryNode(exp, parentExp);
+                    break;
+                case 3 :
+                    handler.endTernaryNode(exp, parentExp);
+                    break;
+            }
         }
     }
-    
 }

@@ -1,66 +1,26 @@
 <?xml version="1.0"?>
 <document>
-    <title>Overview</title>
+    <title>Cayenne 1.1</title>
 
     <body>
-        <!-- News section -->
-        <section name="Cayenne News">
-        <p><img src="images/other/nhl_logo.gif"/> 
-        <u><strong><i>November 6:</i></strong> <strong>National 
-        Hockey League Uses Cayenne.</strong></u></p>
+        <section name="Cayenne 1.1">
         
-        <p>During the playoffs, <a href="http://www.nhl.com">NHL.com</a> services 
-        over a million page views per day. 
-        <a href="http://objectstyle.com">ObjectStyle LLC</a> and 
-        <a href="http://www.centralparksoftware.com/">Central Park Software</a>
-        teamed up to create a new player/team statistics engine based on Cayenne with JSP frontend
-        and Oracle backend. The project was successfully launched in October at the beginning of 
-        2002-2003 season.
-        </p>
-        
-        
-        <p><u><strong><i>October 21:</i></strong> <strong>Cayenne 1.0a4 Released.</strong></u></p>
-        
-        <p>The main highlights of this release are: <ul>
-        <li>bug fixes, code cleanup and refactoring</li>
-        <li>paginated queries</li>
-        <li>serialization support of DataObjects</li>
-        <li>new <a href="http://tapestry.sourceforge.net">Tapestry</a> tutorial</li>
-        <li>all API deprecated in Alpha3 and earlier was removed</li>
-        </ul>
-         Download the release 
-        <a href="http://sourceforge.net/project/showfiles.php?group_id=48132">from 
-        here</a>. 
-        </p>
-        </section>
-        
-        <!-- Welcome section -->
-        <section name="Welcome to Cayenne">
-        <p>Welcome to Cayenne. Our goal is to provide Java developers with opensource 
-        tools to access relational databases in an object-oriented way.</p>
-        
-        <p>Cayenne includes a framework that adds persistence features to Java objects.
-        It allows mapping classes to database tables. Queries and updates (including 
-        atomic updates of all modified objects) are done with a single method call. 
-        This is a big advantage over writing SQL code in your Java program.
-        Cayenne also provides GUI mapping tool (called CayenneModeler) to reverse-engineer 
-        RDBMS schema and create "data maps" - XML files that contain mapping 
-        between the database and Java classes. CayenneModeler can also generate 
-        Java classes source code to use in your Java application.</p>
-        
-        
-        <p>Cayenne is an opensource project and therefore encourages developer and user 
-        community to participate in development, testing and writing documentation.
-        This way we can produce a better product that will benefit its contributors
-        as well as everybody else.</p>
-        </section>
-        
-        <!-- Status section -->
-        <section name="History">
-        <p>Idea of Cayenne was conceived back in April 2001 by a group of developers in 
-        Atlanta, USA. Current version is based on that original idea and is under active 
-        development since December 2001. Right now Cayenne has a growing international
-        user and developer community.</p>
+         <p>Quick Documentation Links:</p>
+		<ul>
+		<li><a href="userguide/index.html">User Guide</a> - installation instructions and general usage notes.</li>
+		<li><a href="modelerguide/index.html">Modeler Guide</a> - Cayenne Modeler documentation.</li>
+		<li><a href="examples/index.html">Examples</a> - examples documentation</li>
+		<li><a href="api/cayenne/index.html">Javadoc API</a></li>
+		</ul>
+		
+		<p>Online Resources:</p>
+		<ul>
+		<li><a href="http://objectstyle.org/cayenne/" target="_new">Cayenne Home</a></li>
+		<li><a href="http://objectstyle.org/cayenne/download.html" target="_new">Downloads</a></li>
+		<li><a href="http://objectstyle.org/cayenne/bugs-features.html" target="_new">Report Bugs</a></li>
+		<li><a href="http://objectstyle.org/cayenne/cayenne-commercial-support.html" target="_new">Commercial Support</a></li>
+		</ul>
+         
         </section>
     </body>
 </document>

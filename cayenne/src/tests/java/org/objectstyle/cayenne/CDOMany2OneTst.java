@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2004, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,33 +47,27 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne;
 
 import java.util.List;
-import org.apache.log4j.Logger;
 
 import org.objectstyle.art.Artist;
 import org.objectstyle.art.Gallery;
 import org.objectstyle.art.Painting;
+import org.objectstyle.art.ROPainting;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.query.SelectQuery;
 
 public class CDOMany2OneTst extends CayenneDOTestBase {
-    static Logger logObj = Logger.getLogger(CDOMany2OneTst.class.getName());
 
-    public CDOMany2OneTst(String name) {
-        super(name);
-    }
-
-   public void testReadRO1() throws Exception {
+    public void testReadRO1() throws Exception {
 
         // setup test
         Artist a1 = newArtist();
@@ -81,18 +76,17 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
         ctxt.commitChanges();
 
         // do select
-        Expression e =
-            ExpressionFactory.binaryPathExp(Expression.EQUAL_TO, "toArtist", a1);
+        Expression e = ExpressionFactory.matchExp("toArtist", a1);
         SelectQuery q = new SelectQuery("ROPainting", e);
 
         // *** TESTING THIS *** 
         List paints = ctxt.performQuery(q);
         assertEquals(1, paints.size());
-        
-        Painting rop1 = (Painting)paints.get(0);
+
+        ROPainting rop1 = (ROPainting) paints.get(0);
         assertSame(a1, rop1.getToArtist());
     }
-    
+
     public void testReadRO2() throws Exception {
 
         // setup test
@@ -101,26 +95,26 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
         a1.addToPaintingArray(p1);
         ctxt.commitChanges();
 
-        resetContext();
-        
+        ctxt = createDataContext();
+
         // do select
-        Expression e =
-            ExpressionFactory.binaryPathExp(Expression.EQUAL_TO, "toArtist", a1);
+        Expression e = ExpressionFactory.matchExp("toArtist", a1);
         SelectQuery q = new SelectQuery("ROPainting", e);
 
         // *** TESTING THIS *** 
         List paints = ctxt.performQuery(q);
         assertEquals(1, paints.size());
-        
-        Painting rop1 = (Painting)paints.get(0);
+
+        ROPainting rop1 = (ROPainting) paints.get(0);
         assertNotNull(rop1.getToArtist());
-        
+
         // trigger fetch
-        String name = rop1.getToArtist().getArtistName();
-        assertEquals(PersistenceState.COMMITTED, rop1.getToArtist().getPersistenceState());
+        rop1.getToArtist().getArtistName();
+        assertEquals(
+            PersistenceState.COMMITTED,
+            rop1.getToArtist().getPersistenceState());
     }
-    
-    
+
     public void testSelectViaRelationship() throws Exception {
 
         // setup test
@@ -130,16 +124,16 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
         ctxt.commitChanges();
 
         // do select
-        Expression e =
-            ExpressionFactory.binaryPathExp(Expression.EQUAL_TO, "toArtist", a1);
+        Expression e = ExpressionFactory.matchExp("toArtist", a1);
         SelectQuery q = new SelectQuery("Painting", e);
+        //q.setLoggingLevel(Level.ERROR);
 
         // *** TESTING THIS *** 
         List paints = ctxt.performQuery(q);
         assertEquals(1, paints.size());
         assertSame(p1, paints.get(0));
     }
-    
+
     public void testSelectViaMultiRelationship() throws Exception {
 
         // setup test
@@ -154,8 +148,7 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
         ctxt.commitChanges();
 
         // do select
-        Expression e =
-            ExpressionFactory.binaryPathExp(Expression.EQUAL_TO, "paintingArray.toGallery", g1);
+        Expression e = ExpressionFactory.matchExp("paintingArray.toGallery", g1);
         SelectQuery q = new SelectQuery("Artist", e);
 
         // *** TESTING THIS *** 
@@ -163,7 +156,6 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
         assertEquals(1, artists.size());
         assertSame(a1, artists.get(0));
     }
-    
 
     public void testNewAdd() throws Exception {
         Artist a1 = newArtist();
@@ -179,7 +171,7 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
 
         // do save
         ctxt.commitChanges();
-        resetContext();
+        ctxt = createDataContext();
 
         // test database data
         Painting p2 = fetchPainting();
@@ -195,7 +187,7 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
 
         // do save
         ctxt.commitChanges();
-        resetContext();
+        ctxt = createDataContext();
 
         // test database data
         Painting p2 = fetchPainting();
@@ -210,7 +202,7 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
 
         // do save II
         ctxt.commitChanges();
-        resetContext();
+        ctxt = createDataContext();
 
         Painting p3 = fetchPainting();
         assertNull(p3.getToGallery());
@@ -227,7 +219,7 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
 
         // do save
         ctxt.commitChanges();
-        resetContext();
+        ctxt = createDataContext();
 
         // test database data
         Painting p2 = fetchPainting();
@@ -249,7 +241,7 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
 
         // do save II
         ctxt.commitChanges();
-        resetContext();
+        ctxt = createDataContext();
 
         Painting p3 = fetchPainting();
         Gallery g3 = p3.getToGallery();
@@ -261,10 +253,14 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
 
     public void testSavedAdd() throws Exception {
         Painting p1 = newPainting();
+        assertEquals(
+            p1.getObjectId(),
+            ctxt.registeredObject(p1.getObjectId()).getObjectId());
+        assertTrue(ctxt.hasChanges());
 
         // do save
         ctxt.commitChanges();
-        resetContext();
+        ctxt = createDataContext();
 
         // test database data
         Painting p2 = fetchPainting();
@@ -281,7 +277,7 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
 
         // do save II
         ctxt.commitChanges();
-        resetContext();
+        ctxt = createDataContext();
 
         Painting p3 = fetchPainting();
         Gallery g3 = p3.getToGallery();
