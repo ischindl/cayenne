@@ -73,6 +73,7 @@ import org.objectstyle.cayenne.conn.PoolManager;
 import org.objectstyle.cayenne.dba.hsqldb.HSQLDBAdapter;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
+import org.objectstyle.cayenne.query.Ordering;
 import org.objectstyle.cayenne.query.SelectQuery;
 
 public class DataContextTst extends DataContextTestBase {
@@ -278,6 +279,24 @@ public class DataContextTst extends DataContextTestBase {
         Artist a1 = (Artist) objects.get(0);
         assertEquals(java.util.Date.class, a1.getDateOfBirth().getClass());
     }
+    
+	public void testCaseInsensitiveOrdering() throws Exception {
+		// case insensitive ordering appends extra columns
+		// to the query when query is using DISTINCT... 
+		// verify that the result is not messaged up
+
+		SelectQuery query = new SelectQuery(Artist.class);
+		Ordering ordering = new Ordering("artistName", false);
+		ordering.setCaseInsensitive(true);
+		query.addOrdering(ordering);
+		query.setDistinct(true);
+		
+		List objects = context.performQuery(query);
+		assertEquals(artistCount, objects.size());
+        
+		Map snapshot = ((Artist)objects.get(0)).getCommittedSnapshot();
+		assertEquals(3, snapshot.size());
+	}
 
     public void testPerformSelectQuery1() throws Exception {
         SelectQuery query = new SelectQuery("Artist");
@@ -345,7 +364,7 @@ public class DataContextTst extends DataContextTestBase {
 
     public void testCommitChangesRO1() throws Exception {
         ROArtist a1 = (ROArtist) context.createAndRegisterNewObject("ROArtist");
-        a1.setArtistName("abc");
+        a1.writePropertyDirectly("artistName", "abc");
 
         try {
             context.commitChanges();
@@ -359,7 +378,8 @@ public class DataContextTst extends DataContextTestBase {
 
     public void testCommitChangesRO2() throws Exception {
         ROArtist a1 = fetchROArtist("artist1");
-        a1.setArtistName("abc");
+		a1.writePropertyDirectly("artistName", "abc");
+		a1.setPersistenceState(PersistenceState.MODIFIED);
 
         try {
             context.commitChanges();

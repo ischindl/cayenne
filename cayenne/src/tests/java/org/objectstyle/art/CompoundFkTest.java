@@ -1,6 +1,5 @@
 package org.objectstyle.art;
 
-
 public class CompoundFkTest extends org.objectstyle.cayenne.CayenneDataObject {
 
     public void setName(String name) {

@@ -67,6 +67,9 @@ import org.objectstyle.cayenne.util.Util;
  * when the object is touched
  * </p>
  * 
+ * @deprecated Since 1.0.1 FlattenedObjectId is not used for flattened
+ * faults anymore, besides this class is not a "true" ObjectId.
+ * 
  * @author Craig Miskell
  */
 public class FlattenedObjectId extends ObjectId {

@@ -53,111 +53,85 @@
  * <http://objectstyle.org/>.
  *
  */
-package org.objectstyle.cayenne.util;
+package org.objectstyle.cayenne.access.util;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Comparator;
+import java.io.Serializable;
+import java.util.List;
 
 import org.objectstyle.cayenne.CayenneRuntimeException;
+import org.objectstyle.cayenne.DataObject;
+import org.objectstyle.cayenne.access.DataContext;
+import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.Relationship;
+import org.objectstyle.cayenne.query.SelectQuery;
 
 /**
- * Comparator that can compare Java beans based on a 
- * value of a property. Bean property must be readable
- * and its type must be an instance of Comparable. 
+ * This class represents a placeholder for an unresolved relationship from a source object.
+ * RelationshipFault is used in cases when it is impossible to create a HOLLOW object using 
+ * the information from the relationship source object. These cases include dependent to-one 
+ * relationships and flattened to-one relationships.
  * 
+ * @since 1.0.1
  * @author Andrei Adamchik
  */
-public class PropertyComparator implements Comparator {
-	protected Method getter;
-	protected boolean ascending;
+public class RelationshipFault implements Serializable {
+    protected String relationshipName;
+    protected DataObject sourceObject;
 
-	public static String capitalize(String s) {
-		if (s.length() == 0) {
-			return s;
-		}
-		char chars[] = s.toCharArray();
-		chars[0] = Character.toUpperCase(chars[0]);
-		return new String(chars);
-	}
+    public RelationshipFault(DataObject sourceObject, String relationshipName) {
+        this.relationshipName = relationshipName;
+        this.sourceObject = sourceObject;
+    }
 
-	public static Method findReadMethod(String propertyName, Class beanClass) {
-		String base = capitalize(propertyName);
+    public String getRelationshipName() {
+        return relationshipName;
+    }
 
-		// find non-boolean property
-		try {
-			return beanClass.getMethod("get" + base, null);
-		} catch (Exception ex) {
-			// ignore, this might be a boolean property
-		}
+    public DataObject getSourceObject() {
+        return sourceObject;
+    }
 
-		try {
-			return beanClass.getMethod("is" + base, null);
-		} catch (Exception ex) {
-			// ran out of options
-			return null;
-		}
-	}
-	
-	/**
-	 * Method to read a simple one-step property of a JavaBean. 
-	 */
-	public static Object readProperty(String propertyName, Object bean)
-		throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-		if (bean == null) {
-			throw new NullPointerException("Null bean. Property: " + propertyName);
-		}
+    /**
+     * Resolves this fault to a DataObject.
+     */
+    public DataObject resolveToOne() {
+        DataContext context = sourceObject.getDataContext();
+        SelectQuery select =
+            QueryUtils.selectRelationshipObjects(context, sourceObject, relationshipName);
+        select.setFetchLimit(2);
 
-		Method getter = findReadMethod(propertyName, bean.getClass());
+        List objects = context.performQuery(select);
 
-		if (getter == null) {
-			throw new NoSuchMethodException(
-				"No such property '"
-					+ propertyName
-					+ "' in class "
-					+ bean.getClass().getName());
-		}
+        if (objects.isEmpty()) {
+            return null;
+        }
+        else if (objects.size() == 1) {
+            return (DataObject) objects.get(0);
+        }
+        else {
+            ObjEntity entity = faultEntity();
+            String label = (entity != null) ? entity.getName() : "Unknown";
+            throw new CayenneRuntimeException(
+                "Error resolving to-one fault. "
+                    + "More than one object found. "
+                    + "Fault entity: "
+                    + label);
+        }
+    }
 
-		return getter.invoke(bean, null);
-	}
+    /**
+     * Determines ObjEntity of this fault.
+     */
+    protected ObjEntity faultEntity() {
+        DataContext context = sourceObject.getDataContext();
+        ObjEntity srcEntity = context.getEntityResolver().lookupObjEntity(sourceObject);
+        Relationship relationship = srcEntity.getRelationship(relationshipName);
 
-	public PropertyComparator(String propertyName, Class beanClass) {
-		this(propertyName, beanClass, true);
-	}
-	
-	public PropertyComparator(String propertyName, Class beanClass, boolean ascending) {
-		getter = findReadMethod(propertyName, beanClass);
-		if (getter == null) {
-			throw new CayenneRuntimeException("No getter for " + propertyName);
-		}
-		
-		this.ascending = ascending;
-	}
+        if (relationship == null) {
+            throw new IllegalStateException(
+                "Non-existent relationship: " + relationshipName);
+        }
 
-	/**
-	 * @see java.util.Comparator#compare(Object, Object)
-	 */
-	public int compare(Object o1, Object o2) {
-		return (ascending) ? compareAsc(o1, o2) : compareAsc(o2, o1);
-	}
-	
-	protected int compareAsc(Object o1, Object o2) {
-		
-		if ((o1 == null && o2 == null) || o1 == o2) {
-			return 0;
-		} else if (o1 == null && o2 != null) {
-			return -1;
-		} else if (o1 != null && o2 == null) {
-			return 1;
-		}
-
-		try {
-			Comparable p1 = (Comparable) getter.invoke(o1, null);
-			Comparable p2 = (Comparable) getter.invoke(o2, null);
-
-			return (p1 == null) ? -1 : p1.compareTo(p2);
-		} catch (Exception ex) {
-			throw new CayenneRuntimeException("Error reading property.", ex);
-		}
-	}
+        return (ObjEntity) relationship.getTargetEntity();
+    }
 }

@@ -5,12 +5,12 @@
     <body>        
         <!-- News section -->
         <section name="Cayenne News">
-        <p><u><strong><i>September 20, 2003:</i></strong> <strong>Cayenne 1.0 Final Release</strong></u></p>
+        <p><u><strong><i>October 13, 2003:</i></strong> <strong>Cayenne 1.0.1 Maintenance Release</strong></u></p>
         
-        <p>Cayenne 1.0 is 
+        <p>Cayenne 1.0.1 is 
         <a href="http://sourceforge.net/project/showfiles.php?group_id=48132">available for 
-        download</a>. Cayenne team would like to thank everybody who made it possible. For release
-        notes and the list of known issues please follow <a href="RELEASE-NOTES-1.0.txt">this link</a>.
+        download</a>. It contains a number of bugfixes for the issues reported in 1.0. 
+        Details can be found in <a href="RELEASE-NOTES-1.0.1.txt">release notes</a>.
         </p>
         
         <p>

@@ -1,6 +1,5 @@
 package org.objectstyle.art;
 
-
 public class MeaningfulPKDep extends org.objectstyle.cayenne.CayenneDataObject {
 
     public void setDescr(String descr) {
