@@ -1,6 +1,5 @@
 package org.objectstyle.art;
 
-
 public class DeleteRuleTest3 extends org.objectstyle.cayenne.CayenneDataObject {
 
     public void setToDeleteRuleTest2(DeleteRuleTest2 toDeleteRuleTest2) {

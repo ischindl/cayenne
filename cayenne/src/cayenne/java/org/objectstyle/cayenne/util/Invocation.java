@@ -141,10 +141,26 @@ public class Invocation extends Object {
 				throw new IllegalArgumentException("parameter types must not be empty");
 			}
 		}
+        
+        Method method = null;
 
-		_method = target.getClass().getMethod(methodName, parameterTypes);
-		_parameterTypes = parameterTypes;
-		_target = new WeakReference(target);
+        // allow access to public methods of inaccessible classes, if such methods were
+        // declared in a public interface
+        Class targetClass = target.getClass();
+        Class[] interfaces = targetClass.getInterfaces();
+        for (int i = 0; i < interfaces.length; i++) {
+            try {
+                method = interfaces[i].getMethod(methodName, parameterTypes);
+                break;
+            } catch (NoSuchMethodException ex) {
+                // ignoring, keep looking
+            }
+        }
+
+        _method =
+            (method != null) ? method : targetClass.getMethod(methodName, parameterTypes);
+        _parameterTypes = parameterTypes;
+        _target = new WeakReference(target);
 	}
 
 	/**
@@ -248,16 +264,15 @@ public class Invocation extends Object {
 	/**
 	 * @see Object#hashCode()
 	 */
-	public int hashCode() {
-		int hash = 42, hashMultiplier = 59;
-		hash = hash * hashMultiplier + _method.hashCode();
-
-		if (_target.get() != null) {
-			hash = hash * hashMultiplier + _target.get().hashCode();
-		}
-
-		return hash;
-	}
+    public int hashCode() {
+        // IMPORTANT: DO NOT include Invocation target into whatever
+        // algorithm is used to compute hashCode, since it is using a 
+        // WeakReference and can be released at a later time, altering
+        // hashCode, and breaking collections using Invocation as a key
+        // (e.g. event DispatchQueue)
+        int hash = 42, hashMultiplier = 59;
+        return hash * hashMultiplier + _method.hashCode();
+    }
 
 	/**
 	 * @return the method to be invoked on the target

@@ -60,8 +60,10 @@ import java.sql.SQLException;
 import java.sql.Types;
 
 import org.objectstyle.cayenne.access.types.ByteArrayType;
+import org.objectstyle.cayenne.access.types.ByteType;
 import org.objectstyle.cayenne.access.types.CharType;
 import org.objectstyle.cayenne.access.types.ExtendedTypeMap;
+import org.objectstyle.cayenne.access.types.ShortType;
 import org.objectstyle.cayenne.dba.JdbcAdapter;
 import org.objectstyle.cayenne.dba.PkGenerator;
 
@@ -72,50 +74,63 @@ import org.objectstyle.cayenne.dba.PkGenerator;
  */
 public class SybaseAdapter extends JdbcAdapter {
 
-	/**
-	 * Installs appropriate ExtendedTypes as converters for passing values
-	 * between JDBC and Java layers.
-	 */
-	protected void configureExtendedTypes(ExtendedTypeMap map) {
-		super.configureExtendedTypes(map);
+    /**
+     * Returns word "go".
+     * 
+     * @since 1.0.4
+     */
+    public String getBatchTerminator() {
+        return "go";
+    }
+    
+    /**
+     * Installs appropriate ExtendedTypes as converters for passing values
+     * between JDBC and Java layers.
+     */
+    protected void configureExtendedTypes(ExtendedTypeMap map) {
+        super.configureExtendedTypes(map);
 
-		// create specially configured CharType handler
-		map.registerType(new CharType(true, false));
+        // create specially configured CharType handler
+        map.registerType(new CharType(true, false));
 
-		// create specially configured ByteArrayType handler
-		map.registerType(new ByteArrayType(true, false));
-	}
+        // create specially configured ByteArrayType handler
+        map.registerType(new ByteArrayType(true, false));
 
-	/** 
-	 * Creates and returns a primary key generator. 
-	 * Overrides superclass implementation to return an
-	 * instance of SybasePkGenerator.
-	 */
-	protected PkGenerator createPkGenerator() {
-		return new SybasePkGenerator();
-	}
-	/**
-	 *
-	 */
+        // address Sybase driver inability to handle java.lang.Short and java.lang.Byte
+        map.registerType(new ShortType(true));
+        map.registerType(new ByteType(true));
+    }
 
-	public void bindParameter(
-		PreparedStatement statement,
-		Object object,
-		int pos,
-		int sqlType,
-		int precision)
-		throws SQLException, Exception {
+    /** 
+     * Creates and returns a primary key generator. 
+     * Overrides superclass implementation to return an
+     * instance of SybasePkGenerator.
+     */
+    protected PkGenerator createPkGenerator() {
+        return new SybasePkGenerator();
+    }
+    /**
+     *
+     */
 
-		// Sybase driver doesn't like CLOBs and BLOBs as parameters
-		if (object == null) {
-			if (sqlType == Types.CLOB) {
-				sqlType = Types.VARCHAR;
-			} else if (sqlType == Types.BLOB) {
-				sqlType = Types.VARBINARY;
-			}
-		}
+    public void bindParameter(
+        PreparedStatement statement,
+        Object object,
+        int pos,
+        int sqlType,
+        int precision)
+        throws SQLException, Exception {
 
-		super.bindParameter(statement, object, pos, sqlType, precision);
-	}
+        // Sybase driver doesn't like CLOBs and BLOBs as parameters
+        if (object == null) {
+            if (sqlType == Types.CLOB) {
+                sqlType = Types.VARCHAR;
+            }
+            else if (sqlType == Types.BLOB) {
+                sqlType = Types.VARBINARY;
+            }
+        }
 
+        super.bindParameter(statement, object, pos, sqlType, precision);
+    }
 }

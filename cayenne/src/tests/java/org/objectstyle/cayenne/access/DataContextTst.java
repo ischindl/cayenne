@@ -58,6 +58,8 @@ package org.objectstyle.cayenne.access;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -67,16 +69,80 @@ import org.objectstyle.art.ArtistAssets;
 import org.objectstyle.art.Gallery;
 import org.objectstyle.art.Painting;
 import org.objectstyle.art.ROArtist;
+import org.objectstyle.cayenne.CayenneRuntimeException;
+import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
 import org.objectstyle.cayenne.conn.PoolManager;
 import org.objectstyle.cayenne.dba.hsqldb.HSQLDBAdapter;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
+import org.objectstyle.cayenne.query.Ordering;
 import org.objectstyle.cayenne.query.SelectQuery;
 
 public class DataContextTst extends DataContextTestBase {
+    public void testRefetchObject() throws Exception {
+        populatePaintings();
+        List paintings = context.performQuery(new SelectQuery(Painting.class));
+        Painting p = (Painting) paintings.get(0);
+        Artist a = p.getToArtist();
+
+        assertEquals(PersistenceState.HOLLOW, a.getPersistenceState());
+        assertNull(a.readPropertyDirectly("artistExhibitArray"));
+        context.refetchObject(a.getObjectId());
+        assertEquals(PersistenceState.COMMITTED, a.getPersistenceState());
+        assertTrue(a.readPropertyDirectly("artistExhibitArray") instanceof List);
+    }
     
+    public void testDeleteHollow() throws Exception {
+        populatePaintings();
+        List paintings = context.performQuery(new SelectQuery(Painting.class));
+        Painting p = (Painting) paintings.get(0);
+        Artist a = p.getToArtist();
+
+        assertEquals(PersistenceState.HOLLOW, a.getPersistenceState());
+        context.deleteObject(a);
+        assertEquals(PersistenceState.DELETED, a.getPersistenceState());
+    }
+        
+    public void testLocalObjects() throws Exception {
+         List artists = context.performQuery(new SelectQuery(Artist.class));
+
+         DataContext altContext = createDataContext();
+
+         List altArtists = altContext.localObjects(artists);
+         assertNotNull(altArtists);
+         assertEquals(artists.size(), altArtists.size());
+
+         // verify new artsists
+         Iterator it = altArtists.iterator();
+         while (it.hasNext()) {
+             DataObject a = (DataObject) it.next();
+             assertSame(altContext, a.getDataContext());
+         }
+
+         // verify original artsists
+         it = artists.iterator();
+         while (it.hasNext()) {
+             DataObject a = (DataObject) it.next();
+             assertSame(context, a.getDataContext());
+         }
+     }
+    
+     public void testLocalObjectsSanity() throws Exception {
+         List artists = context.performQuery(new SelectQuery(Artist.class));
+         Artist a = (Artist)artists.get(0);
+         a.setArtistName("new name");
+
+         DataContext altContext = createDataContext();
+         try {
+             altContext.localObjects(Collections.singletonList(a));
+             fail("Shouldn't allow transfers of modified objects.");
+         }
+         catch(CayenneRuntimeException ex) {
+             // expected
+         }
+     }
 
     public void testCreatePermId1() throws Exception {
         Artist artist = new Artist();
@@ -278,6 +344,24 @@ public class DataContextTst extends DataContextTestBase {
         Artist a1 = (Artist) objects.get(0);
         assertEquals(java.util.Date.class, a1.getDateOfBirth().getClass());
     }
+    
+	public void testCaseInsensitiveOrdering() throws Exception {
+		// case insensitive ordering appends extra columns
+		// to the query when query is using DISTINCT... 
+		// verify that the result is not messaged up
+
+		SelectQuery query = new SelectQuery(Artist.class);
+		Ordering ordering = new Ordering("artistName", false);
+		ordering.setCaseInsensitive(true);
+		query.addOrdering(ordering);
+		query.setDistinct(true);
+		
+		List objects = context.performQuery(query);
+		assertEquals(artistCount, objects.size());
+        
+		Map snapshot = ((Artist)objects.get(0)).getCommittedSnapshot();
+		assertEquals(3, snapshot.size());
+	}
 
     public void testPerformSelectQuery1() throws Exception {
         SelectQuery query = new SelectQuery("Artist");
@@ -345,7 +429,7 @@ public class DataContextTst extends DataContextTestBase {
 
     public void testCommitChangesRO1() throws Exception {
         ROArtist a1 = (ROArtist) context.createAndRegisterNewObject("ROArtist");
-        a1.setArtistName("abc");
+        a1.writePropertyDirectly("artistName", "abc");
 
         try {
             context.commitChanges();
@@ -359,7 +443,8 @@ public class DataContextTst extends DataContextTestBase {
 
     public void testCommitChangesRO2() throws Exception {
         ROArtist a1 = fetchROArtist("artist1");
-        a1.setArtistName("abc");
+		a1.writePropertyDirectly("artistName", "abc");
+		a1.setPersistenceState(PersistenceState.MODIFIED);
 
         try {
             context.commitChanges();

@@ -64,7 +64,6 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataObject;
-import org.objectstyle.cayenne.FlattenedObjectId;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.access.QueryEngine;
 import org.objectstyle.cayenne.exp.Expression;
@@ -217,9 +216,13 @@ public class QueryUtils {
 		return ins;
 	}
 
+	/**
+	  * @deprecated Since 1.0.1 FlattenedObjectId is deprecated, so this 
+	  * method is deprecated too.
+	  */
 	public static SelectQuery selectObjectForFlattenedObjectId(
 		QueryEngine e,
-		FlattenedObjectId oid) {
+	    org.objectstyle.cayenne.FlattenedObjectId oid) {
 		//Create a selectquery using the relationship name
 		// and source id snapshot of the FlattenedObjectId
 		SelectQuery sel = new SelectQuery();
@@ -245,12 +248,6 @@ public class QueryUtils {
 	 * fetch an object given an ObjectId.
 	 */
 	public static SelectQuery selectObjectForId(ObjectId oid) {
-		if (oid instanceof FlattenedObjectId) {
-			throw new CayenneRuntimeException(
-				"Please use "
-					+ "selectObjectForFlattenedObjectId(QueryEngine, FlattenedObjectId)"
-					+ " to create a select query for a FlattenedObjectId");
-		}
 		SelectQuery sel = new SelectQuery();
 		sel.setRoot(oid.getObjClass());
 

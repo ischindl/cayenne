@@ -12,7 +12,7 @@
 
             <p>The people listed below have made significant contributions to Cayenne.
             If you would like to contribute to Cayenne, please go to 
-            <a href="todo.html">this page</a>, where you may find a few useful hints.
+            <a href="how-can-i-help.html">this page</a>, where you may find a few useful hints.
             The most obvious first step is joining the developer mailing list.</p>
 
             <subsection name="Committers">
@@ -26,7 +26,9 @@
             <tr>
                 <td>Andrei Adamchik</td>
                 <td>andrus at objectstyle dot org</td>
-                <td><a href="http://adamchik.org">adamchik.org</a></td>
+                <td><a href="http://adamchik.org">http://adamchik.org</a> (personal)<br/>
+                <a href="http://objectstyle.com">http://objectstyle.com</a> (business)
+                </td>
             </tr>
             <tr>
                 <td>Holger Hoffstaette</td>
@@ -41,12 +43,17 @@
             <tr>
                 <td>Andriy Shapochka</td>
                 <td>ashapochka at hotmail dot com</td>
-                <td><a href="http://objectstyle.org/ashwood/">objectstyle.org/ashwood/</a></td>
+                <td><a href="http://objectstyle.org/ashwood/">http://objectstyle.org/ashwood/</a></td>
             </tr>
             <tr>
                 <td>Michael Shengaout</td>
                 <td>mshenga at pobox dot org</td>
-                <td><a href="http://reusablesoftwarecomponents.com/">reusablesoftwarecomponents.com</a></td>
+                <td><a href="http://reusablesoftwarecomponents.com/">http://reusablesoftwarecomponents.com</a></td>
+            </tr>
+            <tr>
+                <td>Eric Schneider</td>
+                <td>eric at centralparksoftware dot com</td>
+                <td><a href="http://www.centralparksoftware.com/">http://www.centralparksoftware.com/</a></td>
             </tr>
             </table>
             </subsection>
@@ -73,7 +80,7 @@
             <tr>
                 <td>David Cooper</td>
                 <td>snowbladin at yahoo dot com</td>
-                <td><a href="http://livingroad.com/">livingroad.com</a></td>
+                <td><a href="http://livingroad.com/">http://livingroad.com</a></td>
             </tr>
             <tr>
                 <td>Anna Drapeza</td>
@@ -84,11 +91,6 @@
                 <td>Dirk Olmes</td>
                 <td>dirk dot olmes at gmx dot de</td>
                 <td>-</td>
-            </tr>
-            <tr>
-                <td>Eric Schneider</td>
-                <td>eric at centralparksoftware dot com</td>
-                <td><a href="http://www.centralparksoftware.com/">http://www.centralparksoftware.com/</a></td>
             </tr>
              <tr>
                 <td>Maria Vashkevich</td>
