@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -306,6 +306,32 @@ public class PartialProject extends Project {
             domains.put(name, new DomainMetaData(name));
         }
 
+        public void shouldLoadDataMaps(
+            String domainName,
+            Map locations,
+            Map dependencies) {
+
+            if (locations.size() == 0) {
+                return;
+            }
+
+            DomainMetaData domain = findDomain(domainName);
+
+            // load DataMaps tree
+            Iterator it = locations.keySet().iterator();
+            while (it.hasNext()) {
+                String name = (String) it.next();
+                MapMetaData map = new MapMetaData(name);
+                map.location = (String)locations.get(name);
+                map.maps = (List)dependencies.get(name);
+                domain.maps.put(name, map);
+            }
+        }
+        
+        /**
+         * @deprecated Since 1.0.4 this method is no longer called during project loading.
+         * shouldLoadDataMaps(String,Map,Map) is used instead.
+         */
         public void shouldLoadDataMap(
             String domainName,
             String mapName,

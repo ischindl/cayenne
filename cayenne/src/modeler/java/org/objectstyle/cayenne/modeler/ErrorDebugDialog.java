@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -182,13 +182,17 @@ public class ErrorDebugDialog extends CayenneDialog implements ActionListener {
     }
 
     protected String infoHTML() {
+        String bugreportURL = ModelerStrings.getString("cayenne.bugreport.url");
         return "<b><font face='Arial,Helvetica' size='+1' color='red'>"
             + getTitle()
             + "</font></b><br>"
             + "<font face='Arial,Helvetica' size='-1'>Please copy the message below and "
             + "report this error by going to <br>"
-            + "<a href='http://sourceforge.net/tracker/?func=add&group_id=48132&atid=452068'>"
-            + "http://sourceforge.net/tracker/?func=add&group_id=48132&atid=452068</a></font>";
+            + "<a href='"
+            + bugreportURL
+            + "'>"
+            + bugreportURL
+            + "</a></font>";
     }
 
     protected void setThrowable(Throwable throwable) {

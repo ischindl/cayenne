@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,7 +56,10 @@
 
 package org.objectstyle.cayenne.access;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.log4j.Level;
@@ -73,104 +76,169 @@ import org.objectstyle.cayenne.query.SelectQuery;
  * @author Andrei Adamchik
  */
 public class DataNodeTst extends IteratorTestBase {
-	protected DataNode sharedNode;
+    private static Logger logObj = Logger.getLogger(DataNodeTst.class);
 
-	public void testRunSelect() throws Exception {
-		SelectObserver observer = new SelectObserver();
+    protected DataNode sharedNode;
 
-		try {
-			init();
-			sharedNode.runSelect(conn, query, observer);
-			assertEquals(
-				DataContextTst.artistCount,
-				observer.getResults(transl.getQuery()).size());
-		} finally {
-			cleanup();
-		}
-	}
+    public void testRunSelect() throws Exception {
+        SelectObserver observer = new SelectObserver();
 
-	public void testRunIteratedSelect() throws Exception {
-		IteratedObserver observer = new IteratedObserver();
+        try {
+            init();
+            sharedNode.runSelect(conn, query, observer);
+            assertEquals(
+                DataContextTst.artistCount,
+                observer.getResults(transl.getQuery()).size());
+        }
+        finally {
+            cleanup();
+        }
+    }
 
-		init();
-		
-		// first assert that created node is valid
-		assertNotNull(sharedNode.getEntityResolver().lookupObjEntity(query));
-		
-		sharedNode.runSelect(conn, query, observer);
-		assertEquals(DataContextTst.artistCount, observer.getResultCount());
+    public void testRunIteratedSelect() throws Exception {
+        IteratedObserver observer = new IteratedObserver();
 
-		// no cleanup is needed, since observer will close the iterator
-	}
+        init();
 
-	public void testFailIterated() throws Exception {
-		// must fail multiple queries when one of them is iterated
-		IteratedObserver observer = new IteratedObserver();
+        // first assert that created node is valid
+        assertNotNull(sharedNode.getEntityResolver().lookupObjEntity(query));
 
-		List queries = new ArrayList();
-		queries.add(new SelectQuery("Artist"));
-		queries.add(new SelectQuery("Artist"));
+        sharedNode.runSelect(conn, query, observer);
+        assertEquals(DataContextTst.artistCount, observer.getResultCount());
 
-		Logger observerLogger = Logger.getLogger(DefaultOperationObserver.class);
+        // no cleanup is needed, since observer will close the iterator
+    }
+
+    public void testFailIterated() throws Exception {
+        // must fail multiple queries when one of them is iterated
+        IteratedObserver observer = new IteratedObserver();
+
+        List queries = new ArrayList();
+        queries.add(new SelectQuery("Artist"));
+        queries.add(new SelectQuery("Artist"));
+
+        Logger observerLogger = Logger.getLogger(DefaultOperationObserver.class);
         Level oldLevel = observerLogger.getLevel();
         observerLogger.setLevel(Level.ERROR);
 
-		try {
-			getNode().performQueries(queries, observer);
+        try {
+            getNode().performQueries(queries, observer);
 
-			assertEquals(0, observer.getResultCount());
-			assertTrue(
-				"Iterated queries are not allowed in batches.",
-				observer.hasExceptions());
-		} finally {
-			observerLogger.setLevel(oldLevel);
-		}
-	}
+            assertEquals(0, observer.getResultCount());
+            assertTrue(
+                "Iterated queries are not allowed in batches.",
+                observer.hasExceptions());
+        }
+        finally {
+            observerLogger.setLevel(oldLevel);
+        }
+    }
+    
+    /**
+     * Checks that when an iterated query fails prior to returning
+     * to the caller, connection is being closed properly. 
+     */
+    public void testEarlyIteratedFailure() throws Exception {
+        IteratedFailingNode node = new IteratedFailingNode();
+        node.setDataMaps(getNode().getDataMaps());
+        node.setAdapter(getNode().getAdapter());
+        node.setDataSource(getNode().getDataSource());
 
-	protected DataNode newDataNode() {
-		DataNode node = getNode().getAdapter().createDataNode("dummy");
-		node.setDataMaps(getNode().getDataMaps());
-		return node;
-	}
+        SelectObserver observer = new SelectObserver() {
+            public boolean isIteratedResult() {
+                return true;
+            }
+        };
 
-	protected void init() throws Exception {
-		super.init();
-		sharedNode = newDataNode();
-	}
+        SelectQuery query = new SelectQuery("Artist");
 
-	class IteratedObserver extends DefaultOperationObserver {
-		protected int count;
+        try {
+            node.performQueries(Collections.singletonList(query), observer);
+            fail("SQLException expected.");
+        }
+        catch (CayenneRuntimeException ex) {
+            // by now connection must be closed
+            assertNotNull("Node connection is null.", node.connection);
+            assertTrue("Node did not close connection.", node.connection.isClosed());
+        }
+        finally {
+            // To avoid total meltdown if connection is not closed,
+            // close it here again 
+            try {
+                if (node.connection != null) {
+                    node.connection.close();
+                }
+            }
+            catch (Throwable th) {
+                // ignore it...
+            }
+        }
+    }
 
-		public boolean isIteratedResult() {
-			return true;
-		}
 
-		public void nextDataRows(Query q, ResultIterator it) {
-			super.nextDataRows(q, it);
+    protected DataNode newDataNode() {
+        DataNode node = getNode().getAdapter().createDataNode("dummy");
+        node.setDataMaps(getNode().getDataMaps());
+        return node;
+    }
 
-			try {
-				while (it.hasNextRow()) {
-					it.nextDataRow();
-					count++;
-				}
-			} catch (Exception ex) {
-				throw new CayenneRuntimeException(
-					"Error processing result iterator",
-					ex);
-			} finally {
+    protected void init() throws Exception {
+        super.init();
+        sharedNode = newDataNode();
+    }
 
-				try {
-					it.close();
-				} catch (Exception ex) {
-					throw new CayenneRuntimeException(
-						"Error closing result iterator",
-						ex);
-				}
-			}
-		}
+    class IteratedFailingNode extends DataNode {
+        Connection connection;
 
-		public int getResultCount() {
-			return count;
-		}
-	}
+        IteratedFailingNode() {
+            super("test");
+        }
+
+        protected void runSelect(
+            Connection connection,
+            Query query,
+            OperationObserver delegate)
+            throws SQLException, Exception {
+
+            this.connection = connection;
+            throw new SQLException("Test Exception");
+        }
+    }
+
+    class IteratedObserver extends DefaultOperationObserver {
+        protected int count;
+
+        public boolean isIteratedResult() {
+            return true;
+        }
+
+        public void nextDataRows(Query q, ResultIterator it) {
+            super.nextDataRows(q, it);
+
+            try {
+                while (it.hasNextRow()) {
+                    it.nextDataRow();
+                    count++;
+                }
+            }
+            catch (Exception ex) {
+                throw new CayenneRuntimeException("Error processing result iterator", ex);
+            }
+            finally {
+
+                try {
+                    it.close();
+                }
+                catch (Exception ex) {
+                    throw new CayenneRuntimeException(
+                        "Error closing result iterator",
+                        ex);
+                }
+            }
+        }
+
+        public int getResultCount() {
+            return count;
+        }
+    }
 }

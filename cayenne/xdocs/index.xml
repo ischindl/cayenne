@@ -5,31 +5,35 @@
     <body>        
         <!-- News section -->
         <section name="Cayenne News">
-        <p><u><strong><i>September 20, 2003:</i></strong> <strong>Cayenne 1.0 Final Release</strong></u></p>
+        <p><u><i>[March 27, 2004]</i></u> <strong>1.0.7 Maintenance  Release</strong></p>
+         <p>This is a maintenance release that fixes a number of bugs found in 1.0.6.
+         </p>
+         
+         <p><u><i>[March 4, 2004]</i></u> <strong>M4 - New Cayenne 1.1 Milestone  Release</strong></p>
+         <p>This release fixes serious bugs found in M3, adds suppport for to-one relationships with an FK column
+         target and implements performance enhancements for to-many relationships.
+         For details see <a href="RELEASE-NOTES.txt">release notes</a> and <a href="UPGRADE.txt">upgrade instructions</a>.
+         </p>
         
-        <p>Cayenne 1.0 is 
-        <a href="http://sourceforge.net/project/showfiles.php?group_id=48132">available for 
-        download</a>. Cayenne team would like to thank everybody who made it possible. For release
-        notes and the list of known issues please follow <a href="RELEASE-NOTES-1.0.txt">this link</a>.
-        </p>
+         <p><u><i>[November 1, 2003]</i></u> <strong>Cayenne in "The Best Freeware And Shareware" of DB Magazine, Japan</strong></p>
+         <p><img align="left" hspace="3" src="images/other/db-mag-cover-small.jpg"/> 
+         A December 2003 edition of the DB Magazine, a 250-page software tecnology magazine published in Japanese, includes 
+         Cayenne in the selection of "The Best Freeware &amp; Shareware". Cayenne 1.0 is also distributed on the CD that comes with the magazine.
+         <br/><br/><br/><br/>
+         </p>
+
+        <p><u><i>[May 1 2003]</i></u> <strong>National Hockey League Switches to Cayenne</strong></p>
         
-        <p>
-        <u><strong><i>July 2003:</i></strong> <strong>New Website Design</strong></u></p>
-        
-        <p>Many thanks to our graphic artist Anna Drapeza who created this elegant site design!
-        Sadly enough good artistic work is still a rare thing in the OpenSource world.
-        </p>
-        
-        <p><img src="images/other/nhl_logo.gif"/> 
-        <u><strong><i>May 1 2003:</i></strong> <strong>National 
-        Hockey League Switches to Cayenne</strong></u></p>
-        
-        <p>After the initial trial of Cayenne last October, NHL
+        <p><img align="left" hspace="3" src="images/other/nhl_logo.gif"/> 
+        After the initial trial of Cayenne last October, NHL
         switched all their public applications running at <a href="http://www.nhl.com">NHL.com</a>
         to use Cayenne. With the help from <a href="http://objectstyle.com">ObjectStyle</a> and 
         <a href="http://www.centralparksoftware.com/">Central Park Software</a> the site was successfully
         launched to production. Currently applications receive more than 5 million hits a day. 
+        <br/><br/>
         </p>
+        
+        <p><a href="news-archive.html"><strong>older news...</strong></a></p>
         
         </section>
         

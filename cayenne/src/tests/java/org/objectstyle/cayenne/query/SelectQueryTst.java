@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,12 +57,14 @@ package org.objectstyle.cayenne.query;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.objectstyle.art.Artist;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
+import org.objectstyle.cayenne.exp.ExpressionParameter;
 
 public class SelectQueryTst extends SelectQueryBase {
     private static final int _artistCount = 20;
@@ -117,7 +119,6 @@ public class SelectQueryTst extends SelectQueryBase {
 
         // check query results
         List objects = opObserver.objectsForQuery(query);
-        assertNotNull(objects);
         assertEquals(1, objects.size());
     }
 
@@ -129,7 +130,18 @@ public class SelectQueryTst extends SelectQueryBase {
 
         // check query results
         List objects = opObserver.objectsForQuery(query);
-        assertNotNull(objects);
+        assertEquals(_artistCount - 1, objects.size());
+    }
+
+    public void testSelectNotLikeIgnoreCaseSingleWildcardMatch() throws Exception {
+        query.setRoot(Artist.class);
+        Expression qual =
+            ExpressionFactory.notLikeIgnoreCaseExp("artistName", "aRtIsT11%");
+        query.setQualifier(qual);
+        performQuery();
+
+        // check query results
+        List objects = opObserver.objectsForQuery(query);
         assertEquals(_artistCount - 1, objects.size());
     }
 
@@ -195,6 +207,36 @@ public class SelectQueryTst extends SelectQueryBase {
         Map row = (Map) results.get(0);
         assertNotNull(row.get("ARTIST_NAME"));
         assertEquals(1, row.size());
+    }
+
+    public void testSelectIn() throws Exception {
+        query.setRoot(Artist.class);
+        Expression qual =
+            ExpressionFactory.inExp("artistName", new Object[] { "artist1", "artist2" });
+        query.setQualifier(qual);
+        performQuery();
+
+        // check query results
+        List objects = opObserver.objectsForQuery(query);
+        assertEquals(2, objects.size());
+    }
+
+    public void testSelectParameterizedIn() throws Exception {
+        query.setRoot(Artist.class);
+        Expression qual =
+            ExpressionFactory.binaryPathExp(
+                Expression.IN,
+                "artistName",
+                new ExpressionParameter("in"));
+        query.setQualifier(qual);
+        query =
+            query.queryWithParameters(
+                Collections.singletonMap("in", new Object[] { "artist1", "artist2" }));
+        performQuery();
+
+        // check query results
+        List objects = opObserver.objectsForQuery(query);
+        assertEquals(2, objects.size());
     }
 
     protected void populateTables() throws java.lang.Exception {

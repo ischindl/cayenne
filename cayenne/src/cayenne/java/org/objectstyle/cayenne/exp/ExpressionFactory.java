@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -512,6 +512,14 @@ public class ExpressionFactory {
 	public static Expression notInExp(String pathSpec, List values) {
 		return binaryPathExp(Expression.NOT_IN, pathSpec, wrapPathOperand(values));
 	}
+    
+    /**
+     * A convenience shortcut for building NOT_IN expression.
+     * @since 1.0.6
+     */
+    public static Expression notInExp(String pathSpec, Object[] values) {
+        return binaryPathExp(Expression.NOT_IN, pathSpec, wrapPathOperand(values));
+    }
 
     /**
      * A convenience shortcut for building BETWEEN expressions.

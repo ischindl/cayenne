@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -315,10 +315,14 @@ public class QualifierTranslator
         // binary nodes are the only ones that currently require this
         detectObjectMatch(node);
 
-        if (parenthesisNeeded(node, parentNode))
+        if (parenthesisNeeded(node, parentNode)) {
             qualBuf.append('(');
-        if (node.getType() == Expression.LIKE_IGNORE_CASE)
+        }
+
+        if (node.getType() == Expression.LIKE_IGNORE_CASE
+            || node.getType() == Expression.NOT_LIKE_IGNORE_CASE) {
             qualBuf.append("UPPER(");
+        }
     }
 
     public void startTernaryNode(Expression node, Expression parentNode) {
@@ -339,8 +343,11 @@ public class QualifierTranslator
 
         if (parenthesisNeeded(node, parentNode))
             qualBuf.append(')');
-        if (node.getType() == Expression.LIKE_IGNORE_CASE)
+            
+        if (node.getType() == Expression.LIKE_IGNORE_CASE
+            || node.getType() == Expression.NOT_LIKE_IGNORE_CASE) {
             qualBuf.append(')');
+        }
     }
 
     public void endTernaryNode(Expression node, Expression parentNode) {
@@ -436,10 +443,14 @@ public class QualifierTranslator
      * @see org.objectstyle.cayenne.access.trans.QueryAssemblerHelper#getObjEntity()
      */
     public ObjEntity getObjEntity() {
-        return (isTranslateParentQual())
-            ? queryAssembler.getEngine().getEntityResolver().lookupObjEntity(
-                (queryAssembler.getQuery()))
-            : super.getObjEntity();
+        if (isTranslateParentQual()) {
+        	SelectQuery query = (SelectQuery)queryAssembler.getQuery();
+			return queryAssembler.getEngine().getEntityResolver().lookupObjEntity(
+							(query.getParentObjEntityName()));
+        }
+        else {
+			return super.getObjEntity();
+        }
     }
 
     /**

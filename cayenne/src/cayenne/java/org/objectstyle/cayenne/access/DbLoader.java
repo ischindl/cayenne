@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -529,13 +529,22 @@ public class DbLoader {
 
                     if (fkEntity != null) {
                         // Create and append joins
-                        DbAttribute pkAtt =
-                            (DbAttribute) pkEntity.getAttribute(
-                                rs.getString("PKCOLUMN_NAME"));
-                        DbAttribute fkAtt =
-                            (DbAttribute) fkEntity.getAttribute(
-                                rs.getString("FKCOLUMN_NAME"));
-
+                        String pkName = rs.getString("PKCOLUMN_NAME");
+                        String fkName = rs.getString("FKCOLUMN_NAME");
+                        
+                        DbAttribute pkAtt = (DbAttribute) pkEntity.getAttribute(pkName);
+                        if(pkAtt == null) {
+                            logObj.info("no attribute for declared primary key: " + pkName);
+                            continue;
+                        }
+                        
+                        DbAttribute fkAtt = (DbAttribute) fkEntity.getAttribute(fkName);
+                        if (fkAtt == null) {
+                            logObj.info(
+                                "no attribute for declared foreign key: " + fkName);
+                            continue;
+                        }
+                        
                         forwardRelationship.addJoin(
                             new DbAttributePair(pkAtt, fkAtt));
                         reverseRelationship.addJoin(
@@ -600,15 +609,8 @@ public class DbLoader {
         relationship.setToDependentPK(toDependentPK);
         relationship.setToMany(toMany);
     }
-
-    /** 
-     * Performs database reverse engineering and generates DataMap
-     * that contains default mapping of the tables and views. 
-     * By default will include regular tables and views.
-     */
-    public DataMap createDataMapFromDB(String schemaName, String tablePattern)
-        throws SQLException {
-
+    
+    private String[] getDefaultTableTypes() {
         String viewType = adapter.tableTypeForView();
         String tableType = adapter.tableTypeForTable();
 
@@ -621,12 +623,23 @@ public class DbLoader {
             list.add(tableType);
         }
 
-        if (list.size() == 0) {
-            throw new SQLException("No supported table types found.");
-        }
-
         String[] types = new String[list.size()];
         list.toArray(types);
+        return types;
+    }
+
+    /** 
+     * Performs database reverse engineering and generates DataMap
+     * that contains default mapping of the tables and views. 
+     * By default will include regular tables and views.
+     */
+    public DataMap createDataMapFromDB(String schemaName, String tablePattern)
+        throws SQLException {
+
+        String[] types = getDefaultTableTypes();
+        if (types.length == 0) {
+            throw new SQLException("No supported table types found.");
+        }
 
         return createDataMapFromDB(schemaName, tablePattern, types);
     }
@@ -646,6 +659,27 @@ public class DbLoader {
                 DataMap.class,
                 new DataDomain());
         return loadDataMapFromDB(schemaName, tablePattern, tableTypes, dataMap);
+    }
+    
+    /** 
+     * Performs database reverse engineering and generates DataMap
+     * that contains default mapping of the tables and views. 
+     * By default will include regular tables and views.
+     * 
+     * @since 1.0.7
+     */
+    public DataMap loadDataMapFromDB(
+        String schemaName,
+        String tablePattern,
+        DataMap dataMap)
+        throws SQLException {
+
+        String[] types = getDefaultTableTypes();
+        if (types.length == 0) {
+            throw new SQLException("No supported table types found.");
+        }
+
+        return loadDataMapFromDB(schemaName, tablePattern, types, dataMap);
     }
 
     /** 

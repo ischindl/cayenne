@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -114,6 +114,32 @@ public class DataContextDeleteRulesTst extends CayenneTestCase {
         //assertNull(childGroup.getToParentGroup());
 
         //And be sure that the commit works afterwards, just for sanity
+        context.commitChanges();
+    }
+    
+    /**
+     * Tests that deleting a source of a flattened relationship with
+     * CASCADE rule results in deleting a join and a target.
+     */    
+    public void testCascadeToManyFlattened() {
+        // testing Artist.groupArray relationship
+        ArtGroup aGroup = (ArtGroup) context.createAndRegisterNewObject("ArtGroup");
+        aGroup.setName("Group Name");
+        Artist anArtist = (Artist) context.createAndRegisterNewObject("Artist");
+        anArtist.setArtistName("A Name");
+        anArtist.addToGroupArray(aGroup);
+        assertTrue(anArtist.getGroupArray().contains(aGroup));
+
+        context.commitChanges();
+        
+        
+        assertEquals(0, context.getFlattenedDeletes().size());
+        
+        context.deleteObject(anArtist);
+
+        assertEquals(PersistenceState.DELETED, aGroup.getPersistenceState());
+        assertFalse(anArtist.getGroupArray().contains(aGroup));
+        assertEquals(1, context.getFlattenedDeletes().size());
         context.commitChanges();
     }
 

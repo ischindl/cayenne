@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -241,10 +241,12 @@ public class DataNode implements QueryEngine {
         Connection con = null;
         boolean usesAutoCommit = opObserver.useAutoCommit();
         boolean rolledBackFlag = false;
+        boolean iteratedResult = opObserver.isIteratedResult();
+        boolean hasErrors = false;
 
         try {
             // check for invalid iterated query
-            if (opObserver.isIteratedResult() && listSize > 1) {
+            if (iteratedResult && listSize > 1) {
                 throw new CayenneException(
                     "Iterated queries are not allowed in a batch. Batch size: "
                         + listSize);
@@ -266,36 +268,21 @@ public class DataNode implements QueryEngine {
 
                     // 1. All kinds of SELECT
                     if (nextQuery.getQueryType() == Query.SELECT_QUERY) {
-                        boolean isIterated = opObserver.isIteratedResult();
-                        Connection localCon = con;
-
-                        if (isIterated) {
-                            // if ResultIterator is returned to the user,
-                            // DataNode is not responsible for closing the connections
-                            // exception handling, and other housekeeping.
-                            // trick "finally" to avoid closing connection here
-                            // it will be closed by the ResultIterator
-                            con = null;
-                        }
-
-                        runSelect(localCon, nextQuery, opObserver);
+                        runSelect(con, nextQuery, opObserver);
                     }
                     // 2. All kinds of MODIFY - INSERT, DELETE, UPDATE, UNKNOWN
-                    else {
-
-                        if (nextQuery instanceof BatchQuery) {
-                            runBatchUpdate(con, (BatchQuery) nextQuery, opObserver);
-                        }
-                        else if (nextQuery instanceof ProcedureQuery) {
-                            runStoredProcedure(con, nextQuery, opObserver);
-                        }
-                        else {
-                            runUpdate(con, nextQuery, opObserver);
-                        }
+                    else if (nextQuery instanceof BatchQuery) {
+                        runBatchUpdate(con, (BatchQuery) nextQuery, opObserver);
                     }
-
+                    else if (nextQuery instanceof ProcedureQuery) {
+                        runStoredProcedure(con, nextQuery, opObserver);
+                    }
+                    else {
+                        runUpdate(con, nextQuery, opObserver);
+                    }
                 }
                 catch (Exception queryEx) {
+                    hasErrors = true;
                     QueryLogger.logQueryError(logLevel, queryEx);
 
                     // notify consumer of the exception,
@@ -330,6 +317,7 @@ public class DataNode implements QueryEngine {
         }
         // catch stuff like connection allocation errors, etc...
         catch (Exception globalEx) {
+            hasErrors = true;
             QueryLogger.logQueryError(logLevel, globalEx);
 
             if (!usesAutoCommit && con != null) {
@@ -351,7 +339,7 @@ public class DataNode implements QueryEngine {
         finally {
             try {
                 // return connection to the pool if it was checked out
-                if (con != null) {
+                if (con != null && (!iteratedResult || hasErrors)) {
                     con.close();
                 }
             }

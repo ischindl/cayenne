@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -118,6 +118,14 @@ public class JdbcAdapter implements DbAdapter {
         this.extendedTypes = new ExtendedTypeMap();
         this.configureExtendedTypes(extendedTypes);
         this.setSupportsBatchUpdates(false);
+    }
+    
+    /**
+     * Returns default separator - a semicolon.
+     * @since 1.0.4
+     */
+    public String getBatchTerminator() {
+        return ";";
     }
 
     /**

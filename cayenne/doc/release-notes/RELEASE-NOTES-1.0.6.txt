@@ -1,0 +1,34 @@
+            Cayenne Release Notes 1.0.6
+                 Date: Jan. 26, 2004
+============================================
+
+For the latest information go to the project web site at
+http://objectstyle.org/cayenne/
+
+Features and Improvements:
+
+1. CAY-80 Expressions now fully support in memory evaluation with DataObjects.
+2. CAY-78 New method to negate an expression: Expression.notExp()
+
+Issues Resolved:
+see http://objectstyle.org/jira/secure/BrowseProject.jspa?id=10000 for issue details
+
+CAY-83	Prefetching does not work when using paginated queries
+CAY-66	Sync ObjectEntity with DBEntity failed
+CAY-37	ClassCastException on taking snapshot with unresolved to-one RelationshipFault
+CAY-60	DB2 Binary Types Problems
+CAY-74	SnapshotManager.isToOneTargetModified(..) breaks when the target is NEW
+CAY-69	bin/modeler.sh should ship with +x bit set
+CAY-75	Deleting NEW objects is done incorrectly
+CAY-13	Import EOModel: reverse DbRelationship must be created
+CAY-32	Issues in build.xml distributed with Cayenne
+CAY-8		importing related EOModel files fails
+
+Known Unresolved Issues:
+see http://objectstyle.org/jira/secure/BrowseProject.jspa?id=10000 for issue details
+
+CAY-14	PrefetchHelper doesn't work with compound keys
+CAY-12	Prefetching on entity used in qualifier
+CAY-2	Renamed entities not ordered properly
+CAY-17	CM doesn't handle custom data types when importing an EOMode
+CAY-1	Prefetching does not respect fetch limit

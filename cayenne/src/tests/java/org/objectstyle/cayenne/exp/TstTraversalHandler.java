@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -89,10 +89,22 @@ public class TstTraversalHandler
         TstTraversalHandler handler2 = new TstTraversalHandler();
         handler2.traverseExpression(exp2);
 
-        Assert.assertEquals(handler1.unaryNodes, handler2.unaryNodes);
-        Assert.assertEquals(handler1.binaryNodes, handler2.binaryNodes);
-        Assert.assertEquals(handler1.ternaryNodes, handler2.ternaryNodes);
-        Assert.assertEquals(handler1.listNodes, handler2.listNodes);
+        Assert.assertEquals(
+            "Bad expression:" + exp2,
+            handler1.unaryNodes,
+            handler2.unaryNodes);
+        Assert.assertEquals(
+            "Bad expression:" + exp2,
+            handler1.binaryNodes,
+            handler2.binaryNodes);
+        Assert.assertEquals(
+            "Bad expression:" + exp2,
+            handler1.ternaryNodes,
+            handler2.ternaryNodes);
+        Assert.assertEquals(
+            "Bad expression:" + exp2,
+            handler1.listNodes,
+            handler2.listNodes);
     }
 
     public TstTraversalHandler() {
@@ -172,10 +184,7 @@ public class TstTraversalHandler
         return leafs;
     }
 
-    public void finishedChild(
-        Expression node,
-        int childIndex,
-        boolean hasMoreChildren) {
+    public void finishedChild(Expression node, int childIndex, boolean hasMoreChildren) {
         children++;
     }
 

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,7 @@
 package org.objectstyle.cayenne.map;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -116,6 +117,32 @@ public class DbRelationship extends Relationship {
 
 		return map.getDbEntity(getTargetEntityName(), true);
 	}
+    
+    /**
+     * Creates a new relationship with the same set of joins,
+     * but going in the opposite direction.
+     * 
+     * @since 1.0.5
+     * @return
+     */
+    public DbRelationship createReverseRelationship() {
+        DbRelationship reverse = new DbRelationship();
+        reverse.setSourceEntity(getTargetEntity());
+        reverse.setTargetEntityName(getSourceEntity().getName());
+        
+        // TODO: must set toDepPK correctly
+        //       must set toMany correctly
+        
+        reverse.setToMany(!toMany);
+        
+        Iterator it = joins.iterator();
+        while(it.hasNext()) {
+            DbAttributePair join = (DbAttributePair) it.next();
+            reverse.addJoin(join.createReverseJoin());
+        }
+        
+        return reverse;
+    }
 
 	/** 
 	 * Returns DbRelationship that is the opposite of this DbRelationship.
@@ -216,38 +243,54 @@ public class DbRelationship extends Relationship {
 	  * Returns null if relationship does not point to an object.
 	  * Throws CayenneRuntimeException if relationship is "to many" or
 	  * if snapshot is missing id components. */
-	public Map targetPkSnapshotWithSrcSnapshot(Map srcSnapshot) {
+    public Map targetPkSnapshotWithSrcSnapshot(Map srcSnapshot) {
 
-		if (isToMany()) {
-			throw new CayenneRuntimeException("Only 'to one' relationships support this method.");
-		}
+        if (isToMany()) {
+            throw new CayenneRuntimeException("Only 'to one' relationships support this method.");
+        }
 
-		Map idMap = new HashMap();
+        Map idMap;
 
-		int numJoins = joins.size();
-		int foundNulls = 0;
+        int numJoins = joins.size();
+        int foundNulls = 0;
 
-		for (int i = 0; i < numJoins; i++) {
-			DbAttributePair join = (DbAttributePair)joins.get(i);
-			Object val = srcSnapshot.get(join.getSource().getName());
-			if (val == null) {
-				foundNulls++;
-			}
-			else {
-				idMap.put(join.getTarget().getName(), val);
-			}
-		}
+        // optimize for the most common single column join
+        if (numJoins == 1) {
+            DbAttributePair join = (DbAttributePair) joins.get(0);
+            Object val = srcSnapshot.get(join.getSource().getName());
+            if (val == null) {
+                foundNulls++;
+                idMap = Collections.EMPTY_MAP;
+            }
+            else {
+                idMap = Collections.singletonMap(join.getTarget().getName(), val);
+            }
+        }
+        // handle generic case: numJoins > 1
+        else {
+            idMap = new HashMap(numJoins * 2);
+            for (int i = 0; i < numJoins; i++) {
+                DbAttributePair join = (DbAttributePair) joins.get(i);
+                Object val = srcSnapshot.get(join.getSource().getName());
+                if (val == null) {
+                    foundNulls++;
+                }
+                else {
+                    idMap.put(join.getTarget().getName(), val);
+                }
+            }
+        }
 
-		if (foundNulls == 0) {
-			return idMap;
-		}
-		else if (foundNulls == numJoins) {
-			return null;
-		}
-		else {
-			throw new CayenneRuntimeException("Some parts of FK are missing in snapshot.");
-		}
-	}
+        if (foundNulls == 0) {
+            return idMap;
+        }
+        else if (foundNulls == numJoins) {
+            return null;
+        }
+        else {
+            throw new CayenneRuntimeException("Some parts of FK are missing in snapshot.");
+        }
+    }
 
 	/** Common code to src?kSnapshotWithTargetSnapshot.  Both are functionally the
 	 * same, except for the name, and whether they operate on a toMany or a toOne.*/

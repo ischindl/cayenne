@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -75,6 +75,15 @@ public class DbAttributePair {
 		this.setSource(sourceAttribute);
 		this.setTarget(targetAttribute);
 	}
+    
+    /**
+     * Creates and returns a new join going in reverse direction.
+     * 
+     * @since 1.0.5
+     */
+    public DbAttributePair createReverseJoin() {
+        return new DbAttributePair(target, source);
+    }
 
 	/** Returns DbAttribute on on the left side of the join. */
 	public DbAttribute getSource() {

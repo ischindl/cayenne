@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,7 @@
 package org.objectstyle.cayenne.exp;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +103,27 @@ public class ParametrizedExpressionTst extends CayenneTestCase {
         Expression e2 = e1.expWithParameters(new HashMap(), true);
 
         TstTraversalHandler.compareExps(e1, e2);
+    }
+
+    /**
+     * Tests how parameter substitution algorithm works on an expression
+     * with no parameters.
+     *
+     * @throws Exception
+     */
+    public void testInParameter() throws Exception {
+        Expression inExp =
+            ExpressionFactory.binaryPathExp(
+                Expression.IN,
+                "k1",
+                new ExpressionParameter("test"));
+
+        Expression e1 = ExpressionFactory.inExp("k1", new Object[] { "a", "b" });
+
+        TstTraversalHandler.compareExps(
+            e1,
+            inExp.expWithParameters(
+                Collections.singletonMap("test", new Object[] { "a", "b" })));
     }
 
     /**

@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -284,7 +284,7 @@ public class ImportDbAction extends CayenneAction {
         try {
             DataMap map = mediator.getCurrentDataMap();
             if (map != null) {
-                loader.loadDataMapFromDB(schemaName, tableNamePattern, null, map);
+                loader.loadDataMapFromDB(schemaName, tableNamePattern, map);
                 return map;
             }
             else {

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -178,14 +178,11 @@ public class QueryLogger {
     /**
      * Prints a byte value to a StringBuffer as a double digit hex value.
      */
-    protected static void appendFormattedByte(
-        StringBuffer buf,
-        byte byteValue) {
+    protected static void appendFormattedByte(StringBuffer buffer, byte byteValue) {
+        final String digits = "0123456789ABCDEF";
 
-        String hexDecode = "0123456789ABCDEF";
-
-        buf.append(hexDecode.charAt(byteValue >>> 4));
-        buf.append(hexDecode.charAt(byteValue & 0x0F));
+        buffer.append(digits.charAt((byteValue >>> 4) & 0xF));
+        buffer.append(digits.charAt(byteValue & 0xF));
     }
 
     /** 
@@ -361,9 +358,7 @@ public class QueryLogger {
     public static void logUpdateCount(Level logLevel, int count) {
         if (isLoggable(logLevel)) {
             String countStr =
-                (count == 1)
-                    ? "=== updated 1 row."
-                    : "=== updated " + count + " rows.";
+                (count == 1) ? "=== updated 1 row." : "=== updated " + count + " rows.";
             logObj.log(logLevel, countStr);
         }
     }

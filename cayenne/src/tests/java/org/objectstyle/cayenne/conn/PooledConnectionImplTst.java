@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,28 +52,32 @@
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
  *
- */ 
+ */
 package org.objectstyle.cayenne.conn;
 
 import junit.framework.TestCase;
 
 public class PooledConnectionImplTst extends TestCase {
-    
+
     public void testConnectionErrorNotificationConcurrency() throws Exception {
         // test a case when error notification is sent to connection
         // that has been removed from the pool, but when pool is still a 
         // listener for its events.
-        PoolManager pm = new PoolManager(null, 0, 3, "", "");
+        PoolManager pm = new PoolManager(null, 0, 3, "", "") {
+            protected void startMaintenanceThread() {}
+        };
         PooledConnectionImpl con = new PooledConnectionImpl();
         con.addConnectionEventListener(pm);
         con.connectionErrorNotification(new java.sql.SQLException("Bad SQL Exception.."));
     }
-    
+
     public void testConnectionClosedNotificationConcurrency() throws Exception {
         // test a case when closed notification is sent to connection
         // that has been removed from the pool, but when pool is still a 
         // listener for its events.
-        PoolManager pm = new PoolManager(null, 0, 3, "", "");
+        PoolManager pm = new PoolManager(null, 0, 3, "", "") {
+            protected void startMaintenanceThread() {}
+        };
         PooledConnectionImpl con = new PooledConnectionImpl();
         con.addConnectionEventListener(pm);
         con.connectionClosedNotification();

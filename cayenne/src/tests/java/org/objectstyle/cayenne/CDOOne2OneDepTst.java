@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,9 +55,13 @@
  */ 
 package org.objectstyle.cayenne;
 
+import java.util.Map;
+
 import org.objectstyle.art.Artist;
 import org.objectstyle.art.Painting;
 import org.objectstyle.art.PaintingInfo;
+import org.objectstyle.cayenne.access.util.RelationshipFault;
+import org.objectstyle.cayenne.map.ObjEntity;
 
 public class CDOOne2OneDepTst extends CayenneDOTestBase {
    
@@ -92,9 +96,6 @@ public class CDOOne2OneDepTst extends CayenneDOTestBase {
         
         // *** TESTING THIS ***
         p2.setToPaintingInfo(null);
-        
-        assertNotNull(p2.readPropertyDirectly("toPaintingInfo"));
-        assertSame(CayenneDataObject.class, p2.readPropertyDirectly("toPaintingInfo").getClass());
         assertNull(p2.getToPaintingInfo());
     }
     
@@ -123,6 +124,29 @@ public class CDOOne2OneDepTst extends CayenneDOTestBase {
         PaintingInfo pi2 = p2.getToPaintingInfo();
         assertNotNull(pi2);
         assertEquals(textReview, pi2.getTextReview());
+    }
+    
+    public void testTakeObjectSnapshotDependentFault() throws Exception {
+        // prepare data
+        Artist a1 = newArtist();
+        PaintingInfo pi1 = newPaintingInfo();
+        Painting p1 = newPainting();
+        
+        p1.setToArtist(a1);
+        p1.setToPaintingInfo(pi1);
+        ctxt.commitChanges();
+        
+        ctxt = createDataContext();
+        Painting painting = fetchPainting();
+
+        assertTrue(painting.readPropertyDirectly("toPaintingInfo") instanceof RelationshipFault);
+
+        // test that taking a snapshot does not trigger a fault, and generally works well
+        ObjEntity entity = ctxt.getEntityResolver().lookupObjEntity(Painting.class); 
+        Map snapshot = ctxt.getSnapshotManager().takeObjectSnapshot(entity, painting);
+
+        assertEquals(paintingName, snapshot.get("PAINTING_TITLE"));
+        assertTrue(painting.readPropertyDirectly("toPaintingInfo") instanceof RelationshipFault);
     }
     
 }

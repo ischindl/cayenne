@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -73,7 +73,6 @@ import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneException;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataObject;
-import org.objectstyle.cayenne.FlattenedObjectId;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
 import org.objectstyle.cayenne.TempObjectId;
@@ -404,8 +403,12 @@ public class DataContext implements QueryEngine, Serializable {
      *  persistence information for this object.
      */
     public void registerNewObject(DataObject dataObject, String objEntityName) {
-        ObjEntity objEntity = getEntityResolver().lookupObjEntity(objEntityName);
-        registerNewObjectWithEntity(dataObject, objEntity);
+        ObjEntity entity = getEntityResolver().lookupObjEntity(objEntityName);
+        if (entity == null) {
+            throw new IllegalArgumentException("Invalid ObjEntity name: " + objEntityName);
+        }
+
+        registerNewObjectWithEntity(dataObject, entity);
     }
 
     /** Registers a new object (that is not yet persistent) with itself.
@@ -413,8 +416,19 @@ public class DataContext implements QueryEngine, Serializable {
      * @param dataObject new object that we want to make persistent.
      */
     public void registerNewObject(DataObject dataObject) {
-        ObjEntity objEntity = getEntityResolver().lookupObjEntity(dataObject);
-        registerNewObjectWithEntity(dataObject, objEntity);
+        if(dataObject == null) {
+            throw new NullPointerException("Null dataObject.");
+        }
+        
+        ObjEntity entity = getEntityResolver().lookupObjEntity(dataObject);
+        if (entity == null) {
+            throw new IllegalArgumentException(
+                "Can't find ObjEntity for DataObject class: "
+                    + dataObject.getClass().getName()
+                    + ", class is likely not mapped.");
+        }
+        
+        registerNewObjectWithEntity(dataObject, entity);
     }
 
     private void registerNewObjectWithEntity(
@@ -470,6 +484,55 @@ public class DataContext implements QueryEngine, Serializable {
         // change state to HOLLOW
         dataObj.setPersistenceState(PersistenceState.HOLLOW);
     }
+    
+    /**
+     * Creates a list of DataObjects local to this DataContext from a list 
+     * of DataObjects coming from a different DataContext. Note that all objects
+     * in the source list must be either in COMMITTED or in HOLLOW state.
+     * 
+     * @since 1.0.3
+     */
+    public List localObjects(List objects) {
+        
+        List localObjects = new ArrayList(objects.size());
+        Class objectClass = null;
+        ObjEntity entity = null;
+        
+        Iterator it = objects.iterator();
+        while (it.hasNext()) {
+            DataObject object = (DataObject) it.next();
+            
+            // sanity check
+            if (object.getPersistenceState() != PersistenceState.COMMITTED
+                && object.getPersistenceState() != PersistenceState.HOLLOW) {
+                throw new CayenneRuntimeException(
+                    "Only COMMITTED and HOLLOW objects can be transferred between contexts. "
+                        + "Invalid object state '"
+                        + PersistenceState.persistenceStateName(
+                            object.getPersistenceState())
+                        + "', ObjectId: "
+                        + object.getObjectId());
+            }      
+              
+            DataObject localObject;
+
+            if (object.getDataContext() != this) {
+                Class currentClass = object.getObjectId().getObjClass();
+                if (entity == null || currentClass != objectClass) {
+                    entity = getEntityResolver().lookupObjEntity(currentClass);
+                    objectClass = currentClass;
+                }
+                
+                localObject = objectFromDataRow(entity, object.getCommittedSnapshot(), true);
+            } else {
+                localObject = object;
+            }
+
+            localObjects.add(localObject);
+        }
+
+        return localObjects;
+    }
 
     /**
      * Notifies data context that a registered object need to be deleted on
@@ -479,7 +542,8 @@ public class DataContext implements QueryEngine, Serializable {
      */
 
     public void deleteObject(DataObject anObject) {
-        if (anObject.getPersistenceState() == PersistenceState.DELETED) {
+        if (anObject.getPersistenceState() == PersistenceState.DELETED
+            || anObject.getPersistenceState() == PersistenceState.TRANSIENT) {
             //Drop out... we might be about to get into a horrible
             // recursive loop due to CASCADE delete rules.
             // Assume that everything must have been done correctly already
@@ -487,46 +551,58 @@ public class DataContext implements QueryEngine, Serializable {
             return;
         }
 
+        // must resolve an object before deleting
+        if(anObject.getPersistenceState() == PersistenceState.HOLLOW) {
+            refetchObject(anObject.getObjectId());
+        }
+        
+        
         //Save the current state in case of a deny, in which case it should be reset.
         //We cannot delay setting it to deleted, as Cascade deletes might cause
         // recursion, and the "deleted" state is the best way we have of noticing that and bailing out (see above)
         int oldState = anObject.getPersistenceState();
-
-        //TODO - figure out what to do when an object is still in
-        //PersistenceState.NEW (unregister maybe?)
-        anObject.setPersistenceState(PersistenceState.DELETED);
+        int newState =
+            (oldState == PersistenceState.NEW)
+                ? PersistenceState.TRANSIENT
+                : PersistenceState.DELETED;
+        anObject.setPersistenceState(newState);
 
         //Do the right thing with all the relationships of the deleted object
         ObjEntity entity = this.getEntityResolver().lookupObjEntity(anObject);
         Iterator relationshipIterator = entity.getRelationships().iterator();
         while (relationshipIterator.hasNext()) {
-            ObjRelationship thisRelationship =
-                (ObjRelationship) relationshipIterator.next();
-            String thisRelationshipName = thisRelationship.getName();
+            ObjRelationship relationship = (ObjRelationship) relationshipIterator.next();
+            
+            if(relationship.getDeleteRule() == DeleteRule.NO_ACTION) {
+                // no action it is...
+                continue;
+            }
 
-            List relatedObjects;
-            if (thisRelationship.isToMany()) {
-                //Get an independent copy of the list so that
-                // deleting objects doesn't result in concurrent modification
-                // exceptions
-                relatedObjects =
-                    new ArrayList(
-                        (List) anObject.readPropertyDirectly(thisRelationship.getName()));
+            List relatedObjects = Collections.EMPTY_LIST;
+            if (relationship.isToMany()) {
+                List toMany =
+                    (List) anObject.readNestedProperty(relationship.getName());
+
+                if (toMany.size() > 0) {
+                    // Get a copy of the list so that deleting objects doesn't 
+                    // result in concurrent modification exceptions
+                    relatedObjects = new ArrayList(toMany);
+                }
             }
             else {
-                //thisRelationship is toOne... make a list of one object
-                relatedObjects = new ArrayList(1);
-                DataObject relatedObject =
-                    (DataObject) anObject.readPropertyDirectly(thisRelationshipName);
+                // make sure we resolve all faults - use readNestedProperty.
+                Object relatedObject =
+                    anObject.readNestedProperty(relationship.getName());
+
                 if (relatedObject != null) {
-                    relatedObjects.add(relatedObject);
+                    relatedObjects = Collections.singletonList(relatedObject);
                 }
             }
 
-            switch (thisRelationship.getDeleteRule()) {
+            switch (relationship.getDeleteRule()) {
                 case DeleteRule.NULLIFY :
                     ObjRelationship inverseRelationship =
-                        thisRelationship.getReverseRelationship();
+                        relationship.getReverseRelationship();
                     if (null == inverseRelationship) {
                         continue;
                         //with next relationship... nothing we can do here
@@ -549,17 +625,10 @@ public class DataContext implements QueryEngine, Serializable {
                         Iterator iterator = relatedObjects.iterator();
                         while (iterator.hasNext()) {
                             DataObject relatedObject = (DataObject) iterator.next();
-                            if (inverseRelationship.isToDependentEntity()) {
-                                relatedObject.setToOneDependentTarget(
-                                    inverseRelationshipName,
-                                    null);
-                            }
-                            else {
-                                relatedObject.setToOneTarget(
-                                    inverseRelationshipName,
-                                    null,
-                                    true);
-                            }
+                            relatedObject.setToOneTarget(
+                                inverseRelationshipName,
+                                null,
+                                true);
                         }
                     }
                     break;
@@ -574,7 +643,7 @@ public class DataContext implements QueryEngine, Serializable {
                 case DeleteRule.DENY :
                     int relatedObjectsCount = relatedObjects.size();
                     if (relatedObjectsCount != 0) {
-                        //Clean up - we shouldn't be deleting this object
+                        // Clean up - we shouldn't be deleting this object
                         anObject.setPersistenceState(oldState);
                         throw new DeleteDenyException(
                             "Cannot delete a "
@@ -584,22 +653,24 @@ public class DataContext implements QueryEngine, Serializable {
                                 + " object"
                                 + (relatedObjectsCount > 1 ? "s" : "")
                                 + "in it's "
-                                + thisRelationshipName
+                                + relationship.getName()
                                 + " relationship"
                                 + " and this relationship has DENY "
                                 + "as it's delete rule");
                     }
                     break;
-                case DeleteRule.NO_ACTION :
-                    // no action it is...
-                    break;
                 default :
-                    //Clean up - we shouldn't be deleting this object
+                    // Clean up - we shouldn't be deleting this object
                     anObject.setPersistenceState(oldState);
                     throw new CayenneRuntimeException(
-                        "Unknown type of delete rule "
-                            + thisRelationship.getDeleteRule());
+                        "Unknown type of delete rule " + relationship.getDeleteRule());
             }
+        }
+        
+        // if an object was NEW, we must throw it out of the ObjectStore
+        if(oldState == PersistenceState.NEW) {
+            getObjectStore().removeObject(anObject.getObjectId());
+            anObject.setDataContext(null);
         }
     }
 
@@ -623,19 +694,8 @@ public class DataContext implements QueryEngine, Serializable {
             }
         }
 
-        SelectQuery sel;
-        List results;
-        if (oid instanceof FlattenedObjectId) {
-            FlattenedObjectId foid = (FlattenedObjectId) oid;
-            sel = QueryUtils.selectObjectForFlattenedObjectId(this, foid);
-            FlattenedSelectObserver observer = new FlattenedSelectObserver(foid);
-            this.performQuery(sel, observer);
-            results = observer.getResults(sel);
-        }
-        else {
-            sel = QueryUtils.selectObjectForId(oid);
-            results = this.performQuery(sel);
-        }
+        SelectQuery sel = QueryUtils.selectObjectForId(oid);
+        List results = this.performQuery(sel);
 
         if (results.size() != 1) {
             String msg =
@@ -655,7 +715,7 @@ public class DataContext implements QueryEngine, Serializable {
 
     /**
      * Rollsback any changes that have occurred to objects
-     * registered with this data context.
+     * registered with this DataContext.
      */
     public void rollbackChanges() {
         synchronized (objectStore) {
@@ -1313,40 +1373,5 @@ public class DataContext implements QueryEngine, Serializable {
             return source;
         }
 
-    }
-
-    private class FlattenedSelectObserver extends SelectObserver {
-        FlattenedObjectId oid;
-
-        public FlattenedSelectObserver(FlattenedObjectId anOid) {
-            super();
-            this.oid = anOid;
-        }
-
-        public void nextDataRows(Query query, List dataRows) {
-            List result = new ArrayList();
-            if (dataRows != null && dataRows.size() > 0) {
-                //Really, we're only expecting one row, but lets be complete
-                ObjEntity ent =
-                    DataContext.this.getEntityResolver().lookupObjEntity(query);
-                Iterator it = dataRows.iterator();
-                while (it.hasNext()) {
-                    //The next few lines are basically a cut down/modified 
-                    // version of objectFromDataRow that handles the oid swapping
-                    // properly 
-                    Map dataRow = (Map) it.next();
-                    DataObject obj = registeredObject(this.oid);
-                    snapshotManager.mergeObjectWithSnapshot(ent, obj, dataRow);
-                    obj.fetchFinished();
-                    //Swizzle object ids as the old "flattened" one isn't suitable for later
-                    // identification of this object
-                    ObjectId newOid = ent.objectIdFromSnapshot(dataRow);
-                    obj.setObjectId(newOid);
-                    DataContext.this.objectStore.changeObjectKey(this.oid, newOid);
-                    result.add(obj);
-                }
-            }
-            super.nextDataRows(query, result);
-        }
     }
 }

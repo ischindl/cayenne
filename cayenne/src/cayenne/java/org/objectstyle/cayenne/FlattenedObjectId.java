@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,6 +66,9 @@ import org.objectstyle.cayenne.util.Util;
  * pk etc.) in order for DataContext to fetch the appropriate row
  * when the object is touched
  * </p>
+ * 
+ * @deprecated Since 1.0.1 FlattenedObjectId is not used for flattened
+ * faults anymore, besides this class is not a "true" ObjectId.
  * 
  * @author Craig Miskell
  */

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,7 @@
  */
 package org.objectstyle.cayenne;
 
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.objectstyle.art.oneway.Artist;
@@ -63,9 +63,11 @@ import org.objectstyle.art.oneway.Painting;
 import org.objectstyle.cayenne.access.DataContext;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
+import org.objectstyle.cayenne.access.util.DefaultOperationObserver;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.query.SelectQuery;
+import org.objectstyle.cayenne.query.SqlModifyQuery;
 import org.objectstyle.cayenne.unittest.CayenneTestDatabaseSetup;
 import org.objectstyle.cayenne.unittest.OneWayMappingTestCase;
 
@@ -79,37 +81,42 @@ public class OneWayOneToManyTst extends OneWayMappingTestCase {
         CayenneTestDatabaseSetup setup = getDatabaseSetup();
         setup.cleanTableData();
         DataDomain dom = getDomain();
-        setup.createPkSupportForMapEntities((DataNode)dom.getDataNodes().iterator().next());
+        setup.createPkSupportForMapEntities(
+            (DataNode) dom.getDataNodes().iterator().next());
 
         ctxt = getDomain().createDataContext();
     }
 
     public void testReadList() throws Exception {
-        // prepare and save a gallery
-        Painting p11 = newPainting("g1");
-        Painting p12 = newPainting("g1");
-        ctxt.commitChanges();
+        // save bypassing DataContext
+        List queries = new ArrayList(3);
+        queries.add(
+            new SqlModifyQuery(
+                Artist.class,
+                "INSERT INTO ARTIST (ARTIST_ID, ARTIST_NAME, DATE_OF_BIRTH) "
+                    + "VALUES (201, 'artist with one painting', null)"));
 
-        Artist a1 = newArtist();
-        a1.addToPaintingArray(p11);
-        a1.addToPaintingArray(p12);
+        queries.add(
+            new SqlModifyQuery(
+                Artist.class,
+                "INSERT INTO PAINTING (ARTIST_ID, ESTIMATED_PRICE, GALLERY_ID, "
+                    + "PAINTING_ID, PAINTING_TITLE) VALUES (201, null, null, 201, 'p1')"));
+        queries.add(
+            new SqlModifyQuery(
+                Artist.class,
+                "INSERT INTO PAINTING (ARTIST_ID, ESTIMATED_PRICE, GALLERY_ID, "
+                    + "PAINTING_ID, PAINTING_TITLE) VALUES (201, null, null, 202, 'p2')"));
 
-        // test before save
-        assertEquals(2, a1.getPaintingArray().size());
-        ctxt.commitChanges();
-
-        ctxt = getDomain().createDataContext();
+        ctxt.performQueries(queries, new DefaultOperationObserver());
 
         Artist a2 = fetchArtist();
         assertNotNull(a2);
 
-        Iterator it = a2.getPaintingArray().iterator();
-        while (it.hasNext()) {
-            it.next();
-        }
+        assertEquals(2, a2.getPaintingArray().size());
     }
 
-   public void testRevertModification() throws Exception {
+
+    public void testRevertModification() throws Exception {
         // prepare and save a gallery
         Painting p11 = newPainting("p11");
         Painting p12 = newPainting("p12");
@@ -117,30 +124,30 @@ public class OneWayOneToManyTst extends OneWayMappingTestCase {
 
         Artist a1 = newArtist();
         a1.addToPaintingArray(p11);
- 
+
         // test before save
         assertEquals(1, a1.getPaintingArray().size());
         ctxt.commitChanges();
-		
-       	a1.addToPaintingArray(p12);
-		assertEquals(2, a1.getPaintingArray().size());
-      	ctxt.rollbackChanges();
- 
-		/* TODO - these all fail until the one-way relationship code works correctly
+
+        a1.addToPaintingArray(p12);
+        assertEquals(2, a1.getPaintingArray().size());
+        ctxt.rollbackChanges();
+
+        /* TODO - these all fail until the one-way relationship code works correctly
         assertEquals(1, a1.getPaintingArray().size()); //Should only be one..
         assertEquals(p11, a1.getPaintingArray().get(0)); //..and it should be the original one
-    	
-    	ctxt.commitChanges(); //Save so we can be sure the rollback really worked
-    	
+        
+        ctxt.commitChanges(); //Save so we can be sure the rollback really worked
+        
         ctxt = getDomain().createDataContext();
-
+        
         Artist a2 = fetchArtist();
         assertNotNull(a2);
         assertEquals(1, a2.getPaintingArray().size()); //Should only be one..
         Painting p21 = (Painting)a1.getPaintingArray().get(0);
         assertEquals(p11.getPaintingTitle(), p21.getPaintingTitle()); //..and it should be the same as the original one
         */
-     }
+    }
 
     protected Painting newPainting(String name) {
         Painting p1 = (Painting) ctxt.createAndRegisterNewObject("Painting");

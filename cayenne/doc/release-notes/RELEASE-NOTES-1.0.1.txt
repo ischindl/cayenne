@@ -1,0 +1,26 @@
+            Cayenne Release Notes 1.0.1 
+                 Date: October 13, 2003
+         ============================================
+
+For the latest information go to the project web site at
+http://objectstyle.org/cayenne/
+
+1. Fixed handling of to-one dependent relationships. Right now
+   they no longer require special "set/get" methods in the DataObject,
+   so "readToOneDependentTarget" and "setToOneDependentTarget" are deprecated.
+   
+   Note that due to a bug in class generation, these methods weren't used by
+   DataObjects to begin with, so no class regeneration is required to take advantage
+   of this fix.
+
+2. Fixed handling of to-one faults for flattened to-one relationships. Previously
+   Cayenne would not guarantee uniquing for the objects obtained via
+   such relationships. [Bug 813413]
+   
+3. Fixed CayenneDataObject.readNestedProperty() always returning Strings for
+   non-persistent property values, even if the target property has a different
+   class. [Bug 817449]
+   
+4. Generating correct SQL for case insensitive ordering (column list must include 
+   UPPER(column_name) for all ordering columns that use case-insensitive ordering.
+   Patch was submitted by Scott Finnerty.

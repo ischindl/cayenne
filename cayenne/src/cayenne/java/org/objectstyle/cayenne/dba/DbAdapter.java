@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -119,6 +119,14 @@ public interface DbAdapter {
 			DbAdapter.POSTGRES,
 			DbAdapter.SYBASE
 		};
+    
+    /**
+     * Returns a String used to terminate a batch in command-line
+     * tools. E.g. ";" on Oracle or "go" on Sybase.
+     * 
+     * @since 1.0.4
+     */
+    public String getBatchTerminator();
 
 	/**
 	 * Creates an returns a named instance of a DataNode. Sets node adapter to be this object.

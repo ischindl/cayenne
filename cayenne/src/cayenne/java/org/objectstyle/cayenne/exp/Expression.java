@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,7 @@ package org.objectstyle.cayenne.exp;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -160,12 +161,12 @@ public abstract class Expression implements Serializable {
     public static final int MAX = 33;
     /** Interpreted as an aggregate min function. */
     public static final int MIN = 34;
-    
+
     public static final int NOT_BETWEEN = 35;
-	public static final int NOT_IN = 36;
-	public static final int NOT_LIKE = 37;
-	public static final int NOT_LIKE_IGNORE_CASE = 38;
-	
+    public static final int NOT_IN = 36;
+    public static final int NOT_LIKE = 37;
+    public static final int NOT_LIKE_IGNORE_CASE = 38;
+
     protected int type;
 
     /**
@@ -207,14 +208,14 @@ public abstract class Expression implements Serializable {
                 return "DB_PATH";
             case LIST :
                 return "LIST";
-            case NOT_BETWEEN:
+            case NOT_BETWEEN :
                 return "NOT BETWEEN";
-			case NOT_IN:
-				return "NOT IN"; 
-			case NOT_LIKE:
-				return "NOT LIKE"; 
-			case NOT_LIKE_IGNORE_CASE:
-				return "NOT LIKE IGNORE CASE"; 
+            case NOT_IN :
+                return "NOT IN";
+            case NOT_LIKE :
+                return "NOT LIKE";
+            case NOT_LIKE_IGNORE_CASE :
+                return "NOT LIKE IGNORE CASE";
             default :
                 return "other";
         }
@@ -302,6 +303,15 @@ public abstract class Expression implements Serializable {
         return joinExp(Expression.OR, exp);
     }
 
+    /**
+     * Returns a logical NOT of current expression.
+     * 
+     * @since 1.0.6
+     */
+    public Expression notExp() {
+        return ExpressionFactory.unaryExp(Expression.NOT, this);
+    }
+
     /** 
      * Returns a count of operands of this expression. In real life there are
      * unary (count == 1), binary (count == 2) and ternary (count == 3) 
@@ -328,23 +338,27 @@ public abstract class Expression implements Serializable {
      * <code>false</code> otherwise.
      */
     public boolean eval(Object o) {
-        return new EvalExpression(this).evaluate(o);
+        return ASTCompiler.compile(this).evaluateBooleanASTChain(o);
     }
 
     /**
      * Returns a list of objects that match the expression.
      */
     public List filterObjects(List objects) {
-        int size = (objects != null) ? objects.size() : 0;
+        if (objects == null || objects.size() == 0) {
+            return Collections.EMPTY_LIST;
+        }
+
+        int size = objects.size();
         List filtered = new ArrayList(size);
 
-        if (size > 0) {
-            EvalExpression eval = new EvalExpression(this);
-            for (int i = 0; i < size; i++) {
-                Object o = objects.get(i);
-                if (eval.evaluate(o)) {
-                    filtered.add(o);
-                }
+        // compile expression
+        ASTNode compiled = ASTCompiler.compile(this);
+
+        for (int i = 0; i < size; i++) {
+            Object o = objects.get(i);
+            if (compiled.evaluateBooleanASTChain(o)) {
+                filtered.add(o);
             }
         }
 
@@ -359,20 +373,23 @@ public abstract class Expression implements Serializable {
      */
     protected void toStringBuffer(StringBuffer buf) {
         for (int i = 0; i < getOperandCount(); i++) {
-            if (i > 0) {
+            if (i > 0 || getOperandCount() == 1) {
                 buf.append(" ").append(expName()).append(" ");
             }
 
             Object op = getOperand(i);
             if (op == null) {
                 buf.append("<null>");
-            } else if (op instanceof String) {
+            }
+            else if (op instanceof String) {
                 buf.append("'").append(op).append("'");
-            } else if (op instanceof Expression) {
+            }
+            else if (op instanceof Expression) {
                 buf.append('(');
                 ((Expression) op).toStringBuffer(buf);
                 buf.append(')');
-            } else {
+            }
+            else {
                 buf.append(String.valueOf(op));
             }
         }
@@ -462,16 +479,13 @@ public abstract class Expression implements Serializable {
             Expression exp = findExp(node);
             if (prunedChildren(exp) != null) {
                 if (logObj.isDebugEnabled()) {
-                    logObj.debug(
-                        "---- Prune node, since there are pruned children ----");
+                    logObj.debug("---- Prune node, since there are pruned children ----");
                     logObj.debug("  exp: " + exp);
                     logObj.debug("  children: " + prunedChildren(exp));
                 }
 
                 Expression parent =
-                    (parentNode != null)
-                        ? findExp(parentNode)
-                        : fakeTopLevelParent;
+                    (parentNode != null) ? findExp(parentNode) : fakeTopLevelParent;
 
                 pruneChild(exp, parent);
             }
@@ -482,9 +496,7 @@ public abstract class Expression implements Serializable {
          * @return Expression
          */
         public Expression getExpression() {
-            return (prunedChildren(fakeTopLevelParent) == null)
-                ? findExp(proto)
-                : null;
+            return (prunedChildren(fakeTopLevelParent) == null) ? findExp(proto) : null;
         }
 
         public void startBinaryNode(Expression node, Expression parentNode) {
@@ -569,7 +581,8 @@ public abstract class Expression implements Serializable {
             // link child to parent in the expression being built
             if (child instanceof Expression) {
                 parent.setOperand(childIndex, findExp((Expression) child));
-            } else {
+            }
+            else {
                 // check for parameter substitution
                 if (child instanceof ExpressionParameter) {
                     ExpressionParameter param = (ExpressionParameter) child;
@@ -578,20 +591,23 @@ public abstract class Expression implements Serializable {
                     // may simply indicate NULL
                     if (params.containsKey(param.getName())) {
                         child = params.get(param.getName());
-                    } else {
+                    }
+                    else {
                         if (pruneMissing) {
                             if (logObj.isDebugEnabled()) {
                                 logObj.debug("---- Prune parameter: " + param);
                             }
                             pruneChild(param, parent);
-                        } else {
+                        }
+                        else {
                             throw new ExpressionException(
-                                "Missing required parameter for key: "
-                                    + param.getName());
+                                "Missing required parameter for key: " + param.getName());
                         }
                     }
                 }
 
+                // wrap child
+                child = ExpressionFactory.wrapPathOperand(child);
                 parent.setOperand(childIndex, child);
             }
         }

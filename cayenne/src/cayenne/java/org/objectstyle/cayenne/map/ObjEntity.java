@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,11 +92,30 @@ public class ObjEntity extends Entity {
     /**
      * Returns Java class of persistent objects described by this entity.
      * Casts any thrown exceptions into CayenneRuntimeException.
+     * 
+     * @deprecated Since 1.0.7 use {@link #getJavaClass(ClassLoader)}
      */
     public Class getJavaClass() {
+        return getJavaClass(this.getClass().getClassLoader());
+    }
+
+    /**
+     * Returns Java class of persistent objects described by this entity.
+     * Casts any thrown exceptions into CayenneRuntimeException.
+     * 
+     * @since 1.0.7
+     */
+    public Class getJavaClass(ClassLoader classLoader) {
         try {
-            return Class.forName(this.getClassName());
-        } catch (ClassNotFoundException e) {
+            // tolerate null class loader
+            if (classLoader == null) {
+                return Class.forName(this.getClassName());
+            }
+            else {
+                return classLoader.loadClass(this.getClassName());
+            }
+        }
+        catch (ClassNotFoundException e) {
             throw new CayenneRuntimeException(
                 "Failed to load class for name '"
                     + this.getClassName()

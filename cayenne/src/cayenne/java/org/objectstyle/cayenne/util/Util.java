@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -445,4 +445,70 @@ public class Util {
         Collections.sort(list, comparator);
         return list.iterator();
     }
+    
+    /**
+     * Converts a SQL-style pattern to a valid Perl regular expression. E.g.
+     * 
+     * <p>
+     * <code>"billing_%"</code> will become <code>/^billing_.*$/</code> 
+     * <p>
+     * <code>"user?"</code> will become <code>/^user.?$/</code>
+     * 
+     * @since 1.0.6
+     */
+    public static String sqlPatternToRegex(String pattern, boolean ignoreCase) {
+        if (pattern == null) {
+            throw new NullPointerException("Null pattern.");
+        }
+
+        if (pattern.length() == 0) {
+            throw new IllegalArgumentException("Empty pattern.");
+        }
+
+        StringBuffer buffer = new StringBuffer();
+
+        // convert * into regex syntax
+        // e.g. abc*x becomes /^abc.*x$/
+        // or   abc?x becomes /^abc.?x$/
+        buffer.append("/^");
+        for (int j = 0; j < pattern.length(); j++) {
+            char nextChar = pattern.charAt(j);
+            if (nextChar == '%') {
+                nextChar = '*';
+            }
+
+            if (nextChar == '*' || nextChar == '?') {
+                buffer.append('.');
+            }
+            // escape special chars
+            else if (
+                nextChar == '.'
+                    || nextChar == '/'
+                    || nextChar == '$'
+                    || nextChar == '^') {
+                buffer.append('\\');
+            }
+
+            buffer.append(nextChar);
+        }
+        
+        buffer.append("$/");
+        
+        if(ignoreCase) {
+            buffer.append('i');
+        }
+
+        String finalPattern = buffer.toString();
+
+        // test the pattern
+        try {
+            regexUtil.match(finalPattern, "abc_123");
+        }
+        catch (Exception e) {
+            throw new IllegalArgumentException("Error converting pattern: " + e.getLocalizedMessage());
+        }
+        
+        return finalPattern;
+    }
+
 }
