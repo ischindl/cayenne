@@ -98,7 +98,8 @@ public class EOModelPrototypesTst extends BasicTestCase {
         assertEquals(Types.INTEGER, dba3.getType());
     }
 
-    // TODO: move this test to Inheritance. The original problem had nothing
+    // TODO: move this test to EOModelProcessorInheritanceTst. The original problem had
+    // nothing
     // to do with prototypes...
     public void testSameColumnMapping() throws Exception {
         DataMap map = new EOModelProcessor()
@@ -120,5 +121,19 @@ public class EOModelPrototypesTst extends BasicTestCase {
 
         ObjAttribute vn = (ObjAttribute) vendorOE.getAttribute("purchaseOrderNumber");
         assertEquals("DOCUMENT_NUMBER", vn.getDbAttributePath());
+    }
+
+    // TODO: move this test to EOModelProcessorInheritanceTst. The original problem had
+    // nothing
+    // to do with prototypes...
+    public void testOverridingAttributes() throws Exception {
+        DataMap map = new EOModelProcessor()
+                .loadEOModel("test-resources/prototypes.eomodeld");
+
+        ObjEntity documentOE = map.getObjEntity("Document");
+        ObjEntity estimateOE = map.getObjEntity("Estimate");
+
+        assertSame(documentOE, estimateOE.getAttribute("created").getEntity());
+        assertSame(estimateOE, estimateOE.getAttribute("estimateNumber").getEntity());
     }
 }
