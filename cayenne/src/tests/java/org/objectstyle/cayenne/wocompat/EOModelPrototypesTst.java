@@ -55,38 +55,70 @@
  */
 package org.objectstyle.cayenne.wocompat;
 
+import java.sql.Types;
+
 import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.map.DbEntity;
+import org.objectstyle.cayenne.map.ObjAttribute;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.unit.BasicTestCase;
 
 /**
  * @author Andrei Adamchik
  */
-public class EOModelProcessorInheritanceTst extends BasicTestCase {
-    protected EOModelProcessor processor;
+public class EOModelPrototypesTst extends BasicTestCase {
 
-    public void setUp() throws Exception {
-        processor = new EOModelProcessor();
+    public void testSkipPrototypes() throws Exception {
+        DataMap map = new EOModelProcessor()
+                .loadEOModel("test-resources/prototypes.eomodeld");
+
+        assertNotNull(map.getObjEntity("Document"));
+        assertNull(map.getObjEntity("EOPrototypes"));
+        assertNull(map.getObjEntity("EOXYZPrototypes"));
     }
 
-    public void testLoadAbstractEntity() throws Exception {
-        DataMap map = processor.loadEOModel("test-resources/inheritance.eomodeld");
+    public void testDbAttributeType() throws Exception {
+        DataMap map = new EOModelProcessor()
+                .loadEOModel("test-resources/prototypes.eomodeld");
 
-        ObjEntity abstractE = map.getObjEntity("AbstractEntity");
-        assertNotNull(abstractE);
-        assertNull(abstractE.getDbEntityName());
-        assertEquals("AbstractEntityClass", abstractE.getClassName());
+        DbEntity dbe = map.getDbEntity("DOCUMENT");
+        assertNotNull(dbe);
+
+        // test that an attribute that has ObjAttribute has its type configured
+        DbAttribute dba1 = (DbAttribute) dbe.getAttribute("DOCUMENT_TYPE");
+        assertEquals(Types.VARCHAR, dba1.getType());
+
+        // test that a numeric attribute has its type configured
+        DbAttribute dba2 = (DbAttribute) dbe.getAttribute("TEST_NUMERIC");
+        assertEquals(Types.INTEGER, dba2.getType());
+
+        // test that an attribute that has no ObjAttribute has its type configured
+        DbAttribute dba3 = (DbAttribute) dbe.getAttribute("DOCUMENT_ID");
+        assertEquals(Types.INTEGER, dba3.getType());
     }
 
-    public void testLoadConcreteEntity() throws Exception {
-        DataMap map = processor.loadEOModel("test-resources/inheritance.eomodeld");
+    // TODO: move this test to Inheritance. The original problem had nothing
+    // to do with prototypes...
+    public void testSameColumnMapping() throws Exception {
+        DataMap map = new EOModelProcessor()
+                .loadEOModel("test-resources/prototypes.eomodeld");
 
-        ObjEntity concreteE = map.getObjEntity("ConcreteEntityOne");
-        assertNotNull(concreteE);
-        assertEquals("AbstractEntity", concreteE.getSuperEntityName());
-        
-        assertEquals("CONCRETE_ENTITY_ONE", concreteE.getDbEntityName());
-        assertEquals("ConcreteEntityClass", concreteE.getClassName());
-        assertEquals("AbstractEntityClass", concreteE.getSuperClassName());
+        ObjEntity estimateOE = map.getObjEntity("Estimate");
+        ObjEntity invoiceOE = map.getObjEntity("Invoice");
+        ObjEntity vendorOE = map.getObjEntity("VendorPO");
+
+        assertNotNull(estimateOE);
+        assertNotNull(invoiceOE);
+        assertNotNull(vendorOE);
+
+        ObjAttribute en = (ObjAttribute) estimateOE.getAttribute("estimateNumber");
+        assertEquals("DOCUMENT_NUMBER", en.getDbAttributePath());
+
+        ObjAttribute in = (ObjAttribute) invoiceOE.getAttribute("invoiceNumber");
+        assertEquals("DOCUMENT_NUMBER", in.getDbAttributePath());
+
+        ObjAttribute vn = (ObjAttribute) vendorOE.getAttribute("purchaseOrderNumber");
+        assertEquals("DOCUMENT_NUMBER", vn.getDbAttributePath());
     }
 }
