@@ -51,7 +51,7 @@ print_line("Taking CVS snapshot: $label\n");
 
 # checkout source
 get_source("cayenne");
-get_source("sandbox");
+#get_source("sandbox");
 
 # archive
 chdir "$opt_c" or die_with_email("Can't change to $opt_c: $!\n");
