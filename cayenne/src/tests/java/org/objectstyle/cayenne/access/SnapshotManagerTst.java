@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,13 +55,19 @@
  */
 package org.objectstyle.cayenne.access;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.objectstyle.art.Artist;
+import org.objectstyle.art.Gallery;
 import org.objectstyle.art.Painting;
+import org.objectstyle.cayenne.access.util.DefaultOperationObserver;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
+import org.objectstyle.cayenne.query.SelectQuery;
+import org.objectstyle.cayenne.query.SqlModifyQuery;
 
 /**
  * @author Andrei Adamchik
@@ -100,22 +106,51 @@ public class SnapshotManagerTst extends DataContextTestBase {
         Map map = new HashMap();
         map.put(
             "ARTIST_ID",
-            painting.getToArtist().getObjectId().getValueForAttribute(
-                "ARTIST_ID"));
+            painting.getToArtist().getObjectId().getValueForAttribute("ARTIST_ID"));
 
         assertFalse(
-            context.getSnapshotManager().isToOneTargetModified(
-                toArtist,
-                painting,
-                map));
+            context.getSnapshotManager().isToOneTargetModified(toArtist, painting, map));
 
         painting.setToArtist(artist);
 
         assertTrue(
-            context.getSnapshotManager().isToOneTargetModified(
-                toArtist,
-                painting,
-                map));
+            context.getSnapshotManager().isToOneTargetModified(toArtist, painting, map));
+    }
+
+    public void testIsToOneTargetModifiedWithNewTarget() throws Exception {
+        // save bypassing DataContext
+        List queries = new ArrayList(3);
+        queries.add(
+            new SqlModifyQuery(
+                Artist.class,
+                "INSERT INTO ARTIST (ARTIST_ID, ARTIST_NAME, DATE_OF_BIRTH) "
+                    + "VALUES (2000, 'artist with one painting', null)"));
+
+        queries.add(
+            new SqlModifyQuery(
+                Artist.class,
+                "INSERT INTO PAINTING (ARTIST_ID, ESTIMATED_PRICE, GALLERY_ID, "
+                    + "PAINTING_ID, PAINTING_TITLE) VALUES (2000, null, null, 3000, 'p1')"));
+
+        context.performQueries(queries, new DefaultOperationObserver());
+
+        // add NEW gallery to painting
+        List paintings = context.performQuery(new SelectQuery(Painting.class));
+        assertEquals(1, paintings.size());
+        Painting p1 = (Painting) paintings.get(0);
+
+        Gallery g1 = (Gallery) context.createAndRegisterNewObject("Gallery");
+        g1.addToPaintingArray(p1);
+
+        ObjEntity paintingEntity =
+            context.getEntityResolver().lookupObjEntity(Painting.class);
+        ObjRelationship toGallery =
+            (ObjRelationship) paintingEntity.getRelationship("toGallery");
+        Map map = context.getObjectStore().getSnapshot(p1.getObjectId());
+
+        // testing this:
+        assertTrue(
+            context.getSnapshotManager().isToOneTargetModified(toGallery, p1, map));
     }
 
     public void testIsJoinAttributesModified() throws Exception {

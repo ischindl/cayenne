@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,7 +66,10 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.dba.DbAdapter;
+import org.objectstyle.cayenne.dba.firebird.FirebirdAdapter;
+import org.objectstyle.cayenne.dba.mysql.MySQLAdapter;
 import org.objectstyle.cayenne.dba.oracle.OracleAdapter;
+import org.objectstyle.cayenne.dba.postgres.PostgresAdapter;
 import org.objectstyle.cayenne.dba.sybase.SybaseAdapter;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.Procedure;
@@ -89,6 +92,9 @@ public class DatabaseSetupDelegate {
     static {
         delegates.put(OracleAdapter.class, OracleDelegate.class);
         delegates.put(SybaseAdapter.class, SybaseDelegate.class);
+        delegates.put(FirebirdAdapter.class, FirebirdDelegate.class);
+        delegates.put(PostgresAdapter.class, PostgresDelegate.class);
+        delegates.put(MySQLAdapter.class, MySQLDelegate.class);
     }
 
     protected DbAdapter adapter;
@@ -148,6 +154,10 @@ public class DatabaseSetupDelegate {
      */
     public boolean supportsLobs() {
     	return false;
+    }
+    
+    public boolean supportsBinaryPK() {
+        return true;
     }
 
     protected void executeDDL(Connection con, String ddl) throws Exception {

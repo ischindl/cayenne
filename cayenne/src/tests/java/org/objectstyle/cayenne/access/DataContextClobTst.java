@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -124,7 +124,7 @@ public class DataContextClobTst extends CayenneTestCase {
         assertEquals(1, objects2.size());
 
         ClobTest clobObj2 = (ClobTest) objects2.get(0);
-        assertNull(clobObj2.getClobCol());
+        assertNull("Expected null, got: '" + clobObj2.getClobCol() + "'", clobObj2.getClobCol());
 
         // update and save Clob
         clobObj2.setClobCol("updated rather small clob...");

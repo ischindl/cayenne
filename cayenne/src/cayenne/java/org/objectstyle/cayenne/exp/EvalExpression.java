@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,6 +64,10 @@ import org.objectstyle.cayenne.util.Util;
 
 /**
  * Class that performs in-memory Cayenne expressions evaluation.
+ * 
+ * @deprecated since 1.0.6 expressions evaluation has been reimplemented, and this class
+ * is no longer supported (with all its current defficiencies). Use API provided by 
+ * Expression class to do in-memory evaluation.
  * 
  * @author Andrei Adamchik
  */

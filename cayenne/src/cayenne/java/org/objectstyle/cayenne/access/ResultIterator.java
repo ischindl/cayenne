@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -107,5 +107,12 @@ public interface ResultIterator {
      * Otherwise unused database resources will not be released properly.
      */  
     public void close() throws CayenneException;
+    
+    /**
+     * Returns the number of columns in the result row.
+     * 
+     * @since 1.0.6
+     */
+    public int getDataRowWidth();
 }
 

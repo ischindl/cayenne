@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,13 +60,14 @@ import java.util.List;
 import org.objectstyle.art.Artist;
 import org.objectstyle.art.Gallery;
 import org.objectstyle.art.Painting;
+import org.objectstyle.art.ROPainting;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.query.SelectQuery;
 
 public class CDOMany2OneTst extends CayenneDOTestBase {
 
-   public void testReadRO1() throws Exception {
+    public void testReadRO1() throws Exception {
 
         // setup test
         Artist a1 = newArtist();
@@ -82,11 +83,11 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
         // *** TESTING THIS *** 
         List paints = ctxt.performQuery(q);
         assertEquals(1, paints.size());
-        
-        Painting rop1 = (Painting)paints.get(0);
+
+        ROPainting rop1 = (ROPainting) paints.get(0);
         assertSame(a1, rop1.getToArtist());
     }
-    
+
     public void testReadRO2() throws Exception {
 
         // setup test
@@ -96,7 +97,7 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
         ctxt.commitChanges();
 
         resetContext();
-        
+
         // do select
         Expression e =
             ExpressionFactory.binaryPathExp(Expression.EQUAL_TO, "toArtist", a1);
@@ -105,16 +106,17 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
         // *** TESTING THIS *** 
         List paints = ctxt.performQuery(q);
         assertEquals(1, paints.size());
-        
-        Painting rop1 = (Painting)paints.get(0);
+
+        ROPainting rop1 = (ROPainting) paints.get(0);
         assertNotNull(rop1.getToArtist());
-        
+
         // trigger fetch
         rop1.getToArtist().getArtistName();
-        assertEquals(PersistenceState.COMMITTED, rop1.getToArtist().getPersistenceState());
+        assertEquals(
+            PersistenceState.COMMITTED,
+            rop1.getToArtist().getPersistenceState());
     }
-    
-    
+
     public void testSelectViaRelationship() throws Exception {
 
         // setup test
@@ -134,7 +136,7 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
         assertEquals(1, paints.size());
         assertSame(p1, paints.get(0));
     }
-    
+
     public void testSelectViaMultiRelationship() throws Exception {
 
         // setup test
@@ -150,7 +152,10 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
 
         // do select
         Expression e =
-            ExpressionFactory.binaryPathExp(Expression.EQUAL_TO, "paintingArray.toGallery", g1);
+            ExpressionFactory.binaryPathExp(
+                Expression.EQUAL_TO,
+                "paintingArray.toGallery",
+                g1);
         SelectQuery q = new SelectQuery("Artist", e);
 
         // *** TESTING THIS *** 
@@ -158,7 +163,6 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
         assertEquals(1, artists.size());
         assertSame(a1, artists.get(0));
     }
-    
 
     public void testNewAdd() throws Exception {
         Artist a1 = newArtist();
@@ -256,8 +260,10 @@ public class CDOMany2OneTst extends CayenneDOTestBase {
 
     public void testSavedAdd() throws Exception {
         Painting p1 = newPainting();
-		assertEquals(p1.getObjectId(), ctxt.registeredObject(p1.getObjectId()).getObjectId());
-		assertTrue(ctxt.hasChanges());
+        assertEquals(
+            p1.getObjectId(),
+            ctxt.registeredObject(p1.getObjectId()).getObjectId());
+        assertTrue(ctxt.hasChanges());
 
         // do save
         ctxt.commitChanges();

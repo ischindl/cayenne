@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -100,9 +100,53 @@ public interface DataObject extends java.io.Serializable {
     /** Allows Cayenne framework classes to modify object property values. */
     public void writePropertyDirectly(String propName, Object val);
     
-    /** Allows Cayenne framework classes to read object property values. */
+    /** 
+     * Returns a value of object property without alterning a state of the object,
+     * or the property returned. This method is used internally by Cayenne framework
+     * and shouldn't be normally used directly.
+     * 
+     * @see {@link #readNestedProperty(String)}
+     */
     public Object readPropertyDirectly(String propName);
     
+    /**
+     * Returns the value of a property path. Property path (or nested property) is a 
+     * dot-separated path used to traverse object relationships until the final object 
+     * is found. If a null object found while traversing path, null is returned. If a 
+     * list is encountered in the middle of the path, CayenneRuntimeException is thrown. 
+     * Unlike {@link #readPropertyDirectly(String)}, this method will resolve an object
+     * if it is HOLLOW.
+     *
+     * <p>Examples:</p>
+     * <ul>
+     *    <li>Read this object property:<br>
+     *    <code>String name = (String)artist.readNestedProperty("name");</code><br><br></li>
+     *
+     *    <li>Read an object related to this object:<br>
+     *    <code>Gallery g = (Gallery)paintingInfo.readNestedProperty("toPainting.toGallery");</code>
+     *    <br><br></li>
+     *
+     *    <li>Read a property of an object related to this object: <br>
+     *    <code>String name = (String)painting.readNestedProperty("toArtist.artistName");</code>
+     *    <br><br></li>
+     *
+     *    <li>Read to-many relationship list:<br>
+     *    <code>List exhibits = (List)painting.readNestedProperty("toGallery.exhibitArray");</code>
+     *    <br><br></li>
+     *
+     *    <li>Read to-many relationship in the middle of the path <b>(throws exception)</b>:<br>
+     *    <code>String name = (String)artist.readNestedProperty("paintingArray.paintingName");</code>
+     *   <br><br></li>
+     * </ul>
+     * 
+     * @since 1.0.5
+     *
+     */    
+    public Object readNestedProperty(String path);
+    
+	/**
+	 * @deprecated Since 1.0.1 this method is no longer needed.
+	 */
     public DataObject readToOneDependentTarget(String relName);
 
     public void addToManyTarget(String relName, DataObject val, boolean setReverse);
@@ -111,6 +155,11 @@ public interface DataObject extends java.io.Serializable {
     
     public void setToOneTarget(String relName, DataObject val, boolean setReverse);
     
+	/**
+	 * @deprecated Since 1.0.1 this method is no longer needed, since 
+	 * "setToOneTarget(String, DataObject, boolean)" supports dependent targets 
+	 * as well.
+	 */
     public void setToOneDependentTarget(String relName, DataObject val);
 
     /** 

@@ -1,0 +1,8 @@
+            Cayenne Release Notes 1.0.x 
+                 Date: [unreleased]
+         ============================================
+
+For the latest information go to the project web site at
+http://objectstyle.org/cayenne/
+
+

@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -209,8 +209,13 @@ public class GenerateDbDialog
         // convert them to string representation for display
         StringBuffer buf = new StringBuffer();
         Iterator it = gen.configuredStatements().iterator();
+        String batchTerminator = gen.getAdapter().getBatchTerminator();
+
+        String lineEnd =
+            (batchTerminator != null) ? "\n" + batchTerminator + "\n\n" : "\n\n";
+
         while (it.hasNext()) {
-            buf.append(it.next()).append("\n\n");
+            buf.append(it.next()).append(lineEnd);
         }
         sql.setText(buf.toString());
     }

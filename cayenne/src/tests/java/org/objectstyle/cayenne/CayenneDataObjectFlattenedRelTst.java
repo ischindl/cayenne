@@ -1,6 +1,8 @@
 package org.objectstyle.cayenne;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.objectstyle.art.ArtGroup;
 import org.objectstyle.art.Artist;
@@ -8,9 +10,15 @@ import org.objectstyle.art.FlattenedTest1;
 import org.objectstyle.art.FlattenedTest2;
 import org.objectstyle.art.FlattenedTest3;
 import org.objectstyle.cayenne.access.DataContext;
+import org.objectstyle.cayenne.access.MockupSnapshotManager;
+import org.objectstyle.cayenne.access.util.DefaultOperationObserver;
+import org.objectstyle.cayenne.access.util.RelationshipFault;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
+import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.ObjRelationship;
 import org.objectstyle.cayenne.query.SelectQuery;
+import org.objectstyle.cayenne.query.SqlModifyQuery;
 import org.objectstyle.cayenne.util.Util;
 
 /**
@@ -138,8 +146,7 @@ public class CayenneDataObjectFlattenedRelTst extends CayenneDOTestBase {
             //The bug caused the second commit to fail (the link record
             // was inserted again)
             a1.getDataContext().commitChanges();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             fail("Should not have thrown an exception");
         }
@@ -182,8 +189,7 @@ public class CayenneDataObjectFlattenedRelTst extends CayenneDOTestBase {
 
         try {
             dc.commitChanges();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             fail("Should not have thrown the exception :" + e.getMessage());
         }
@@ -215,8 +221,7 @@ public class CayenneDataObjectFlattenedRelTst extends CayenneDOTestBase {
 
         try {
             ctxt.commitChanges();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Util.unwindException(e).printStackTrace();
             fail("Should not have thrown the exception " + e.getMessage());
         }
@@ -230,4 +235,87 @@ public class CayenneDataObjectFlattenedRelTst extends CayenneDOTestBase {
         //a1 = fetchArtist();
         //assertTrue(group.getArtistArray().contains(a1));
     }
+
+    public void testTakeObjectSnapshotFlattenedFault() throws Exception {
+        prepareSnapshotManagerTest();
+
+        // fetch 
+        List ft3s = ctxt.performQuery(new SelectQuery(FlattenedTest3.class));
+        assertEquals(1, ft3s.size());
+        FlattenedTest3 ft3 = (FlattenedTest3) ft3s.get(0);
+
+        assertTrue(ft3.readPropertyDirectly("toFT1") instanceof RelationshipFault);
+
+        // test that taking a snapshot does not trigger a fault, and generally works well 
+        ObjEntity entity = ctxt.getEntityResolver().lookupObjEntity(FlattenedTest3.class);
+        Map snapshot = ctxt.getSnapshotManager().takeObjectSnapshot(entity, ft3);
+
+        assertEquals("ft3", snapshot.get("NAME"));
+        assertTrue(ft3.readPropertyDirectly("toFT1") instanceof RelationshipFault);
+
+    }
+
+    public void testIsToOneTargetModifiedFlattenedFault1() throws Exception {
+        prepareSnapshotManagerTest();
+
+        // fetch 
+        List ft3s = ctxt.performQuery(new SelectQuery(FlattenedTest3.class));
+        assertEquals(1, ft3s.size());
+        FlattenedTest3 ft3 = (FlattenedTest3) ft3s.get(0);
+
+        // mark as dirty for the purpose of the test...
+        ft3.setPersistenceState(PersistenceState.MODIFIED);
+
+        assertTrue(ft3.readPropertyDirectly("toFT1") instanceof RelationshipFault);
+
+        // test that checking for modifications does not trigger a fault, and generally works well
+        MockupSnapshotManager testSnapshotManager = new MockupSnapshotManager(ctxt);
+        ObjEntity entity = ctxt.getEntityResolver().lookupObjEntity(FlattenedTest3.class);
+        ObjRelationship flattenedRel = (ObjRelationship) entity.getRelationship("toFT1");
+        assertFalse(
+            testSnapshotManager.isToOneTargetModified(
+                flattenedRel,
+                ft3,
+                ctxt.getObjectStore().getSnapshot(ft3.getObjectId())));
+        assertTrue(ft3.readPropertyDirectly("toFT1") instanceof RelationshipFault);
+    }
+
+
+    public void testRefetchWithFlattenedFaultToOneTarget1() throws Exception {
+        prepareSnapshotManagerTest();
+
+        // fetch 
+        List ft3s = ctxt.performQuery(new SelectQuery(FlattenedTest3.class));
+        assertEquals(1, ft3s.size());
+        FlattenedTest3 ft3 = (FlattenedTest3) ft3s.get(0);
+
+        assertTrue(ft3.readPropertyDirectly("toFT1") instanceof RelationshipFault);
+
+        // refetch
+        ctxt.performQuery(new SelectQuery(FlattenedTest3.class));
+        assertTrue(ft3.readPropertyDirectly("toFT1") instanceof RelationshipFault);
+    }
+
+    private void prepareSnapshotManagerTest() {
+        List queries = new ArrayList();
+        queries.add(
+            new SqlModifyQuery(
+                FlattenedTest3.class,
+                "insert into FLATTENED_TEST_1 (FT1_ID, NAME) values (1, 'ft1')"));
+        queries.add(
+            new SqlModifyQuery(
+                FlattenedTest3.class,
+                "insert into FLATTENED_TEST_1 (FT1_ID, NAME) values (2, 'ft12')"));
+        queries.add(
+            new SqlModifyQuery(
+                FlattenedTest3.class,
+                "insert into FLATTENED_TEST_2 (FT2_ID, FT1_ID, NAME) values (1, 1, 'ft2')"));
+        queries.add(
+            new SqlModifyQuery(
+                FlattenedTest3.class,
+                "insert into FLATTENED_TEST_3 (FT3_ID, FT2_ID, NAME) values (1, 1, 'ft3')"));
+
+        ctxt.performQueries(queries, new DefaultOperationObserver());
+    }
+
 }

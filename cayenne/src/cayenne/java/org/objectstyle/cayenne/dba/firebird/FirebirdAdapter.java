@@ -2,7 +2,7 @@
  *
  * The ObjectStyle Group Software License, Version 1.0
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group
+ * Copyright (c) 2002-2004 The ObjectStyle Group
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -136,7 +136,7 @@ public class FirebirdAdapter extends JdbcAdapter {
             buf.append(at.getName()).append(' ').append(type);
             
             // append size and precision (if applicable)
-            if (TypesMapping.supportsLength(at.getType())) {
+            if (typeSupportsLength(at.getType())) {
                 int len = at.getMaxLength();
                 int prec = TypesMapping.isDecimal(at.getType()) ? at.getPrecision() : -1;
                 
@@ -187,6 +187,20 @@ public class FirebirdAdapter extends JdbcAdapter {
         }
         buf.append(");");  // added ; and so I can execute the DDL Script at once
         return buf.toString();
+    }
+    
+    private boolean typeSupportsLength(int type) {
+        // "bytea" type does not support length
+        String[] externalTypes = externalTypesForJdbcType(type);
+        if (externalTypes != null && externalTypes.length > 0) {
+            for (int i = 0; i < externalTypes.length; i++) {
+                if ("blob sub_type 0".equalsIgnoreCase(externalTypes[i])) {
+                    return false;
+                }
+            }
+        }
+
+        return TypesMapping.supportsLength(type);
     }
     
     /**

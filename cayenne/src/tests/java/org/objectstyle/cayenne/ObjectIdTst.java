@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,7 @@
 package org.objectstyle.cayenne;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.objectstyle.art.Artist;
@@ -135,6 +136,47 @@ public class ObjectIdTst extends CayenneTestCase {
 		ObjectId oid = new ObjectId(class1, hm2);
 		assertFalse(ref.equals(oid));
 	}
+    
+    /**
+     * Checks that hashCode works even if keys
+     * are inserted in the map in a different order...
+     */
+    public void testEquals7() throws Exception {
+        Class class1 = Number.class;
+        
+        // create maps with guaranteed iteration order
+
+        Map hm1 = new LinkedHashMap();
+        hm1.put("KEY1", new Integer(1));
+        hm1.put("KEY2", new Integer(2));
+
+        Map hm2 = new LinkedHashMap();
+        // put same keys but in different order 
+        hm2.put("KEY2", new Integer(2));
+        hm2.put("KEY1", new Integer(1));
+
+        ObjectId ref = new ObjectId(class1, hm1);
+        ObjectId oid = new ObjectId(class1, hm2);
+        assertTrue(ref.equals(oid));
+        assertEquals(ref.hashCode(), oid.hashCode());
+    }
+	
+
+	public void testEqualsBinaryKey() throws Exception {
+		Class class1 = Artist.class;
+
+		Map hm1 = new HashMap();
+		hm1.put("key1",  new byte[] {3, 4, 10, -1});
+
+		Map hm2 = new HashMap();
+		hm2.put("key1", new byte[] {3, 4, 10, -1});
+
+		ObjectId ref = new ObjectId(class1, hm1);
+		ObjectId oid = new ObjectId(class1, hm2);
+		assertEquals(ref.hashCode(), oid.hashCode());
+		assertTrue(ref.equals(oid));
+	}
+
 
 	public void testEqualsNull() {
 		ObjectId o = new ObjectId(Artist.class, "ARTIST_ID", 42);

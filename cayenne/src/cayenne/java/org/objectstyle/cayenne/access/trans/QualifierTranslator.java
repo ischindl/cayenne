@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -436,10 +436,14 @@ public class QualifierTranslator
      * @see org.objectstyle.cayenne.access.trans.QueryAssemblerHelper#getObjEntity()
      */
     public ObjEntity getObjEntity() {
-        return (isTranslateParentQual())
-            ? queryAssembler.getEngine().getEntityResolver().lookupObjEntity(
-                (queryAssembler.getQuery()))
-            : super.getObjEntity();
+        if (isTranslateParentQual()) {
+        	SelectQuery query = (SelectQuery)queryAssembler.getQuery();
+			return queryAssembler.getEngine().getEntityResolver().lookupObjEntity(
+							(query.getParentObjEntityName()));
+        }
+        else {
+			return super.getObjEntity();
+        }
     }
 
     /**

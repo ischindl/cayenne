@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -104,4 +104,23 @@ public class PkGeneratorTst extends CayenneTestCase {
 			pkList.add(pk);
 		}
 	}
+    
+    public void testBinaryPK1() throws Exception {
+        if (!(pkGen instanceof JdbcPkGenerator)) {
+            return;
+        }
+
+        DbEntity artistEntity = getDomain().getEntityResolver().lookupDbEntity("Artist");
+        assertNull(((JdbcPkGenerator) pkGen).binaryPK(artistEntity));
+    }
+
+    public void testBinaryPK2() throws Exception {
+        if (!(pkGen instanceof JdbcPkGenerator)) {
+            return;
+        }
+
+        DbEntity binPKEntity =
+            getDomain().getEntityResolver().lookupDbEntity("BinaryPKTest1");
+        assertNotNull(((JdbcPkGenerator) pkGen).binaryPK(binPKEntity));
+    }
 }

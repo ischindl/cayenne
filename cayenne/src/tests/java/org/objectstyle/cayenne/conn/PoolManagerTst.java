@@ -2,7 +2,7 @@
  * 
  * The ObjectStyle Group Software License, Version 1.0 
  *
- * Copyright (c) 2002-2003 The ObjectStyle Group 
+ * Copyright (c) 2002-2004 The ObjectStyle Group 
  * and individual authors of the software.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,28 +65,38 @@ public class PoolManagerTst extends CayenneTestCase {
         String driverName = getFreshConnInfo().getJdbcDriver();
         String url = getFreshConnInfo().getDataSourceUrl();
 
-        PoolManager pm = new PoolManager(driverName, url, 0, 3, "", "");
+        PoolManager pm = new PoolManager(driverName, url, 0, 3, "", "") {
+            protected void startMaintenanceThread() {}
+        };
         assertEquals(url, pm.getDataSourceUrl());
         assertEquals(driverName, pm.getJdbcDriver());
     }
 
     public void testPassword() throws Exception {
-        PoolManager pm = new PoolManager(null, 0, 3, "", "b");
+        PoolManager pm = new PoolManager(null, 0, 3, "", "b") {
+            protected void startMaintenanceThread() {}
+        };
         assertEquals("b", pm.getPassword());
     }
 
     public void testUserName() throws Exception {
-        PoolManager pm = new PoolManager(null, 0, 3, "a", "");
+        PoolManager pm = new PoolManager(null, 0, 3, "a", "") {
+            protected void startMaintenanceThread() {}
+        };
         assertEquals("a", pm.getUserName());
     }
 
     public void testMinConnections() throws Exception {
-        PoolManager pm = new PoolManager(null, 0, 3, "", "");
+        PoolManager pm = new PoolManager(null, 0, 3, "", "") {
+            protected void startMaintenanceThread() {}
+        };
         assertEquals(0, pm.getMinConnections());
     }
 
     public void testMaxConnections() throws Exception {
-        PoolManager pm = new PoolManager(null, 0, 3, "", "");
+        PoolManager pm = new PoolManager(null, 0, 3, "", "") {
+            protected void startMaintenanceThread() {}
+        };
         assertEquals(3, pm.getMaxConnections());
     }
 
