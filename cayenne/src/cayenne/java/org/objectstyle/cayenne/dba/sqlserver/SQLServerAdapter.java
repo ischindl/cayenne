@@ -55,6 +55,7 @@
  */
 package org.objectstyle.cayenne.dba.sqlserver;
 
+import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.access.trans.QualifierTranslator;
 import org.objectstyle.cayenne.access.trans.QueryAssembler;
 import org.objectstyle.cayenne.access.trans.TrimmingQualifierTranslator;
@@ -101,5 +102,16 @@ public class SQLServerAdapter extends SybaseAdapter {
         return new TrimmingQualifierTranslator(
                 queryAssembler,
                 SQLServerAdapter.TRIM_FUNCTION);
+    }
+    
+    /**
+     * Returns an instance of SQLServerDataNode.
+     * 
+     * @since 1.1.1
+     */
+    public DataNode createDataNode(String name) {
+        DataNode node = new SQLServerDataNode(name);
+        node.setAdapter(this);
+        return node;
     }
 }

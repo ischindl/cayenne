@@ -55,25 +55,20 @@
  */
 package org.objectstyle.cayenne.dba.sqlserver;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collections;
-import java.util.Iterator;
 
 import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.access.OperationObserver;
 import org.objectstyle.cayenne.access.QueryLogger;
-import org.objectstyle.cayenne.map.DbAttribute;
-import org.objectstyle.cayenne.query.BatchQuery;
-import org.objectstyle.cayenne.query.InsertBatchQuery;
+import org.objectstyle.cayenne.access.trans.ProcedureTranslator;
+import org.objectstyle.cayenne.query.GenericSelectQuery;
 import org.objectstyle.cayenne.query.Query;
 
 /**
- * SQLServer-specific DataNode implementation that handles certain issues like identity
- * columns, etc.
- * 
- * @since 1.2
+ * @since 1.1.1
  * @author Andrei Adamchik
  */
 public class SQLServerDataNode extends DataNode {
@@ -87,78 +82,68 @@ public class SQLServerDataNode extends DataNode {
     }
 
     /**
-     * Executes stored procedure with SQLServer specific action.
+     * Runs stored procedure to addressing some pecularities of MS JDBC driver.
      */
     protected void runStoredProcedure(
             Connection con,
             Query query,
-            OperationObserver observer) throws SQLException, Exception {
-
-        new SQLServerProcedureAction(getAdapter(), getEntityResolver()).performAction(
-                con,
-                query,
-                observer);
-    }
-
-    /**
-     * Implements handling of identity PK columns.
-     */
-    protected void runBatchUpdate(
-            Connection connection,
-            BatchQuery query,
             OperationObserver delegate) throws SQLException, Exception {
 
-        // this condition checks if identity coilumns are present in the query and adapter
-        // is not ready to process them... e.g. if we are using a MS driver...
-        if (expectsToOverrideIdentityColumns(query)) {
+        ProcedureTranslator transl = (ProcedureTranslator) getAdapter()
+                .getQueryTranslator(query);
+        transl.setEngine(this);
+        transl.setCon(con);
 
-            String configSQL = "SET IDENTITY_INSERT "
-                    + query.getDbEntity().getFullyQualifiedName()
-                    + " ON";
+        CallableStatement statement = (CallableStatement) transl.createStatement(query
+                .getLoggingLevel());
 
-            QueryLogger.logQuery(
-                    query.getLoggingLevel(),
-                    configSQL,
-                    Collections.EMPTY_LIST);
+        try {
+            // stored procedure may contain a mixture of update counts and result sets,
+            // and out parameters. Read out parameters first, then
+            // iterate until we exhaust all results
+            statement.execute();
 
-            Statement statement = connection.createStatement();
+            // read the rest of the query
+            while (true) {
+                if (statement.getMoreResults()) {
+                    ResultSet rs = statement.getResultSet();
+
+                    try {
+                        readResultSet(
+                                rs,
+                                transl.getResultDescriptor(rs),
+                                (GenericSelectQuery) query,
+                                delegate);
+                    }
+                    finally {
+                        try {
+                            rs.close();
+                        }
+                        catch (SQLException ex) {
+                        }
+                    }
+                }
+                else {
+                    int updateCount = statement.getUpdateCount();
+                    if (updateCount == -1) {
+                        break;
+                    }
+                    QueryLogger.logUpdateCount(query.getLoggingLevel(), updateCount);
+                    delegate.nextCount(query, updateCount);
+                }
+            }
+
+            // read out parameters ... AFTER the main result set
+            readStoredProcedureOutParameters(statement, transl
+                    .getProcedureResultDescriptor(), query, delegate);
+        }
+        finally {
             try {
-                statement.execute(configSQL);
+                statement.close();
             }
-            finally {
-                try {
-                    statement.close();
-                }
-                catch (Exception e) {
-                }
+            catch (SQLException ex) {
+
             }
         }
-
-        super.runBatchUpdate(connection, query, delegate);
-    }
-
-    /**
-     * Returns whether a table has identity columns.
-     */
-    protected boolean expectsToOverrideIdentityColumns(BatchQuery query) {
-        // jTDS driver supports identity columns, no need for tricks...
-        if (getAdapter().supportsGeneratedKeys()) {
-            return false;
-        }
-
-        if (!(query instanceof InsertBatchQuery) || query.getDbEntity() == null) {
-            return false;
-        }
-
-        // find identity attributes
-        Iterator it = query.getDbEntity().getAttributes().iterator();
-        while (it.hasNext()) {
-            DbAttribute attribute = (DbAttribute) it.next();
-            if (attribute.isGenerated()) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
