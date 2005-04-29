@@ -184,6 +184,14 @@ public class DataRow extends HashMap {
         if (pk.size() == 1) {
             DbAttribute attr = (DbAttribute) pk.get(0);
             Object val = this.get(attr.getName());
+
+            if (val == null) {
+                throw new CayenneRuntimeException("Null value for '"
+                        + attr.getName()
+                        + "'. Snapshot: "
+                        + this);
+            }
+
             return new ObjectId(objectClass, attr.getName(), val);
         }
 
@@ -195,8 +203,10 @@ public class DataRow extends HashMap {
             DbAttribute attr = (DbAttribute) it.next();
             Object val = this.get(attr.getName());
             if (val == null) {
-                throw new CayenneRuntimeException(
-                    "Null value for '" + attr.getName() + "'. Snapshot: " + this);
+                throw new CayenneRuntimeException("Null value for '"
+                        + attr.getName()
+                        + "'. Snapshot: "
+                        + this);
             }
 
             idMap.put(attr.getName(), val);

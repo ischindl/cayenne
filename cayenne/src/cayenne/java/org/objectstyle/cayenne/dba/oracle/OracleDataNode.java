@@ -136,11 +136,21 @@ public class OracleDataNode extends DataNode {
                     // note: jdbc column indexes start from 1, not 0 unlike everywhere
                     // else
                     ResultSet rs = (ResultSet) statement.getObject(index + 1);
-                    ResultDescriptor nextDesc = ResultDescriptor.createDescriptor(
-                            rs,
-                            getAdapter().getExtendedTypes());
 
-                    readResultSet(rs, nextDesc, (GenericSelectQuery) query, delegate);
+                    try {
+                        ResultDescriptor nextDesc = ResultDescriptor.createDescriptor(
+                                rs,
+                                getAdapter().getExtendedTypes());
+
+                        readResultSet(rs, nextDesc, (GenericSelectQuery) query, delegate);
+                    }
+                    finally {
+                        try {
+                            rs.close();
+                        }
+                        catch (SQLException ex) {
+                        }
+                    }
                 }
                 else {
                     // note: jdbc column indexes start from 1, not 0 unlike everywhere
