@@ -512,6 +512,9 @@ public class DataNode implements QueryEngine {
         String queryStr = queryBuilder.createSqlString(query);
         Level logLevel = query.getLoggingLevel();
         boolean isLoggable = QueryLogger.isLoggable(logLevel);
+        boolean useOptimisticLock =
+          (query instanceof UpdateBatchQuery)
+              && ((UpdateBatchQuery) query).isUsingOptimisticLocking();
 
         // log batch SQL execution
         QueryLogger.logQuery(logLevel, queryStr, Collections.EMPTY_LIST);
@@ -528,7 +531,7 @@ public class DataNode implements QueryEngine {
                     QueryLogger.logQueryParameters(
                         logLevel,
                         "batch bind",
-                        query.getValuesForUpdateParameters());
+                        query.getValuesForUpdateParameters(useOptimisticLock ? false : true));
                 }
 
                 queryBuilder.bindParameters(statement, query, dbAttributes);
@@ -585,7 +588,7 @@ public class DataNode implements QueryEngine {
                     QueryLogger.logQueryParameters(
                         logLevel,
                         "bind",
-                        query.getValuesForUpdateParameters());
+                        query.getValuesForUpdateParameters(useOptimisticLock ? false : true));
                 }
 
                 queryBuilder.bindParameters(statement, query, dbAttributes);
