@@ -56,11 +56,14 @@
 
 package org.objectstyle.cayenne.query;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.objectstyle.cayenne.CayenneRuntimeException;
+import org.objectstyle.cayenne.access.jdbc.ColumnDescriptor;
 import org.objectstyle.cayenne.map.Procedure;
 import org.objectstyle.cayenne.map.QueryBuilder;
 import org.objectstyle.cayenne.util.XMLEncoder;
@@ -101,6 +104,11 @@ public class ProcedureQuery extends AbstractQuery implements GenericSelectQuery,
      * @since 1.1
      */
     protected String resultClassName;
+    
+    /**
+     * @since 1.1.3
+     */
+    protected List resultDescriptors;
 
     protected Map parameters = new HashMap();
     protected SelectExecutionProperties selectProperties = new SelectExecutionProperties();
@@ -151,6 +159,49 @@ public class ProcedureQuery extends AbstractQuery implements GenericSelectQuery,
         setRoot(procedureName);
         setResultClassName(resultType != null ? resultType.getName() : null);
     }
+    
+    /**
+     * Returns a List of #{@link RowDescriptor}
+     * objects describing query ResultSets in the order they are returned by the stored
+     * procedure.
+     * <p>
+     * <i>Note that if a procedure returns ResultSet in an OUT parameter, it is returned
+     * prior to any other result sets (though in practice database engines usually support
+     * only one mechanism for returning result sets. </i>
+     * </p>
+     * 
+     * @since 1.1.3
+     */
+    public List getResultDescriptors() {
+        return resultDescriptors != null ? resultDescriptors : Collections.EMPTY_LIST;
+    }
+
+    /**
+     * Adds a descriptor for a single ResultSet. More than one descriptor can be added by
+     * calling this method multiple times in the order of described ResultSet appearance
+     * in the procedure results.
+     * 
+     * @since 1.1.3
+     */
+    public synchronized void addResultDescriptor(ColumnDescriptor[] descriptor) {
+        if (resultDescriptors == null) {
+            resultDescriptors = new ArrayList(2);
+        }
+
+        resultDescriptors.add(descriptor);
+    }
+    
+    /**
+     * Removes result descriptor from the list of descriptors.
+     * 
+     * @since 1.1.3
+     */
+    public void removeResultDescriptor(ColumnDescriptor[] descriptor) {
+        if(resultDescriptors != null) {
+            resultDescriptors.remove(descriptor);
+        }
+    }
+
 
     /**
      * Initializes query parameters using a set of properties.

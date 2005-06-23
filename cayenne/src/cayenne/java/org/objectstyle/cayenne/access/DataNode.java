@@ -644,8 +644,7 @@ public class DataNode implements QueryEngine {
             statement.execute();
 
             // read out parameters
-            readStoredProcedureOutParameters(statement, transl
-                    .getProcedureResultDescriptor(), query, delegate);
+            readStoredProcedureOutParameters(statement, transl, delegate);
 
             // read the rest of the query
             while (true) {
@@ -689,24 +688,51 @@ public class DataNode implements QueryEngine {
 
     /**
      * Helper method that reads OUT parameters of a CallableStatement.
+     * 
+     * @deprecated since 1.1.3 Use a method that uses ProcedureTranslator parameter.
      */
     protected void readStoredProcedureOutParameters(
-        CallableStatement statement,
-        ResultDescriptor descriptor,
-        Query query,
-        OperationObserver delegate)
-        throws SQLException, Exception {
+            CallableStatement statement,
+            ResultDescriptor descriptor,
+            Query query,
+            OperationObserver delegate)
+            throws SQLException, Exception {
+
+            long t1 = System.currentTimeMillis();
+            Map row = DefaultResultIterator.readProcedureOutParameters(statement, descriptor);
+
+            if (!row.isEmpty()) {
+                // treat out parameters as a separate data row set
+                QueryLogger.logSelectCount(
+                    query.getLoggingLevel(),
+                    1,
+                    System.currentTimeMillis() - t1);
+                delegate.nextDataRows(query, Collections.singletonList(row));
+            }
+        }
+    
+    /**
+     * This method was added to 1.1 late in the game and does not exist in 1.2. It should not be called directly anyway.
+     * 
+     * @since 1.1.3 Replacement of
+     *        {@link #readStoredProcedureOutParameters(CallableStatement, ResultDescriptor, Query, OperationObserver)}
+     *        that supports custom result descriptors.
+     */
+    protected void readStoredProcedureOutParameters(
+            CallableStatement statement,
+            ProcedureTranslator translator,
+            OperationObserver delegate) throws SQLException, Exception {
 
         long t1 = System.currentTimeMillis();
-        Map row = DefaultResultIterator.readProcedureOutParameters(statement, descriptor);
+        Map row = DefaultResultIterator.readProcedureOutParameters(statement, translator
+                .getProcedureResultDescriptor());
 
         if (!row.isEmpty()) {
             // treat out parameters as a separate data row set
-            QueryLogger.logSelectCount(
-                query.getLoggingLevel(),
-                1,
-                System.currentTimeMillis() - t1);
-            delegate.nextDataRows(query, Collections.singletonList(row));
+            QueryLogger.logSelectCount(translator.getQuery().getLoggingLevel(), 1, System
+                    .currentTimeMillis()
+                    - t1);
+            delegate.nextDataRows(translator.getQuery(), Collections.singletonList(row));
         }
     }
 

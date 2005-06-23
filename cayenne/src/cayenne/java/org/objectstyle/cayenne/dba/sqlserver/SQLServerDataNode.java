@@ -133,9 +133,10 @@ public class SQLServerDataNode extends DataNode {
                 }
             }
 
-            // read out parameters ... AFTER the main result set
-            readStoredProcedureOutParameters(statement, transl
-                    .getProcedureResultDescriptor(), query, delegate);
+            // read out parameters ... AFTER the main result set ... 
+            // TODO: I hope SQLServer does not support ResultSets as OUT parameters, otherwise 
+            // custom result descriptors introduced in 1.1.3 will not work
+            readStoredProcedureOutParameters(statement, transl, delegate);
         }
         finally {
             try {
