@@ -1,38 +1,39 @@
 /* ====================================================================
+ *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,291 +47,619 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.conf;
 
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 
+import org.apache.commons.lang.Validate;
+import org.apache.commons.collections.Predicate;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.objectstyle.cayenne.CayenneRuntimeException;
-import org.objectstyle.cayenne.ConfigException;
+import org.objectstyle.cayenne.ConfigurationException;
 import org.objectstyle.cayenne.access.DataDomain;
-import org.objectstyle.cayenne.util.Log4JConverter;
+import org.objectstyle.cayenne.util.CayenneMap;
 import org.objectstyle.cayenne.util.ResourceLocator;
+import org.objectstyle.cayenne.dataview.DataView;
 
 /**
- * This class is an entry point to Cayenne. It loads all 
- * configuration files and instantiates main Cayenne objects. Used as a 
- * singleton via 'getSharedConfig' method.
- *
- * <p>To force custom subclass of Configuration, Java application must
- * call "initSharedConfig" with the name of such subclass. This will initialize
- * Configuration singleton instance with new object of a specified class.
- * By default org.objectstyle.cayenne.conf.DefaultConfiguration is instantiated.
+ * This class is an entry point to Cayenne. It loads all configuration files and
+ * instantiates main Cayenne objects. Used as a singleton via the
+ * {@link #getSharedConfiguration}method.
+ * <p>
+ * To use a custom subclass of Configuration, Java applications must call
+ * {@link #initializeSharedConfiguration}with the subclass as argument. This will create
+ * and initialize a Configuration singleton instance of the specified class. By default
+ * {@link DefaultConfiguration}is instantiated.
  * </p>
- *
+ * 
  * @author Andrei Adamchik
+ * @author Holger Hoffstaette
  */
 public abstract class Configuration {
-	static Logger logObj = Logger.getLogger(Configuration.class);
 
-	public static final String LOGGING_PROPS =
-		".cayenne/cayenne-log.properties";
-	public static final String DOMAIN_FILE = "cayenne.xml";
-	public static final String DEFAULT_CONFIG_CLASS =
-		"org.objectstyle.cayenne.conf.DefaultConfiguration";
+    private static Logger logObj = Logger.getLogger(Configuration.class);
 
-	private static Configuration sharedConfig;
-	private static boolean loggingConfigured;
-	protected static Level logLevel = Level.DEBUG;
+    public static final String DEFAULT_LOGGING_PROPS_FILE = ".cayenne/cayenne-log.properties";
+    public static final String DEFAULT_DOMAIN_FILE = "cayenne.xml";
+    public static final Class DEFAULT_CONFIGURATION_CLASS = DefaultConfiguration.class;
 
-	/** 
-	 * Defines ClassLoader to use for resource lookup.
-	 * Configuration objects that are using ClassLoaders
-	 * to locate reosurces may need to be bootstrapped
-	 * explicitly.
-	 */
-	private static ClassLoader resourceLoader =
-		Configuration.class.getClassLoader();
+    protected static Configuration sharedConfiguration = null;
+    private static boolean loggingConfigured = false;
 
-	/** Lookup map that stores DataDomains with names as keys. */
-	protected HashMap dataDomains = new HashMap();
+    public static final Predicate ACCEPT_ALL_DATAVIEWS = new Predicate() {
 
-	/** 
-	 * Sets <code>cl</code> class's ClassLoader to serve
-	 * as shared configuration resource ClassLoader.
-	 * If shared Configuration object does not use ClassLoader,
-	 * this method call will have no effect on how resources are loaded.
-	 */
-	public static void bootstrapSharedConfig(Class cl) {
-		resourceLoader = cl.getClassLoader();
-	}
+        public boolean evaluate(Object dataViewName) {
+            return true;
+        }
+    };
 
-	/** 
-	 * Configures Cayenne logging properties. 
-	 * Search for the properties file called <code>cayenne-log.properties</code> 
-	 * is first done in $HOME/.cayenne, then in CLASSPATH.
-	 */
-	public synchronized static void configCommonLogging() {
-		if (!loggingConfigured) {
-			ResourceLocator locator = new ResourceLocator();
-			locator.setSkipAbsPath(true);
-			locator.setSkipClasspath(false);
-			locator.setSkipCurDir(true);
-			locator.setSkipHomeDir(false);
-			configCommonLogging(locator.findResource(LOGGING_PROPS));
-		}
-	}
+    /**
+     * Defines a ClassLoader to use for resource lookup. Configuration objects that are
+     * using ClassLoaders to locate resources may need to be bootstrapped explicitly.
+     */
+    protected static ClassLoader resourceLoader;
 
-	/** 
-	 * Configures Cayenne logging properties using properties found at specified URL. 
-	 */
-	public synchronized static void configCommonLogging(URL propsFile) {
-		if (!loggingConfigured) {
-			if (propsFile != null) {
-				PropertyConfigurator.configure(propsFile);
-			} else {
-				BasicConfigurator.configure();
-			}
-			loggingConfigured = true;
-		}
-	}
+    /**
+     * Stores ClassLoader set up for the current thread.
+     * 
+     * @since 1.2
+     */
+    protected static ThreadLocal threadClassLoader = new ThreadLocal();
 
-	/** Use this method as an entry point to all Cayenne access objects.
-	  * <p>Note that if you want to provide custom Configuration,
-	  * make sure you call one of <code>initSharedConfig</code> methods
-	  * before your application code has a chance to call this method.
-	  */
-	public synchronized static Configuration getSharedConfig() {
-		if (sharedConfig == null)
-			initSharedConfig();
-		return sharedConfig;
-	}
+    /** Lookup map that stores DataDomains with names as keys. */
+    protected CayenneMap dataDomains = new CayenneMap(this);
+    protected Collection dataDomainsRef = Collections.unmodifiableCollection(dataDomains
+            .values());
+    protected DataSourceFactory overrideFactory;
+    protected ConfigStatus loadStatus = new ConfigStatus();
+    protected String domainConfigurationName = DEFAULT_DOMAIN_FILE;
+    protected boolean ignoringLoadFailures;
+    protected ConfigLoaderDelegate loaderDelegate;
+    protected ConfigurationShutdownHook configurationShutdownHook = new ConfigurationShutdownHook();
+    protected Map dataViewLocations = new HashMap();
+    protected String projectVersion;
+    
+    /**
+     * Stores instance ClassLoader.
+     * 
+     * @since 1.2
+     */
+    protected ClassLoader classLoader;
 
-	public static ClassLoader getResourceLoader() {
-		return resourceLoader;
-	}
+    /**
+     * Sets <code>cl</code> class's ClassLoader to serve as shared configuration
+     * resource ClassLoader. If shared Configuration object does not use ClassLoader, this
+     * method call will have no effect on how resources are loaded.
+     */
+    public static void bootstrapSharedConfiguration(Class cl) {
+        if (cl.getClassLoader() != null) {
+            resourceLoader = cl.getClassLoader();
+        }
+        else {
+            logObj
+                    .debug("An attempt to bootstrap configuration with null class loader for class "
+                            + cl.getName());
+        }
+    }
 
-	/**
-	* @deprecated Use Log4J-based equivalent
-	*/
-	public static java.util.logging.Level getLogLevel() {
-		return Log4JConverter.getJSDKLogLevel(logLevel);
-	}
+    /**
+     * Configures Cayenne logging properties. Search for the properties file called
+     * <code>cayenne-log.properties</code> is first done in $HOME/.cayenne, then in
+     * CLASSPATH.
+     */
+    public synchronized static void configureCommonLogging() {
+        if (!Configuration.isLoggingConfigured()) {
+            // create a simple CLASSPATH/$HOME locator
+            ResourceLocator locator = new ResourceLocator();
+            locator.setSkipAbsolutePath(true);
+            locator.setSkipClasspath(false);
+            locator.setSkipCurrentDirectory(true);
+            locator.setSkipHomeDirectory(false);
 
-	/**
-	 * @deprecated Use Log4J-based equivalent
-	 */
-	public static void setLogLevel(java.util.logging.Level logLevel) {
-		setLoggingLevel(Log4JConverter.getLog4JLogLevel(logLevel));
-	}
+            // and load the default logging config file
+            URL configURL = locator.findResource(DEFAULT_LOGGING_PROPS_FILE);
+            Configuration.configureCommonLogging(configURL);
+        }
+    }
 
-	/** 
-	 * Returns default log level for loading configuration. 
-	 * Log level is made static so that applications can set it 
-	 * before shared Configuration object is instantaited.
-	 */
-	public static Level getLoggingLevel() {
-		return logLevel;
-	}
+    /**
+     * Configures Cayenne logging properties using properties found at the specified URL.
+     */
+    public synchronized static void configureCommonLogging(URL propsFile) {
+        if (!Configuration.isLoggingConfigured()) {
+            if (propsFile != null) {
+                PropertyConfigurator.configure(propsFile);
+                logObj.debug("configured log4j from: " + propsFile);
+            }
+            else {
+                BasicConfigurator.configure();
+                logObj.debug("configured log4j with BasicConfigurator.");
+            }
 
-	/** Sets default log level for loading configuration. */
-	public static void setLoggingLevel(Level logLevel) {
-		Configuration.logLevel = logLevel;
-	}
+            // remember configuration success
+            Configuration.setLoggingConfigured(true);
+        }
+    }
 
-	/** Creates and initializes shared Configuration object.
-	  * org.objectstyle.cayenne.conf.DefaultConfiguration will be 
-	  * instantiated and assigned to a singleton instance of
-	  * Configuration. */
-	public static void initSharedConfig() {
-		initSharedConfig(DEFAULT_CONFIG_CLASS);
-	}
+    /**
+     * Indicates whether Log4j has been initialized, either by cayenne or otherwise. If an
+     * external setup has been detected, {@link #setLoggingConfigured}will be called to
+     * remember this.
+     */
+    public static boolean isLoggingConfigured() {
+        if (!loggingConfigured) {
+            // check for existing log4j setup
+            if (Logger.getRootLogger().getAllAppenders().hasMoreElements()) {
+                Configuration.setLoggingConfigured(true);
+            }
+        }
 
-	/** Creates and initializes shared Configuration object with
-	  * custom Configuration subclass. */
-	public static void initSharedConfig(String configClass) {
-		Configuration conf = null;
+        return loggingConfigured;
+    }
 
-		// separate instantiation exceptions from the
-		// possible runtime exceptions thown in initSharedConfig
-		try {
-			conf = (Configuration) Class.forName(configClass).newInstance();
-		} catch (Exception ex) {
-			logObj.error("Error initializing shared Configuration", ex);
-			throw new RuntimeException("Error initializing shared Configuration");
-		}
+    /**
+     * Indicate whether Log4j has been initialized. Can be used when subclasses customize
+     * the initialization process, or to configure Log4J outside of Cayenne.
+     */
+    public synchronized static void setLoggingConfigured(boolean state) {
+        loggingConfigured = state;
+    }
 
-		initSharedConfig(conf);
-	}
+    /**
+     * Use this method as an entry point to all Cayenne access objects.
+     * <p>
+     * Note that if you want to provide a custom Configuration, make sure you call one of
+     * the {@link #initializeSharedConfiguration}methods before your application code has
+     * a chance to call this method.
+     */
+    public synchronized static Configuration getSharedConfiguration() {
+        if (Configuration.sharedConfiguration == null) {
+            Configuration.initializeSharedConfiguration();
+        }
 
-	/** Sets shared Configuration object to a new Configuration object.
-	  * calls <code>init</code> method of <code>conf</code> object. */
-	public static void initSharedConfig(Configuration conf) {
-		try {
-			sharedConfig = conf;
-			sharedConfig.init();
-		} catch (java.lang.Exception ex) {
-			logObj.error("Error initializing shared Configuration", ex);
-			throw new RuntimeException("Error initializing shared Configuration");
-		}
-	}
+        return Configuration.sharedConfiguration;
+    }
 
-	/** Returns domain configuration as a stream or null if it
-	  * can not be found. */
-	public abstract InputStream getDomainConfig();
+    /**
+     * Returns the ClassLoader used to load resources. Since Cayenne 1.2 this method
+     * implements different logic for providing a class loader. First it checks whether a
+     * thread-local ClassLoader was provided via "setThreadClassLoader", then it checked
+     * static resourceLoader, and finally it returns current thread context ClassLoader.
+     */
+    public static ClassLoader getResourceLoader() {
+        ClassLoader loader = (ClassLoader) threadClassLoader.get();
+        if (loader == null) {
+            loader = Configuration.resourceLoader;
+        }
 
-	/** Returns DataMap configuration from a specified location or null if it
-	  * can not be found. */
-	public abstract InputStream getMapConfig(String location);
+        if (loader == null) {
+            loader = Thread.currentThread().getContextClassLoader();
+        }
 
-	/** Initializes all Cayenne resources. Loads all configured domains and their
-	  * data maps, initializes all domain Nodes and their DataSources. */
-	public void init() throws Exception {
-		configLogging();
-		InputStream in = getDomainConfig();
-		if (in == null) {
-			StringBuffer msg = new StringBuffer();
-			msg
-				.append("[")
-				.append(this.getClass().getName())
-				.append("] : Domain configuration file \"")
-				.append(DOMAIN_FILE)
-				.append("\" is not found.");
+        return loader;
+    }
 
-			throw new ConfigException(msg.toString());
-		}
+    public static void setThreadClassLoader(ClassLoader classLoader) {
+        threadClassLoader.set(classLoader);
+    }
 
-		DomainHelper helper = new DomainHelper(this, getLoggingLevel());
-		if (!helper.loadDomains(in, getOverrideFactory())) {
-			StringBuffer msg = new StringBuffer();
-			msg.append("[").append(this.getClass().getName()).append(
-				"] : Failed to load domain and/or its maps/nodes.");
+    /**
+     * Returns default log level for loading configuration. Log level is made static so
+     * that applications can set it before shared Configuration object is instantiated.
+     */
+    public static Level getLoggingLevel() {
+        Level l = logObj.getLevel();
+        return (l != null ? l : Level.DEBUG);
+    }
 
-			throw new ConfigException(msg.toString());
-		}
+    /**
+     * Sets the default log level for loading a configuration.
+     */
+    public static void setLoggingLevel(Level logLevel) {
+        logObj.setLevel(logLevel);
+    }
 
-		Iterator it = helper.getDomains().iterator();
-		while (it.hasNext()) {
-			addDomain((DataDomain) it.next());
-		}
-	}
+    /**
+     * Creates and initializes shared Configuration object. By default
+     * {@link DefaultConfiguration}will be instantiated and assigned to a singleton
+     * instance of Configuration.
+     */
+    public static void initializeSharedConfiguration() {
+        Configuration.initializeSharedConfiguration(DEFAULT_CONFIGURATION_CLASS);
+    }
 
-	/**
-	 * Configures Log4J. This implementation calls
-	 * <code>configCommonLogging</code>.
-	 */
-	protected void configLogging() {
-		configCommonLogging();
-	}
+    /**
+     * Creates and initializes a shared Configuration object of a custom Configuration
+     * subclass.
+     */
+    public static void initializeSharedConfiguration(Class configurationClass) {
+        Configuration conf = null;
 
-	/**
-	 * Default implementation returns null. Subclasses
-	 * may override this method to provide a special factory
-	 * for DataSource creation that will override any factories configured
-	 * in cayenne project.
-	 */
-	protected DataSourceFactory getOverrideFactory() {
-		return null;
-	}
+        try {
+            conf = (Configuration) configurationClass.newInstance();
+        }
+        catch (Exception ex) {
+            logObj.error("Error creating shared Configuration: ", ex);
+            throw new ConfigurationException("Error creating shared Configuration."
+                    + ex.getMessage(), ex);
+        }
 
-	/** Adds new DataDomain to the list of registered domains. */
-	public void addDomain(DataDomain domain) {
-		dataDomains.put(domain.getName(), domain);
-	}
+        Configuration.initializeSharedConfiguration(conf);
+    }
 
-	/** Returns registered domain matching <code>name</code>
-	  * or null if no such domain is found. */
-	public DataDomain getDomain(String name) {
-		return (DataDomain) dataDomains.get(name);
-	}
+    /**
+     * Sets the shared Configuration object to a new Configuration object. First calls
+     * {@link #canInitialize}and - if permitted -{@link #initialize}followed by
+     * {@link #didInitialize}.
+     */
+    public static void initializeSharedConfiguration(Configuration conf) {
+        // check to see whether we can proceed
+        if (!conf.canInitialize()) {
+            throw new ConfigurationException("Configuration of class "
+                    + conf.getClass().getName()
+                    + " refused to be initialized.");
+        }
 
-	/** Returns default domain of this configuration. If no domains
-	  * are configured, null is returned. If more then 1 domain exists
-	  * in this configuration, an exception is thrown. In such cases
-	  * <code>getDomain(String name)</code> method must be used. */
-	public DataDomain getDomain() {
-		int size = dataDomains.size();
-		if (size == 0) {
-			return null;
-		} else if (size == 1) {
-			Iterator it = dataDomains.keySet().iterator();
-			return (DataDomain) dataDomains.get(it.next());
-		} else {
-			throw new CayenneRuntimeException("More then 1 domain is configured, use 'getDomain(String name)' instead.");
-		}
-	}
+        try {
+            // initialize configuration
+            conf.initialize();
 
-	/** Unregisters DataDomain matching <code>name<code> from
-	  * this Configuration object. Note that any domain database
-	  * connections remain open, and it is a responsibility of a
-	  * caller to clean it up. */
-	public void removeDomain(String name) {
-		dataDomains.remove(name);
-	}
+            // call post-initialization hook
+            conf.didInitialize();
 
-	/** Returns a list of registered DataDomain objects. */
-	public List getDomainList() {
-		ArrayList list = new ArrayList();
-		Iterator it = dataDomains.keySet().iterator();
-		while (it.hasNext()) {
-			list.add(dataDomains.get(it.next()));
-		}
-		return list;
-	}
+            // set the initialized Configuration only after success
+            Configuration.sharedConfiguration = conf;
+        }
+        catch (Exception ex) {
+            throw new ConfigurationException(
+                    "Error during Configuration initialization. " + ex.getMessage(),
+                    ex);
+        }
+    }
+
+    /**
+     * Default constructor for new Configuration instances. Simply calls
+     * {@link Configuration#Configuration(String)}.
+     * 
+     * @see Configuration#Configuration(String)
+     */
+    protected Configuration() {
+        this(DEFAULT_DOMAIN_FILE);
+    }
+
+    /**
+     * Default constructor for new Configuration instances using the given resource name
+     * as the main domain file. First calls {@link #configureLogging}, then
+     * {@link #setDomainConfigurationName}with the given domain configuration resource
+     * name.
+     */
+    protected Configuration(String domainConfigurationName) {
+        super();
+
+        // set up logging
+        this.configureLogging();
+
+        // set domain configuration name
+        this.setDomainConfigurationName(domainConfigurationName);
+    }
+
+    /**
+     * Indicates whether {@link #initialize}can be called. Returning <code>false</code>
+     * allows new instances to delay or refuse the initialization process.
+     */
+    public abstract boolean canInitialize();
+
+    /**
+     * Initializes the new instance.
+     * 
+     * @throws Exception
+     */
+    public abstract void initialize() throws Exception;
+
+    /**
+     * Called after successful completion of {@link #initialize}.
+     */
+    public abstract void didInitialize();
+
+    /**
+     * Returns the resource locator used for finding and loading resources.
+     */
+    protected abstract ResourceLocator getResourceLocator();
+
+    /**
+     * Returns a DataDomain as a stream or <code>null</code> if it cannot be found.
+     */
+    // TODO: this method is only used in sublcass (DefaultConfiguration),
+    // should we remove it from here?
+    protected abstract InputStream getDomainConfiguration();
+
+    /**
+     * Returns a DataMap with the given name or <code>null</code> if it cannot be found.
+     */
+    protected abstract InputStream getMapConfiguration(String name);
+
+    protected abstract InputStream getViewConfiguration(String location);
+
+    /**
+     * Configures log4J. This implementation calls
+     * {@link Configuration#configureCommonLogging}.
+     */
+    protected void configureLogging() {
+        Configuration.configureCommonLogging();
+    }
+
+    /**
+     * Returns the name of the main domain configuration resource. Defaults to
+     * {@link Configuration#DEFAULT_DOMAIN_FILE}.
+     */
+    public String getDomainConfigurationName() {
+        return this.domainConfigurationName;
+    }
+
+    /**
+     * Sets the name of the main domain configuration resource.
+     * 
+     * @param domainConfigurationName the name of the resource that contains this
+     *            Configuration's domain(s).
+     */
+    protected void setDomainConfigurationName(String domainConfigurationName) {
+        this.domainConfigurationName = domainConfigurationName;
+    }
+
+    /**
+     * @since 1.1
+     */
+    public String getProjectVersion() {
+        return projectVersion;
+    }
+
+    /**
+     * @since 1.1
+     */
+    public void setProjectVersion(String projectVersion) {
+        this.projectVersion = projectVersion;
+    }
+
+    /**
+     * Returns an internal property for the DataSource factory that will override any
+     * settings configured in XML. Subclasses may override this method to provide a
+     * special factory for DataSource creation that will take precedence over any
+     * factories configured in a cayenne project.
+     */
+    public DataSourceFactory getDataSourceFactory() {
+        return this.overrideFactory;
+    }
+
+    public void setDataSourceFactory(DataSourceFactory overrideFactory) {
+        this.overrideFactory = overrideFactory;
+    }
+
+    /**
+     * Adds new DataDomain to the list of registered domains.
+     */
+    public void addDomain(DataDomain domain) {
+        this.dataDomains.put(domain.getName(), domain);
+        logObj.debug("added domain: " + domain.getName());
+    }
+
+    /**
+     * Returns registered domain matching <code>name</code> or <code>null</code> if no
+     * such domain is found.
+     */
+    public DataDomain getDomain(String name) {
+        return (DataDomain) this.dataDomains.get(name);
+    }
+
+    /**
+     * Returns default domain of this configuration. If no domains are configured,
+     * <code>null</code> is returned. If more than one domain exists in this
+     * configuration, a CayenneRuntimeException is thrown, indicating that the domain name
+     * must be explicitly specified. In such cases {@link #getDomain(String name)}must be
+     * used instead.
+     */
+    public DataDomain getDomain() {
+        int size = this.dataDomains.size();
+        if (size == 0) {
+            return null;
+        }
+        else if (size == 1) {
+            return (DataDomain) this.dataDomains.values().iterator().next();
+        }
+        else {
+            throw new CayenneRuntimeException(
+                    "More than one domain is configured; use 'getDomain(String name)' instead.");
+        }
+    }
+
+    /**
+     * Unregisters DataDomain matching <code>name<code> from
+     * this Configuration object. Note that any domain database
+     * connections remain open, and it is a responsibility of a
+     * caller to clean it up.
+     */
+    public void removeDomain(String name) {
+        this.dataDomains.remove(name);
+        logObj.debug("removed domain: " + name);
+    }
+
+    /**
+     * Returns an unmodifiable collection of registered {@link DataDomain}objects.
+     */
+    public Collection getDomains() {
+        return this.dataDomainsRef;
+    }
+
+    /**
+     * Returns whether to ignore any failures during map loading or not.
+     * 
+     * @return boolean
+     */
+    public boolean isIgnoringLoadFailures() {
+        return this.ignoringLoadFailures;
+    }
+
+    /**
+     * Sets whether to ignore any failures during map loading or not.
+     * 
+     * @param ignoringLoadFailures <code>true</code> or <code>false</code>
+     */
+    protected void setIgnoringLoadFailures(boolean ignoringLoadFailures) {
+        this.ignoringLoadFailures = ignoringLoadFailures;
+    }
+
+    /**
+     * Returns the load status.
+     * 
+     * @return ConfigStatus
+     */
+    public ConfigStatus getLoadStatus() {
+        return this.loadStatus;
+    }
+
+    /**
+     * Sets the load status.
+     */
+    protected void setLoadStatus(ConfigStatus status) {
+        this.loadStatus = status;
+    }
+
+    /**
+     * Returns a delegate used for controlling the loading of configuration elements.
+     */
+    public ConfigLoaderDelegate getLoaderDelegate() {
+        return loaderDelegate;
+    }
+
+    /**
+     * @since 1.1
+     * @param loaderDelegate
+     */
+    public void setLoaderDelegate(ConfigLoaderDelegate loaderDelegate) {
+        this.loaderDelegate = loaderDelegate;
+    }
+
+    /**
+     * Initializes configuration with the location of data views.
+     * 
+     * @since 1.1
+     * @param dataViewLocations Map of DataView locations.
+     */
+    public void setDataViewLocations(Map dataViewLocations) {
+        if (dataViewLocations == null)
+            this.dataViewLocations = new HashMap();
+        else
+            this.dataViewLocations = dataViewLocations;
+    }
+
+    /**
+     * @since 1.1
+     */
+    public Map getDataViewLocations() {
+        return dataViewLocations;
+    }
+
+    /**
+     * @since 1.1
+     */
+    public boolean loadDataView(DataView dataView) throws IOException {
+        return loadDataView(dataView, Configuration.ACCEPT_ALL_DATAVIEWS);
+    }
+
+    /**
+     * @since 1.1
+     */
+    public boolean loadDataView(DataView dataView, Predicate dataViewNameFilter)
+            throws IOException {
+
+        Validate.notNull(dataView, "DataView cannot be null.");
+
+        if (dataViewLocations.size() == 0 || dataViewLocations.size() > 512) {
+            return false;
+        }
+
+        if (dataViewNameFilter == null)
+            dataViewNameFilter = Configuration.ACCEPT_ALL_DATAVIEWS;
+
+        List viewXMLSources = new ArrayList(dataViewLocations.size());
+        int index = 0;
+        for (Iterator i = dataViewLocations.entrySet().iterator(); i.hasNext(); index++) {
+            Map.Entry entry = (Map.Entry) i.next();
+            String name = (String) entry.getKey();
+            if (!dataViewNameFilter.evaluate(name))
+                continue;
+            String location = (String) entry.getValue();
+            InputStream in = getViewConfiguration(location);
+            if (in != null)
+                viewXMLSources.add(in);
+        }
+
+        if (viewXMLSources.isEmpty())
+            return false;
+
+        dataView.load((InputStream[]) viewXMLSources
+                .toArray(new InputStream[viewXMLSources.size()]));
+        return true;
+    }
+
+    /**
+     * Shutdowns all owned domains. Invokes DataDomain.shutdown().
+     */
+    public void shutdown() {
+        Collection domains = getDomains();
+        for (Iterator i = domains.iterator(); i.hasNext();) {
+            DataDomain domain = (DataDomain) i.next();
+            domain.shutdown();
+        }
+    }
+
+    private class ConfigurationShutdownHook extends Thread {
+
+        public void run() {
+            shutdown();
+        }
+    }
+
+    public void installConfigurationShutdownHook() {
+        uninstallConfigurationShutdownHook();
+        Runtime.getRuntime().addShutdownHook(configurationShutdownHook);
+    }
+
+    public void uninstallConfigurationShutdownHook() {
+        Runtime.getRuntime().removeShutdownHook(configurationShutdownHook);
+    }
+    
+    /**
+     * Returns ClassLoader set for this instance if it is not null. Otherwise returns
+     * static ClassLoader by calling "Configuration.getResourceLoader()".
+     * 
+     * @since 1.2
+     */
+    public ClassLoader getClassLoader() {
+        return classLoader != null ? classLoader : Configuration.getResourceLoader();
+    }
+    
+    /**
+     * @since 1.2
+     */
+    public void setClassLoader(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+    }
 }

@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,86 +47,160 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.map;
 
-import java.util.HashMap;
-
-import org.objectstyle.cayenne.CayenneTestCase;
-import org.objectstyle.cayenne.ObjectId;
+import org.objectstyle.art.Artist;
+import org.objectstyle.cayenne.CayenneRuntimeException;
+import org.objectstyle.cayenne.exp.Expression;
+import org.objectstyle.cayenne.unit.CayenneTestCase;
 
 public class ObjEntityTst extends CayenneTestCase {
-	protected ObjEntity ent;
 
-	public ObjEntityTst(String name) {
-		super(name);
-	}
+    protected ObjEntity entity;
 
-	public void setUp() throws Exception {
-		ent = new ObjEntity();
-	}
+    public void setUp() throws Exception {
+        entity = new ObjEntity("entity");
+    }
 
-	public void testClassName() throws Exception {
-		String tstName = "tst_name";
-		ent.setClassName(tstName);
-		assertEquals(tstName, ent.getClassName());
-	}
+    public void testDbEntityName() throws Exception {
+        assertNull(entity.getDbEntityName());
 
-	public void testAttributeForDbAttribute() throws Exception {
-		ObjEntity ae =
-			getSharedDomain().lookupEntity("Artist");
-		DbEntity dae = ae.getDbEntity();
+        entity.setDbEntityName("dbe");
+        assertEquals("dbe", entity.getDbEntityName());
 
-		assertNull(
-			ae.getAttributeForDbAttribute(
-				(DbAttribute) dae.getAttribute("ARTIST_ID")));
-		assertNotNull(
-			ae.getAttributeForDbAttribute(
-				(DbAttribute) dae.getAttribute("ARTIST_NAME")));
-	}
+        entity.setDbEntityName(null);
+        assertNull(entity.getDbEntityName());
+    }
 
-	public void testRelationshipForDbRelationship() throws Exception {
-		ObjEntity ae =
-			getSharedDomain().lookupEntity("Artist");
-		DbEntity dae = ae.getDbEntity();
+    public void testDbEntity() throws Exception {
+        DbEntity dbentity = new DbEntity("dbe");
 
-		assertNull(ae.getRelationshipForDbRelationship(new DbRelationship()));
-		assertNotNull(
-			ae.getRelationshipForDbRelationship(
-				(DbRelationship) dae.getRelationship("paintingArray")));
-	}
+        // need a container
+        DataMap dataMap = new DataMap();
+        dataMap.addObjEntity(entity);
+        dataMap.addDbEntity(dbentity);
 
-	public void testObjectIdFromSnapshot() throws Exception {
-		DbAttribute at = new DbAttribute();
-		at.setName("xyz");
-		at.setPrimaryKey(true);
-		DbEntity dbe = new DbEntity("123");
-		dbe.addAttribute(at);
-		ent.setDbEntity(dbe);
-		ent.setName("456");
+        assertNull(entity.getDbEntity());
 
-		// test same id created by different methods
-		HashMap map = new HashMap();
-		map.put(at.getName(), "123");
+        entity.setDbEntity(dbentity);
+        assertSame(dbentity, entity.getDbEntity());
 
-		HashMap map2 = new HashMap();
-		map2.put(at.getName(), "123");
+        entity.setDbEntity(null);
+        assertNull(entity.getDbEntity());
 
-		ObjectId ref = new ObjectId(ent.getName(), map);
-		ObjectId oid = ent.objectIdFromSnapshot(map2);
+        entity.setDbEntityName("dbe");
+        assertSame(dbentity, entity.getDbEntity());
+    }
 
-		assertEquals(ref, oid);
-	}
-	
-	public void testReadOnly() throws Exception {
-		assertTrue(!ent.isReadOnly());
-		ent.setReadOnly(true);
-		assertTrue(ent.isReadOnly());
-	}
+    public void testDbEntityNoContainer() throws Exception {
+        entity.setDbEntityName("dbe");
+
+        try {
+            entity.getDbEntity();
+            fail("Without a container ObjENtity shouldn't resolve DbEntity");
+        }
+        catch (CayenneRuntimeException ex) {
+            // expected
+        }
+    }
+
+    public void testClassName() throws Exception {
+        String tstName = "tst_name";
+        entity.setClassName(tstName);
+        assertEquals(tstName, entity.getClassName());
+    }
+
+    public void testSuperClassName() throws Exception {
+        String tstName = "super_tst_name";
+        entity.setSuperClassName(tstName);
+        assertEquals(tstName, entity.getSuperClassName());
+    }
+
+    public void testAttributeForDbAttribute() throws Exception {
+        ObjEntity ae = getObjEntity("Artist");
+        DbEntity dae = ae.getDbEntity();
+
+        assertNull(ae.getAttributeForDbAttribute((DbAttribute) dae
+                .getAttribute("ARTIST_ID")));
+        assertNotNull(ae.getAttributeForDbAttribute((DbAttribute) dae
+                .getAttribute("ARTIST_NAME")));
+    }
+
+    public void testRelationshipForDbRelationship() throws Exception {
+        ObjEntity ae = getObjEntity("Artist");
+        DbEntity dae = ae.getDbEntity();
+
+        assertNull(ae.getRelationshipForDbRelationship(new DbRelationship()));
+        assertNotNull(ae.getRelationshipForDbRelationship((DbRelationship) dae
+                .getRelationship("paintingArray")));
+    }
+
+    public void testReadOnly() throws Exception {
+        assertFalse(entity.isReadOnly());
+        entity.setReadOnly(true);
+        assertTrue(entity.isReadOnly());
+    }
+
+    public void testTranslateToRelatedEntityIndependentPath() throws Exception {
+        ObjEntity artistE = getDomain().getEntityResolver().lookupObjEntity(Artist.class);
+
+        Expression e1 = Expression.fromString("paintingArray");
+        Expression translated = artistE
+                .translateToRelatedEntity(e1, "artistExhibitArray");
+        assertEquals("failure: " + translated, Expression
+                .fromString("db:toArtist.paintingArray"), translated);
+    }
+
+    public void testTranslateToRelatedEntityTrimmedPath() throws Exception {
+        ObjEntity artistE = getDomain().getEntityResolver().lookupObjEntity(Artist.class);
+
+        Expression e1 = Expression.fromString("artistExhibitArray.toExhibit");
+        Expression translated = artistE
+                .translateToRelatedEntity(e1, "artistExhibitArray");
+        assertEquals(
+                "failure: " + translated,
+                Expression.fromString("db:toExhibit"),
+                translated);
+    }
+
+    public void testTranslateToRelatedEntitySplitHalfWay() throws Exception {
+        ObjEntity artistE = getDomain().getEntityResolver().lookupObjEntity(Artist.class);
+
+        Expression e1 = Expression.fromString("paintingArray.toPaintingInfo.textReview");
+        Expression translated = artistE.translateToRelatedEntity(
+                e1,
+                "paintingArray.toGallery");
+        assertEquals("failure: " + translated, Expression
+                .fromString("db:paintingArray.toPaintingInfo.TEXT_REVIEW"), translated);
+    }
+
+    public void testTranslateToRelatedEntityMatchingPath() throws Exception {
+        ObjEntity artistE = getDomain().getEntityResolver().lookupObjEntity(Artist.class);
+        Expression e1 = Expression.fromString("artistExhibitArray.toExhibit");
+        Expression translated = artistE.translateToRelatedEntity(
+                e1,
+                "artistExhibitArray.toExhibit");
+        assertEquals("failure: " + translated, Expression
+                .fromString("db:artistExhibitArray.toExhibit"), translated);
+    }
+
+    public void testTranslateToRelatedEntityMultiplePaths() throws Exception {
+        ObjEntity artistE = getDomain().getEntityResolver().lookupObjEntity(Artist.class);
+
+        Expression e1 = Expression
+                .fromString("paintingArray = $p and artistExhibitArray.toExhibit.closingDate = $d");
+        Expression translated = artistE
+                .translateToRelatedEntity(e1, "artistExhibitArray");
+        assertEquals(
+                "failure: " + translated,
+                Expression
+                        .fromString("db:toArtist.paintingArray = $p and db:toExhibit.CLOSING_DATE = $d"),
+                translated);
+    }
 }

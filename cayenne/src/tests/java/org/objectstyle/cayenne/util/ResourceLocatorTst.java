@@ -1,39 +1,39 @@
-package org.objectstyle.cayenne.util;
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -47,67 +47,74 @@ package org.objectstyle.cayenne.util;
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
+package org.objectstyle.cayenne.util;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStream;
 
-import org.objectstyle.cayenne.CayenneTestCase;
+import junit.framework.TestCase;
 
-public class ResourceLocatorTst extends CayenneTestCase {
-    private File fTmpFileInCurrentDir;
-    private String fTmpFileName;
+public class ResourceLocatorTst extends TestCase {
+	private File fTmpFileInCurrentDir;
+	private String fTmpFileName;
 
-    public ResourceLocatorTst(String name) {
-        super(name);
-    }
+	protected void setUp() throws java.lang.Exception {
+		fTmpFileName = System.currentTimeMillis() + ".tmp";
+		fTmpFileInCurrentDir = new File("." + File.separator + fTmpFileName);
 
-    protected void setUp() throws java.lang.Exception {
-        fTmpFileName = System.currentTimeMillis() + ".tmp";
-        fTmpFileInCurrentDir = new File("." + File.separator + fTmpFileName);
+		// right some garbage to the temp file, so that it is not empty
+		FileWriter fout = new FileWriter(fTmpFileInCurrentDir);
+		fout.write("This is total garbage..");
+		fout.close();
+	}
 
-        // right some garbage to the temp file, so that it is not empty
-        FileWriter fout = new FileWriter(fTmpFileInCurrentDir);
-        fout.write("This is total grabage..");
-        fout.close();
-    }
+	protected void tearDown() throws java.lang.Exception {
+		if (!fTmpFileInCurrentDir.delete())
+			throw new Exception("Error deleting temporary file: " + fTmpFileInCurrentDir);
+	}
 
-    protected void tearDown() throws java.lang.Exception {
-        if (!fTmpFileInCurrentDir.delete())
-            throw new Exception("Error deleting temporary file: " + fTmpFileInCurrentDir);
-    }
+	public void testFindResourceInCurrentDirectory() throws java.lang.Exception {
+		InputStream in = ResourceLocator.findResourceInFileSystem(fTmpFileName);
+		try {
+			assertNotNull(in);
+		}
+		finally {
+			in.close();
+		}
+	}
 
-    public void testFindResourceInCurDir() throws java.lang.Exception {
-        InputStream in = ResourceLocator.findResourceInFileSystem(fTmpFileName);
-        try {
-            assertNotNull(in);
-        }
-        finally {
-            in.close();
-        }
-    }
+	public void testClassBaseUrl() throws java.lang.Exception {
+		String me = ResourceLocator.classBaseUrl(this.getClass());
+		assertNotNull(me);
+		assertTrue("Expected 'jar:' or 'file:' URL, got " + me,
+					me.startsWith("jar:") || me.startsWith("file:"));
+	}
 
-    public void testClassBaseUrl() throws java.lang.Exception {
-        String me = ResourceLocator.classBaseUrl(this.getClass());
-        assertNotNull(me);
-        assertTrue("Expected jar:.. URL, got " + me, me.startsWith("jar:"));
-    }
+	public void testFindResourceInClasspath() throws java.lang.Exception {
+		InputStream in =
+			ResourceLocator.findResourceInClasspath("test-resources/testfile1.txt");
+		try {
+			assertNotNull(in);
+		}
+		finally {
+			in.close();
+		}
+	}
 
-    public void testFindResourceWithJarUrl() throws java.lang.Exception {
-        InputStream in =
-            ResourceLocator.findResourceInClasspath("test-resources/testfile1.txt");
-        try {
-            assertNotNull(in);
-        }
-        finally {
-            in.close();
-        }
-    }
+	public void testFindResourceWithCustomClassPath() throws java.lang.Exception {
+		ResourceLocator l = new ResourceLocator();
+		l.setSkipAbsolutePath(true);
+		l.setSkipCurrentDirectory(true);
+		l.setSkipHomeDirectory(true);
+		l.addClassPath("test-resources");
+		assertNotNull(l.findResource("testfile1.txt"));
+	}
+
 }

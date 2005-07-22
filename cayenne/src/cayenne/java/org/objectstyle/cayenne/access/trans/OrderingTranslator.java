@@ -1,39 +1,39 @@
-package org.objectstyle.cayenne.access.trans;
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -47,16 +47,16 @@ package org.objectstyle.cayenne.access.trans;
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
+package org.objectstyle.cayenne.access.trans;
 
+import java.util.ArrayList;
 import java.util.List;
-import org.apache.log4j.Logger;
 
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.exp.Expression;
@@ -64,52 +64,87 @@ import org.objectstyle.cayenne.query.Ordering;
 import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.query.SelectQuery;
 
-/** Translates query qualifier to SQL. */
+/** 
+ * Translates query ordering to SQL. 
+ * 
+ * @author Andrei Adamchik
+ * @author Craig Miskell
+ */
 public class OrderingTranslator extends QueryAssemblerHelper {
-	static Logger logObj = Logger.getLogger(OrderingTranslator.class.getName());
 
-	public OrderingTranslator(QueryAssembler queryAssembler) {
-		super(queryAssembler);
-	}
+    protected List orderByColumnList = new ArrayList();
+    
+    public OrderingTranslator(QueryAssembler queryAssembler) {
+        super(queryAssembler);
+    }
 
-	/** Translates query Ordering list to SQL ORDER BY clause. 
-	 *  Ordering list is obtained from <code>queryAssembler</code>'s query object. 
-	 *  In a process of building of ORDER BY clause, <code>queryAssembler</code> 
-	 *  is notified when a join needs to be added. */
-	public String doTranslation() {
-		Query q = queryAssembler.getQuery();
+    /** Translates query Ordering list to SQL ORDER BY clause. 
+     *  Ordering list is obtained from <code>queryAssembler</code>'s query object. 
+     *  In a process of building of ORDER BY clause, <code>queryAssembler</code> 
+     *  is notified when a join needs to be added. */
+    public String doTranslation() {
+        Query q = queryAssembler.getQuery();
 
-		// only select queries can have ordering...
-		if (q == null || !(q instanceof SelectQuery))
-			return null;
+        // only select queries can have ordering...
+        if (q == null || !(q instanceof SelectQuery))
+            return null;
 
-		StringBuffer buf = new StringBuffer();
-		List list = ((SelectQuery) q).getOrderingList();
-		int len = list.size();
+        StringBuffer buf = new StringBuffer();
+        List list = ((SelectQuery) q).getOrderings();
+        int len = list.size();
 
-		for (int i = 0; i < len; i++) {
-			if (i > 0)
-				buf.append(", ");
+        for (int i = 0; i < len; i++) {
+            if (i > 0)
+                buf.append(", ");
 
-			Ordering ord = (Ordering) list.get(i);
-			Expression exp = ord.getSortSpec();
+            StringBuffer ordComp = new StringBuffer();
 
-			if (exp.getType() == Expression.OBJ_PATH) {
-				appendObjPath(buf, exp);
-			}
-			else if(exp.getType() == Expression.DB_PATH) {
-				appendDbPath(buf, exp);
-			}
-			else {
-				throw new CayenneRuntimeException("Unsupported ordering expression: " + exp);
-			}
+            Ordering ord = (Ordering) list.get(i);
 
-			// "ASC" is a noop, omit it from the query 
-			if (!ord.isAscending()) {
-				buf.append(" DESC");
-			}
-		}
+            //UPPER is (I think) part of the SQL99 standard, and I'm not convinced it's universally available
+            // - should the syntax used here be defined by the Db specific adaptor perhaps, or at least
+            // possibly specified by the db adaptor (a DB specific OrderingTranslator hook)?
+            if (ord.isCaseInsensitive()) {
+                ordComp.append("UPPER(");
 
-		return buf.length() > 0 ? buf.toString() : null;
-	}
+            }
+
+            Expression exp = ord.getSortSpec();
+
+            if (exp.getType() == Expression.OBJ_PATH) {
+                appendObjPath(ordComp, exp);
+            } else if (exp.getType() == Expression.DB_PATH) {
+                appendDbPath(ordComp, exp);
+            } else {
+                throw new CayenneRuntimeException(
+                    "Unsupported ordering expression: " + exp);
+            }
+
+            //Close UPPER() modifier
+            if (ord.isCaseInsensitive()) {
+                ordComp.append(")");
+            }
+
+            orderByColumnList.add(ordComp.toString());
+            
+            buf.append(ordComp.toString());
+
+            // "ASC" is a noop, omit it from the query 
+            if (!ord.isAscending()) {
+                buf.append(" DESC");
+            }
+        }
+
+        return buf.length() > 0 ? buf.toString() : null;
+    }
+
+    /**
+     * Returns the column expressions (not Expressions) used in
+     * the order by clause.  E.g., in the case of an case-insensitive 
+     * order by, an element of the list would be 
+     * <code>UPPER(&lt;column reference&gt;)</code>
+     */    
+    public List getOrderByColumnList() {
+        return orderByColumnList;
+    }
 }

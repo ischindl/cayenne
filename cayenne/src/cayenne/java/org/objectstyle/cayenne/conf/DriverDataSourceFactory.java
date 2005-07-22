@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,12 +47,11 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.conf;
 
@@ -61,322 +61,254 @@ import javax.sql.DataSource;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.objectstyle.cayenne.ConfigException;
-import org.objectstyle.cayenne.access.DataSourceInfo;
+import org.objectstyle.cayenne.ConfigurationException;
 import org.objectstyle.cayenne.access.QueryLogger;
+import org.objectstyle.cayenne.access.util.ConnectionEventLogger;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.conn.PoolManager;
 import org.objectstyle.cayenne.util.AbstractHandler;
-import org.objectstyle.cayenne.util.Log4JConverter;
-import org.objectstyle.cayenne.util.ResourceLocator;
 import org.objectstyle.cayenne.util.Util;
-import org.xml.sax.*;
+import org.xml.sax.Attributes;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-/** 
- * Creates DataSource objects from XML configuration files that
- * describe a JDBC driver. Wraps JDBC driver in a generic DataSource 
- * implementation.
- *
+/**
+ * Creates DataSource objects from XML configuration files that describe a JDBC driver.
+ * Wraps JDBC driver in a generic DataSource implementation.
+ * 
  * @author Andrei Adamchik
  */
+// TODO: factory shouldn't contain any state specific to location ("driverInfo" ivar
+// should go, and probably "parser" too)... Otherwise the API doesn't make sense -
+// sequential invocations of getDataSource() will have side effects....
 public class DriverDataSourceFactory implements DataSourceFactory {
-	static Logger logObj =
-		Logger.getLogger(DriverDataSourceFactory.class.getName());
 
-	private static boolean applyWebAppPatch;
+    private static Logger logObj = Logger.getLogger(DriverDataSourceFactory.class);
 
-	static {
-		// determine if servlet environment is even accessible
-		try {
-			Class.forName("javax.servlet.http.HttpSession");
-			applyWebAppPatch = true;
-		} catch (Exception ex) {
-			applyWebAppPatch = false;
-		}
-	}
+    protected XMLReader parser;
+    protected DataSourceInfo driverInfo;
+    protected Level logLevel = Level.DEBUG;
+    protected Configuration parentConfiguration;
 
-	protected XMLReader parser;
-	protected DataSourceInfo driverInfo;
-	protected Level logLevel = Level.DEBUG;
-	protected ResourceLocator locator;
-	protected Configuration parentConfig;
+    /**
+     * Creates new DriverDataSourceFactory.
+     */
+    public DriverDataSourceFactory() throws Exception {
+        this.parser = Util.createXmlReader();
+    }
 
-	public DriverDataSourceFactory() throws Exception {
-		parser = Util.createXmlReader();
+    /**
+     * Stores configuration object internally to use it later for resource loading.
+     */
+    public void initializeWithParentConfiguration(Configuration parentConfiguration) {
+        this.parentConfiguration = parentConfiguration;
+    }
 
-		// CLASSPATH and filesystem locator
-		// (by default ResourceLocator is configured to find files 
-		// everywhere it can
-		locator = new ResourceLocator();
+    public DataSource getDataSource(String location) throws Exception {
+        return this.getDataSource(location, Level.DEBUG);
+    }
 
-		// Configuration statically defines what 
-		// ClassLoader to use for resources. This
-		// allows applications to control where resources 
-		// are loaded from.
-		locator.setClassLoader(Configuration.getResourceLoader());
-	}
+    public DataSource getDataSource(String location, Level logLevel) throws Exception {
+        this.logLevel = logLevel;
+        this.load(location);
 
-	public void setParentConfig(Configuration conf) {
-		this.parentConfig = conf;
-	}
+        ConnectionEventLogger logger = new ConnectionEventLogger(Level.INFO);
 
-	/** Returns DataSource object corresponding to <code>location</code>.
-	  * Location is expected to be a path of a file relative to the current
-	  * directory or a user home directory. */
-	public DataSource getDataSource(String location) throws Exception {
-		return getDataSource(location, Level.DEBUG);
-	}
+        try {
+            return new PoolManager(driverInfo.getJdbcDriver(), driverInfo
+                    .getDataSourceUrl(), driverInfo.getMinConnections(), driverInfo
+                    .getMaxConnections(), driverInfo.getUserName(), driverInfo
+                    .getPassword(), logger);
+        }
+        catch (Exception ex) {
+            QueryLogger.logConnectFailure(logLevel, ex);
+            throw ex;
+        }
+    }
 
-	/**
-	 * @deprecated Use Log4J-based equivalent.
-	 */
-	public DataSource getDataSource(
-		String location,
-		java.util.logging.Level logLevel)
-		throws Exception {
-		return getDataSource(location, Log4JConverter.getLog4JLogLevel(logLevel));
-	}
+    /**
+     * Returns DataSourceInfo property.
+     */
+    protected DataSourceInfo getDriverInfo() {
+        return this.driverInfo;
+    }
 
-	public DataSource getDataSource(String location, Level logLevel)
-		throws Exception {
-		this.logLevel = logLevel;
-		load(location);
+    protected InputStream getInputStream(String location) {
+        if (this.parentConfiguration == null) {
+            throw new ConfigurationException(
+                    "No parent Configuration set - cannot continue.");
+        }
 
-		QueryLogger.logConnect(logLevel, driverInfo);
-		try {
-			PoolManager pm =
-				new PoolManager(
-					driverInfo.getJdbcDriver(),
-					driverInfo.getDataSourceUrl(),
-					driverInfo.getMinConnections(),
-					driverInfo.getMaxConnections(),
-					driverInfo.getUserName(),
-					driverInfo.getPassword());
-			QueryLogger.logConnectSuccess(logLevel);
-			return pm;
-		} catch (Exception ex) {
-			QueryLogger.logConnectFailure(logLevel, ex);
-			throw ex;
-		}
-	}
+        return this.parentConfiguration.getResourceLocator().findResourceStream(location);
+    }
 
-	/** Returns DataSourceInfo property. */
-	protected DataSourceInfo getDriverInfo() {
-		return driverInfo;
-	}
+    /**
+     * Loads driver information from the file at <code>location</code>. Called
+     * internally from "getDataSource"
+     */
+    protected void load(String location) throws Exception {
+        logObj.log(logLevel, "loading driver information from '" + location + "'.");
 
-	protected InputStream getInputStream(String location) {
-		InputStream in = getWebAppInputStream(location);
+        InputStream in = this.getInputStream(location);
+        if (in == null) {
+            logObj.log(logLevel, "Error: location '" + location + "' not found.");
+            throw new ConfigurationException(
+                    "Can't find DataSource configuration file at " + location);
+        }
 
-		// if not a web app, return to normal behavior
-		return (in != null) ? in : locator.findResourceStream(location);
-	}
+        RootHandler handler = new RootHandler();
+        parser.setContentHandler(handler);
+        parser.setErrorHandler(handler);
+        parser.parse(new InputSource(in));
+    }
 
-	protected InputStream getWebAppInputStream(String location) {
-		// webapp patch - first lookup in WEB-INF
-		if (applyWebAppPatch
-			&& parentConfig != null
-			&& (parentConfig instanceof ServletConfiguration)) {
-			ServletConfiguration servlConf =
-				(ServletConfiguration) parentConfig;
-			return servlConf.getMapConfig(location);
-		}
-		return null;
-	}
+    // SAX handlers start below
 
-	/** Loads driver information from the file at <code>location</code>.
-	  * Called internally from "getDataSource" */
-	protected void load(String location) throws Exception {
-		logObj.log(
-			logLevel,
-			"loading driver information from (" + location + ").");
+    /** Handler for the root element. Its only child must be the "driver" element. */
+    private class RootHandler extends DefaultHandler {
 
-		InputStream in = getInputStream(location);
-		if (in == null) {
-			logObj.log(logLevel, "location not found in filesystem.");
-			in = ResourceLocator.findResourceInClasspath(location);
-		} else {
-			logObj.log(logLevel, "location found in filesystem.");
-		}
+        /**
+         * Handles the start of a "driver" element. A driver handler is created and
+         * initialized with the element name and attributes.
+         * 
+         * @exception SAXException if the tag given is not <code>"driver"</code>
+         */
+        public void startElement(
+                String namespaceURI,
+                String localName,
+                String qName,
+                Attributes atts) throws SAXException {
+            if (localName.equals("driver")) {
+                new DriverHandler(parser, this).init(localName, atts);
+            }
+            else {
+                logObj.log(logLevel, "<driver> must be the root element. <"
+                        + localName
+                        + "> is unexpected.");
+                throw new SAXException("Config file is not of expected XML type. '"
+                        + localName
+                        + "' unexpected.");
+            }
+        }
+    }
 
-		if (in == null) {
-			logObj.log(logLevel, "error: location not found.");
-			throw new ConfigException(
-				"Can't find DataSource configuration file at " + location);
-		}
+    /** Handler for the "driver" element. */
+    private class DriverHandler extends AbstractHandler {
 
-		RootHandler handler = new RootHandler();
-		parser.setContentHandler(handler);
-		parser.setErrorHandler(handler);
-		parser.parse(new InputSource(in));
-	}
+        public DriverHandler(XMLReader parser, ContentHandler parentHandler) {
+            super(parser, parentHandler);
+        }
 
-	// SAX handlers start below
+        public void init(String name, Attributes attrs) throws SAXException {
+            String className = attrs.getValue("", "class");
+            logObj.log(logLevel, "loading driver " + className);
+            driverInfo = new DataSourceInfo();
+            driverInfo.setJdbcDriver(className);
+        }
 
-	/** Handler for the root element. Its only child must be the "driver" element. */
-	private class RootHandler extends DefaultHandler {
-		/**
-		 * Handles the start of a "driver" element. A driver handler is created
-		 * and initialized with the element name and attributes.
-		 * 
-		 * @exception SAXException if the tag given is not 
-		 *                              <code>"driver"</code>
-		 */
-		public void startElement(
-			String namespaceURI,
-			String localName,
-			String qName,
-			Attributes atts)
-			throws SAXException {
-			if (localName.equals("driver")) {
-				new DriverHandler(parser, this).init(localName, atts);
-			} else {
-				logObj.log(
-					logLevel,
-					"<driver> must be the root element. <"
-						+ localName
-						+ "> is unexpected.");
-				throw new SAXException(
-					"Config file is not of expected XML type. '"
-						+ localName
-						+ "' unexpected.");
-			}
-		}
-	}
+        /**
+         * Handles the start of a driver child element. An appropriate handler is created
+         * and initialized with the element name and attributes.
+         * 
+         * @exception SAXException if the tag given is not recognized.
+         */
+        public void startElement(
+                String namespaceURI,
+                String localName,
+                String qName,
+                Attributes atts) throws SAXException {
+            if (localName.equals("login")) {
+                new LoginHandler(this.parser, this).init(localName, atts, driverInfo);
+            }
+            else if (localName.equals("url")) {
+                new UrlHandler(this.parser, this).init(localName, atts, driverInfo);
+            }
+            else if (localName.equals("connectionPool")) {
+                new ConnectionHandler(this.parser, this)
+                        .init(localName, atts, driverInfo);
+            }
+            else {
+                logObj.log(logLevel, "<login, url, connectionPool> are valid. <"
+                        + localName
+                        + "> is unexpected.");
+                throw new SAXException("Config file is not of expected XML type");
+            }
+        }
 
-	/** Handler for the "driver" element. */
-	private class DriverHandler extends AbstractHandler {
-		public DriverHandler(XMLReader parser, ContentHandler parentHandler) {
-			super(parser, parentHandler);
-		}
+    }
 
-		public void init(String name, Attributes attrs) throws SAXException {
-			String className = attrs.getValue("", "class");
-			logObj.log(logLevel, "loading driver " + className);
-			driverInfo = new DataSourceInfo();
-			driverInfo.setJdbcDriver(className);
-		}
+    private class UrlHandler extends AbstractHandler {
 
-		/**
-		  * Handles the start of a driver child element. An appropriate handler 
-		  * is created and initialized with the element name and attributes.
-		  * 
-		  * @exception SAXException if the tag given is not recognized.
-		  */
-		public void startElement(
-			String namespaceURI,
-			String localName,
-			String qName,
-			Attributes atts)
-			throws SAXException {
-			if (localName.equals("login")) {
-				new LoginHandler(this.parser, this).init(
-					localName,
-					atts,
-					driverInfo);
-			} else if (localName.equals("url")) {
-				new UrlHandler(this.parser, this).init(
-					localName,
-					atts,
-					driverInfo);
-			} else if (localName.equals("connectionPool")) {
-				new ConnectionHandler(this.parser, this).init(
-					localName,
-					atts,
-					driverInfo);
-			} else {
-				logObj.log(
-					logLevel,
-					"<login, url, connectionPool> are valid. <"
-						+ localName
-						+ "> is unexpected.");
-				throw new SAXException("Config file is not of expected XML type");
-			}
-		}
+        /**
+         * Constructor which just delegates to the superconstructor.
+         * 
+         * @param parentHandler The handler which should be restored to the parser at the
+         *            end of the element. Must not be <code>null</code>.
+         */
+        public UrlHandler(XMLReader parser, ContentHandler parentHandler) {
+            super(parser, parentHandler);
+        }
 
-	}
+        public void init(String name, Attributes atts, DataSourceInfo driverInfo)
+                throws SAXException {
+            driverInfo.setDataSourceUrl(atts.getValue("value"));
+            if (driverInfo.getDataSourceUrl() == null) {
+                logObj.log(logLevel, "error: <url> has no 'value'.");
+                throw new SAXException("'<url value=' attribute is required.");
+            }
+        }
+    }
 
-	private class UrlHandler extends AbstractHandler {
-		/**
-		 * Constructor which just delegates to the superconstructor.
-		 * 
-		 * @param parentHandler The handler which should be restored to the 
-		 *                      parser at the end of the element. 
-		 *                      Must not be <code>null</code>.
-		 */
-		public UrlHandler(XMLReader parser, ContentHandler parentHandler) {
-			super(parser, parentHandler);
-		}
+    private class LoginHandler extends AbstractHandler {
 
-		public void init(
-			String name,
-			Attributes atts,
-			DataSourceInfo driverInfo)
-			throws SAXException {
-			driverInfo.setDataSourceUrl(atts.getValue("value"));
-			if (driverInfo.getDataSourceUrl() == null) {
-				logObj.log(logLevel, "error: <url> has no 'value'.");
-				throw new SAXException("'<url value=' attribute is required.");
-			}
-		}
-	}
+        /**
+         * Constructor which just delegates to the superconstructor.
+         * 
+         * @param parentHandler The handler which should be restored to the parser at the
+         *            end of the element. Must not be <code>null</code>.
+         */
+        public LoginHandler(XMLReader parser, ContentHandler parentHandler) {
+            super(parser, parentHandler);
+        }
 
-	private class LoginHandler extends AbstractHandler {
-		/**
-		 * Constructor which just delegates to the superconstructor.
-		 * 
-		 * @param parentHandler The handler which should be restored to the 
-		 *                      parser at the end of the element. 
-		 *                      Must not be <code>null</code>.
-		 */
-		public LoginHandler(XMLReader parser, ContentHandler parentHandler) {
-			super(parser, parentHandler);
-		}
+        public void init(String name, Attributes atts, DataSourceInfo driverInfo)
+                throws SAXException {
+            logObj.log(logLevel, "loading user name and password.");
+            driverInfo.setUserName(atts.getValue("userName"));
+            driverInfo.setPassword(atts.getValue("password"));
+        }
+    }
 
-		public void init(
-			String name,
-			Attributes atts,
-			DataSourceInfo driverInfo)
-			throws SAXException {
-			logObj.log(logLevel, "loading user name and password.");
-			driverInfo.setUserName(atts.getValue("userName"));
-			driverInfo.setPassword(atts.getValue("password"));
-		}
-	}
+    private class ConnectionHandler extends AbstractHandler {
 
-	private class ConnectionHandler extends AbstractHandler {
-		/**
-		 * Constructor which just delegates to the superconstructor.
-		 * 
-		 * @param parentHandler The handler which should be restored to the 
-		 *                      parser at the end of the element. 
-		 *                      Must not be <code>null</code>.
-		 */
-		public ConnectionHandler(
-			XMLReader parser,
-			ContentHandler parentHandler) {
-			super(parser, parentHandler);
-		}
+        /**
+         * Constructor which just delegates to the superconstructor.
+         * 
+         * @param parentHandler The handler which should be restored to the parser at the
+         *            end of the element. Must not be <code>null</code>.
+         */
+        public ConnectionHandler(XMLReader parser, ContentHandler parentHandler) {
+            super(parser, parentHandler);
+        }
 
-		public void init(
-			String name,
-			Attributes atts,
-			DataSourceInfo driverInfo)
-			throws SAXException {
-			try {
-				String min = atts.getValue("min");
-				if (min != null)
-					driverInfo.setMinConnections(Integer.parseInt(min));
+        public void init(String name, Attributes atts, DataSourceInfo driverInfo)
+                throws SAXException {
+            try {
+                String min = atts.getValue("min");
+                if (min != null)
+                    driverInfo.setMinConnections(Integer.parseInt(min));
 
-				String max = atts.getValue("max");
-				if (max != null)
-					driverInfo.setMaxConnections(Integer.parseInt(max));
-			} catch (NumberFormatException nfex) {
-				logObj.log(logLevel, "Error loading numeric attribute", nfex);
-				throw new SAXException(
-					"Error reading numeric attribute.",
-					nfex);
-			}
-		}
-	}
+                String max = atts.getValue("max");
+                if (max != null)
+                    driverInfo.setMaxConnections(Integer.parseInt(max));
+            }
+            catch (NumberFormatException nfex) {
+                logObj.log(logLevel, "Error loading numeric attribute", nfex);
+                throw new SAXException("Error reading numeric attribute.", nfex);
+            }
+        }
+    }
 }

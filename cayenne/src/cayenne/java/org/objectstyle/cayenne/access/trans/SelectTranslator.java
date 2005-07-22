@@ -1,38 +1,39 @@
 /* ====================================================================
+ *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,445 +47,677 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.access.trans;
 
-import java.sql.ResultSet;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.log4j.Logger;
+import java.util.Map;
+import java.util.Set;
 
 import org.objectstyle.cayenne.CayenneRuntimeException;
-import org.objectstyle.cayenne.dba.TypesMapping;
-import org.objectstyle.cayenne.map.*;
+import org.objectstyle.cayenne.access.jdbc.ColumnDescriptor;
+import org.objectstyle.cayenne.exp.Expression;
+import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.map.DbEntity;
+import org.objectstyle.cayenne.map.DbJoin;
+import org.objectstyle.cayenne.map.DbRelationship;
+import org.objectstyle.cayenne.map.DerivedDbEntity;
+import org.objectstyle.cayenne.map.EntityInheritanceTree;
+import org.objectstyle.cayenne.map.ObjAttribute;
+import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.ObjRelationship;
+import org.objectstyle.cayenne.query.PrefetchSelectQuery;
 import org.objectstyle.cayenne.query.SelectQuery;
 
-/** 
- * Class that serves as a translator of SELECT queries to JDBC statements.
+/**
+ * A builder of JDBC PreparedStatements based on Cayenne SelectQueries. Translates
+ * SelectQuery to parameterized SQL string and wraps it in a PreparedStatement.
+ * SelectTranslator is stateful and thread-unsafe.
  * 
  * @author Andrei Adamchik
  */
-public class SelectTranslator extends SelectQueryAssembler {
-	static Logger logObj = Logger.getLogger(SelectTranslator.class.getName());
+public class SelectTranslator extends QueryAssembler {
 
-	private final HashMap aliasLookup = new HashMap();
-	private final ArrayList columnList = new ArrayList();
-	private final ArrayList tableList = new ArrayList();
-	private final ArrayList aliasList = new ArrayList();
-	private final ArrayList dbRelList = new ArrayList();
-	private List groupByList;
-	private int aliasCounter;
+    protected static final int[] UNSUPPORTED_DISTINCT_TYPES = new int[] {
+            Types.BLOB, Types.CLOB, Types.LONGVARBINARY, Types.LONGVARCHAR
+    };
 
-	/** 
-	 * If set to <code>true</code>, indicates that distinct
-	 * select query is required no matter what the original query 
-	 * settings where. This flag can be set when joins are created
-	 * using "to-many" relationships. 
-	 */
-	private boolean forceDistinct;
+    protected static boolean isUnsupportedForDistinct(int type) {
+        for (int i = 0; i < UNSUPPORTED_DISTINCT_TYPES.length; i++) {
+            if (UNSUPPORTED_DISTINCT_TYPES[i] == type) {
+                return true;
+            }
+        }
 
-	/** 
-	 * Returns a list of DbAttributes representing columns
-	 * in this query.
-	 */
-	protected List getColumnList() {
-		return columnList;
-	}
+        return false;
+    }
 
-	public int getFetchLimit() {
-		return getSelectQuery().getFetchLimit();
-	}
+    final Map aliasLookup = new HashMap();
 
-	/** 
-	 * Returns an ordered list of DbAttributes that describe the
-	 * result columns in the in the ResultSet. ResultSet column names are ignored, 
-	 * names specified in the query are used instead. */
-	public DbAttribute[] getSnapshotDesc(ResultSet rs) {
-		int len = columnList.size();
-		if (len == 0) {
-			throw new CayenneRuntimeException("Call 'createStatement' first");
-		}
-        	
-		DbAttribute[] desc = new DbAttribute[len];
-		columnList.toArray(desc);
-		return desc;
-	}
+    final List tableList = new ArrayList();
+    final List aliasList = new ArrayList();
+    final List dbRelList = new ArrayList();
 
-	/** 
-	 * Returns ordered list of Java class names that should be used for fetched values.
-	 * ResultSet types are ignored, types specified in the query are used instead. 
-	 */
-	public String[] getResultTypes(ResultSet rs) {
-		int len = columnList.size();
-		if (len == 0) {
-			throw new CayenneRuntimeException("Call 'createStatement' first.");
-		}
+    List resultColumns;
+    List groupByList;
 
-		String[] types = new String[len];
-		for (int i = 0; i < len; i++) {
-			DbAttribute attr = (DbAttribute) columnList.get(i);
-			ObjAttribute objAttr =
-				getRootEntity().getAttributeForDbAttribute(attr);
+    int aliasCounter;
 
-			// use explicit type mapping specified in ObjAttribute,
-			// or use default JDBC mapping if no ObjAttribute exists
-			types[i] =
-				(objAttr != null)
-					? objAttr.getType()
-					: TypesMapping.getJavaBySqlType(attr.getType());
-		}
-		return types;
-	}
+    boolean suppressingDistinct;
 
-	/**
-	 * Returns query translated to SQL. This is a main work method of the SelectTranslator.
-	 */
-	public String createSqlString() throws Exception {
-		forceDistinct = false;
+    /**
+     * If set to <code>true</code>, indicates that distinct select query is required no
+     * matter what the original query settings where. This flag can be set when joins are
+     * created using "to-many" relationships.
+     */
+    boolean forcingDistinct;
 
-		// build column list
-		buildColumnList();
+    /**
+     * Returns a list of DbAttributes representing columns in this query.
+     * 
+     * @deprecated since 1.2 - contents of this list are now ColumnDescriptors, not
+     *             DbAttributes. Anyway, use getResultColumns() instead to reduce
+     *             confusion.
+     */
+    protected List getColumns() {
+        return resultColumns;
+    }
 
-		QualifierTranslator tr =
-			adapter.getQualifierFactory().createTranslator(this);
+    /**
+     * Returns query translated to SQL. This is a main work method of the
+     * SelectTranslator.
+     */
+    public String createSqlString() throws Exception {
+        forcingDistinct = false;
 
-		// build parent qualifier
-		// Parent qualifier translation must PRECEED main qualifier
-		// since it will be appended first and its parameters must
-		// go first as well
-		String parentQualifierStr = null;
-		if (getSelectQuery().isQualifiedOnParent()) {
-			tr.setTranslateParentQual(true);
-			parentQualifierStr = tr.doTranslation();
-		}
+        // build column list
+        this.resultColumns = buildResultColumns();
 
-		// build main qualifier
-		tr.setTranslateParentQual(false);
-		String qualifierStr = tr.doTranslation();
+        QualifierTranslator tr = adapter.getQualifierTranslator(this);
 
-		// build GROUP BY
-		buildGroupByList();
+        // build parent qualifier
+        // Parent qualifier translation must PRECEED main qualifier
+        // since it will be appended first and its parameters must
+        // go first as well
+        String parentQualifierStr = null;
+        if (getSelectQuery().isQualifiedOnParent()) {
+            tr.setTranslateParentQual(true);
+            parentQualifierStr = tr.doTranslation();
+        }
 
-		// build ORDER BY,
-		String orderByStr = new OrderingTranslator(this).doTranslation();
+        // build main qualifier
+        tr.setTranslateParentQual(false);
+        String qualifierStr = tr.doTranslation();
 
-		// assemble
-		StringBuffer queryBuf = new StringBuffer();
-		queryBuf.append("SELECT ");
+        // build GROUP BY
+        this.groupByList = buildGroupByList();
 
-		if (forceDistinct || getSelectQuery().isDistinct()) {
-			queryBuf.append("DISTINCT ");
-		}
+        // build ORDER BY
+        OrderingTranslator orderingTranslator = new OrderingTranslator(this);
+        String orderByStr = orderingTranslator.doTranslation();
 
-		// append columns (unroll the loop's first element)
-		int columnCount = columnList.size();
-		appendColumn(queryBuf, 0); // assume there is at least 1 element
-		for (int i = 1; i < columnCount; i++) {
-			queryBuf.append(", ");
-			appendColumn(queryBuf, i);
-		}
+        // assemble
+        StringBuffer queryBuf = new StringBuffer();
+        queryBuf.append("SELECT ");
 
-		// append from clause
-		queryBuf.append(" FROM ");
+        // check if DISTINCT is appropriate
+        // side effect: "suppressingDistinct" flag may end up being flipped here
+        if (forcingDistinct || getSelectQuery().isDistinct()) {
 
-		// append table list (unroll loop's 1st element)
-		int tableCount = tableList.size();
-		appendTable(queryBuf, 0); // assume there is at least 1 table
-		for (int i = 1; i < tableCount; i++) {
-			queryBuf.append(", ");
-			appendTable(queryBuf, i);
-		}
+            suppressingDistinct = false;
+            Iterator it = resultColumns.iterator();
+            while (it.hasNext()) {
+                ColumnDescriptor column = (ColumnDescriptor) it.next();
+                if (isUnsupportedForDistinct(column.getJdbcType())) {
+                    suppressingDistinct = true;
+                    break;
+                }
+            }
 
-		// append db relationship joins if any
-		boolean hasWhere = false;
-		int dbRelCount = dbRelList.size();
-		if (dbRelCount > 0) {
-			hasWhere = true;
-			queryBuf.append(" WHERE ");
+            if (!suppressingDistinct) {
+                queryBuf.append("DISTINCT ");
+            }
+        }
 
-			appendDbRelJoins(queryBuf, 0);
-			for (int i = 1; i < dbRelCount; i++) {
-				queryBuf.append(" AND ");
-				appendDbRelJoins(queryBuf, i);
-			}
-		}
+        // convert ColumnDescriptors to column names
+        List selectColumnExpList = new ArrayList();
 
-		// append parent qualifier if any
-		if (parentQualifierStr != null) {
-			if (hasWhere) {
-				queryBuf.append(" AND (");
-				queryBuf.append(parentQualifierStr);
-				queryBuf.append(")");
-			} else {
-				hasWhere = true;
-				queryBuf.append(" WHERE ");
-				queryBuf.append(parentQualifierStr);
-			}
-		}
+        Iterator it = resultColumns.iterator();
+        while (it.hasNext()) {
+            ColumnDescriptor column = (ColumnDescriptor) it.next();
+            selectColumnExpList.add(column.getQualifiedColumnName());
+        }
 
-		// append group by
-		boolean hasGroupBy = false;
-		if (groupByList != null) {
-			int groupByCount = groupByList.size();
-			if (groupByCount > 0) {
-				hasGroupBy = true;
-				queryBuf.append(" GROUP BY ");
-				appendGroupBy(queryBuf, 0);
-				for (int i = 1; i < groupByCount; i++) {
-					queryBuf.append(", ");
-					appendGroupBy(queryBuf, i);
-				}
-			}
-		}
+        // append any column expressions used in the order by if this query
+        // uses the DISTINCT modifier
+        if (forcingDistinct || getSelectQuery().isDistinct()) {
+            List orderByColumnList = orderingTranslator.getOrderByColumnList();
+            for (int i = 0; i < orderByColumnList.size(); i++) {
+                // Convert to ColumnDescriptors??
+                Object orderByColumnExp = orderByColumnList.get(i);
+                if (!selectColumnExpList.contains(orderByColumnExp)) {
+                    selectColumnExpList.add(orderByColumnExp);
+                }
+            }
+        }
 
-		// append qualifier
-		if (qualifierStr != null) {
-			if (hasGroupBy) {
-				queryBuf.append(" HAVING ");
-				queryBuf.append(qualifierStr);
-			} else {
-				if (hasWhere) {
-					queryBuf.append(" AND (");
-					queryBuf.append(qualifierStr);
-					queryBuf.append(")");
-				} else {
-					hasWhere = true;
-					queryBuf.append(" WHERE ");
-					queryBuf.append(qualifierStr);
-				}
-			}
-		}
+        // append columns (unroll the loop's first element)
+        int columnCount = selectColumnExpList.size();
+        queryBuf.append((String) selectColumnExpList.get(0));
+        // assume there is at least 1 element
+        for (int i = 1; i < columnCount; i++) {
+            queryBuf.append(", ");
+            queryBuf.append((String) selectColumnExpList.get(i));
+        }
 
-		// append prebuilt ordering
-		if (orderByStr != null) {
-			queryBuf.append(" ORDER BY ").append(orderByStr);
-		}
+        // append from clause
+        queryBuf.append(" FROM ");
 
-		return queryBuf.toString();
-	}
+        // append table list (unroll loop's 1st element)
+        int tableCount = tableList.size();
+        appendTable(queryBuf, 0); // assume there is at least 1 table
+        for (int i = 1; i < tableCount; i++) {
+            queryBuf.append(", ");
+            appendTable(queryBuf, i);
+        }
 
-	private SelectQuery getSelectQuery() {
-		return (SelectQuery) getQuery();
-	}
+        // append db relationship joins if any
+        boolean hasWhere = false;
+        int dbRelCount = dbRelList.size();
+        if (dbRelCount > 0) {
+            hasWhere = true;
+            queryBuf.append(" WHERE ");
 
-	/**
-	 * Creates a list of columns used in the query.
-	 */
-	private void buildColumnList() {
-		newAliasForTable(getRootEntity().getDbEntity());
-		appendAttributes();
-	}
+            appendJoins(queryBuf, 0);
+            for (int i = 1; i < dbRelCount; i++) {
+                queryBuf.append(" AND ");
+                appendJoins(queryBuf, i);
+            }
+        }
 
-	/**
-	 * Creates a list of columns used in the query's GROUP BY clause.
-	 */
-	private void buildGroupByList() {
-		DbEntity dbEntity = getRootEntity().getDbEntity();
-		if (dbEntity instanceof DerivedDbEntity) {
-			groupByList = ((DerivedDbEntity) dbEntity).getGroupByAttributes();
-		}
-	}
+        // append parent qualifier if any
+        if (parentQualifierStr != null) {
+            if (hasWhere) {
+                queryBuf.append(" AND (");
+                queryBuf.append(parentQualifierStr);
+                queryBuf.append(")");
+            }
+            else {
+                hasWhere = true;
+                queryBuf.append(" WHERE ");
+                queryBuf.append(parentQualifierStr);
+            }
+        }
 
-	/** 
-	 * Returns a list of DbAttributes used in query.
-	 */
-	private void appendAttributes() {
-		ObjEntity oe = getRootEntity();
-		DbEntity dbe = oe.getDbEntity();
-		SelectQuery q = getSelectQuery();
+        // append group by
+        boolean hasGroupBy = false;
+        if (groupByList != null) {
+            int groupByCount = groupByList.size();
+            if (groupByCount > 0) {
+                hasGroupBy = true;
+                queryBuf.append(" GROUP BY ");
+                appendGroupBy(queryBuf, 0);
+                for (int i = 1; i < groupByCount; i++) {
+                    queryBuf.append(", ");
+                    appendGroupBy(queryBuf, i);
+                }
+            }
+        }
 
-		// extract custom attributes from the query
-		if (q.isFetchingCustAttributes()) {
-			List custAttrNames = q.getCustDbAttributes();
-			int len = custAttrNames.size();
-			for (int i = 0; i < len; i++) {
-				Attribute attr =
-					dbe.getAttribute((String) custAttrNames.get(i));
-				if (attr == null) {
-					throw new CayenneRuntimeException(
-						"Attribute does not exist: " + custAttrNames.get(i));
-				}
-				columnList.add(attr);
-			}
-		} else {
-			// build a list of attributes mentioned in ObjEntity + PK's + FK's + GROUP BY's
+        // append qualifier
+        if (qualifierStr != null) {
+            if (hasGroupBy) {
+                queryBuf.append(" HAVING ");
+                queryBuf.append(qualifierStr);
+            }
+            else {
+                if (hasWhere) {
+                    queryBuf.append(" AND (");
+                    queryBuf.append(qualifierStr);
+                    queryBuf.append(")");
+                }
+                else {
+                    hasWhere = true;
+                    queryBuf.append(" WHERE ");
+                    queryBuf.append(qualifierStr);
+                }
+            }
+        }
 
-			// ObjEntity attrs
-			List attrs = oe.getAttributeList();
-			int len = attrs.size();
-			for (int i = 0; i < len; i++) {
-				ObjAttribute oa = (ObjAttribute) attrs.get(i);
-				Attribute dbAttr = oa.getDbAttribute();
-				if (dbAttr == null) {
-					throw new CayenneRuntimeException(
-						"ObjAttribute has no DbAttribute: " + oa.getName());
-				}
-				columnList.add(dbAttr);
-			}
+        // append prebuilt ordering
+        if (orderByStr != null) {
+            queryBuf.append(" ORDER BY ").append(orderByStr);
+        }
 
-			// relationship keys
-			List rels = oe.getRelationshipList();
-			int rLen = rels.size();
-			for (int i = 0; i < rLen; i++) {
-				ObjRelationship rel = (ObjRelationship) rels.get(i);
-				DbRelationship dbRel =
-					(DbRelationship) rel.getDbRelationshipList().get(0);
+        return queryBuf.toString();
+    }
 
-				List joins = dbRel.getJoins();
-				int jLen = joins.size();
-				for (int j = 0; j < jLen; j++) {
-					DbAttributePair join = (DbAttributePair) joins.get(j);
-					DbAttribute src = join.getSource();
-					if (!columnList.contains(src)) {
-						columnList.add(src);
-					}
-				}
-			}
+    /**
+     * Returns a list of ColumnDescriptors for the query columns.
+     * 
+     * @since 1.2
+     */
+    public ColumnDescriptor[] getResultColumns() {
+        if (resultColumns == null || resultColumns.isEmpty()) {
+            return new ColumnDescriptor[0];
+        }
 
-			// add remaining needed attrs from DbEntity
-			List dbattrs = dbe.getAttributeList();
-			int dLen = dbattrs.size();
-			for (int i = 0; i < dLen; i++) {
-				DbAttribute dba = (DbAttribute) dbattrs.get(i);
-				if (dba.isPrimaryKey()) {
-					if (!columnList.contains(dba)) {
-						columnList.add(dba);
-					}
-				}
-			}
-		}
-	}
+        return (ColumnDescriptor[]) resultColumns
+                .toArray(new ColumnDescriptor[resultColumns.size()]);
+    }
 
-	private void appendColumn(StringBuffer queryBuf, int index) {
-		DbAttribute attr = (DbAttribute) columnList.get(index);
-		String alias = aliasForTable((DbEntity) attr.getEntity());
-		queryBuf.append(attr.getAliasedName(alias));
-	}
+    /**
+     * Returns true if SelectTranslator determined that a query requiring DISTINCT can't
+     * be run with DISTINCT keyword for internal reasons. If this method returns true,
+     * DataNode may need to do in-memory distinct filtering.
+     * 
+     * @since 1.1
+     */
+    public boolean isSuppressingDistinct() {
+        return suppressingDistinct;
+    }
 
+    private SelectQuery getSelectQuery() {
+        return (SelectQuery) getQuery();
+    }
 
-	private void appendGroupBy(StringBuffer queryBuf, int index) {
-		DbAttribute attr = (DbAttribute) groupByList.get(index);
-		DbEntity ent = (DbEntity)attr.getEntity();
-		queryBuf.append(
-			attr.getAliasedName(aliasForTable(ent)));
-	}
+    /**
+     * Creates a list of columns used in the query's GROUP BY clause.
+     */
+    private List buildGroupByList() {
+        DbEntity dbEntity = getRootDbEntity();
+        return (dbEntity instanceof DerivedDbEntity) ? ((DerivedDbEntity) dbEntity)
+                .getGroupByAttributes() : Collections.EMPTY_LIST;
+    }
 
+    List buildResultColumns() {
 
-	private void appendTable(StringBuffer queryBuf, int index) {
-		DbEntity ent = (DbEntity) tableList.get(index);
-		queryBuf.append(ent.getFullyQualifiedName());
-		queryBuf.append(' ').append(aliasForTable(ent));
-	}
+        // create alias for root table
+        newAliasForTable(getRootDbEntity());
 
+        List columns = new ArrayList();
+        SelectQuery query = getSelectQuery();
 
-	private void appendDbRelJoins(StringBuffer queryBuf, int index) {
-		DbRelationship rel = (DbRelationship) dbRelList.get(index);
-		String srcAlias = aliasForTable((DbEntity) rel.getSourceEntity());
-		String targetAlias = aliasForTable((DbEntity) rel.getTargetEntity());
+        // for query with custom attributes use a different strategy
+        if (query.isFetchingCustomAttributes()) {
+            appendCustomColumns(columns, query);
+        }
+        else {
+            appendQueryColumns(columns, query);
+        }
 
-		boolean andFlag = false;
+        return columns;
+    }
 
-		List joins = rel.getJoins();
-		int len = joins.size();
-		for (int i = 0; i < len; i++) {
-			if (andFlag)
-				queryBuf.append(" AND ");
-			else
-				andFlag = true;
+    /**
+     * Appends columns needed for object SelectQuery to the provided columns list.
+     */
+    //  TODO: this whole method screams REFACTORING!!!
+    List appendQueryColumns(List columns, SelectQuery query) {
 
-			DbAttributePair join = (DbAttributePair) joins.get(i);
-			DbAttribute src = join.getSource();
-			queryBuf
-				.append(srcAlias)
-				.append('.')
-				.append(join.getSource().getName())
-				.append(" = ")
-				.append(targetAlias)
-				.append('.')
-				.append(join.getTarget().getName());
-		}
-	}
+        Set attributes = new HashSet();
 
-	/** 
-	 * Stores a new relationship in an internal list.
-	 * Later it will be used to create joins to relationship 
-	 * destination table.
-	 */
-	public void dbRelationshipAdded(DbRelationship rel) {
-		if (rel.isToMany()) {
-			forceDistinct = true;
-		}
+        // fetched attributes include attributes that are either:
+        // 
+        //   * class properties
+        //   * PK
+        //   * FK used in relationships
+        //   * GROUP BY
+        //   * joined prefetch PK
 
-		String existAlias = (String) aliasLookup.get(rel);
+        ObjEntity oe = getRootEntity();
 
-		if (existAlias == null) {
-			dbRelList.add(rel);
+        // null tree will indicate that we don't take inheritance into account
+        EntityInheritanceTree tree = null;
 
-			// add alias for the destination table of the relationship
-			String newAlias =
-				newAliasForTable((DbEntity) rel.getTargetEntity());
-			aliasLookup.put(rel, newAlias);
-		}
-	}
+        if (query.isResolvingInherited()) {
+            tree = getRootInheritanceTree();
+        }
 
-	/**
-	 * Sets up and returns a new alias for a speciafied table.
-	 */
-	protected String newAliasForTable(DbEntity ent) {
-		if (ent instanceof DerivedDbEntity) {
-			ent = ((DerivedDbEntity) ent).getParentEntity();
-		}
+        // ObjEntity attrs
+        Iterator attrs = (tree != null) ? tree.allAttributes().iterator() : oe
+                .getAttributes()
+                .iterator();
+        while (attrs.hasNext()) {
+            ObjAttribute oa = (ObjAttribute) attrs.next();
+            Iterator dbPathIterator = oa.getDbPathIterator();
+            while (dbPathIterator.hasNext()) {
+                Object pathPart = dbPathIterator.next();
+                if (pathPart instanceof DbRelationship) {
+                    DbRelationship rel = (DbRelationship) pathPart;
+                    dbRelationshipAdded(rel);
+                }
+                else if (pathPart instanceof DbAttribute) {
+                    DbAttribute dbAttr = (DbAttribute) pathPart;
+                    if (dbAttr == null) {
+                        throw new CayenneRuntimeException(
+                                "ObjAttribute has no DbAttribute: " + oa.getName());
+                    }
 
-		String newAlias = "t" + aliasCounter++;
-		tableList.add(ent);
-		aliasList.add(newAlias);
-		return newAlias;
-	}
+                    appendColumn(columns, oa, dbAttr, attributes, null);
+                }
+            }
+        }
 
-	/** 
-	 * Overrides superclass implementation. Will return an alias that
-	 * should be used for a specified DbEntity in the query
-	 * (or null if this DbEntity is not included in the FROM clause).
-	 */
-	public String aliasForTable(DbEntity ent) {
-		if (ent instanceof DerivedDbEntity) {
-			ent = ((DerivedDbEntity) ent).getParentEntity();
-		}
+        // relationship keys
+        Iterator rels = (tree != null) ? tree.allRelationships().iterator() : oe
+                .getRelationships()
+                .iterator();
+        while (rels.hasNext()) {
+            ObjRelationship rel = (ObjRelationship) rels.next();
+            DbRelationship dbRel = (DbRelationship) rel.getDbRelationships().get(0);
 
-		int entIndex = tableList.indexOf(ent);
-		if (entIndex >= 0) {
-			return (String) aliasList.get(entIndex);
-		} else {
-			StringBuffer msg = new StringBuffer();
-			msg
-				.append("Alias not found, DbEntity: '")
-				.append(ent != null ? ent.getName() : "<null entity>")
-				.append("'\nExisting aliases:");
+            List joins = dbRel.getJoins();
+            int len = joins.size();
+            for (int i = 0; i < len; i++) {
+                DbJoin join = (DbJoin) joins.get(i);
+                DbAttribute src = join.getSource();
+                appendColumn(columns, null, src, attributes, null);
+            }
+        }
 
-			int len = aliasList.size();
-			for (int i = 0; i < len; i++) {
-				String dbeName =
-					(tableList.get(i) != null)
-						? ((DbEntity) tableList.get(i)).getName()
-						: "<null entity>";
-				msg.append("\n").append(aliasList.get(0)).append(
-					" => ").append(
-					dbeName);
-			}
+        // add remaining needed attrs from DbEntity
 
-			throw new CayenneRuntimeException(msg.toString());
-		}
-	}
+        DbEntity table = getRootDbEntity();
+        Iterator pk = table.getPrimaryKey().iterator();
+        while (pk.hasNext()) {
+            DbAttribute dba = (DbAttribute) pk.next();
+            appendColumn(columns, null, dba, attributes, null);
+        }
 
-	public boolean supportsTableAliases() {
-		return true;
-	}
+        // add FKs for Prefetch selects for to-many ObjRelationships with no reverse
+        if (query instanceof PrefetchSelectQuery) {
+            PrefetchSelectQuery pq = (PrefetchSelectQuery) query;
+            ObjRelationship r = pq.getLastPrefetchHint();
+            if ((r != null) && (r.getReverseRelationship() == null)) {
+
+                // Prefetching a single step toMany relationship which
+                // has no reverse obj relationship. Add the FK attributes
+                // of the relationship (wouldn't otherwise be included)
+
+                // TODO: seems like a hack for srcPkSnapshotWithTargetSnapshot benefit;
+                // if we have a flat row with multiple joins, this will violate the naming
+                // conventions.
+                DbRelationship dbRel = (DbRelationship) r.getDbRelationships().get(0);
+
+                List joins = dbRel.getJoins();
+                for (int j = 0; j < joins.size(); j++) {
+                    DbJoin join = (DbJoin) joins.get(j);
+                    DbAttribute target = join.getTarget();
+                    appendColumn(columns, null, target, attributes, null);
+                }
+            }
+        }
+
+        // handle joint prefetches
+        if (!query.getJointPrefetches().isEmpty()) {
+            Iterator jointPrefetches = query.getJointPrefetches().iterator();
+            while (jointPrefetches.hasNext()) {
+                String prefetch = (String) jointPrefetches.next();
+
+                // for each prefetch add all joins plus columns from the target entity
+                Expression prefetchExp = Expression.fromString(prefetch);
+                Expression dbPrefetch = oe.translateToDbPath(prefetchExp);
+
+                // find target entity
+                Iterator it = table.resolvePathComponents(dbPrefetch);
+
+                DbRelationship r = null;
+                while (it.hasNext()) {
+                    r = (DbRelationship) it.next();
+                    dbRelationshipAdded(r);
+                }
+
+                if (r == null) {
+                    throw new CayenneRuntimeException("Invalid joint prefetch '"
+                            + prefetch
+                            + "' for entity: "
+                            + oe.getName());
+                }
+
+                // add columns from the target entity, skipping those that are an FK to
+                // source entity
+
+                Collection skipColumns = Collections.EMPTY_LIST;
+                if (r.getSourceEntity() == table) {
+                    skipColumns = new ArrayList(2);
+                    Iterator joins = r.getJoins().iterator();
+                    while (joins.hasNext()) {
+                        DbJoin join = (DbJoin) joins.next();
+                        if (attributes.contains(join.getSource())) {
+                            skipColumns.add(join.getTarget());
+                        }
+                    }
+                }
+
+                // go via target OE to make sure that Java types are mapped correctly...
+                ObjRelationship targetRel = (ObjRelationship) prefetchExp.evaluate(oe);
+                Iterator targetObjAttrs = targetRel
+                        .getTargetEntity()
+                        .getAttributes()
+                        .iterator();
+                while (targetObjAttrs.hasNext()) {
+                    ObjAttribute oa = (ObjAttribute) targetObjAttrs.next();
+                    Iterator dbPathIterator = oa.getDbPathIterator();
+                    while (dbPathIterator.hasNext()) {
+                        Object pathPart = dbPathIterator.next();
+                        if (pathPart instanceof DbRelationship) {
+                            DbRelationship rel = (DbRelationship) pathPart;
+                            dbRelationshipAdded(rel);
+                        }
+                        else if (pathPart instanceof DbAttribute) {
+                            DbAttribute attribute = (DbAttribute) pathPart;
+                            if (attribute == null) {
+                                throw new CayenneRuntimeException(
+                                        "ObjAttribute has no DbAttribute: "
+                                                + oa.getName());
+                            }
+
+                            if (!skipColumns.contains(attribute)) {
+                                appendColumn(columns,
+                                        oa,
+                                        attribute,
+                                        attributes,
+                                        dbPrefetch);
+                            }
+                        }
+                    }
+                }
+
+                // append remaining target attributes such as keys
+                Iterator targetAttributes = r
+                        .getTargetEntity()
+                        .getAttributes()
+                        .iterator();
+                while (targetAttributes.hasNext()) {
+                    DbAttribute attribute = (DbAttribute) targetAttributes.next();
+                    if (!skipColumns.contains(attribute)) {
+                        appendColumn(columns, null, attribute, attributes, dbPrefetch);
+                    }
+                }
+            }
+        }
+
+        return columns;
+    }
+
+    /**
+     * Appends custom columns from SelectQuery to the provided list.
+     */
+    List appendCustomColumns(List columns, SelectQuery query) {
+
+        List customAttributes = query.getCustomDbAttributes();
+        DbEntity table = getRootDbEntity();
+        int len = customAttributes.size();
+
+        for (int i = 0; i < len; i++) {
+            DbAttribute attribute = (DbAttribute) table
+                    .getAttribute((String) customAttributes.get(i));
+            if (attribute == null) {
+                throw new CayenneRuntimeException("Attribute does not exist: "
+                        + customAttributes.get(i));
+            }
+
+            String alias = aliasForTable((DbEntity) attribute.getEntity());
+            columns.add(new ColumnDescriptor(attribute, alias));
+        }
+
+        return columns;
+    }
+
+    private void appendColumn(
+            List columns,
+            ObjAttribute objAttribute,
+            DbAttribute attribute,
+            Set skipSet,
+            Expression dbPath) {
+
+        if (skipSet.add(attribute)) {
+            String alias = aliasForTable((DbEntity) attribute.getEntity());
+            ColumnDescriptor column = (objAttribute != null) ? new ColumnDescriptor(
+                    objAttribute,
+                    attribute,
+                    alias) : new ColumnDescriptor(attribute, alias);
+
+            // used for joint prefetches
+            if (dbPath != null) {
+                String path = dbPath.toString().substring("db:".length());
+                column.setLabel(path + '.' + attribute.getName());
+            }
+
+            columns.add(column);
+        }
+    }
+
+    private void appendGroupBy(StringBuffer queryBuf, int index) {
+        DbAttribute column = (DbAttribute) groupByList.get(index);
+        String alias = aliasForTable((DbEntity) column.getEntity());
+        queryBuf.append(column.getAliasedName(alias));
+    }
+
+    private void appendTable(StringBuffer queryBuf, int index) {
+        DbEntity ent = (DbEntity) tableList.get(index);
+        queryBuf.append(ent.getFullyQualifiedName());
+        //The alias should be the alias from the same index in aliasList, not that
+        // returned by aliasForTable.
+        queryBuf.append(' ').append((String) aliasList.get(index));
+    }
+
+    private void appendJoins(StringBuffer queryBuf, int index) {
+        DbRelationship rel = (DbRelationship) dbRelList.get(index);
+        String srcAlias = aliasForTable((DbEntity) rel.getSourceEntity());
+        String targetAlias = (String) aliasLookup.get(rel);
+
+        boolean andFlag = false;
+
+        List joins = rel.getJoins();
+        int len = joins.size();
+        for (int i = 0; i < len; i++) {
+            DbJoin join = (DbJoin) joins.get(i);
+
+            if (andFlag) {
+                queryBuf.append(" AND ");
+            }
+            else {
+                andFlag = true;
+            }
+
+            queryBuf
+                    .append(srcAlias)
+                    .append('.')
+                    .append(join.getSourceName())
+                    .append(" = ")
+                    .append(targetAlias)
+                    .append('.')
+                    .append(join.getTargetName());
+        }
+    }
+
+    /**
+     * Stores a new relationship in an internal list. Later it will be used to create
+     * joins to relationship destination table.
+     */
+    public void dbRelationshipAdded(DbRelationship rel) {
+        if (rel.isToMany()) {
+            forcingDistinct = true;
+        }
+
+        String existAlias = (String) aliasLookup.get(rel);
+
+        if (existAlias == null) {
+            dbRelList.add(rel);
+
+            // add alias for the destination table of the relationship
+            String newAlias = newAliasForTable((DbEntity) rel.getTargetEntity());
+            aliasLookup.put(rel, newAlias);
+        }
+    }
+
+    /**
+     * Sets up and returns a new alias for a speciafied table.
+     */
+    protected String newAliasForTable(DbEntity ent) {
+        if (ent instanceof DerivedDbEntity) {
+            ent = ((DerivedDbEntity) ent).getParentEntity();
+        }
+
+        String newAlias = "t" + aliasCounter++;
+        tableList.add(ent);
+        aliasList.add(newAlias);
+        return newAlias;
+    }
+
+    public String aliasForTable(DbEntity ent, DbRelationship rel) {
+        return (String) aliasLookup.get(rel);
+    }
+
+    /**
+     * Overrides superclass implementation. Will return an alias that should be used for a
+     * specified DbEntity in the query (or null if this DbEntity is not included in the
+     * FROM clause).
+     */
+    public String aliasForTable(DbEntity ent) {
+        if (ent instanceof DerivedDbEntity) {
+            ent = ((DerivedDbEntity) ent).getParentEntity();
+        }
+
+        int entIndex = tableList.indexOf(ent);
+        if (entIndex >= 0) {
+            return (String) aliasList.get(entIndex);
+        }
+        else {
+            StringBuffer msg = new StringBuffer();
+            msg.append("Alias not found, DbEntity: '").append(ent != null
+                    ? ent.getName()
+                    : "<null entity>").append("'\nExisting aliases:");
+
+            int len = aliasList.size();
+            for (int i = 0; i < len; i++) {
+                String dbeName = (tableList.get(i) != null) ? ((DbEntity) tableList
+                        .get(i)).getName() : "<null entity>";
+                msg.append("\n").append(aliasList.get(i)).append(" => ").append(dbeName);
+            }
+
+            throw new CayenneRuntimeException(msg.toString());
+        }
+    }
+
+    /**
+     * Always returns true.
+     */
+    public boolean supportsTableAliases() {
+        return true;
+    }
 }

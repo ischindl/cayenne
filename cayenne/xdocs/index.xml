@@ -1,72 +1,27 @@
 <?xml version="1.0"?>
 <document>
-    <title>Overview</title>
+    <title>Cayenne 1.2</title>
 
     <body>
-        <!-- News section -->
-        <section name="Cayenne News">
-        <p><strong><font color="#AAAAAA"><i>September 7:</i></font></strong> <strong>Cayenne 
-        Alpha 3 Is Out.</strong> 
-        This is a maintenance release. It contains a few serious bug fixes, 
-        so everybody is encouraged to upgrade. In this release:
-        <ul>
-        	<li>JDK1.3 port: Cayenne runtime libraries are now fully JDK1.3 compatible,
-        	GUI tools still require 1.4.</li>
-        	<li>Fixed a few serious problems in CayenneModeler that could potentially
-        	corrupt model files.</li>
-        	<li>"Derived" entities support. Derived DbEntities allow 
-        	expressions in columns, including aggregate functions. They
-        	also contain built in GROUP BY support.</li>
-        	<li>Bugs fixes, a few convenience features and performance 
-        	improvements.</li>
-        	<li>Links:
-        	       <ul>
-        				<li><a href="http://sourceforge.net/project/showfiles.php?group_id=48132">Download 
-        				Alpha 3.</a></li>
-        				<li><a href="RELEASE-NOTES-1.0a3.txt">View Release Notes.</a></li>
-        			</ul>
-        	</li>
-        </ul>
-        </p>
+        <section name="Cayenne 1.2">
         
-        <p><strong><font color="#AAAAAA"><i>July 29:</i></font></strong> <strong>Cayenne Comparison Chart.</strong> 
-        Having received multiple requests to compare Cayenne features
-        with other O/R frameworks we decided to leverage the community collective knowledge
-        to do this research. A WikiWiki page was setup to build a feature matrix at
-        <a href="http://c2.com/cgi-bin/wiki?CayenneVsOther">http://c2.com/cgi-bin/wiki?CayenneVsOther</a>.
-        Anybody who has experience with TopLink, CocoBase, EOF, etc. are welcome to provide
-        the input interactively via WikiWiki collaboration engine. To participate, click on the link
-        above, scroll to the bottom of the page and select "Edit Text".
-        </p>
-        </section>
-        
-        <!-- Welcome section -->
-        <section name="Welcome to Cayenne">
-        <p>Welcome to Cayenne. Our goal is to provide Java developers with opensource 
-        tools to access relational databases in an object-oriented way.</p>
-        
-        <p>Cayenne includes a framework that adds persistence features to Java objects.
-        It allows mapping classes to database tables. Queries and updates (including 
-        atomic updates of all modified objects) are done with a single method call. 
-        This is a big advantage over writing SQL code in your Java program.
-        Cayenne also provides GUI mapping tool (called CayenneModeler) to reverse-engineer 
-        RDBMS schema and create "data maps" - XML files that contain mapping 
-        between the database and Java classes. CayenneModeler can also generate 
-        Java classes source code to use in your Java application.</p>
-        
-        
-        <p>Cayenne is an opensource project and therefore encourages developer and user 
-        community to participate in development, testing and writing documentation.
-        This way we can produce a better product that will benefit its contributors
-        as well as everybody else.</p>
-        </section>
-        
-        <!-- Status section -->
-        <section name="History">
-        <p>Idea of Cayenne was conceived back in April 2001 by a group of developers in 
-        Atlanta, USA. Current version is based on that original idea and is under active 
-        development since December 2001. Right now Cayenne has a growing international
-        user and developer community.</p>
+         <p>Quick Documentation Links:</p>
+		<ul>
+		<li><a href="userguide/index.html">User Guide</a> - installation instructions and general usage notes.</li>
+		<li><a href="modelerguide/index.html">Modeler Guide</a> - Cayenne Modeler documentation.</li>
+		<li><a href="api/cayenne/index.html">Javadoc API</a></li>
+		</ul>
+		
+		<p>Online Resources:</p>
+		<ul>
+		<li><a href="http://objectstyle.org/cayenne/" target="_new">Cayenne Home</a></li>
+		<li><a href="http://objectstyle.org/cayenne/download.html" target="_new">Downloads</a></li>
+		<li><a href="http://objectstyle.org/cayenne/bugs-features.html" target="_new">Report Bugs</a></li>
+		<li><a href="http://objectstyle.org/confluence/display/CAY/Home" target="_new">Wiki and Blog</a></li>
+		<li><a href="http://objectstyle.org/confluence/display/CAY/Cayenne+Examples">Examples</a></li>
+		<li><a href="http://objectstyle.org/cayenne/cayenne-commercial-support.html" target="_new">Commercial Support</a></li>
+		</ul>
+         
         </section>
     </body>
 </document>

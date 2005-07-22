@@ -11,11 +11,12 @@ Broken PostgreSQL types mapping.
    </jdbc-type>
    <jdbc-type name="BINARY">
    <!-- this is an undocumented type with known JDBC issues
-    some stesting needs to be done. -->
+    some testing needs to be done. -->
        <db-type name="bytea"/>
    </jdbc-type>
    <jdbc-type name="BIT">
-       <db-type name="bit"/>
+   		<!-- PostgreSQL BIT is a "bit string", so mapping it as boolean seems more appropriate -->
+       <db-type name="boolean"/>
    </jdbc-type>
    <jdbc-type name="BLOB">
        <db-type name="bytea"/>
@@ -40,7 +41,7 @@ Broken PostgreSQL types mapping.
        <db-type name="double precision"/>
    </jdbc-type>
    <jdbc-type name="FLOAT">
-       <db-type name="real"/>
+       <db-type name="float"/>
    </jdbc-type>
    <jdbc-type name="INTEGER">
        <db-type name="integer"/>
@@ -68,7 +69,7 @@ Broken PostgreSQL types mapping.
        <db-type name="time"/>
    </jdbc-type>
    <jdbc-type name="TIMESTAMP">
-       <db-type name="timestamp"/>
+       <db-type name="timestamp with time zone"/>
    </jdbc-type>
    <jdbc-type name="TINYINT">
        <db-type name="smallint"/>

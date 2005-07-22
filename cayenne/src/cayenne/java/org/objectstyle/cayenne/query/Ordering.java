@@ -1,43 +1,39 @@
-package org.objectstyle.cayenne.query;
-
-import org.objectstyle.cayenne.exp.Expression;
-import org.objectstyle.cayenne.exp.ExpressionFactory;
-
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -51,86 +47,208 @@ import org.objectstyle.cayenne.exp.ExpressionFactory;
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
+package org.objectstyle.cayenne.query;
 
-/** Defines ordering policy. Queries can have multiple Ordering's. */
-public class Ordering {
-	/** Symbolic representation of ascending ordering criterion. */
-	public static final boolean ASC = true;
+import java.io.PrintWriter;
+import java.io.Serializable;
+import java.io.StringWriter;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
-	/** Symbolic representation of descending ordering criterion. */
-	public static final boolean DESC = false;
+import org.apache.commons.collections.ComparatorUtils;
+import org.objectstyle.cayenne.exp.Expression;
+import org.objectstyle.cayenne.util.ConversionUtil;
+import org.objectstyle.cayenne.util.XMLEncoder;
+import org.objectstyle.cayenne.util.XMLSerializable;
 
-	protected Expression sortSpec;
-	protected boolean ascending;
+/** 
+ * Defines a Comparator for Java Beans. Ordering can be used either
+ * to define ORDER BY clause of a query in terms of object properties,
+ * or as a Comparator for in-memory Java Beans sorting.
+ * 
+ * @author Andrei Adamchik
+ * @author Craig Miskell
+ */
+public class Ordering implements Comparator, Serializable, XMLSerializable {
 
-	public Ordering() {
-	}
-
-	public Ordering(String sortPathSpec, boolean ascending) {
-		setSortSpec(sortPathSpec);
-		this.ascending = ascending;
-	}
-
-	/** 
-	 * Returns sortPathSpec OBJ_PATH specification used in ordering.
-	 * 
-	 * @deprecated Since ordering now supports expression types other than OBJ_PATH,
-	 * this method is deprected. Use <code>getSortSpec().getOperand(0)</code> instead.
+    /** 
+     * Symbolic representation of ascending ordering criterion. 
      */
-	public String getSortPathSpec() {
-		return (String)getSortSpec().getOperand(0);
-	}
+    public static final boolean ASC = true;
 
-	/** 
-	 * Sets path of the sort specification. 
-	 * 
-	 * @deprecated Since ordering now supports expression types other than OBJ_PATH,
-	 * this method is deprected. Use <code>setSortSpec()</code> instead.
-	 */
-	public void setSortPathSpec(String sortPathSpec) {
-		setSortSpec(sortPathSpec);
-	}
+    /** 
+     * Symbolic representation of descending ordering criterion. 
+     */
+    public static final boolean DESC = false;
 
-	/** 
-	 * Sets sortSpec to be OBJ_PATH expression. 
-	 * with path specified as <code>sortPathSpec</code>
-	 * parameter.
-	 */
-	public void setSortSpec(String sortPathSpec) {
-		this.sortSpec =
-			ExpressionFactory.unaryExp(Expression.OBJ_PATH, sortPathSpec);
-	}
+    protected Expression sortSpec;
+    protected boolean ascending;
+    protected boolean caseInsensitive;
 
-	/** Returns true if sorting is done in ascending order. */
-	public boolean isAscending() {
-		return ascending;
-	}
+    /**
+     * Orders a given list of objects, using a List of Orderings
+     * applied according the default iteration order of the Orderings list. 
+     * I.e. each Ordering with lower index is more significant than any other
+     * Ordering with higer index. List being ordered is modified in place.
+     */
+    public static void orderList(List objects, List orderings) {
+        Collections.sort(objects, ComparatorUtils.chainedComparator(orderings));
+    }
 
-	/** Sets <code>ascending</code> property of this Ordering. */
-	public void setAscending(boolean ascending) {
-		this.ascending = ascending;
-	}
+    public Ordering() {
+    }
 
-	/**
-	 * Returns the sortSpec.
-	 * @return Expression
-	 */
-	public Expression getSortSpec() {
-		return sortSpec;
-	}
+    public Ordering(String sortPathSpec, boolean ascending) {
+        this(sortPathSpec, ascending, false);
+    }
 
-	/**
-	 * Sets the sortSpec.
-	 * @param sortSpec The sortSpec to set
-	 */
-	public void setSortSpec(Expression sortSpec) {
-		this.sortSpec = sortSpec;
-	}
+    public Ordering(String sortPathSpec, boolean ascending, boolean caseInsensitive) {
+        setSortSpecString(sortPathSpec);
+        this.ascending = ascending;
+        this.caseInsensitive = caseInsensitive;
+    }
+
+    public Ordering(Expression sortExpression, boolean ascending) {
+        this(sortExpression, ascending, false);
+    }
+
+    public Ordering(
+        Expression sortExpression,
+        boolean ascending,
+        boolean caseInsensitive) {
+        setSortSpec(sortExpression);
+        this.ascending = ascending;
+        this.caseInsensitive = caseInsensitive;
+    }
+
+    /** 
+     * Sets sortSpec to be an expression represented by string argument.
+     * 
+     * @since 1.1
+     */
+    public void setSortSpecString(String sortSpecString) {
+        this.sortSpec =
+            (sortSpecString != null) ? Expression.fromString(sortSpecString) : null;
+    }
+
+    /** 
+     * Returns sortSpec string representation.
+     * 
+     * @since 1.1
+     */
+    public String getSortSpecString() {
+        return (sortSpec != null) ? sortSpec.toString() : null;
+    }
+
+    /** Returns true if sorting is done in ascending order. */
+    public boolean isAscending() {
+        return ascending;
+    }
+
+    /** Sets <code>ascending</code> property of this Ordering. */
+    public void setAscending(boolean ascending) {
+        this.ascending = ascending;
+    }
+
+    /** Returns true if the sorting is case insensitive */
+    public boolean isCaseInsensitive() {
+        return caseInsensitive;
+    }
+
+    /** Sets <code>caseInsensitive</code> property of this Ordering. */
+    public void setCaseInsensitive(boolean caseInsensitive) {
+        this.caseInsensitive = caseInsensitive;
+    }
+
+    /**
+     * Returns the expression defining a ordering Java Bean property.
+     */
+    public Expression getSortSpec() {
+        return sortSpec;
+    }
+
+    /**
+     * Sets the expression defining a ordering Java Bean property.
+     */
+    public void setSortSpec(Expression sortSpec) {
+        this.sortSpec = sortSpec;
+    }
+
+    /**
+     * Orders the given list of objects according to the ordering that this 
+     * object specifies. List is modified in-place.
+     * 
+     * @param objects a List of objects to be sorted
+     */
+    public void orderList(List objects) {
+        Collections.sort(objects, this);
+    }
+
+    /**
+     * Comparable interface implementation. Can compare two
+     * Java Beans based on the stored expression.
+     */
+    public int compare(Object o1, Object o2) {
+        Object value1 = sortSpec.evaluate(o1);
+        Object value2 = sortSpec.evaluate(o2);
+
+        // nulls first policy... maybe make this configurable as some DB do
+        if (value1 == null) {
+            return (value2 == null) ? 0 : -1;
+        }
+        else if (value2 == null) {
+            return 1;
+        }
+
+        if (this.caseInsensitive) {
+            // TODO: to upper case should probably be defined as a separate expression type
+            value1 = ConversionUtil.toUpperCase(value1);
+            value2 = ConversionUtil.toUpperCase(value2);
+        }
+
+        int compareResult =
+            ConversionUtil.toComparable(value1).compareTo(
+                ConversionUtil.toComparable(value2));
+        return (ascending) ? compareResult : -compareResult;
+    }
+
+    /**
+     * Encodes itself as a query ordering.
+     * 
+     * @since 1.1
+     */
+    public void encodeAsXML(XMLEncoder encoder) {
+        encoder.print("<ordering");
+
+        if (!ascending) {
+            encoder.print(" descending=\"true\"");
+        }
+
+        if (caseInsensitive) {
+            encoder.print(" ignore-case=\"true\"");
+        }
+
+        encoder.print(">");
+        if (sortSpec != null) {
+            sortSpec.encodeAsXML(encoder);
+        }
+        encoder.println("</ordering>");
+    }
+
+    public String toString() {
+        StringWriter buffer = new StringWriter();
+        PrintWriter pw = new PrintWriter(buffer);
+        XMLEncoder encoder = new XMLEncoder(pw);
+        encodeAsXML(encoder);
+        pw.close();
+        buffer.flush();
+        return buffer.toString();
+    }
 }

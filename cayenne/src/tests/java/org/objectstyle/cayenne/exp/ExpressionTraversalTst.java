@@ -1,39 +1,39 @@
-package org.objectstyle.cayenne.exp;
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -47,56 +47,47 @@ package org.objectstyle.cayenne.exp;
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */ 
+package org.objectstyle.cayenne.exp;
 
-import org.objectstyle.cayenne.CayenneTestCase;
+import org.objectstyle.cayenne.unit.CayenneTestCase;
 
 
 public class ExpressionTraversalTst extends CayenneTestCase {
     protected TstTraversalHandler handler;
-    protected ExpressionTraversal walker;
-    
-    
-    public ExpressionTraversalTst(String name) {
-        super(name);
-    }
-    
-    
-    protected void setUp() throws java.lang.Exception {                
+ 
+    protected void setUp() throws Exception {                
         handler = new TstTraversalHandler();
-        walker = new ExpressionTraversal(); 
-        walker.setHandler(handler);
     }
     
     
-    public void testUnary() throws java.lang.Exception {
+    public void testUnary() throws Exception {
         doExpressionTest(new TstUnaryExpSuite());
     }
     
     
-    public void testBinary() throws java.lang.Exception {
+    public void testBinary() throws Exception {
         doExpressionTest(new TstBinaryExpSuite());
     }
     
     
-    public void testTernary() throws java.lang.Exception {
+    public void testTernary() throws Exception {
         doExpressionTest(new TstTernaryExpSuite());
     } 
     
     
-    private void doExpressionTest(TstExpressionSuite suite) throws java.lang.Exception {
+    private void doExpressionTest(TstExpressionSuite suite) throws Exception {
         TstExpressionCase[] cases = suite.cases();
         
         int len = cases.length;
         for(int i = 0;  i < len; i++) {
             handler.reset();
-            walker.traverseExpression(cases[i].getCayenneExp());
+            cases[i].getCayenneExp().traverse(handler);
             
             // assert statistics
             handler.assertConsistency();

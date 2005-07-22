@@ -1,38 +1,39 @@
 /* ====================================================================
+ *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,333 +47,652 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.access;
 
-import java.util.*;
-import org.apache.log4j.Logger;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneRuntimeException;
+import org.objectstyle.cayenne.ObjectContext;
+import org.objectstyle.cayenne.access.util.PrimaryKeyHelper;
+import org.objectstyle.cayenne.graph.GraphChangeHandler;
 import org.objectstyle.cayenne.map.DataMap;
-import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.EntityResolver;
 import org.objectstyle.cayenne.query.Query;
+import org.objectstyle.cayenne.query.QueryChain;
+import org.objectstyle.cayenne.query.QueryExecutionPlan;
+import org.objectstyle.cayenne.query.QueryRouter;
 
 /**
- * DataDomain is Cayenne "router". It has zero or more DataNodes that work
- * with data sources. For each query coming to DataDomain, an appropriate node
- * is selected and query is forwarded to this node. This way DataDomain creates 
- * single data source abstraction hiding multiple physical data sources from the 
- * user.
+ * DataDomain performs query routing functions in Cayenne. DataDomain creates single data
+ * source abstraction hiding multiple physical data sources from the user. When a child
+ * DataContext sends a query to the DataDomain, it is transparently routed to an
+ * appropriate DataNode.
+ * <p>
+ * <i>For more information see <a href="../../../../../../userguide/index.html"
+ * target="_top">Cayenne User Guide. </a> </i>
+ * </p>
  * 
- * Other functions of DataDomain are:
- * <ul>
- * <li>Factory of DataContexts
- * <li>Storage of DataMaps
- * </ul>
- * 
- * <p><i>For more information see <a href="../../../../../userguide/index.html"
- * target="_top">Cayenne User Guide.</a></i></p>
- *
  * @author Andrei Adamchik
  */
-public class DataDomain implements QueryEngine {
-	static Logger logObj = Logger.getLogger(DataDomain.class.getName());
+public class DataDomain implements QueryEngine, PersistenceContext {
 
-	/** Stores "name" property. */
-	protected String name;
+    private static Logger logObj = Logger.getLogger(DataDomain.class);
 
-	/** Stores mapping of data nodes to DataNode name keys. */
-	protected HashMap dataNodes = new HashMap();
+    public static final String SHARED_CACHE_ENABLED_PROPERTY = "cayenne.DataDomain.sharedCache";
+    public static final boolean SHARED_CACHE_ENABLED_DEFAULT = true;
 
-	/** Stores DataMaps by name. */
-	protected HashMap maps = new HashMap();
+    public static final String VALIDATING_OBJECTS_ON_COMMIT_PROPERTY = "cayenne.DataDomain.validatingObjectsOnCommit";
+    public static final boolean VALIDATING_OBJECTS_ON_COMMIT_DEFAULT = true;
 
-	/** Stores mapping of data nodes to ObjEntity names.
-	  * Its goal is to speed up lookups for data operation 
-	  * switching. */
-	protected HashMap nodesByEntityName = new HashMap();
+    public static final String USING_EXTERNAL_TRANSACTIONS_PROPERTY = "cayenne.DataDomain.usingExternalTransactions";
+    public static final boolean USING_EXTERNAL_TRANSACTIONS_DEFAULT = false;
 
-	/** Creates an unnamed DataDomain */
-	public DataDomain() {
-	}
+    /** Stores mapping of data nodes to DataNode name keys. */
+    protected Map nodes = Collections.synchronizedMap(new TreeMap());
+    protected Map nodesByDataMapName = Collections.synchronizedMap(new HashMap());
+    protected Collection nodesRef = Collections.unmodifiableCollection(nodes.values());
 
-	/** Creates DataDomain and assigns it a <code>name</code>. */
-	public DataDomain(String name) {
-		this.name = name;
-	}
+    /**
+     * Properties configured for DataDomain. These include properties of the DataRowStore
+     * and remote notifications.
+     */
+    protected Map properties = Collections.synchronizedMap(new TreeMap());
 
-	/** Returns "name" property value. */
-	public String getName() {
-		return name;
-	}
+    protected org.objectstyle.cayenne.map.EntityResolver entityResolver;
+    protected PrimaryKeyHelper primaryKeyHelper;
+    protected DataRowStore sharedSnapshotCache;
+    protected TransactionDelegate transactionDelegate;
+    protected String name;
 
-	/** Sets "name" property to a new value. */
-	public void setName(String name) {
-		this.name = name;
-	}
+    // these are initializable from properties...
+    protected boolean sharedCacheEnabled;
+    protected boolean validatingObjectsOnCommit;
+    protected boolean usingExternalTransactions;
 
-	/** Registers new DataMap with this domain. */
-	public void addMap(DataMap map) {
-		maps.put(map.getName(), map);
-	}
+    /**
+     * Creates a DataDomain and assigns it a name.
+     */
+    public DataDomain(String name) {
+        setName(name);
+        resetProperties();
+    }
 
-	/** Returns DataMap matching <code>name</code> parameter. */
-	public DataMap getMap(String name) {
-		return (DataMap) maps.get(name);
-	}
+    /**
+     * Creates new DataDomain.
+     * 
+     * @param name DataDomain name. Domain can be located using its name in the
+     *            Configuration object.
+     * @param properties A Map containing domain configuration properties.
+     */
+    public DataDomain(String name, Map properties) {
+        setName(name);
+        initWithProperties(properties);
+    }
 
-	/** 
-	 * Unregisters DataMap matching <code>name</code> parameter.
-	 * Also removes map from any child DataNodes that use it.
-	 */
-	public void removeMap(String name) {
-		DataMap map = (DataMap)maps.remove(name);
-		if(map == null) {
-			return;
-		}
-		
-		// remove from data nodes
-		Iterator it = dataNodes.keySet().iterator();
-		while(it.hasNext()) {
-			DataNode node = (DataNode)dataNodes.get(it.next());
-			node.removeDataMap(name);
-		}
-		
-		// reindex nodes to remove references on removed map entities
-		reindexNodes();		
-	}
+    /**
+     * @since 1.1
+     */
+    protected void resetProperties() {
+        if (properties != null) {
+            properties.clear();
+        }
 
-	/** Unregisters DataNode. Also removes entities mapped to the current node. */
-	public void removeDataNode(String name) {
-		DataNode node_to_remove = (DataNode) dataNodes.get(name);
-		if (null == node_to_remove)
-			return;
-		dataNodes.remove(name);
-		Iterator iter = nodesByEntityName.keySet().iterator();
-		while (iter.hasNext()) {
-			String text = (String) iter.next();
-			DataNode node = (DataNode) nodesByEntityName.get(text);
-			if (node == node_to_remove) {
-				nodesByEntityName.remove(text);
-			}
-		}
-	}
+        sharedCacheEnabled = SHARED_CACHE_ENABLED_DEFAULT;
+        validatingObjectsOnCommit = VALIDATING_OBJECTS_ON_COMMIT_DEFAULT;
+        usingExternalTransactions = USING_EXTERNAL_TRANSACTIONS_DEFAULT;
+    }
 
-	/** Returns a list of registered DataMap objects. */
-	public List getMapList() {
-		ArrayList list = new ArrayList();
-		Iterator it = maps.keySet().iterator();
-		while (it.hasNext()) {
-			list.add(maps.get(it.next()));
-		}
-		return list;
-	}
+    /**
+     * Reinitializes domain state with a new set of properties.
+     * 
+     * @since 1.1
+     */
+    public void initWithProperties(Map properties) {
+        // create map with predictable modification and synchronization behavior
+        Map localMap = new HashMap();
+        if (properties != null) {
+            localMap.putAll(properties);
+        }
 
-	/** Return an array of DataNodes (by copy) */
-	public DataNode[] getDataNodes() {
-		DataNode[] dataNodesArray = null;
-		synchronized (dataNodes) {
-			Collection nodes = dataNodes.values();
+        this.properties = localMap;
 
-			if (nodes == null || nodes.size() == 0)
-				dataNodesArray = new DataNode[0];
-			else {
-				dataNodesArray = new DataNode[nodes.size()];
-				nodes.toArray(dataNodesArray);
-			}
-		}
-		return dataNodesArray;
-	}
+        Object sharedCacheEnabled = localMap.get(SHARED_CACHE_ENABLED_PROPERTY);
+        Object validatingObjectsOnCommit = localMap
+                .get(VALIDATING_OBJECTS_ON_COMMIT_PROPERTY);
+        Object usingExternalTransactions = localMap
+                .get(USING_EXTERNAL_TRANSACTIONS_PROPERTY);
 
-	/** Closes all data nodes, removes them from the list
-	*  of available nodes. */
-	public void reset() {
-		synchronized (dataNodes) {
-			dataNodes.clear();
-			nodesByEntityName.clear();
-		}
-	}
+        if (logObj.isDebugEnabled()) {
+            logObj.debug("DataDomain property "
+                    + SHARED_CACHE_ENABLED_PROPERTY
+                    + " = "
+                    + sharedCacheEnabled);
+            logObj.debug("DataDomain property "
+                    + VALIDATING_OBJECTS_ON_COMMIT_PROPERTY
+                    + " = "
+                    + validatingObjectsOnCommit);
+            logObj.debug("DataDomain property "
+                    + USING_EXTERNAL_TRANSACTIONS_PROPERTY
+                    + " = "
+                    + usingExternalTransactions);
+        }
 
-	/** Adds new DataNode to this domain. */
-	public void addNode(DataNode node) {
-		synchronized (dataNodes) {
-			// add node to name->node map
-			dataNodes.put(node.getName(), node);
+        // init ivars from properties
+        this.sharedCacheEnabled = (sharedCacheEnabled != null)
+                ? "true".equalsIgnoreCase(sharedCacheEnabled.toString())
+                : SHARED_CACHE_ENABLED_DEFAULT;
+        this.validatingObjectsOnCommit = (validatingObjectsOnCommit != null)
+                ? "true".equalsIgnoreCase(validatingObjectsOnCommit.toString())
+                : VALIDATING_OBJECTS_ON_COMMIT_DEFAULT;
+        this.usingExternalTransactions = (usingExternalTransactions != null)
+                ? "true".equalsIgnoreCase(usingExternalTransactions.toString())
+                : USING_EXTERNAL_TRANSACTIONS_DEFAULT;
+    }
 
-			// add node to "ent name->node" map
-			DataMap[] maps = node.getDataMaps();
-			if (maps != null) {
-				int mapsCount = maps.length;
-				for (int i = 0; i < mapsCount; i++) {
-					addMap(maps[i]);
-					Iterator it = maps[i].getObjEntitiesAsList().iterator();
-					while (it.hasNext()) {
-						ObjEntity e = (ObjEntity) it.next();
-						nodesByEntityName.put(e.getName(), node);
-					}
-				}
-			}
-		}
-	}
+    /** Returns "name" property value. */
+    public String getName() {
+        return name;
+    }
 
-	/** Creates and returns new DataContext. */
-	public DataContext createDataContext() {
-		return new DataContext(this);
-	}
+    /** Sets "name" property to a new value. */
+    public synchronized void setName(String name) {
+        this.name = name;
+        if (sharedSnapshotCache != null) {
+            this.sharedSnapshotCache.setName(name);
+        }
+    }
 
-	/** Returns registered DataNode whose name matches
-	  * <code>name</code> parameter. */
-	public DataNode getNode(String nodeName) {
-		return (DataNode) dataNodes.get(nodeName);
-	}
+    /**
+     * Returns <code>true</code> if DataContexts produced by this DataDomain are using
+     * shared DataRowStore. Returns <code>false</code> if each DataContext would work
+     * with its own DataRowStore.
+     */
+    public boolean isSharedCacheEnabled() {
+        return sharedCacheEnabled;
+    }
 
-	/** 
-	 * Returns DataNode that should handle database operations for
-	 * a specified <code>objEntityName</code>. Method is synchronized
-	 * since it can potentially update the index of DataNodes.
-	 */
-	public synchronized DataNode dataNodeForObjEntityName(String objEntityName) {
-		DataNode node = (DataNode) nodesByEntityName.get(objEntityName);
+    public void setSharedCacheEnabled(boolean sharedCacheEnabled) {
+        this.sharedCacheEnabled = sharedCacheEnabled;
+    }
 
-		// if lookup fails, it may mean that internal index
-		// in 'nodesByEntityName' need to be updated
-		// do it and then try again.
-		if (node == null) {
-			reindexNodes();
-			return (DataNode) nodesByEntityName.get(objEntityName);
-		} else {
-			return node;
-		}
-	}
+    /**
+     * Returns whether child DataContexts default behavior is to perform object validation
+     * before commit is executed.
+     * 
+     * @since 1.1
+     */
+    public boolean isValidatingObjectsOnCommit() {
+        return validatingObjectsOnCommit;
+    }
 
-	/**
-	 * Updates internal index of DataNodes stored by the entity name.
-	 */
-	public void reindexNodes() {
-		nodesByEntityName.clear();
-		DataNode[] nodes = this.getDataNodes();
-		for (int j = 0; j < nodes.length; j++) {
-			DataNode node = nodes[j];
-			DataMap[] maps = node.getDataMaps();
-			
-			if (maps != null) {
-				int mapsCount = maps.length;
-				for (int i = 0; i < mapsCount; i++) {
-					addMap(maps[i]);
-					Iterator it = maps[i].getObjEntitiesAsList().iterator();
-					while (it.hasNext()) {
-						ObjEntity e = (ObjEntity) it.next();
-						nodesByEntityName.put(e.getName(), node);
-					}
-				}
-			}
-		}
-	}
+    /**
+     * Sets the property defining whether child DataContexts should perform object
+     * validation before commit is executed.
+     * 
+     * @since 1.1
+     */
+    public void setValidatingObjectsOnCommit(boolean flag) {
+        this.validatingObjectsOnCommit = flag;
+    }
 
-	/** 
-	 * Returns DataNode that should handle database operations for
-	 * a specified <code>objEntity</code>. 
-	 */
-	public DataNode dataNodeForObjEntity(ObjEntity objEntity) {
-		return dataNodeForObjEntityName(objEntity.getName());
-	}
+    /**
+     * Returns whether this DataDomain should internally commit all transactions, or let
+     * container do that.
+     * 
+     * @since 1.1
+     */
+    public boolean isUsingExternalTransactions() {
+        return usingExternalTransactions;
+    }
 
-	/** Returns ObjEntity whose name matches <code>name</code> parameter. */
-	public ObjEntity lookupEntity(String name) {
-		Iterator it = maps.values().iterator();
-		while (it.hasNext()) {
-			DataMap map = (DataMap) it.next();
-			ObjEntity anEntity = map.getObjEntity(name);
-			if (anEntity != null) {
-				return anEntity;
-			}
-		}
-		return null;
-	}
+    /**
+     * Sets a property defining whether this DataDomain should internally commit all
+     * transactions, or let container do that.
+     * 
+     * @since 1.1
+     */
+    public void setUsingExternalTransactions(boolean flag) {
+        this.usingExternalTransactions = flag;
+    }
 
-	/** 
-	 * Returns a DataMap that contains DbEntity matching the 
-	 * <code>entityName</code> parameter.
-	 */
-	public DataMap getMapForDbEntity(String entityName) {
-		Iterator it = maps.values().iterator();
-		while (it.hasNext()) {
-			DataMap map = (DataMap) it.next();
-			if (map.getDbEntity(entityName) != null) {
-				return map;
-			}
-		}
-		return null;
-	} 
-	
-	/**
-	 * Returns a DataMap that contains ObjEntity matching the 
-	 * <code>entityName</code> parameter.
-	 */
-	public DataMap getMapForObjEntity(String entityName) {
-		Iterator it = maps.values().iterator();
-		while (it.hasNext()) {
-			DataMap map = (DataMap) it.next();
-			if (map.getObjEntity(entityName) != null) {
-				return map;
-			}
-		}
-		return null;
-	} 
-	
-	/** Analyzes each query and sends it to appropriate DataNode for execution. */
-	public void performQueries(List queries, OperationObserver resultCons) {
-		Iterator it = queries.iterator();
-		HashMap queryMap = new HashMap();
-		// organize queries by node
-		while (it.hasNext()) {
-			Query nextQ = (Query) it.next();
-			DataNode aNode =
-				this.dataNodeForObjEntityName(nextQ.getObjEntityName());
-			if (aNode == null) {
-				throw new CayenneRuntimeException(
-					"No suitable DataNode to handle entity '"
-						+ nextQ.getObjEntityName()
-						+ "'.");
-			}
+    /**
+     * @since 1.1
+     * @return a Map of properties for this DataDomain. There is no guarantees of specific
+     *         synchronization behavior of this map.
+     */
+    public Map getProperties() {
+        return properties;
+    }
 
-			ArrayList nodeQueries = (ArrayList) queryMap.get(aNode);
-			if (nodeQueries == null) {
-				nodeQueries = new ArrayList();
-				queryMap.put(aNode, nodeQueries);
-			}
+    /**
+     * @since 1.1
+     * @return TransactionDelegate associated with this DataDomain, or null if no delegate
+     *         exist.
+     */
+    public TransactionDelegate getTransactionDelegate() {
+        return transactionDelegate;
+    }
 
-			nodeQueries.add(nextQ);
-		} // perform queries on each node
-		Iterator nodeIt = queryMap.keySet().iterator();
-		while (nodeIt.hasNext()) {
-			DataNode nextNode = (DataNode) nodeIt.next();
-			List nodeQueries = (List) queryMap.get(nextNode);
-			// ? maybe this should be run in parallel on different nodes ?
-			// (then resultCons will have to be prepared to handle results coming
-			// from multiple threads)
-			// another way of handling this (which actually preserves
-			nextNode.performQueries(nodeQueries, resultCons);
-		}
-	} 
-	
-	/** Analyzes a query and sends it to appropriate DataNode */
-	public void performQuery(Query query, OperationObserver resultCons) {
-		DataNode aNode =
-			this.dataNodeForObjEntityName(query.getObjEntityName());
-		if (aNode == null) {
-			throw new CayenneRuntimeException(
-				"No DataNode to handle entity '"
-					+ query.getObjEntityName()
-					+ "'.");
-		}
+    /**
+     * Initializes TransactionDelegate used by all DataContexts associated with this
+     * DataDomain.
+     * 
+     * @since 1.1
+     */
+    public void setTransactionDelegate(TransactionDelegate transactionDelegate) {
+        this.transactionDelegate = transactionDelegate;
+    }
 
-		aNode.performQuery(query, resultCons);
-	}
+    /**
+     * Returns snapshots cache for this DataDomain, lazily initializing it on the first
+     * call.
+     */
+    public synchronized DataRowStore getSharedSnapshotCache() {
+        if (sharedSnapshotCache == null) {
+            this.sharedSnapshotCache = new DataRowStore(name, properties);
+        }
+
+        return sharedSnapshotCache;
+    }
+
+    public synchronized void setSharedSnapshotCache(DataRowStore snapshotCache) {
+        if (this.sharedSnapshotCache != snapshotCache) {
+            if (this.sharedSnapshotCache != null) {
+                this.sharedSnapshotCache.shutdown();
+            }
+            this.sharedSnapshotCache = snapshotCache;
+        }
+    }
+
+    /** Registers new DataMap with this domain. */
+    public void addMap(DataMap map) {
+        getEntityResolver().addDataMap(map);
+    }
+
+    /** Returns DataMap matching <code>name</code> parameter. */
+    public DataMap getMap(String mapName) {
+        return getEntityResolver().getDataMap(mapName);
+    }
+
+    /**
+     * Removes named DataMap from this DataDomain and any underlying DataNodes that
+     * include it.
+     */
+    public synchronized void removeMap(String mapName) {
+        DataMap map = getMap(mapName);
+        if (map == null) {
+            return;
+        }
+
+        // remove from data nodes
+        Iterator it = nodes.values().iterator();
+        while (it.hasNext()) {
+            DataNode node = (DataNode) it.next();
+            node.removeDataMap(mapName);
+        }
+
+        // remove from EntityResolver
+        getEntityResolver().removeDataMap(map);
+
+        // reindex nodes to remove references on removed map entities
+        reindexNodes();
+    }
+
+    /**
+     * Removes a DataNode from DataDomain. Any maps previously associated with this node
+     * within domain will still be kept around, however they wan't be mapped to any node.
+     */
+    public synchronized void removeDataNode(String nodeName) {
+        DataNode removed = (DataNode) nodes.remove(nodeName);
+        if (removed != null) {
+
+            removed.setEntityResolver(null);
+
+            Iterator it = nodesByDataMapName.values().iterator();
+            while (it.hasNext()) {
+                if (it.next() == removed) {
+                    it.remove();
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns a collection of registered DataMaps.
+     */
+    public Collection getDataMaps() {
+        return getEntityResolver().getDataMaps();
+    }
+
+    /**
+     * Returns an unmodifiable collection of DataNodes associated with this domain.
+     */
+    public Collection getDataNodes() {
+        return nodesRef;
+    }
+
+    /**
+     * Closes all data nodes, removes them from the list of available nodes.
+     */
+    public void reset() {
+        synchronized (nodes) {
+            nodes.clear();
+            nodesByDataMapName.clear();
+
+            if (entityResolver != null) {
+                entityResolver.clearCache();
+                entityResolver = null;
+            }
+        }
+    }
+
+    /**
+     * Clears the list of internal DataMaps. In most cases it is wise to call "reset"
+     * before doing that.
+     */
+    public void clearDataMaps() {
+        getEntityResolver().setDataMaps(Collections.EMPTY_LIST);
+    }
+
+    /**
+     * Adds new DataNode.
+     */
+    public synchronized void addNode(DataNode node) {
+
+        // add node to name->node map
+        nodes.put(node.getName(), node);
+        node.setEntityResolver(this.getEntityResolver());
+
+        // add node to "ent name->node" map
+        Iterator nodeMaps = node.getDataMaps().iterator();
+        while (nodeMaps.hasNext()) {
+            DataMap map = (DataMap) nodeMaps.next();
+            this.addMap(map);
+            this.nodesByDataMapName.put(map.getName(), node);
+        }
+    }
+
+    /**
+     * Creates and returns a new DataContext. If this DataDomain is configured to use
+     * shared cache, returned DataContext will use shared cache as well. Otherwise a new
+     * instance of DataRowStore will be used as its local cache.
+     */
+    public DataContext createDataContext() {
+        return createDataContext(isSharedCacheEnabled());
+    }
+
+    /**
+     * Creates a new DataContext.
+     * 
+     * @param useSharedCache determines whether resulting DataContext should use shared
+     *            vs. local cache. This setting overrides default behavior configured for
+     *            this DataDomain via {@link #SHARED_CACHE_ENABLED_PROPERTY}.
+     * @since 1.1
+     */
+    public DataContext createDataContext(boolean useSharedCache) {
+        // for new dataRowStores use the same name for all stores
+        // it makes it easier to track the event subject
+        DataRowStore snapshotCache = (useSharedCache)
+                ? getSharedSnapshotCache()
+                : new DataRowStore(name, properties);
+
+        DataContext context = new DataContext(this, new ObjectStore(snapshotCache));
+        context.setValidatingObjectsOnCommit(isValidatingObjectsOnCommit());
+        return context;
+    }
+
+    /**
+     * Creates and returns a new inactive transaction. If there is a TransactionDelegate,
+     * adds the delegate to the newly created Transaction. Behavior of the returned
+     * Transaction depends on "usingInternalTransactions" property setting.
+     * 
+     * @since 1.1
+     */
+    public Transaction createTransaction() {
+        return (isUsingExternalTransactions()) ? Transaction
+                .externalTransaction(getTransactionDelegate()) : Transaction
+                .internalTransaction(getTransactionDelegate());
+    }
+
+    /**
+     * Returns registered DataNode whose name matches <code>name</code> parameter.
+     */
+    public DataNode getNode(String nodeName) {
+        return (DataNode) nodes.get(nodeName);
+    }
+
+    /**
+     * Updates internal index of DataNodes stored by the entity name.
+     */
+    public synchronized void reindexNodes() {
+        nodesByDataMapName.clear();
+
+        Iterator nodes = this.getDataNodes().iterator();
+        while (nodes.hasNext()) {
+            DataNode node = (DataNode) nodes.next();
+            Iterator nodeMaps = node.getDataMaps().iterator();
+            while (nodeMaps.hasNext()) {
+                DataMap map = (DataMap) nodeMaps.next();
+                addMap(map);
+                nodesByDataMapName.put(map.getName(), node);
+            }
+        }
+    }
+
+    /**
+     * Returns a DataNode that should handle queries for all entities in a DataMap.
+     * 
+     * @since 1.1
+     */
+    public DataNode lookupDataNode(DataMap map) {
+        synchronized (nodesByDataMapName) {
+            DataNode node = (DataNode) nodesByDataMapName.get(map.getName());
+            if (node == null) {
+                reindexNodes();
+                return (DataNode) nodesByDataMapName.get(map.getName());
+            }
+            else {
+                return node;
+            }
+        }
+    }
+
+    /**
+     * Inspects the queries, sending them to appropriate DataNodes for execution. May
+     * modify transaction settings on the OperationObserver.
+     * 
+     * @since 1.1
+     */
+    public void performQueries(
+            Collection queries,
+            OperationObserver resultConsumer,
+            Transaction transaction) {
+
+        if (queries.isEmpty()) {
+            return;
+        }
+
+        // transaction is passed to us, so assume we are already wrapped in it...
+        performQuery(new QueryChain(queries), resultConsumer, transaction);
+    }
+
+    /**
+     * Wraps queries in an internal transaction and sends them to appropriate DataNodes
+     * for execution.
+     */
+    public void performQueries(Collection queries, OperationObserver observer) {
+        if (queries.isEmpty()) {
+            return;
+        }
+
+        performQuery(new QueryChain(queries), observer);
+    }
+
+    public EntityResolver getEntityResolver() {
+        if (entityResolver == null) {
+            createEntityResolver();
+        }
+
+        return entityResolver;
+    }
+
+    /**
+     * Sets EntityResolver. If not set explicitly, DataDomain creates a default
+     * EntityResolver internally on demand.
+     * 
+     * @since 1.1
+     */
+    public void setEntityResolver(EntityResolver entityResolver) {
+        this.entityResolver = entityResolver;
+    }
+
+    // creates default entity resolver if there is none set yet
+    private synchronized void createEntityResolver() {
+        if (entityResolver == null) {
+            // entity resolver will be self-indexing as we add all our maps
+            // to it as they are added to the DataDomain
+            entityResolver = new org.objectstyle.cayenne.map.EntityResolver();
+        }
+    }
+
+    // creates default PrimaryKeyHelper
+    private void createKeyGenerator() {
+        primaryKeyHelper = new PrimaryKeyHelper(this);
+    }
+
+    /**
+     * @return PrimaryKeyHelper
+     */
+    public synchronized PrimaryKeyHelper getPrimaryKeyHelper() {
+        // TODO instead of on the spot generation, we can
+        // use lazy initialization features similar to DefaultSorter
+        if (primaryKeyHelper == null) {
+            createKeyGenerator();
+        }
+
+        return primaryKeyHelper;
+    }
+
+    /**
+     * Shutdowns all owned data nodes. Invokes DataNode.shutdown().
+     */
+    public void shutdown() {
+        this.sharedSnapshotCache.shutdown();
+
+        Collection dataNodes = getDataNodes();
+        for (Iterator i = dataNodes.iterator(); i.hasNext();) {
+            DataNode node = (DataNode) i.next();
+            try {
+                node.shutdown();
+            }
+            catch (Exception ex) {
+            }
+        }
+    }
+
+    public String toString() {
+        return new ToStringBuilder(this).append("name", name).toString();
+    }
+
+    // **** new 1.2 PersistenceContext methods:
+    // =======================================
+
+    /**
+     * Commits changes in an ObjectContext.
+     * 
+     * @since 1.2
+     */
+    public void commitChangesInContext(ObjectContext context, GraphChangeHandler commitChangeCallback) {
+        new DataDomainCommitAction(this).commit(context, commitChangeCallback);
+    }
+
+    /**
+     * Routes and executes a given query, wrapping it in a transaction. Note that query
+     * resolution phase is not done at this level and is a responsibility of the caller.
+     * 
+     * @since 1.2
+     */
+    public void performQuery(QueryExecutionPlan query, OperationObserver resultConsumer) {
+
+        Transaction transaction = (resultConsumer.isIteratedResult()) ? Transaction
+                .noTransaction() : createTransaction();
+
+        // we created a transaction, so it is this method's responsibility to
+        // wrap the execution in it
+        transaction.performQuery(this, query, resultConsumer);
+    }
+
+    /**
+     * Routes and executes a given query. Note that query resolution phase is not done at
+     * this level and is a responsibility of the caller.
+     * 
+     * @since 1.2
+     */
+    public void performQuery(
+            QueryExecutionPlan query,
+            OperationObserver resultConsumer,
+            Transaction transaction) {
+
+        final Map queryMap = new HashMap();
+
+        // TODO: optimize for single engine - the most common case...
+
+        // QueryRouter to organize queries by engine
+        QueryRouter router = new QueryRouter() {
+
+            public QueryEngine engineForDataMap(DataMap map) {
+                if (map == null) {
+                    throw new NullPointerException(
+                            "Null DataMap, can't determine DataNode.");
+                }
+
+                QueryEngine node = lookupDataNode(map);
+
+                if (node == null) {
+                    throw new CayenneRuntimeException("No DataNode exists for DataMap "
+                            + map);
+                }
+
+                return node;
+            }
+
+            public void useEngineForQuery(QueryEngine engine, Query query) {
+
+                List queriesByEngine = (List) queryMap.get(engine);
+                if (queriesByEngine == null) {
+                    queriesByEngine = new ArrayList();
+                    queryMap.put(engine, queriesByEngine);
+                }
+
+                queriesByEngine.add(query);
+            }
+        };
+
+        query.route(router, getEntityResolver());
+
+        // perform queries on each node
+        Iterator nodeIt = queryMap.entrySet().iterator();
+        while (nodeIt.hasNext()) {
+            Map.Entry entry = (Map.Entry) nodeIt.next();
+            QueryEngine nextNode = (QueryEngine) entry.getKey();
+            Collection nodeQueries = (Collection) entry.getValue();
+
+            nextNode.performQueries(nodeQueries, resultConsumer, transaction);
+        }
+    }
 }

@@ -1,39 +1,40 @@
 package org.objectstyle.cayenne;
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -47,132 +48,121 @@ package org.objectstyle.cayenne;
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
- */ 
+ */
 
+import java.sql.Timestamp;
 import java.util.List;
-import org.apache.log4j.Level;
 
-import junit.framework.TestCase;
-
-import org.objectstyle.TestMain;
-import org.objectstyle.art.*;
-import org.objectstyle.cayenne.access.*;
-import org.objectstyle.cayenne.exp.Expression;
+import org.objectstyle.art.Artist;
+import org.objectstyle.art.ArtistExhibit;
+import org.objectstyle.art.Exhibit;
+import org.objectstyle.art.Gallery;
+import org.objectstyle.art.Painting;
+import org.objectstyle.art.PaintingInfo;
+import org.objectstyle.cayenne.access.DataContext;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.query.SelectQuery;
+import org.objectstyle.cayenne.unit.CayenneTestCase;
 
-public class CayenneDOTestBase extends CayenneTestCase {    
-    static final String artistName = "artist with one painting";
-    static final String galleryName = "my gallery";
-    static final String textReview = "this painting sucks...";
-    static final String paintingName = "painting about nothing";    
-    static final byte[] paintingImage = new byte[] {2, 3, 4, 5};
-    
+public class CayenneDOTestBase extends CayenneTestCase {
+    public static final String artistName = "artist with one painting";
+    public static final String galleryName = "my gallery";
+    public static final String textReview = "this painting sucks...";
+    public static final String paintingName = "painting about nothing";
+    public static final String groupName = "a group";
+
+    static final byte[] paintingImage = new byte[] { 2, 3, 4, 5 };
+
     protected DataContext ctxt;
-    
-    public CayenneDOTestBase(String name) {
-        super(name);
+
+    protected void setUp() throws Exception {
+        deleteTestData();
+        ctxt = getDomain().createDataContext();
     }
-    
-    public void setUp() throws java.lang.Exception {
-        TestMain.getSharedDatabaseSetup().cleanTableData();        
-        DataDomain dom = getSharedDomain();
-        Level oldLevel = QueryLogger.getLoggingLevel();
-        QueryLogger.setLoggingLevel(Level.ERROR);
-        dom.getDataNodes()[0].createPkSupportForMapEntities();
-        QueryLogger.setLoggingLevel(oldLevel);
-        resetContext();
-    }
-    
-    protected void resetContext() {
-        ctxt = getSharedDomain().createDataContext();
-    }
-    
+
     protected Exhibit newExhibit(Gallery gallery) {
-        Exhibit e1 = (Exhibit)ctxt.createAndRegisterNewObject("Exhibit");
-        e1.setOpeningDate(new java.util.Date());
-        e1.setClosingDate(new java.util.Date());
+        Exhibit e1 = (Exhibit) ctxt.createAndRegisterNewObject("Exhibit");
+        e1.setOpeningDate(new Timestamp(System.currentTimeMillis()));
+        e1.setClosingDate(new Timestamp(System.currentTimeMillis()));
         e1.setToGallery(gallery);
         return e1;
     }
-    
-    protected ArtistExhibit newAritistExhibit() {
-        return (ArtistExhibit)ctxt.createAndRegisterNewObject("ArtistExhibit");
+
+    protected ArtistExhibit newArtistExhibit() {
+        return (ArtistExhibit) ctxt.createAndRegisterNewObject("ArtistExhibit");
     }
-    
+
     protected Gallery newGallery() {
-        Gallery g1 = (Gallery)ctxt.createAndRegisterNewObject("Gallery");
+        Gallery g1 = (Gallery) ctxt.createAndRegisterNewObject("Gallery");
         g1.setGalleryName(galleryName);
         return g1;
     }
-    
+
     protected Artist newArtist() {
-        Artist a1 = (Artist)ctxt.createAndRegisterNewObject("Artist");
+        Artist a1 = (Artist) ctxt.createAndRegisterNewObject("Artist");
         a1.setArtistName(artistName);
         return a1;
     }
-    
+
     protected Painting newROPainting() {
-        Painting p1 = (Painting)ctxt.createAndRegisterNewObject("ROPainting");
+        Painting p1 = (Painting) ctxt.createAndRegisterNewObject("ROPainting");
         p1.setPaintingTitle(paintingName);
         return p1;
     }
-    
+
     protected Painting newPainting() {
-        Painting p1 = (Painting)ctxt.createAndRegisterNewObject("Painting");
+        Painting p1 = (Painting) ctxt.createAndRegisterNewObject("Painting");
         p1.setPaintingTitle(paintingName);
         return p1;
     }
-    
+
     protected PaintingInfo newPaintingInfo() {
-        PaintingInfo p1 = (PaintingInfo)ctxt.createAndRegisterNewObject("PaintingInfo");
+        PaintingInfo p1 = (PaintingInfo) ctxt.createAndRegisterNewObject("PaintingInfo");
         p1.setTextReview(textReview);
         p1.setImageBlob(paintingImage);
         return p1;
     }
-    
+
     protected Gallery fetchGallery() {
-        SelectQuery q = new SelectQuery(
-        "Gallery", 
-        ExpressionFactory.binaryPathExp(Expression.EQUAL_TO, "galleryName", galleryName)
-        );
+        SelectQuery q =
+            new SelectQuery(
+                "Gallery",
+                ExpressionFactory.matchExp("galleryName", galleryName));
         List gls = ctxt.performQuery(q);
-        return (gls.size() > 0) ? (Gallery)gls.get(0) : null;
+        return (gls.size() > 0) ? (Gallery) gls.get(0) : null;
     }
-    
+
     protected Artist fetchArtist() {
-        SelectQuery q = new SelectQuery(
-        "Artist", 
-        ExpressionFactory.binaryPathExp(Expression.EQUAL_TO, "artistName", artistName)
-        );
+        SelectQuery q =
+            new SelectQuery(
+                "Artist",
+                ExpressionFactory.matchExp("artistName", artistName));
         List ats = ctxt.performQuery(q);
-        return (ats.size() > 0) ? (Artist)ats.get(0) : null;
+        return (ats.size() > 0) ? (Artist) ats.get(0) : null;
     }
-    
+
     protected Painting fetchPainting() {
-        SelectQuery q = new SelectQuery(
-        "Painting", 
-        ExpressionFactory.binaryPathExp(Expression.EQUAL_TO, "paintingTitle", paintingName)
-        );
+        SelectQuery q =
+            new SelectQuery(
+                "Painting",
+                ExpressionFactory.matchExp("paintingTitle", paintingName));
         List pts = ctxt.performQuery(q);
-        return (pts.size() > 0) ? (Painting)pts.get(0) : null;
+        return (pts.size() > 0) ? (Painting) pts.get(0) : null;
     }
-    
+
     protected PaintingInfo fetchPaintingInfo() {
         // we are using "LIKE" comparison, since Sybase does not allow
         // "=" comparisons on "text" columns
-        SelectQuery q = new SelectQuery(
-        "PaintingInfo", 
-        ExpressionFactory.binaryPathExp(Expression.LIKE, "textReview", textReview)
-        );
+        SelectQuery q =
+            new SelectQuery(
+                PaintingInfo.class,
+                ExpressionFactory.likeExp("textReview", textReview));
         List pts = ctxt.performQuery(q);
-        return (pts.size() > 0) ? (PaintingInfo)pts.get(0) : null;
+        return (pts.size() > 0) ? (PaintingInfo) pts.get(0) : null;
     }
 }
-

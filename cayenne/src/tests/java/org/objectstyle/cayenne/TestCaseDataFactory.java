@@ -1,39 +1,39 @@
-package org.objectstyle.cayenne;
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -47,46 +47,67 @@ package org.objectstyle.cayenne;
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
+package org.objectstyle.cayenne;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
+import org.objectstyle.cayenne.unit.CayenneTestResources;
+
 public class TestCaseDataFactory {
+
+    private static void createArtist(Connection conn, String artistName)
+        throws Exception {
+        String insertArtist =
+            "INSERT INTO ARTIST (ARTIST_ID, ARTIST_NAME, DATE_OF_BIRTH) VALUES (?,?,?)";
+        PreparedStatement stmt = conn.prepareStatement(insertArtist);
+        long dateBase = System.currentTimeMillis();
+
+        stmt.setInt(1, 1);
+        stmt.setString(2, artistName);
+        stmt.setDate(3, new java.sql.Date(dateBase - 1000 * 60 * 60 * 24 * 365 * 30));
+        stmt.executeUpdate();
+
+        stmt.close();
+        conn.commit();
+    }
+
+    public static void createArtist(String artistName) throws Exception {
+
+        Connection conn =
+            CayenneTestResources.getResources().getDataSource().getConnection();
+
+        try {
+            conn.setAutoCommit(false);
+            createArtist(conn, artistName);
+        }
+        finally {
+            conn.close();
+        }
+    }
 
     public static void createArtistWithPainting(
         String artistName,
         String[] paintingNames,
         boolean paintingInfo)
         throws Exception {
-        String insertArtist =
-            "INSERT INTO ARTIST (ARTIST_ID, ARTIST_NAME, DATE_OF_BIRTH) VALUES (?,?,?)";
 
-        Connection conn = org.objectstyle.TestMain.getSharedConnection();
+        Connection conn =
+            CayenneTestResources.getResources().getDataSource().getConnection();
 
-        try {   
+        try {
             conn.setAutoCommit(false);
-                     
-            PreparedStatement stmt = conn.prepareStatement(insertArtist);
-            long dateBase = System.currentTimeMillis();
-
-            stmt.setInt(1, 1);
-            stmt.setString(2, artistName);
-            stmt.setDate(3, new java.sql.Date(dateBase - 1000 * 60 * 60 * 24 * 365 * 30));
-            stmt.executeUpdate();
-
-            stmt.close();
-            conn.commit();
+            createArtist(conn, artistName);
 
             String insertPt =
                 "INSERT INTO PAINTING (PAINTING_ID, ARTIST_ID, ESTIMATED_PRICE, PAINTING_TITLE) VALUES (?,?,?,?)";
-            stmt = conn.prepareStatement(insertPt);
+            PreparedStatement stmt = conn.prepareStatement(insertPt);
 
             int len = paintingNames.length;
             if (len > 0) {
@@ -120,4 +141,61 @@ public class TestCaseDataFactory {
             conn.close();
         }
     }
+
+    public static void createArtistBelongingToGroups(
+        String artistName,
+        String[] groupNames)
+        throws Exception {
+        Connection conn =
+            CayenneTestResources.getResources().getDataSource().getConnection();
+
+        try {
+            conn.setAutoCommit(false);
+            createArtist(conn, artistName);
+            String insertGroup = "INSERT INTO ARTGROUP (GROUP_ID, NAME) VALUES (?,?)";
+            String insertLink =
+                "INSERT INTO ARTIST_GROUP (GROUP_ID, ARTIST_ID) VALUES (?,?)";
+            PreparedStatement groupStmt = conn.prepareStatement(insertGroup);
+            PreparedStatement linkStmt = conn.prepareStatement(insertLink);
+
+            int len = groupNames.length;
+            if (len > 0) {
+                for (int i = 0; i < len; i++) {
+                    groupStmt.setInt(1, i + 1);
+                    groupStmt.setString(2, groupNames[i]);
+                    groupStmt.executeUpdate();
+
+                    linkStmt.setInt(1, i + 1); //group id
+                    linkStmt.setInt(2, 1); //artist id
+                    linkStmt.executeUpdate();
+                }
+                groupStmt.close();
+                linkStmt.close();
+                conn.commit();
+            }
+        }
+        finally {
+            conn.close();
+        }
+    }
+
+    public static void createUnconnectedGroup(String groupName) throws Exception {
+        Connection conn =
+            CayenneTestResources.getResources().getDataSource().getConnection();
+
+        try {
+            conn.setAutoCommit(false);
+            String insertGroup = "INSERT INTO ARTGROUP (GROUP_ID, NAME) VALUES (?,?)";
+            PreparedStatement groupStmt = conn.prepareStatement(insertGroup);
+            groupStmt.setInt(1, 1);
+            groupStmt.setString(2, groupName);
+            groupStmt.executeUpdate();
+            groupStmt.close();
+            conn.commit();
+        }
+        finally {
+            conn.close();
+        }
+    }
+
 }

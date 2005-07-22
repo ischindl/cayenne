@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,333 +47,383 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.access;
 
+import java.sql.SQLException;
 import java.util.List;
 
-import org.objectstyle.cayenne.util.Log4JConverter;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.objectstyle.cayenne.access.jdbc.ParameterBinding;
+import org.objectstyle.cayenne.conn.DataSourceInfo;
+import org.objectstyle.cayenne.query.Query;
+import org.objectstyle.cayenne.util.Util;
 
 /** 
- * Logs special events during query exectutions.
- * DataNodes invoke its static methods to do logging.
+ * A QueryLogger is intended to log special events during query executions.
+ * This includes generated SQL statements, result counts, connection events etc.
+ * It is a single consistent place for that kind of logging and should be used
+ * by all Cayenne classes that work with the database directly.
  * 
- * <p><i>For more information see <a href="../../../../../userguide/index.html"
+ * <p>In many cases it is important to use this class as opposed to logging 
+ * from the class that performs a particular operation, since QueryLogger 
+ * will generate consistently formatted logs that are easy to analyze
+ * and turn on/off.</p>
+ * 
+ * <p><i>For more information see <a href="../../../../../../userguide/index.html"
  * target="_top">Cayenne User Guide.</a></i></p>
  * 
  * @author Andrei Adamchik
  */
 public class QueryLogger {
-	static org.apache.log4j.Logger logObj =
-		org.apache.log4j.Logger.getLogger(QueryLogger.class);
+    private static final Logger logObj = Logger.getLogger(QueryLogger.class);
 
-	/** Utility method that appends SQL literal for the specified object to the buffer.
-	*  This value will be quoted as needed. Conversion of the value is done based on Java class.
-	*
-	*  <p>Note: this is not intended to build SQL queries, rather this is used in logging routines only.</p> 
-	*
-	*  @param buf buffer to append value
-	*  @param anObject object to be transformed to SQL literal.
-	*/
-	public static void sqlLiteralForObject(StringBuffer buf, Object anObject) {
-		// 0. Null
-		if (anObject == null)
-			buf.append("NULL");
-		// 1. String literal
-		else if (anObject instanceof String) {
-			buf.append('\'');
-			// lets escape quotes
-			String literal = (String) anObject;
-			int curPos = 0;
-			int endPos = 0;
+    public static final Level DEFAULT_LOG_LEVEL = Query.DEFAULT_LOG_LEVEL;
+    public static final int TRIM_VALUES_THRESHOLD = 300;
 
-			while ((endPos = literal.indexOf('\'', curPos)) >= 0) {
-				buf.append(literal.substring(curPos, endPos + 1)).append('\'');
-				curPos = endPos + 1;
-			}
+    /** 
+     * Utility method that appends SQL literal for the specified object to the buffer.
+    *
+    * <p>Note: this method is not intended to build SQL queries, rather this is used 
+    * in logging routines only. In particular it will trim large values to avoid 
+    * flooding the logs.</p> 
+    *
+    *  @param buf buffer to append value
+    *  @param anObject object to be transformed to SQL literal.
+    */
+    public static void sqlLiteralForObject(StringBuffer buf, Object anObject) {
+        // 0. Null
+        if (anObject == null) {
+            buf.append("NULL");
+        }
+        // 1. String literal
+        else if (anObject instanceof String) {
+            buf.append('\'');
+            // lets escape quotes
+            String literal = (String) anObject;
+            if (literal.length() > TRIM_VALUES_THRESHOLD) {
+                literal = literal.substring(0, TRIM_VALUES_THRESHOLD) + "...";
+            }
 
-			if (curPos < literal.length())
-				buf.append(literal.substring(curPos));
+            int curPos = 0;
+            int endPos = 0;
 
-			buf.append('\'');
-		}
-		// 2. Numeric literal
-		else if (anObject instanceof Number) {
-			// process numeric value (do something smart in the future)
-			buf.append(anObject);
-		}
-		// 3. Date
-		else if (anObject instanceof java.sql.Date) {
-			buf.append('\'').append(anObject).append('\'');
-		}
-		// 4. Date
-		else if (anObject instanceof java.sql.Time) {
-			buf.append('\'').append(anObject).append('\'');
-		}
-		// 5 Date
-		else if (anObject instanceof java.util.Date) {
-			long time = ((java.util.Date) anObject).getTime();
-			buf.append('\'').append(new java.sql.Timestamp(time)).append('\'');
-		}
-		// 6. byte[]
-		else if (anObject instanceof byte[]) {
-			buf.append('\'');
-			byte[] b = (byte[]) anObject;
-			for (int i = 0; i < b.length; i++) {
-				buf.append(b[i]);
-			}
-			buf.append('\'');
-		} 
+            while ((endPos = literal.indexOf('\'', curPos)) >= 0) {
+                buf.append(literal.substring(curPos, endPos + 1)).append('\'');
+                curPos = endPos + 1;
+            }
+
+            if (curPos < literal.length())
+                buf.append(literal.substring(curPos));
+
+            buf.append('\'');
+        }
+        // 2. Numeric literal
+        else if (anObject instanceof Number) {
+            // process numeric value (do something smart in the future)
+            buf.append(anObject);
+        }
+        // 3. Date
+        else if (anObject instanceof java.sql.Date) {
+            buf.append('\'').append(anObject).append('\'');
+        }
+        // 4. Date
+        else if (anObject instanceof java.sql.Time) {
+            buf.append('\'').append(anObject).append('\'');
+        }
+        // 5 Date
+        else if (anObject instanceof java.util.Date) {
+            long time = ((java.util.Date) anObject).getTime();
+            buf.append('\'').append(new java.sql.Timestamp(time)).append('\'');
+        }
+        // 6. byte[]
+        else if (anObject instanceof byte[]) {
+            buf.append("< ");
+            byte[] b = (byte[]) anObject;
+
+            int len = b.length;
+            boolean trimming = false;
+            if (len > TRIM_VALUES_THRESHOLD) {
+                len = TRIM_VALUES_THRESHOLD;
+                trimming = true;
+            }
+
+            for (int i = 0; i < len; i++) {
+                appendFormattedByte(buf, b[i]);
+                buf.append(' ');
+            }
+
+            if (trimming) {
+                buf.append("...");
+            }
+            buf.append('>');
+        }
+        else if (anObject instanceof Boolean) {
+            buf.append('\'').append(anObject).append('\'');
+
+        }
+        else if (anObject instanceof ParameterBinding) {
+            sqlLiteralForObject(buf, ((ParameterBinding) anObject).getValue());
+        }
         else {
-			throw new org.objectstyle.cayenne.CayenneRuntimeException(
-				"Unsupported type : " + anObject.getClass().getName());
-		}
-	}
+            // unknown
+            buf
+                .append("[")
+                .append(anObject.getClass().getName())
+                .append(": ")
+                .append(anObject)
+                .append("]");
+        }
+    }
 
-	/** 
-	 * @deprecated Use of JSDK 1.4 logging API is deprecated. 
-	 * Use corresponding Log4J method.
-	 */
-	public static java.util.logging.Level getLogLevel() {
-		return Log4JConverter.getJSDKLogLevel(getLoggingLevel());
-	}
+    /**
+     * Prints a byte value to a StringBuffer as a double digit hex value.
+     */
+    protected static void appendFormattedByte(StringBuffer buffer, byte byteValue) {
+        final String digits = "0123456789ABCDEF";
 
-	/**
-	 * 
-	 * 
-	 * @deprecated
-	 */
-	public static void setLogLevel(java.util.logging.Level level) {
-		setLoggingLevel(Log4JConverter.getLog4JLogLevel(level));
-	}
+        buffer.append(digits.charAt((byteValue >>> 4) & 0xF));
+        buffer.append(digits.charAt(byteValue & 0xF));
+    }
 
-	/** 
-	 * Returns current logging level.
-	 */
-	public static org.apache.log4j.Level getLoggingLevel() {
-		return logObj.getLevel();
-	}
+    /** 
+     * Returns current logging level.
+     */
+    public static Level getLoggingLevel() {
+        Level level = logObj.getLevel();
+        return (level != null) ? level : DEFAULT_LOG_LEVEL;
+    }
 
-	/**
-	 * Sets logging level.
-	 */
-	public static void setLoggingLevel(org.apache.log4j.Level level) {
-		logObj.setLevel(level);
-	}
+    /**
+     * Sets logging level.
+     */
+    public static void setLoggingLevel(Level level) {
+        logObj.setLevel(level);
+    }
 
-	/**
-	 * Logs database connection event using container data source.
-	 */
-	public static void logConnect(org.apache.log4j.Level logLevel, String dataSource) {
-		if (logObj.isEnabledFor(logLevel)) {
-			logObj.log(logLevel, "Connecting. JNDI path: " + dataSource);
-		}
-	}
+    /**
+     * Logs database connection event using container data source.
+     */
+    public static void logConnect(Level logLevel, String dataSource) {
+        if (isLoggable(logLevel)) {
+            logObj.log(logLevel, "Connecting. JNDI path: " + dataSource);
+        }
+    }
 
-	/**
-	 * Logs database connection event.
-	 */
-	public static void logConnect(org.apache.log4j.Level logLevel, DataSourceInfo dsi) {
-		if (logObj.isEnabledFor(logLevel)) {
-			StringBuffer buf = new StringBuffer("Connecting. DataSource information:");
+    public static void logConnect(
+        Level logLevel,
+        String url,
+        String userName,
+        String password) {
+        if (isLoggable(logLevel)) {
+            StringBuffer buf = new StringBuffer("Opening connection: ");
 
-			if (dsi != null) {
-				buf.append("\nDriver class: ").append(dsi.getJdbcDriver());
+            // append URL on the same line to make log somewhat grep-friendly
+            buf.append(url);
+            buf.append("\n\tLogin: ").append(userName);
+            buf.append("\n\tPassword: *******");
 
-				if (dsi.getAdapterClass() != null) {
-					buf.append("\nCayenne DbAdapter: ").append(dsi.getAdapterClass());
-				}
+            logObj.log(logLevel, buf.toString());
+        }
+    }
 
-				if (dsi.getMinConnections() >= 0) {
-					buf.append("\nMin. Pool Size: ").append(dsi.getMinConnections());
-				}
-				if (dsi.getMaxConnections() >= 0) {
-					buf.append("\nMax. Pool Size: ").append(dsi.getMaxConnections());
-				}
-				buf.append("\nDatabase URL: ").append(dsi.getDataSourceUrl());
-				buf.append("\nLogin: ").append(dsi.getUserName());
-				buf.append("\nPassword: *******");
-			} else {
-				buf.append(" unavailable");
-			}
+    /**
+     * Logs database connection event.
+     */
+    public static void logPoolCreated(Level logLevel, DataSourceInfo dsi) {
+        if (isLoggable(logLevel)) {
+            StringBuffer buf = new StringBuffer("Created connection pool: ");
 
-			logObj.log(logLevel, buf.toString());
-		}
-	}
+            if (dsi != null) {
+                // append URL on the same line to make log somewhat grep-friendly
+                buf.append(dsi.getDataSourceUrl());
 
-	public static void logConnectSuccess(org.apache.log4j.Level logLevel) {
-		logObj.log(logLevel, "+++ Connecting: SUCCESS.");
-	}
+                if (dsi.getAdapterClassName() != null) {
+                    buf.append("\n\tCayenne DbAdapter: ").append(
+                        dsi.getAdapterClassName());
+                }
 
-	public static void logConnectFailure(org.apache.log4j.Level logLevel, Throwable th) {
-		logObj.log(logLevel, "*** Connecting: FAILURE.", th);
-	}
+                buf.append("\n\tDriver class: ").append(dsi.getJdbcDriver());
 
-	/** 
-	 * @deprecated Use of JSDK 1.4 logging API is deprecated. 
-	 * Use corresponding Log4J method.
-	 */
-	public static void logQuery(
-		java.util.logging.Level logLevel,
-		String queryStr,
-		List params) {
-		logQuery(Log4JConverter.getLog4JLogLevel(logLevel), queryStr, params);
-	}
+                if (dsi.getMinConnections() >= 0) {
+                    buf.append("\n\tMin. connections in the pool: ").append(
+                        dsi.getMinConnections());
+                }
+                if (dsi.getMaxConnections() >= 0) {
+                    buf.append("\n\tMax. connections in the pool: ").append(
+                        dsi.getMaxConnections());
+                }
+            }
+            else {
+                buf.append(" pool information unavailable");
+            }
 
-	public static void logQuery(
-		org.apache.log4j.Level logLevel,
-		String queryStr,
-		List params) {
-		logQuery(logLevel, queryStr, params, -1);
-	}
+            logObj.log(logLevel, buf.toString());
+        }
+    }
 
-	/** 
-	 * Log query content using Log4J Category with "INFO" priority.
-	 *
-	 * @param queryStr Query SQL string
-	 * @param params optional list of query parameters that are used when 
-	 * executing query in prepared statement.
-	 */
-	public static void logQuery(
-		org.apache.log4j.Level logLevel,
-		String queryStr,
-		List params,
-		long time) {
-		if (logObj.isEnabledFor(logLevel)) {
-			StringBuffer buf = new StringBuffer(queryStr);
-			if (params != null && params.size() > 0) {
-				buf.append(" [params: ");
-				sqlLiteralForObject(buf, params.get(0));
+    public static void logConnectSuccess(Level logLevel) {
+        logObj.log(logLevel, "+++ Connecting: SUCCESS.");
+    }
 
-				int len = params.size();
-				for (int i = 1; i < len; i++) {
-					buf.append(", ");
-					sqlLiteralForObject(buf, params.get(i));
-				}
+    public static void logConnectFailure(Level logLevel, Throwable th) {
+        logObj.log(logLevel, "*** Connecting: FAILURE.", th);
+    }
 
-				buf.append(']');
-			}
+    public static void logQuery(Level logLevel, String queryStr, List params) {
+        logQuery(logLevel, queryStr, params, -1);
+    }
 
-			if (time >= 0) {
-				buf.append(" - prepared in ").append(time).append(" ms.");
-			}
-			logObj.log(logLevel, buf.toString());
-		}
-	}
+    /** 
+     * Log query content using Log4J Category with "INFO" priority.
+     *
+     * @param queryStr Query SQL string
+     * @param params optional list of query parameters that are used when 
+     * executing query in prepared statement.
+     */
+    public static void logQuery(
+        Level logLevel,
+        String queryStr,
+        List params,
+        long time) {
+        if (isLoggable(logLevel)) {
+            StringBuffer buf = new StringBuffer(queryStr);
+            if (params != null && params.size() > 0) {
+                buf.append(" [bind: ");
+                sqlLiteralForObject(buf, params.get(0));
 
-	/** 
-	 * @deprecated Use of JSDK 1.4 logging API is deprecated. 
-	 * Use corresponding Log4J method.
-	 */
-	public static void logSelectCount(java.util.logging.Level logLevel, int count) {
-		logSelectCount(Log4JConverter.getLog4JLogLevel(logLevel), count);
-	}
+                int len = params.size();
+                for (int i = 1; i < len; i++) {
+                    buf.append(", ");
+                    sqlLiteralForObject(buf, params.get(i));
+                }
 
-	public static void logSelectCount(org.apache.log4j.Level logLevel, int count) {
-		logSelectCount(logLevel, count, -1);
-	}
+                buf.append(']');
+            }
 
-	public static void logSelectCount(
-		org.apache.log4j.Level logLevel,
-		int count,
-		long time) {
-		StringBuffer buf = new StringBuffer();
+            // log preparation time only if it is something significant
+            if (time > 5) {
+                buf.append(" - prepared in ").append(time).append(" ms.");
+            }
 
-		if (count == 1) {
-			buf.append("=== returned 1 row.");
-		} else {
-			buf.append("=== returned ").append(count).append(" rows.");
-		}
+            logObj.log(logLevel, buf.toString());
+        }
+    }
 
-		if (time >= 0) {
-			buf.append(" - took ").append(time).append(" ms.");
-		}
+    public static void logQueryParameters(
+        Level logLevel,
+        String label,
+        List parameters) {
 
-		logObj.log(logLevel, buf.toString());
-	}
+        if (isLoggable(logLevel) && parameters.size() > 0) {
+            int len = parameters.size();
+            StringBuffer buf = new StringBuffer("[");
+            buf.append(label).append(": ");
 
-	/** 
-	 * @deprecated Use of JSDK 1.4 logging API is deprecated. 
-	 * Use corresponding Log4J method.
-	 */
-	public static void logUpdateCount(java.util.logging.Level logLevel, int count) {
-		logUpdateCount(Log4JConverter.getLog4JLogLevel(logLevel), count);
-	}
+            sqlLiteralForObject(buf, parameters.get(0));
 
-	public static void logUpdateCount(org.apache.log4j.Level logLevel, int count) {
-		String countStr =
-			(count == 1) ? "=== updated 1 row." : "=== updated " + count + " rows.";
-		logObj.log(logLevel, countStr);
-	}
+            for (int i = 1; i < len; i++) {
+                buf.append(", ");
+                sqlLiteralForObject(buf, parameters.get(i));
+            }
 
-	/** 
-	 * @deprecated Use of JSDK 1.4 logging API is deprecated. 
-	 * Use corresponding Log4J method.
-	 */
-	public static void logCommitTransaction(java.util.logging.Level logLevel) {
-		logCommitTransaction(Log4JConverter.getLog4JLogLevel(logLevel));
-	}
+            buf.append(']');
+            logObj.log(logLevel, buf.toString());
+        }
+    }
 
-	public static void logCommitTransaction(org.apache.log4j.Level logLevel) {
-		logObj.log(logLevel, "+++ transaction committed.");
-	}
+    public static void logSelectCount(Level logLevel, int count) {
+        logSelectCount(logLevel, count, -1);
+    }
 
-	/** 
-	 * @deprecated Use of JSDK 1.4 logging API is deprecated. 
-	 * Use corresponding Log4J method.
-	 */
-	public static void logRollbackTransaction(java.util.logging.Level logLevel) {
-		logRollbackTransaction(Log4JConverter.getLog4JLogLevel(logLevel));
-	}
+    public static void logSelectCount(Level logLevel, int count, long time) {
+        if (isLoggable(logLevel)) {
+            StringBuffer buf = new StringBuffer();
 
-	public static void logRollbackTransaction(org.apache.log4j.Level logLevel) {
-		logObj.log(logLevel, "*** transaction rolledback.");
-	}
+            if (count == 1) {
+                buf.append("=== returned 1 row.");
+            }
+            else {
+                buf.append("=== returned ").append(count).append(" rows.");
+            }
 
-	/** 
-	 * @deprecated Use of JSDK 1.4 logging API is deprecated. 
-	 * Use corresponding Log4J method.
-	 */
-	public static void logQueryError(java.util.logging.Level logLevel, Throwable th) {
-		logQueryError(Log4JConverter.getLog4JLogLevel(logLevel), th);
-	}
+            if (time >= 0) {
+                buf.append(" - took ").append(time).append(" ms.");
+            }
 
-	public static void logQueryError(org.apache.log4j.Level logLevel, Throwable th) {
-		logObj.log(logLevel, "*** error.", th);
-	}
+            logObj.log(logLevel, buf.toString());
+        }
+    }
 
-	/** 
-	 * @deprecated Use of JSDK 1.4 logging API is deprecated. 
-	 * Use corresponding Log4J method.
-	 */
-	public static void logQueryStart(java.util.logging.Level logLevel, int count) {
-		logQueryStart(Log4JConverter.getLog4JLogLevel(logLevel), count);
-	}
+    public static void logUpdateCount(Level logLevel, int count) {
+        if (isLoggable(logLevel)) {
+            String countStr =
+                (count == 1) ? "=== updated 1 row." : "=== updated " + count + " rows.";
+            logObj.log(logLevel, countStr);
+        }
+    }
 
-	public static void logQueryStart(org.apache.log4j.Level logLevel, int count) {
-		String countStr =
-			(count == 1)
-				? "--- will run 1 query."
-				: "--- will run " + count + " queries.";
-		logObj.log(logLevel, countStr);
+    /**
+     * @since 1.1
+     */
+    public static void logBeginTransaction(Level logLevel, String transactionLabel) {
+        if (isLoggable(logLevel)) {
+            logObj.log(logLevel, "--- " + transactionLabel);
+        }
+    }
 
-	}
+    /**
+     * @since 1.1
+     */
+    public static void logCommitTransaction(Level logLevel, String transactionLabel) {
+        if (isLoggable(logLevel)) {
+            logObj.log(logLevel, "+++ " + transactionLabel);
+        }
+    }
 
-	/** 
-	 * @deprecated Use of JSDK 1.4 logging API is deprecated. 
-	 * Use corresponding Log4J method.
-	 */
-	public static boolean isLoggable(java.util.logging.Level logLevel) {
-		return isLoggable(Log4JConverter.getLog4JLogLevel(logLevel));
-	}
+    /**
+     * @since 1.1
+     */
+    public static void logRollbackTransaction(Level logLevel, String transactionLabel) {
+        if (isLoggable(logLevel)) {
+            logObj.log(logLevel, "*** " + transactionLabel);
+        }
+    }
 
-	public static boolean isLoggable(org.apache.log4j.Level logLevel) {
-		return logObj.isEnabledFor(logLevel);
-	}
+    public static void logQueryError(Level logLevel, Throwable th) {
+        if (th != null) {
+            th = Util.unwindException(th);
+        }
+
+        logObj.log(logLevel, "*** error.", th);
+
+        if (th instanceof SQLException) {
+            SQLException sqlException = ((SQLException) th).getNextException();
+            while (sqlException != null) {
+                logObj.log(logLevel, "*** nested SQL error.", sqlException);
+                sqlException = sqlException.getNextException();
+            }
+        }
+    }
+
+    public static void logQueryStart(Level logLevel, int count) {
+        if (isLoggable(logLevel)) {
+            String countStr =
+                (count == 1)
+                    ? "--- will run 1 query."
+                    : "--- will run " + count + " queries.";
+            logObj.log(logLevel, countStr);
+        }
+    }
+
+    public static boolean isLoggable(Level logLevel) {
+        return logObj.isEnabledFor(logLevel);
+    }
+
 }

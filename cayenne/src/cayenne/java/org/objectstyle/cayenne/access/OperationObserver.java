@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,13 +47,12 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
- */ 
+ */
 
 package org.objectstyle.cayenne.access;
 
@@ -61,78 +61,56 @@ import java.util.List;
 import org.objectstyle.cayenne.query.Query;
 
 /**
- * Defines a set of callback methods for a QueryEngine to notify interested 
- * object about different stages of queries execution. Superinterface, OperationHints,
- * defines information methods that are needed to define query execution 
- * strategy. This Interface adds callback methods.
- *
- * <p>Implementing objects are passed to a QueryEngine that will execute
- * one or more queries. QueryEngine will pass results of the execution 
- * of any kind of queries - selects, updates, store proc. calls, etc..
- * to the interested objects. This includes result counts, created objects, 
- * thrown exceptions, etc.</p>
- * 
- * <p><i>For more information see <a href="../../../../../userguide/index.html"
- * target="_top">Cayenne User Guide.</a></i></p>
+ * Defines a set of callback methods that allow QueryEngine to pass back query results and
+ * notify caller about exceptions.
  * 
  * @see org.objectstyle.cayenne.access.QueryEngine
- * 
  * @author Andrei Adamchik
  */
+// TODO: need a name that better reflects the functionality,
+// e.g. OperationContext or QueryContext
 public interface OperationObserver extends OperationHints {
-	
-	/** 
-	 * Invoked after the update (can be insert, delete or update query) is executed.
-	 */
+
+    /**
+     * Callback method invoked after an updating query is executed.
+     */
     public void nextCount(Query query, int resultCount);
-    
-    
-    /** Invoked after the next query results are read. */
+
+    /**
+     * Callback method invoked after a batch update is executed.
+     */
+    public void nextBatchCount(Query query, int[] resultCount);
+
+    /**
+     * Callback method invoked for each processed ResultSet.
+     */
     public void nextDataRows(Query query, List dataRows);
-    
-    
-   	/** 
-	 * Invoked after the next query is invoked, if a query required
-	 * results to be returned as a ResultIterator. OperationObserver 
-	 * is responsible for closing the ResultIterator.
-	 */
+
+    /**
+     * Callback method invoked for each opened ResultIterator. If this observer requested
+     * results to be returned as a ResultIterator, this method is invoked instead of
+     * "nextDataRows(Query,List)". OperationObserver is responsible for closing the
+     * ResultIterators passed via this method.
+     */
     public void nextDataRows(Query q, ResultIterator it);
-	
-	
-    /** Invoked when an exception occurs during query execution. */
+
+    /**
+     * Callback method invoked after each batch of generated values is read durring an
+     * update.
+     * 
+     * @since 1.2
+     */
+    public void nextGeneratedDataRows(Query query, ResultIterator keysIterator);
+
+    /**
+     * Callback method invoked on exceptions that happen during an execution of a specific
+     * query.
+     */
     public void nextQueryException(Query query, Exception ex);
-    
-    /** 
-     * Invoked when a "global" exception occurred, such as JDBC
-     * connection exception, etc.
+
+    /**
+     * Callback method invoked on exceptions that are not tied to a specific query
+     * execution, such as JDBC connection exceptions, etc.
      */
     public void nextGlobalException(Exception ex);
-    
-    
-    /** 
-     * Invoked when a batch of queries was processed as a single transaction,
-     * and this transaction was successfully committed.
-     */
-    public void transactionCommitted();
-    
-    
-    /** 
-     * Invoked when a batch of queries was processed as a single transaction,
-     *  and this transaction was failed and was rolled back. 
-     */
-    public void transactionRolledback();
-    
-    
-    /** This method may be called by DataNode. It gives a chance to OperationObserver to order 
-     *  queries to satisfy database referential integrity constraints.
-     *
-     *  @param aNode data node that is about to run a list of queries...
-     *  @param queryList a list of queries being executed by QueryEngine as a single transaction
-     *
-     *  @return ordered query list (of course some implementations may just return unmodified original
-     *  query list if they do not care about ordering)
-     *
-     */
-    public List orderQueries(DataNode aNode, List queryList);
 }
-

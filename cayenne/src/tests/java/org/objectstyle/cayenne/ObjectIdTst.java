@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,142 +47,210 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne;
 
 import java.util.HashMap;
-import org.apache.log4j.Logger;
+import java.util.Map;
 
 import junit.framework.TestCase;
 
-import org.objectstyle.cayenne.map.DbAttribute;
+import org.apache.commons.collections.map.LinkedMap;
+import org.objectstyle.art.Artist;
 
-public class ObjectIdTst extends CayenneTestCase {
-	static Logger logObj = Logger.getLogger(ObjectIdTst.class.getName());
+public class ObjectIdTst extends TestCase {
 
-	public ObjectIdTst(String name) {
-		super(name);
-	}
+    public void testObjEntityName() {
+        Class class1 = Number.class;
+        ObjectId oid = new ObjectId(class1, null);
+        assertEquals(class1, oid.getObjectClass());
+    }
 
-	public void testObjEntityName() throws Exception {
-		String nm = "12345";
-		ObjectId oid = new ObjectId(nm, null);
-		assertEquals(nm, oid.getObjEntityName());
-	}
+    public void testEquals0() {
+        Class class1 = Number.class;
+        ObjectId oid1 = new ObjectId(class1, null);
+        assertEquals(oid1, oid1);
+        assertEquals(oid1.hashCode(), oid1.hashCode());
+    }
 
-	public void testEquals0() throws Exception {
-		String nm = "12345";
-		ObjectId oid1 = new ObjectId(nm, null);
-		assertEquals(oid1, oid1);
-	}
+    public void testEquals1() {
+        Class class1 = Number.class;
+        ObjectId oid1 = new ObjectId(class1, null);
+        ObjectId oid2 = new ObjectId(class1, null);
+        assertEquals(oid1, oid2);
+        assertEquals(oid1.hashCode(), oid2.hashCode());
+    }
 
-	public void testEquals1() throws Exception {
-		String nm = "12345";
-		ObjectId oid1 = new ObjectId(nm, null);
-		ObjectId oid2 = new ObjectId(nm, null);
-		assertEquals(oid1, oid2);
-	}
+    public void testEquals2() {
+        Class class1 = Number.class;
+        Map hm = new HashMap();
+        ObjectId oid1 = new ObjectId(class1, hm);
+        ObjectId oid2 = new ObjectId(class1, hm);
+        assertEquals(oid1, oid2);
+        assertEquals(oid1.hashCode(), oid2.hashCode());
+    }
 
-	public void testEquals2() throws Exception {
-		String nm = "12345";
-		HashMap hm = new HashMap();
-		ObjectId oid1 = new ObjectId(nm, hm);
-		ObjectId oid2 = new ObjectId(nm, hm);
-		assertEquals(oid1, oid2);
-	}
+    public void testEquals3() {
+        Class class1 = Number.class;
+        String pknm = "xyzabc";
 
-	public void testEquals3() throws Exception {
-		String nm = "12345";
-		String pknm = "xyzabc";
+        Map hm1 = new HashMap();
+        hm1.put(pknm, "123");
 
-		HashMap hm1 = new HashMap();
-		hm1.put(pknm, "123");
+        Map hm2 = new HashMap();
+        hm2.put(pknm, "123");
 
-		HashMap hm2 = new HashMap();
-		hm2.put(pknm, "123");
+        ObjectId oid1 = new ObjectId(class1, hm1);
+        ObjectId oid2 = new ObjectId(class1, hm2);
+        assertEquals(oid1, oid2);
+        assertEquals(oid1.hashCode(), oid2.hashCode());
+    }
 
-		ObjectId oid1 = new ObjectId(nm, hm1);
-		ObjectId oid2 = new ObjectId(nm, hm2);
-		assertEquals(oid1, oid2);
-	}
+    public void testEquals4() {
+        Class class1 = Number.class;
+        String pknm = "xyzabc";
 
-	public void testEquals4() throws Exception {
-		String nm = "12345";
-		String pknm = "xyzabc";
+        Map hm1 = new HashMap();
+        hm1.put(pknm, new Integer(1000));
 
-		HashMap hm1 = new HashMap();
-		hm1.put(pknm, new Integer(1000));
-
-		ObjectId ref = new ObjectId(nm, hm1);
-		ObjectId oid = new ObjectId(nm, pknm, 1000);
-		assertEquals(ref, oid);
-	}
+        ObjectId ref = new ObjectId(class1, hm1);
+        ObjectId oid = new ObjectId(class1, pknm, 1000);
+        assertEquals(ref, oid);
+        assertEquals(ref.hashCode(), oid.hashCode());
+    }
 
     /**
      * This is a test case reproducing conditions for the bug "8458963".
      */
-	public void testEquals5() throws Exception {
-		String nm = "12345";
+    public void testEquals5() {
+        Class class1 = Number.class;
 
-		HashMap hm1 = new HashMap();
-		hm1.put("key1",  new Integer(1));
-		hm1.put("key2",  new Integer(11));
+        Map hm1 = new HashMap();
+        hm1.put("key1", new Integer(1));
+        hm1.put("key2", new Integer(11));
 
-		HashMap hm2 = new HashMap();
-		hm2.put("key1", new Integer(11));
-		hm2.put("key2",  new Integer(1));
+        Map hm2 = new HashMap();
+        hm2.put("key1", new Integer(11));
+        hm2.put("key2", new Integer(1));
 
-		ObjectId ref = new ObjectId(nm, hm1);
-		ObjectId oid = new ObjectId(nm, hm2);
-		assertTrue(!ref.equals(oid));
-	}
+        ObjectId ref = new ObjectId(class1, hm1);
+        ObjectId oid = new ObjectId(class1, hm2);
+        assertFalse(ref.equals(oid));
+    }
 
-	public void testIdAsMapKey() throws Exception {
-		HashMap map = new HashMap();
-		Object o1 = new Object();
+    /**
+     * Multiple key objectId
+     */
+    public void testEquals6() {
+        Class class1 = Number.class;
 
-		String nm = "12345";
-		String pknm = "xyzabc";
+        Map hm1 = new HashMap();
+        hm1.put("key1", new Integer(1));
+        hm1.put("key2", new Integer(2));
 
-		HashMap hm1 = new HashMap();
-		hm1.put(pknm, "123");
+        Map hm2 = new HashMap();
+        hm2.put("key1", new Integer(1));
+        hm2.put("key2", new Integer(2));
 
-		HashMap hm2 = new HashMap();
-		hm2.put(pknm, "123");
+        ObjectId ref = new ObjectId(class1, hm1);
+        ObjectId oid = new ObjectId(class1, hm2);
+        assertTrue(ref.equals(oid));
+        assertEquals(ref.hashCode(), oid.hashCode());
+    }
 
-		ObjectId oid1 = new ObjectId(nm, hm1);
-		ObjectId oid2 = new ObjectId(nm, hm2);
+    /**
+     * Checks that hashCode works even if keys are inserted in the map in a different
+     * order...
+     */
+    public void testEquals7() {
+        Class class1 = Number.class;
 
-		map.put(oid1, o1);
-		assertSame(o1, map.get(oid2));
-	}
+        // create maps with guaranteed iteration order
 
-	public void testNotEqual1() throws Exception {
-		String nm1 = "12345";
-		String nm2 = "abcdef";
+        Map hm1 = new LinkedMap();
+        hm1.put("KEY1", new Integer(1));
+        hm1.put("KEY2", new Integer(2));
 
-		ObjectId oid1 = new ObjectId(nm1, null);
-		ObjectId oid2 = new ObjectId(nm2, null);
-		assertTrue(!oid1.equals(oid2));
-	}
+        Map hm2 = new LinkedMap();
+        // put same keys but in different order
+        hm2.put("KEY2", new Integer(2));
+        hm2.put("KEY1", new Integer(1));
 
-	public void testNotEqual2() throws Exception {
-		String nm = "12345";
+        ObjectId ref = new ObjectId(class1, hm1);
+        ObjectId oid = new ObjectId(class1, hm2);
+        assertTrue(ref.equals(oid));
+        assertEquals(ref.hashCode(), oid.hashCode());
+    }
 
-		HashMap hm1 = new HashMap();
-		hm1.put("pk1", "123");
+    public void testEqualsBinaryKey() {
+        Class class1 = Artist.class;
 
-		HashMap hm2 = new HashMap();
-		hm2.put("pk2", "123");
+        Map hm1 = new HashMap();
+        hm1.put("key1", new byte[] {
+                3, 4, 10, -1
+        });
 
-		ObjectId oid1 = new ObjectId(nm, hm1);
-		ObjectId oid2 = new ObjectId(nm, hm2);
-		assertTrue(!oid1.equals(oid2));
-	}
+        Map hm2 = new HashMap();
+        hm2.put("key1", new byte[] {
+                3, 4, 10, -1
+        });
+
+        ObjectId ref = new ObjectId(class1, hm1);
+        ObjectId oid = new ObjectId(class1, hm2);
+        assertEquals(ref.hashCode(), oid.hashCode());
+        assertTrue(ref.equals(oid));
+    }
+
+    public void testEqualsNull() {
+        ObjectId o = new ObjectId(Artist.class, "ARTIST_ID", 42);
+        assertFalse(o.equals(null));
+    }
+
+    public void testIdAsMapKey() {
+        Map map = new HashMap();
+        Object o1 = new Object();
+
+        Class class1 = Number.class;
+        String pknm = "xyzabc";
+
+        Map hm1 = new HashMap();
+        hm1.put(pknm, "123");
+
+        Map hm2 = new HashMap();
+        hm2.put(pknm, "123");
+
+        ObjectId oid1 = new ObjectId(class1, hm1);
+        ObjectId oid2 = new ObjectId(class1, hm2);
+
+        map.put(oid1, o1);
+        assertSame(o1, map.get(oid2));
+    }
+
+    public void testNotEqual1() {
+        Class class1 = Number.class;
+        Class class2 = Boolean.class;
+
+        ObjectId oid1 = new ObjectId(class1, null);
+        ObjectId oid2 = new ObjectId(class2, null);
+        assertFalse(oid1.equals(oid2));
+    }
+
+    public void testNotEqual2() {
+        Class class1 = Number.class;
+
+        Map hm1 = new HashMap();
+        hm1.put("pk1", "123");
+
+        Map hm2 = new HashMap();
+        hm2.put("pk2", "123");
+
+        ObjectId oid1 = new ObjectId(class1, hm1);
+        ObjectId oid2 = new ObjectId(class1, hm2);
+        assertFalse(oid1.equals(oid2));
+    }
 }

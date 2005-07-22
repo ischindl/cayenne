@@ -1,38 +1,39 @@
 /* ====================================================================
+ *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,409 +47,492 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 
 package org.objectstyle.cayenne.access;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.apache.log4j.Level;
 import org.objectstyle.cayenne.CayenneException;
-import org.objectstyle.cayenne.access.trans.SelectQueryAssembler;
+import org.objectstyle.cayenne.CayenneRuntimeException;
+import org.objectstyle.cayenne.access.jdbc.BatchAction;
+import org.objectstyle.cayenne.access.jdbc.ProcedureAction;
+import org.objectstyle.cayenne.access.jdbc.RowDescriptor;
+import org.objectstyle.cayenne.access.jdbc.SelectAction;
+import org.objectstyle.cayenne.access.jdbc.UpdateAction;
+import org.objectstyle.cayenne.access.trans.BatchQueryBuilder;
+import org.objectstyle.cayenne.conn.PoolManager;
 import org.objectstyle.cayenne.dba.DbAdapter;
-import org.objectstyle.cayenne.map.*;
+import org.objectstyle.cayenne.dba.JdbcAdapter;
+import org.objectstyle.cayenne.map.AshwoodEntitySorter;
+import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.EntityResolver;
+import org.objectstyle.cayenne.map.EntitySorter;
+import org.objectstyle.cayenne.query.BatchQuery;
+import org.objectstyle.cayenne.query.GenericSelectQuery;
+import org.objectstyle.cayenne.query.ProcedureQuery;
 import org.objectstyle.cayenne.query.Query;
+import org.objectstyle.cayenne.query.SelectQuery;
 
-/** Wrapper class for javax.sql.DataSource. Links Cayenne framework
-  * with JDBC layer, providing query execution facilities.
-  *
-  * <p><i>For more information see <a href="../../../../../userguide/index.html"
-  * target="_top">Cayenne User Guide.</a></i></p>
-  * 
-  * @author Andrei Adamchik
-  */
+/**
+ * Describes a single physical data source. This can be a database server, LDAP server,
+ * etc. When the underlying connection layer is based on JDBC, DataNode works as a Cayenne
+ * wrapper of javax.sql.DataSource.
+ * <p>
+ * <i>For more information see <a href="../../../../../../userguide/index.html"
+ * target="_top">Cayenne User Guide. </a> </i>
+ * </p>
+ * 
+ * @author Andrei Adamchik
+ */
 public class DataNode implements QueryEngine {
-	static Logger logObj = Logger.getLogger(DataNode.class.getName());
 
-	public static final String DEFAULT_ADAPTER_CLASS =
-		"org.objectstyle.cayenne.dba.JdbcAdapter";
+    public static final Class DEFAULT_ADAPTER_CLASS = JdbcAdapter.class;
 
-	private static final DataMap[] noDataMaps = new DataMap[0];
+    protected String name;
+    protected DataSource dataSource;
+    protected DbAdapter adapter;
+    protected String dataSourceLocation;
+    protected String dataSourceFactory;
+    protected EntityResolver entityResolver;
+    protected EntitySorter entitySorter;
 
-	protected String name;
-	protected DataSource dataSource;
-	protected DataMap[] dataMaps;
-	protected DbAdapter adapter;
-	protected String dataSourceLocation;
-	protected String dataSourceFactory;
+    // ====================================================
+    // DataMaps
+    // ====================================================
+    protected Map dataMaps = new HashMap();
+    private Collection dataMapsValuesRef = Collections.unmodifiableCollection(dataMaps
+            .values());
 
-	/** Creates unnamed DataNode */
-	public DataNode() {}
+    /**
+     * Creates a new unnamed DataNode.
+     */
+    public DataNode() {
+        this(null);
+    }
 
-	/** Creates DataNode and assigns <code>name</code> to it. */
-	public DataNode(String name) {
-		this.name = name;
+    /**
+     * Creates a new DataNode, assigning it a name.
+     */
+    public DataNode(String name) {
+        this.name = name;
 
-		// make sure it is not null - set to static immutable object
-		this.dataMaps = noDataMaps;
-	}
+        // since 1.2 we always implement entity sorting, regardless of the underlying DB
+        // as the right order is needed for deferred PK propagation (and maybe other
+        // things too?)
+        this.entitySorter = new AshwoodEntitySorter(Collections.EMPTY_LIST);
+    }
 
-	// setters/getters
+    /** Returns node "name" property. */
+    public String getName() {
+        return name;
+    }
 
-	/** Returns node "name" property. */
-	public String getName() {
-		return name;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    /** Returns a location of DataSource of this node. */
+    public String getDataSourceLocation() {
+        return dataSourceLocation;
+    }
 
-	/** Returns a location of DataSource of this node. */
-	public String getDataSourceLocation() {
-		return dataSourceLocation;
-	}
+    public void setDataSourceLocation(String dataSourceLocation) {
+        this.dataSourceLocation = dataSourceLocation;
+    }
 
-	public void setDataSourceLocation(String dataSourceLocation) {
-		this.dataSourceLocation = dataSourceLocation;
-	}
+    /** Returns a name of DataSourceFactory class for this node. */
+    public String getDataSourceFactory() {
+        return dataSourceFactory;
+    }
 
-	/** Returns a name of DataSourceFactory class for this node. */
-	public String getDataSourceFactory() {
-		return dataSourceFactory;
-	}
+    public void setDataSourceFactory(String dataSourceFactory) {
+        this.dataSourceFactory = dataSourceFactory;
+    }
 
-	public void setDataSourceFactory(String dataSourceFactory) {
-		this.dataSourceFactory = dataSourceFactory;
-	}
+    /**
+     * Returns an unmodifiable collection of DataMaps handled by this DataNode.
+     */
+    public Collection getDataMaps() {
+        return dataMapsValuesRef;
+    }
 
-	public DataMap[] getDataMaps() {
-		return dataMaps;
-	}
+    public void setDataMaps(Collection dataMaps) {
+        Iterator it = dataMaps.iterator();
+        while (it.hasNext()) {
+            DataMap map = (DataMap) it.next();
+            this.dataMaps.put(map.getName(), map);
+        }
 
-	public void setDataMaps(DataMap[] dataMaps) {
-		this.dataMaps = dataMaps;
-	}
+        entitySorter.setDataMaps(dataMaps);
+    }
 
-	public void addDataMap(DataMap map) {
-		// note to self - implement it as a List
-		// to avoid this ugly resizing in the future
-		if (dataMaps == null)
-			dataMaps = new DataMap[] { map };
-		else {
-			DataMap[] newMaps = new DataMap[dataMaps.length + 1];
-			System.arraycopy(dataMaps, 0, newMaps, 0, dataMaps.length);
-			newMaps[dataMaps.length] = map;
-			dataMaps = newMaps;
-		}
-	}
+    /**
+     * Adds a DataMap to be handled by this node.
+     */
+    public void addDataMap(DataMap map) {
+        this.dataMaps.put(map.getName(), map);
 
-	public void removeDataMap(String name) {
-		// note to self - implement it as a List
-		// to avoid this ugly resizing in the future
-		if (dataMaps == null || name == null) {
-			return;
-		} else {
-			int mapInd = -1;
-			for (int i = 0; i < dataMaps.length; i++) {
-				if (name.equals(dataMaps[i].getName())) {
-					mapInd = i;
-					break;
-				}
-			}
+        entitySorter.setDataMaps(getDataMaps());
+    }
 
-			if (mapInd < 0) {
-				return;
-			}
+    public void removeDataMap(String mapName) {
+        DataMap map = (DataMap) dataMaps.remove(mapName);
+        if (map != null) {
+            entitySorter.setDataMaps(getDataMaps());
+        }
+    }
 
-			DataMap[] newMaps = new DataMap[dataMaps.length - 1];
-			int newInd = 0;
-			for (int i = 0; i < dataMaps.length; i++) {
-				if (i != mapInd) {
-					newMaps[newInd] = dataMaps[i];
-					newInd++;
-				}
-			}
-			dataMaps = newMaps;
-		}
-	}
+    /**
+     * Returns DataSource used by this DataNode to obtain connections.
+     */
+    public DataSource getDataSource() {
+        return dataSource;
+    }
 
-	public DataSource getDataSource() {
-		return dataSource;
-	}
+    public void setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
 
-	public void setDataSource(DataSource dataSource) {
-		this.dataSource = dataSource;
-	}
+    /**
+     * Returns DbAdapter object. This is a plugin that handles RDBMS vendor-specific
+     * features.
+     */
+    public DbAdapter getAdapter() {
+        return adapter;
+    }
 
-	/** Returns DbAdapter object. This is a plugin for
-	  * that handles RDBMS vendor-specific features. */
-	public DbAdapter getAdapter() {
-		return adapter;
-	}
+    public void setAdapter(DbAdapter adapter) {
+        this.adapter = adapter;
+    }
 
-	public void setAdapter(DbAdapter adapter) {
-		this.adapter = adapter;
-	}
+    /**
+     * Returns a DataNode that should hanlde queries for all DataMap components.
+     * 
+     * @since 1.1
+     */
+    public DataNode lookupDataNode(DataMap dataMap) {
+        // we don't know any better than to return ourselves...
+        return this;
+    }
 
-	// other methods
+    /**
+     * Wraps queries in an internal transaction, and executes them via connection obtained
+     * from internal DataSource.
+     */
+    public void performQueries(Collection queries, OperationObserver observer) {
+        Transaction transaction = Transaction.internalTransaction(null);
+        transaction.performQueries(this, queries, observer);
+    }
 
-	/** 
-	 * Returns this object if it can hanle queries for
-	 * <code>objEntity</code>, returns null otherwise.
-	 */
-	public DataNode dataNodeForObjEntity(ObjEntity objEntity) {
-		return (lookupEntity(objEntity.getName()) != null) ? this : null;
-	}
+    /**
+     * Runs queries using Connection obtained from internal DataSource. Once Connection is
+     * obtained internally, it is added to the Transaction that will handle its closing.
+     * 
+     * @since 1.1
+     */
+    public void performQueries(
+            Collection queries,
+            OperationObserver resultConsumer,
+            Transaction transaction) {
 
-	/** Lookup an entity by name across all node maps. */
-	public ObjEntity lookupEntity(String objEntityName) {
-		DataMap[] maps = this.getDataMaps();
-		int mapLen = maps.length;
-		for (int i = 0; i < mapLen; i++) {
-			ObjEntity anEntity = maps[i].getObjEntity(objEntityName);
-			if (anEntity != null) {
-				return anEntity;
-			}
-		}
-		return null;
-	}
+        Level logLevel = resultConsumer.getLoggingLevel();
 
-	/** Run multiple queries using one of the pooled connections. */
-	public void performQueries(List queries, OperationObserver opObserver) {
-		Level logLevel = opObserver.getLoggingLevel();
+        int listSize = queries.size();
+        if (listSize == 0) {
+            return;
+        }
+        QueryLogger.logQueryStart(logLevel, listSize);
 
-		int listSize = queries.size();
-		QueryLogger.logQueryStart(logLevel, listSize);
-		if (listSize == 0) {
-			return;
-		}
+        // since 1.1 Transaction object is required
+        if (transaction == null) {
+            throw new CayenneRuntimeException(
+                    "No transaction associated with the queries.");
+        }
 
-		Connection con = null;
-		boolean usesAutoCommit = opObserver.useAutoCommit();
-		boolean rolledBackFlag = false;
+        Connection connection = null;
 
-		try {
+        try {
+            // check for invalid iterated query
+            if (resultConsumer.isIteratedResult() && listSize > 1) {
+                throw new CayenneException(
+                        "Iterated queries are not allowed in a batch. Batch size: "
+                                + listSize);
+            }
 
-			// check for invalid iterated query
-			if (opObserver.isIteratedResult() && listSize > 1) {
-				throw new CayenneException(
-					"Iterated queries are not allowed in a batch. Batch size: "
-						+ listSize);
-			}
+            // check out connection
+            connection = this.getDataSource().getConnection();
+            transaction.addConnection(connection);
+        }
+        // catch stuff like connection allocation errors, etc...
+        catch (Exception globalEx) {
+            QueryLogger.logQueryError(logLevel, globalEx);
 
-			// check out connection, create statement
-			con = this.getDataSource().getConnection();
-			if (con.getAutoCommit() != usesAutoCommit) {
-				con.setAutoCommit(usesAutoCommit);
-			}
+            if (connection != null) {
+                // rollback failed transaction
+                transaction.setRollbackOnly();
+            }
 
-			// give a chance to order queries
-			queries = opObserver.orderQueries(this, queries);
+            resultConsumer.nextGlobalException(globalEx);
+            return;
+        }
 
-			// just in case, recheck list size....
-			listSize = queries.size();
+        DataNodeQueryAction queryRunner = new DataNodeQueryAction(this, resultConsumer);
+        Iterator it = queries.iterator();
+        while (it.hasNext()) {
+            Query nextQuery = (Query) it.next();
 
-			for (int i = 0; i < listSize; i++) {
-				Query nextQuery = (Query) queries.get(i);
+            // catch exceptions for each individual query
+            try {
+                queryRunner.runQuery(connection, nextQuery);
+            }
+            catch (Exception queryEx) {
+                QueryLogger.logQueryError(logLevel, queryEx);
 
-				// catch exceptions for each individual query
-				try {
-					// translate query
-					QueryTranslator transl = getAdapter().getQueryTranslator(nextQuery);
-					transl.setEngine(this);
-					transl.setCon(con);
+                // notify consumer of the exception,
+                // stop running further queries
+                resultConsumer.nextQueryException(nextQuery, queryEx);
 
-					PreparedStatement prepStmt = transl.createStatement(logLevel);
+                // rollback transaction
+                transaction.setRollbackOnly();
+                break;
+            }
+        }
+    }
 
-					// if ResultIterator is returned to the user,
-					// DataNode is not responsible for closing the connections
-					// exception handling, and other housekeeping
-					if (opObserver.isIteratedResult()) {
-						// trick "finally" to avoid closing connection here
-						// it will be closed by the ResultIterator
-						con = null;
-						runIteratedSelect(opObserver, prepStmt, transl);
-						return;
-					}
+    /**
+     * Executes a SelectQuery.
+     * 
+     * @deprecated since 1.2
+     */
+    protected void runSelect(
+            Connection connection,
+            Query query,
+            OperationObserver observer) throws SQLException, Exception {
 
-					if (nextQuery.getQueryType() == Query.SELECT_QUERY) {
-						runSelect(opObserver, prepStmt, transl);
-					} else {
-						runUpdate(opObserver, prepStmt, transl);
-					}
+        new SelectAction((SelectQuery) query, getAdapter(), getEntityResolver())
+                .performAction(connection, observer);
+    }
 
-				} catch (Exception queryEx) {
-					QueryLogger.logQueryError(logLevel, queryEx);
+    /**
+     * Executes a non-batched updating query.
+     * 
+     * @deprecated since 1.2
+     */
+    protected void runUpdate(Connection con, Query query, OperationObserver delegate)
+            throws SQLException, Exception {
 
-					// notify consumer of the exception,
-					// stop running further queries
-					opObserver.nextQueryException(nextQuery, queryEx);
+        new UpdateAction(query, getAdapter(), getEntityResolver()).performAction(con,
+                delegate);
+    }
 
-					if (!usesAutoCommit) {
-						// rollback transaction
-						try {
-							rolledBackFlag = true;
-							con.rollback();
-							QueryLogger.logRollbackTransaction(logLevel);
-							opObserver.transactionRolledback();
-						} catch (SQLException sqlEx) {
-							opObserver.nextQueryException(nextQuery, sqlEx);
-						}
-					}
+    /**
+     * Executes a batch updating query.
+     * 
+     * @deprecated since 1.2
+     */
+    protected void runBatchUpdate(
+            Connection connection,
+            BatchQuery query,
+            OperationObserver observer) throws SQLException, Exception {
 
-					break;
-				}
-			}
+        // check run strategy...
 
-			// commit transaction if needed
-			if (!rolledBackFlag && !usesAutoCommit) {
-				con.commit();
-				QueryLogger.logCommitTransaction(logLevel);
-				opObserver.transactionCommitted();
-			}
+        // optimistic locking is not supported in batches due to JDBC driver limitations
+        boolean useOptimisticLock = query.isUsingOptimisticLocking();
 
-		}
-		// catch stuff like connection allocation errors, etc...
-		catch (Exception globalEx) {
-			QueryLogger.logQueryError(logLevel, globalEx);
+        boolean runningAsBatch = !useOptimisticLock && adapter.supportsBatchUpdates();
+        BatchAction action = new BatchAction(query, getAdapter(), getEntityResolver());
+        action.setBatch(runningAsBatch);
+        action.performAction(connection, observer);
+    }
 
-			if (!usesAutoCommit) {
-				// rollback failed transaction
-				rolledBackFlag = true;
+    /**
+     * Executes batch query using JDBC Statement batching features.
+     * 
+     * @deprecated since 1.2 SQLActions are used.
+     */
+    protected void runBatchUpdateAsBatch(
+            Connection con,
+            BatchQuery query,
+            BatchQueryBuilder queryBuilder,
+            OperationObserver delegate) throws SQLException, Exception {
+        new TempBatchAction(query, true).runAsBatch(con, queryBuilder, delegate);
+    }
 
-				try {
-					con.rollback();
-					QueryLogger.logRollbackTransaction(logLevel);
-					opObserver.transactionRolledback();
-				} catch (SQLException ex) {
-					// do nothing....
-				}
-			}
+    /**
+     * Executes batch query without using JDBC Statement batching features, running
+     * individual statements in the batch one by one.
+     * 
+     * @deprecated since 1.2 SQLActions are used.
+     */
+    protected void runBatchUpdateAsIndividualQueries(
+            Connection con,
+            BatchQuery query,
+            BatchQueryBuilder queryBuilder,
+            OperationObserver delegate) throws SQLException, Exception {
 
-			opObserver.nextGlobalException(globalEx);
-		} finally {
-			try {
-				// return connection to the pool if it was checked out
-				if (con != null) {
-					con.close();
-				}
-			}
-			// finally catch connection closing exceptions...
-			catch (Exception finalEx) {
-				opObserver.nextGlobalException(finalEx);
-			}
-		}
-	}
+        new TempBatchAction(query, false).runAsBatch(con, queryBuilder, delegate);
+    }
 
-	/** 
-	 * Executes prebuilt SELECT PreparedStatement.
-	 */
-	protected void runSelect(
-		OperationObserver observer,
-		PreparedStatement prepStmt,
-		QueryTranslator transl)
-		throws Exception {
+    /**
+     * @deprecated since 1.2
+     */
+    protected void runStoredProcedure(
+            Connection con,
+            Query query,
+            OperationObserver delegate) throws SQLException, Exception {
 
-		long t1 = System.currentTimeMillis();
+        new ProcedureAction((ProcedureQuery) query, getAdapter(), getEntityResolver())
+                .performAction(con, delegate);
+    }
 
-		SelectQueryAssembler assembler = (SelectQueryAssembler) transl;
-		DefaultResultIterator it =
-			(assembler.getFetchLimit() > 0)
-				? new LimitedResultIterator(prepStmt, this.getAdapter(), assembler)
-				: new DefaultResultIterator(prepStmt, this.getAdapter(), assembler);
+    /**
+     * Helper method that reads OUT parameters of a CallableStatement.
+     * 
+     * @deprecated Since 1.2 this logic is moved to SQLAction.
+     */
+    protected void readStoredProcedureOutParameters(
+            CallableStatement statement,
+            org.objectstyle.cayenne.access.util.ResultDescriptor descriptor,
+            Query query,
+            OperationObserver delegate) throws SQLException, Exception {
 
-		// note that we don't need to close ResultIterator
-		// since "dataRows" will do it internally
-		List resultRows = it.dataRows();
-		QueryLogger.logSelectCount(
-			observer.getLoggingLevel(),
-			resultRows.size(),
-			System.currentTimeMillis() - t1);
-		observer.nextDataRows(transl.getQuery(), resultRows);
-	}
+        // method is deprecated, so keep this ugly piece here as a placeholder
+        new TempProcedureAction((ProcedureQuery) query)
+                .readProcedureOutParameters(statement, delegate);
+    }
 
-	/** 
-	 * Executes prebuilt SELECT PreparedStatement and returns 
-	 * result to an observer as a ResultIterator.
-	 */
-	protected void runIteratedSelect(
-		OperationObserver observer,
-		PreparedStatement prepStmt,
-		QueryTranslator transl)
-		throws Exception {
+    /**
+     * Helper method that reads a ResultSet.
+     * 
+     * @deprecated Since 1.2 this logic is moved to SQLAction.
+     */
+    protected void readResultSet(
+            ResultSet resultSet,
+            org.objectstyle.cayenne.access.util.ResultDescriptor descriptor,
+            GenericSelectQuery query,
+            OperationObserver delegate) throws SQLException, Exception {
 
-		DefaultResultIterator it = null;
+        // method is deprecated, so keep this ugly piece here as a placeholder
+        RowDescriptor rowDescriptor = new RowDescriptor(resultSet, getAdapter()
+                .getExtendedTypes());
+        new TempProcedureAction((ProcedureQuery) query).readResultSet(resultSet,
+                rowDescriptor,
+                query,
+                delegate);
+    }
 
-		try {
-			SelectQueryAssembler assembler = (SelectQueryAssembler) transl;
-			it = new DefaultResultIterator(prepStmt, this.getAdapter(), assembler);
+    /**
+     * Returns EntityResolver that handles DataMaps of this node.
+     */
+    public EntityResolver getEntityResolver() {
+        return entityResolver;
+    }
 
-			it.setClosingConnection(true);
-			observer.nextDataRows(transl.getQuery(), it);
-		} catch (Exception ex) {
-			if (it != null) {
-				it.close();
-			}
+    /**
+     * Sets EntityResolver. DataNode relies on externally set EntityResolver, so if the
+     * node is created outside of DataDomain stack, a valid EntityResolver must be
+     * provided explicitly.
+     * 
+     * @since 1.1
+     */
+    public void setEntityResolver(
+            org.objectstyle.cayenne.map.EntityResolver entityResolver) {
+        this.entityResolver = entityResolver;
+    }
 
-			throw ex;
-		}
-	}
+    /**
+     * Returns EntitySorter used by the DataNode.
+     */
+    public EntitySorter getEntitySorter() {
+        return entitySorter;
+    }
 
-	/** 
-	 * Executes prebuilt UPDATE, DELETE or INSERT PreparedStatement.
-	 */
-	protected void runUpdate(
-		OperationObserver observer,
-		PreparedStatement prepStmt,
-		QueryTranslator transl)
-		throws Exception {
+    /**
+     * Tries to close JDBC connections opened by this node's data source.
+     */
+    public synchronized void shutdown() {
+        DataSource ds = getDataSource();
+        try {
+            // TODO: theoretically someone maybe using our PoolManager as a container
+            // mapped DataSource, so we should use some other logic to determine whether
+            // this is a DataNode-managed DS.
+            if (ds instanceof PoolManager) {
+                ((PoolManager) ds).dispose();
+            }
+        }
+        catch (SQLException ex) {
+        }
+    }
 
-		try {
-			// execute update
-			int count = prepStmt.executeUpdate();
-			QueryLogger.logUpdateCount(observer.getLoggingLevel(), count);
+    // this class exists to provide deprecated DataNode methods with access to
+    // various SQLAction implementations. It will be removed once corresponding
+    // DataNode methods are removed
+    final class TempProcedureAction extends ProcedureAction {
 
-			// send results back to consumer
-			observer.nextCount(transl.getQuery(), count);
-		} finally {
-			prepStmt.close();
-		}
-	}
+        public TempProcedureAction(ProcedureQuery query) {
+            super(query, DataNode.this.adapter, DataNode.this.entityResolver);
+        }
 
-	public void performQuery(Query query, OperationObserver opObserver) {
-		ArrayList qWrapper = new ArrayList(1);
-		qWrapper.add(query);
-		this.performQueries(qWrapper, opObserver);
-	}
+        // changing access to public
+        public void readProcedureOutParameters(
+                CallableStatement statement,
+                OperationObserver delegate) throws SQLException, Exception {
+            super.readProcedureOutParameters(statement, delegate);
+        }
 
-	/** 
-	 * Creates primary key support for all node DbEntities.
-	 * Will use its facilities provided by DbAdapter to generate
-	 * any necessary database objects and data for primary
-	 * key support.
-	 * 
-	 * @deprecated Use DbAdapter PK generator functions
-	 */
-	public void createPkSupportForMapEntities() throws Exception {
-		// generate PK support for each indiv. entity.
-		int len = dataMaps.length;
-		for (int i = 0; i < len; i++) {
-			DbEntity[] ents = dataMaps[i].getDbEntities();
-			adapter.getPkGenerator().createAutoPk(
-				this,
-				dataMaps[i].getDbEntitiesAsList());
-		}
-	}
+        // changing access to public
+        public void readResultSet(
+                ResultSet resultSet,
+                RowDescriptor descriptor,
+                GenericSelectQuery query,
+                OperationObserver delegate) throws SQLException, Exception {
+            super.readResultSet(resultSet, descriptor, query, delegate);
+        }
+    }
+
+    // this class exists to provide deprecated DataNode methods with access to
+    // various SQLAction implementations. It will be removed once corresponding
+    // DataNode methods are removed
+    final class TempBatchAction extends BatchAction {
+
+        public TempBatchAction(BatchQuery batchQuery, boolean runningAsBatch) {
+            super(batchQuery, DataNode.this.adapter, DataNode.this.entityResolver);
+            setBatch(runningAsBatch);
+        }
+
+        // making public to access from DataNode
+        protected void runAsBatch(
+                Connection con,
+                BatchQueryBuilder queryBuilder,
+                OperationObserver delegate) throws SQLException, Exception {
+            super.runAsBatch(con, queryBuilder, delegate);
+        }
+
+        // making public to access from DataNode
+        public void runAsIndividualQueries(
+                Connection con,
+                BatchQueryBuilder queryBuilder,
+                OperationObserver delegate) throws SQLException, Exception {
+            super.runAsIndividualQueries(con, queryBuilder, delegate, false);
+        }
+    }
+
 }

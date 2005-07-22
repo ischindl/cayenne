@@ -1,38 +1,39 @@
 /* ====================================================================
  * 
- * The ObjectStyle Group Software License, Version 1.0 
- *
- * Copyright (c) 2002 The ObjectStyle Group 
- * and individual authors of the software.  All rights reserved.
- *
+ * The ObjectStyle Group Software License, version 1.1
+ * ObjectStyle Group - http://objectstyle.org/
+ * 
+ * Copyright (c) 2002-2005, Andrei (Andrus) Adamchik and individual authors
+ * of the software. All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
- *
+ *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
- * 3. The end-user documentation included with the redistribution, if
- *    any, must include the following acknowlegement:  
- *       "This product includes software developed by the 
- *        ObjectStyle Group (http://objectstyle.org/)."
+ * 
+ * 3. The end-user documentation included with the redistribution, if any,
+ *    must include the following acknowlegement:
+ *    "This product includes software developed by independent contributors
+ *    and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
  *    Alternately, this acknowlegement may appear in the software itself,
  *    if and wherever such third-party acknowlegements normally appear.
- *
- * 4. The names "ObjectStyle Group" and "Cayenne" 
- *    must not be used to endorse or promote products derived
- *    from this software without prior written permission. For written 
- *    permission, please contact andrus@objectstyle.org.
- *
+ * 
+ * 4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
+ *    or promote products derived from this software without prior written
+ *    permission. For written permission, email
+ *    "andrus at objectstyle dot org".
+ * 
  * 5. Products derived from this software may not be called "ObjectStyle"
- *    nor may "ObjectStyle" appear in their names without prior written
- *    permission of the ObjectStyle Group.
- *
+ *    or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
+ *    names without prior written permission.
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -46,164 +47,233 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
- *
+ * 
  * This software consists of voluntary contributions made by many
- * individuals on behalf of the ObjectStyle Group.  For more
+ * individuals and hosted on ObjectStyle Group web site.  For more
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
- *
  */
 package org.objectstyle.cayenne.util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 import org.objectstyle.cayenne.dba.TypesMapping;
-import org.objectstyle.cayenne.map.*;
+import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.DbAttribute;
+import org.objectstyle.cayenne.map.DbEntity;
+import org.objectstyle.cayenne.map.DbJoin;
+import org.objectstyle.cayenne.map.DbRelationship;
+import org.objectstyle.cayenne.map.Entity;
+import org.objectstyle.cayenne.map.ObjAttribute;
+import org.objectstyle.cayenne.map.ObjEntity;
+import org.objectstyle.cayenne.map.ObjRelationship;
+import org.objectstyle.cayenne.project.NamedObjectFactory;
 
 /**
- * Class that implements methods for entity merging.
- * At this point it is at experimental stage, so chances of
- * API changes are about 100%. 
+ * Implements methods for entity merging.
  * 
  * @author Andrei Adamchik
  */
 public class EntityMergeSupport {
-	protected DataMap map;
-	protected ObjEntity entity;
 
-	public EntityMergeSupport(DataMap map) {
-		this.map = map;
-	}
+    protected DataMap map;
 
-	protected void reset() {
-		entity = null;
-	}
+    public EntityMergeSupport(DataMap map) {
+        this.map = map;
+    }
+    
 
-	/**
-	 * Updates ObjEntity attributes and relationships
-	 * based on the current state of its DbEntity.
-	 */
-	public void synchronizeWithDbEntity(ObjEntity entity) {
-		reset();
+    /**
+     * Updates each one of the collection of ObjEntities, adding attributes and relationships
+     * based on the current state of its DbEntity.
+     * 
+     * @since 1.2 changed signature to use Collection instead of List.
+     */
+    public void synchronizeWithDbEntities(Collection objEntities) {
+        Iterator it = objEntities.iterator();
+        while (it.hasNext()) {
+            this.synchronizeWithDbEntity((ObjEntity) it.next());
+        }
+    }
 
-		if (entity == null || entity.getDbEntity() == null) {
-			return;
-		}
+    /**
+     * Updates ObjEntity attributes and relationships based on the current state of its
+     * DbEntity.
+     */
+    public void synchronizeWithDbEntity(ObjEntity entity) {
 
-		this.setEntity(entity);
+        if (entity == null || entity.getDbEntity() == null) {
+            return;
+        }
 
-		List addAttributes = getAttributesToAdd();
-		List addRelationships = getRelationshipsToAdd();
+        // synchronization on DataMap is some (weak) protection
+        // against simulteneous modification of the map (like double-clicking on sync
+        // button)
+        synchronized (map) {
+            List removeAttributes = getAttributesToRemove(entity);
+            
+            // get rid of attributes that are now src attributes for relationships
+            Iterator rait = removeAttributes.iterator();
+            while (rait.hasNext()) {
+                DbAttribute da = (DbAttribute) rait.next();
+                ObjAttribute oa = entity.getAttributeForDbAttribute(da);
+                while (oa != null){
+                    String attrName = oa.getName();
+                    entity.removeAttribute(attrName);
+                    oa = entity.getAttributeForDbAttribute(da);
+                }
+            }
+            
+            List addAttributes = getAttributesToAdd(entity);
 
-		// add missing attributes
-		Iterator ait = addAttributes.iterator();
-		while (ait.hasNext()) {
-			DbAttribute da = (DbAttribute) ait.next();
-			String attName =
-				NameConverter.undescoredToJava(da.getName(), false);
-			String type = TypesMapping.getJavaBySqlType(da.getType());
+            // add missing attributes
+            Iterator ait = addAttributes.iterator();
+            while (ait.hasNext()) {
+                DbAttribute da = (DbAttribute) ait.next();
+                String attrName = NameConverter.undescoredToJava(da.getName(), false);
 
-			ObjAttribute oa = new ObjAttribute(attName, type, entity);
-			oa.setDbAttribute(da);
-			entity.addAttribute(oa);
-		}
+                // avoid duplicate names
+                attrName = NamedObjectFactory.createName(
+                        ObjAttribute.class,
+                        entity,
+                        attrName);
 
-		// add missing relationships
-		Iterator rit = addRelationships.iterator();
-		while (rit.hasNext()) {
-			DbRelationship dr = (DbRelationship) rit.next();
-			List mappedTargets =
-				map.getMappedEntities((DbEntity) dr.getTargetEntity());
-			if (mappedTargets.size() == 0) {
+                String type = TypesMapping.getJavaBySqlType(da.getType());
+
+                ObjAttribute oa = new ObjAttribute(attrName, type, entity);
+                oa.setDbAttribute(da);
+                entity.addAttribute(oa);
+            }
+            
+            List addRelationships = getRelationshipsToAdd(entity);
+
+            // add missing relationships
+            Iterator rit = addRelationships.iterator();
+            while (rit.hasNext()) {
+                DbRelationship dr = (DbRelationship) rit.next();
+                DbEntity dbEntity = (DbEntity) dr.getTargetEntity();
+
+                Iterator targets = map.getMappedEntities(dbEntity).iterator();
+                if (targets.hasNext()) {
+
+                    Entity mappedTarget = (Entity) targets.next();
+
+                    // avoid duplicate names
+                    String relationshipName = NameConverter.undescoredToJava(dr.getName(), false);
+                    relationshipName = NamedObjectFactory.createName(
+                            ObjRelationship.class,
+                            entity,
+                            relationshipName);
+
+                    ObjRelationship or = new ObjRelationship(relationshipName);
+                    or.addDbRelationship(dr);
+                    or.setSourceEntity(entity);
+                    or.setTargetEntity(mappedTarget);
+                    entity.addRelationship(or);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns a list of src attributes for the DbEntity relationships (Foreign Keys), 
+     * these do not need to be attributes of the ObjEntity.
+     * 
+     * @since 1.2
+     */
+    protected List getAttributesToRemove(ObjEntity objEntity){
+        List removeList = new ArrayList();
+        Iterator it = objEntity.getDbEntity().getRelationships().iterator();
+        while (it.hasNext()) {
+            DbRelationship dbrel = (DbRelationship) it.next();
+            
+            // check if adding it makes sense at all
+            if (dbrel.getName() == null) {
                 continue;
-			}
+            }
 
-			ObjRelationship or = new ObjRelationship(dr.getName());
-			or.addDbRelationship(dr);
-			or.setToMany(dr.isToMany());
-			or.setSourceEntity(entity);
-			or.setTargetEntity((Entity) mappedTargets.get(0));
-			entity.addRelationship(or);
-		}
-	}
+            // get all of the srcAttributes for the relationship
+            Iterator srcAttIterator = dbrel.getSourceAttributes().iterator();
+            while(srcAttIterator.hasNext()){
+                removeList.add(srcAttIterator.next());
+            }
+        }
+        
+        return removeList;        
+    }
 
-	/**
-	 * Returns a list of attributes that exist in the DbEntity, but 
-	 * are missing from the ObjEntity.
-	 */
-	protected List getAttributesToAdd() {
-		ArrayList missing = new ArrayList();
-		Iterator it = entity.getDbEntity().getAttributeList().iterator();
-		List rels = entity.getDbEntity().getRelationshipList();
+    /**
+     * Returns a list of attributes that exist in the DbEntity, but are missing from the
+     * ObjEntity.
+     */
+    protected List getAttributesToAdd(ObjEntity objEntity) {
+        List missing = new ArrayList();
+        Iterator it = objEntity.getDbEntity().getAttributes().iterator();
+        Collection rels = objEntity.getDbEntity().getRelationships();
 
-		while (it.hasNext()) {
-			DbAttribute dba = (DbAttribute) it.next();
-			// already there
-			if (entity.getAttributeForDbAttribute(dba) != null) {
-				continue;
-			}
+        while (it.hasNext()) {
+            DbAttribute dba = (DbAttribute) it.next();
+            // already there
+            if (objEntity.getAttributeForDbAttribute(dba) != null) {
+                continue;
+            }
 
-			// check if adding it makes sense at all
-			if (dba.getName() == null || dba.isPrimaryKey()) {
-				continue;
-			}
+            // check if adding it makes sense at all
+            if (dba.getName() == null || dba.isPrimaryKey()) {
+                continue;
+            }
 
-			// check FK's 
-			boolean isFK = false;
-			Iterator rit = rels.iterator();
-			while (!isFK && rit.hasNext()) {
-				DbRelationship rel = (DbRelationship) rit.next();
-				Iterator jit = rel.getJoins().iterator();
-				while (jit.hasNext()) {
-					DbAttributePair join = (DbAttributePair) jit.next();
-					if (join.getSource() == dba) {
-						isFK = true;
-						break;
-					}
-				}
-			}
+            // check FK's
+            boolean isFK = false;
+            Iterator rit = rels.iterator();
+            while (!isFK && rit.hasNext()) {
+                DbRelationship rel = (DbRelationship) rit.next();
+                Iterator jit = rel.getJoins().iterator();
+                while (jit.hasNext()) {
+                    DbJoin join = (DbJoin) jit.next();
+                    if (join.getSource() == dba) {
+                        isFK = true;
+                        break;
+                    }
+                }
+            }
 
-			if (isFK) {
-				continue;
-			}
+            if (isFK) {
+                continue;
+            }
 
-			missing.add(dba);
-		}
+            missing.add(dba);
+        }
 
-		return missing;
-	}
+        return missing;
+    }
 
-	protected List getRelationshipsToAdd() {
-		ArrayList missing = new ArrayList();
-		Iterator it = entity.getDbEntity().getRelationshipList().iterator();
-		while (it.hasNext()) {
-			DbRelationship dbrel = (DbRelationship) it.next();
-			// check if adding it makes sense at all
-			if (dbrel.getName() == null) {
-				continue;
-			}
+    protected List getRelationshipsToAdd(ObjEntity objEntity) {
+        List missing = new ArrayList();
+        Iterator it = objEntity.getDbEntity().getRelationships().iterator();
+        while (it.hasNext()) {
+            DbRelationship dbrel = (DbRelationship) it.next();
+            // check if adding it makes sense at all
+            if (dbrel.getName() == null) {
+                continue;
+            }
 
-			if (entity.getRelationshipForDbRelationship(dbrel) == null) {
-				missing.add(dbrel);
-			}
-		}
+            if (objEntity.getRelationshipForDbRelationship(dbrel) == null) {
+                missing.add(dbrel);
+            }
+        }
 
-		return missing;
-	}
+        return missing;
+    }
+    
+    public DataMap getMap() {
+        return map;
+    }
 
-	public ObjEntity getEntity() {
-		return entity;
-	}
-
-	public void setEntity(ObjEntity entity) {
-		this.entity = entity;
-	}
-
-	public DataMap getMap() {
-		return map;
-	}
-
-	public void setMap(DataMap map) {
-		this.map = map;
-	}
+    public void setMap(DataMap map) {
+        this.map = map;
+    }
 }
