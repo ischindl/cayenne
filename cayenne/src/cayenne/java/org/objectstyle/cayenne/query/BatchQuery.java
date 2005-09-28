@@ -85,12 +85,19 @@ public abstract class BatchQuery extends AbstractQuery {
      * Returns a List of values for the current batch iteration, 
      * in the order they are bound to the query. Used mainly for 
      * logging.
+     * 
+     * @param includeNullValues A <code>true</code> value indicates that the
+     *        returned list should include <code>null</code> values and
+     *        <code>false</code> indicates they should not be included.
      */
-    public List getValuesForUpdateParameters() {
+    public List getValuesForUpdateParameters(boolean includeNullValues) {
         int len = getDbAttributes().size();
         List values = new ArrayList(len);
         for (int i = 0; i < len; i++) {
-            values.add(getObject(i));
+            Object value = getObject(i);
+            if (includeNullValues || value != null) {
+                values.add(value);
+            }
         }
         return values;
     }

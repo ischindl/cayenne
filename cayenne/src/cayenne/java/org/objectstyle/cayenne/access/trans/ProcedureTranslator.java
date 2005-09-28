@@ -64,8 +64,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Level;
+import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.access.QueryLogger;
 import org.objectstyle.cayenne.access.QueryTranslator;
+import org.objectstyle.cayenne.access.jdbc.ColumnDescriptor;
 import org.objectstyle.cayenne.access.util.ResultDescriptor;
 import org.objectstyle.cayenne.map.Procedure;
 import org.objectstyle.cayenne.map.ProcedureParameter;
@@ -99,6 +101,8 @@ public class ProcedureTranslator
 
     protected List callParams;
     protected List values;
+    
+    private int processedResultSets;
 
     /**
      * Creates an SQL String for the stored procedure call.
@@ -174,12 +178,37 @@ public class ProcedureTranslator
         return (ProcedureQuery) query;
     }
 
+    /**
+     * Returns a ResultDescriptor for the ResultSet. If a ProcedureQuery has custom
+     * descriptors each call to this method will "rewind" the position of the current
+     * descriptor to point to the next one.
+     */
     public ResultDescriptor getResultDescriptor(ResultSet rs) {
-        return ResultDescriptor.createDescriptor(rs, getAdapter().getExtendedTypes());
+
+        List descriptors = getProcedureQuery().getResultDescriptors();
+        if (descriptors.isEmpty()) {
+            // failover to default JDBC result descriptor
+            return ResultDescriptor.createDescriptor(rs, getAdapter().getExtendedTypes());
+        }
+
+        // if one result is described, all of them must be present...
+        if (processedResultSets >= descriptors.size()
+                || descriptors.get(processedResultSets) == null) {
+            throw new CayenneRuntimeException("No descriptor for result set at index '"
+                    + processedResultSets
+                    + "' configured.");
+        }
+
+        ColumnDescriptor[] columns = (ColumnDescriptor[]) descriptors
+                .get(processedResultSets);
+
+        processedResultSets++;
+        return ResultDescriptor
+                .createDescriptor(columns, getAdapter().getExtendedTypes());
     }
 
     /**
-     * Returns a result descriptor for the stored procedure OUT parameters. 
+     * Returns a result descriptor for the stored procedure OUT parameters.
      */
     public ResultDescriptor getProcedureResultDescriptor() {
         return ResultDescriptor.createDescriptor(

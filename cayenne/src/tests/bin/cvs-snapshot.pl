@@ -51,12 +51,12 @@ print_line("Taking CVS snapshot: $label\n");
 
 # checkout source
 get_source("cayenne");
-get_source("sandbox");
+#get_source("sandbox");
 
 # archive
 chdir "$opt_c" or die_with_email("Can't change to $opt_c: $!\n");
 
-my $status = run_command("tar --create --gzip --file=$opt_c/cayenne-cvs-snapshot-$label.tar.gz --exclude CVS cayenne sandbox");  
+my $status = run_command("tar --create --gzip --file=$opt_c/cayenne-cvs-snapshot-$label.tar.gz --exclude CVS cayenne");  
 die_with_email("Tar failed, return status: $status\n") if $status;
 
 $status = run_command("mv $opt_c/cayenne-cvs-snapshot-$label.tar.gz $rel_path/");

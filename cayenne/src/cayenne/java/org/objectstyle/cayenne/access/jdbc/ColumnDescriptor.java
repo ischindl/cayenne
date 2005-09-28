@@ -73,6 +73,17 @@ public class ColumnDescriptor {
 
     public ColumnDescriptor() {
     }
+    
+    /**
+     * Creates a column descriptor with user-specified parameters.
+     * 
+     * @since 1.1.3
+     */
+    public ColumnDescriptor(String columnName, int jdbcType, String javaClass) {
+        this.name = columnName;
+        this.jdbcType = jdbcType;
+        this.javaClass = javaClass;
+    }
 
     public ColumnDescriptor(ObjAttribute objAttribute, DbAttribute dbAttribute) {
         this.name = dbAttribute.getName();

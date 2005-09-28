@@ -76,6 +76,7 @@ import org.objectstyle.cayenne.access.trans.SelectTranslator;
 import org.objectstyle.cayenne.access.trans.SqlModifyTranslator;
 import org.objectstyle.cayenne.access.trans.SqlSelectTranslator;
 import org.objectstyle.cayenne.access.trans.UpdateTranslator;
+import org.objectstyle.cayenne.access.types.BooleanType;
 import org.objectstyle.cayenne.access.types.ByteArrayType;
 import org.objectstyle.cayenne.access.types.CharType;
 import org.objectstyle.cayenne.access.types.ExtendedType;
@@ -170,6 +171,10 @@ public class JdbcAdapter implements DbAdapter {
      * between JDBC and Java layers. Called from default constructor.
      */
     protected void configureExtendedTypes(ExtendedTypeMap map) {
+        // use BooleanType to ensure that returned booleans are an enum of Boolean.TRUE
+        // and Boolean.FALSE
+        map.registerType(new BooleanType());
+
         // Create a default CHAR handler with some generic settings.
         // Subclasses may need to install their own CharType or reconfigure
         // this one to work better with the target database.
@@ -183,9 +188,9 @@ public class JdbcAdapter implements DbAdapter {
     }
 
     /**
-     * Creates and returns a primary key generator. This factory
-     * method should be overriden by JdbcAdapter subclasses to
-     * provide custom implementations of PKGenerator.
+     * Creates and returns a primary key generator. This factory method should be
+     * overriden by JdbcAdapter subclasses to provide custom implementations of
+     * PKGenerator.
      */
     protected PkGenerator createPkGenerator() {
         return new JdbcPkGenerator();
