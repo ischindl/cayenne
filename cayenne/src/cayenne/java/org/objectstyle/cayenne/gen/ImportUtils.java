@@ -225,6 +225,10 @@ public class ImportUtils {
         List typesList = new ArrayList(importTypesMap.values());
         Collections.sort(typesList, new Comparator() {
 
+            public boolean equals(Object obj) {
+                return this.equals(obj);
+            }
+
             public int compare(Object o1, Object o2) {
                 
                 String s1 = (String)o1;
