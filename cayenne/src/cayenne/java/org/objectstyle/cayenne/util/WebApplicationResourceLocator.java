@@ -122,23 +122,36 @@ public class WebApplicationResourceLocator extends ResourceLocator {
      * Looks for resources relative to /WEB-INF/ directory using ServletContext.
      */
     public URL findResource(String location) {
-        if (!this.additionalContextPaths.isEmpty()) {
-            logObj.debug("searching additional context paths: " + this.additionalContextPaths);
+        if (!additionalContextPaths.isEmpty() && getServletContext() != null) {
+
+            String suffix = location != null ? location : "";
+            if (suffix.startsWith("/")) {
+                suffix = suffix.substring(1);
+            }
+
             Iterator cpi = this.additionalContextPaths.iterator();
             while (cpi.hasNext()) {
-                String fullName = cpi.next() + "/" + location;
+                String prefix = (String) cpi.next();
+
+                if (!prefix.endsWith("/")) {
+                    prefix += "/";
+                }
+
+                String fullName = prefix + suffix;
                 logObj.debug("searching for: " + fullName);
                 try {
-                    URL url = this.getServletContext().getResource(fullName);
+                    URL url = getServletContext().getResource(fullName);
                     if (url != null) {
                         return url;
                     }
-                } catch (MalformedURLException ex) {
+                }
+                catch (MalformedURLException ex) {
                     // ignoring
                     logObj.debug("Malformed URL, ignoring.", ex);
                 }
             }
         }
+        
         return super.findResource(location);
     }
 
