@@ -83,6 +83,7 @@ import org.objectstyle.cayenne.access.trans.LOBBatchQueryBuilder;
 import org.objectstyle.cayenne.access.trans.LOBBatchQueryWrapper;
 import org.objectstyle.cayenne.access.trans.LOBInsertBatchQueryBuilder;
 import org.objectstyle.cayenne.access.trans.LOBUpdateBatchQueryBuilder;
+import org.objectstyle.cayenne.access.trans.ProcedureTranslator;
 import org.objectstyle.cayenne.access.types.ExtendedType;
 import org.objectstyle.cayenne.access.util.ResultDescriptor;
 import org.objectstyle.cayenne.map.DbAttribute;
@@ -107,9 +108,81 @@ public class OracleDataNode extends DataNode {
     public OracleDataNode(String name) {
         super(name);
     }
+    
+    /**
+     * Implements Oracle-specific handling of StoredProcedure OUT parameters reading.
+     * 
+     * @since 1.1.3
+     */
+    protected void readStoredProcedureOutParameters(
+            CallableStatement statement,
+            ProcedureTranslator translator,
+            OperationObserver delegate) throws SQLException, Exception {
+
+        long t1 = System.currentTimeMillis();
+
+        ResultDescriptor outDescriptor = translator.getProcedureResultDescriptor();
+
+        int resultSetType = OracleAdapter.getOracleCursorType();
+        int resultWidth = outDescriptor.getResultWidth();
+        if (resultWidth > 0) {
+            Map dataRow = new HashMap(resultWidth * 2, 0.75f);
+            ExtendedType[] converters = outDescriptor.getConverters();
+            int[] jdbcTypes = outDescriptor.getJdbcTypes();
+            String[] names = outDescriptor.getNames();
+            int[] outParamIndexes = outDescriptor.getOutParamIndexes();
+
+            // process result row columns,
+            for (int i = 0; i < outParamIndexes.length; i++) {
+                int index = outParamIndexes[i];
+
+                if (jdbcTypes[index] == resultSetType) {
+                    // note: jdbc column indexes start from 1, not 0 unlike everywhere
+                    // else
+                    ResultSet rs = (ResultSet) statement.getObject(index + 1);
+
+                    try {
+                        ResultDescriptor nextDesc = translator.getResultDescriptor(rs);
+                        readResultSet(
+                                rs,
+                                nextDesc,
+                                translator.getProcedureQuery(),
+                                delegate);
+                    }
+                    finally {
+                        try {
+                            rs.close();
+                        }
+                        catch (SQLException ex) {
+                        }
+                    }
+                }
+                else {
+                    // note: jdbc column indexes start from 1, not 0 unlike everywhere
+                    // else
+                    Object val = converters[index].materializeObject(
+                            statement,
+                            index + 1,
+                            jdbcTypes[index]);
+                    dataRow.put(names[index], val);
+                }
+            }
+
+            if (!dataRow.isEmpty()) {
+                QueryLogger.logSelectCount(
+                        translator.getQuery().getLoggingLevel(),
+                        1,
+                        System.currentTimeMillis() - t1);
+                delegate.nextDataRows(translator.getQuery(), Collections
+                        .singletonList(dataRow));
+            }
+        }
+    }
 
     /**
      * Implements Oracle-specific handling of StoredProcedure OUT parameters reading.
+     * 
+     * @deprecated Not called since 1.1.3
      */
     protected void readStoredProcedureOutParameters(
             CallableStatement statement,
@@ -136,11 +209,21 @@ public class OracleDataNode extends DataNode {
                     // note: jdbc column indexes start from 1, not 0 unlike everywhere
                     // else
                     ResultSet rs = (ResultSet) statement.getObject(index + 1);
-                    ResultDescriptor nextDesc = ResultDescriptor.createDescriptor(
-                            rs,
-                            getAdapter().getExtendedTypes());
 
-                    readResultSet(rs, nextDesc, (GenericSelectQuery) query, delegate);
+                    try {
+                        ResultDescriptor nextDesc = ResultDescriptor.createDescriptor(
+                                rs,
+                                getAdapter().getExtendedTypes());
+
+                        readResultSet(rs, nextDesc, (GenericSelectQuery) query, delegate);
+                    }
+                    finally {
+                        try {
+                            rs.close();
+                        }
+                        catch (SQLException ex) {
+                        }
+                    }
                 }
                 else {
                     // note: jdbc column indexes start from 1, not 0 unlike everywhere

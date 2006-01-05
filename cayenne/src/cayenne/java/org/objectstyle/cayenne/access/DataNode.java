@@ -512,6 +512,9 @@ public class DataNode implements QueryEngine {
         String queryStr = queryBuilder.createSqlString(query);
         Level logLevel = query.getLoggingLevel();
         boolean isLoggable = QueryLogger.isLoggable(logLevel);
+        boolean useOptimisticLock =
+          (query instanceof UpdateBatchQuery)
+              && ((UpdateBatchQuery) query).isUsingOptimisticLocking();
 
         // log batch SQL execution
         QueryLogger.logQuery(logLevel, queryStr, Collections.EMPTY_LIST);
@@ -528,7 +531,7 @@ public class DataNode implements QueryEngine {
                     QueryLogger.logQueryParameters(
                         logLevel,
                         "batch bind",
-                        query.getValuesForUpdateParameters());
+                        query.getValuesForUpdateParameters(useOptimisticLock ? false : true));
                 }
 
                 queryBuilder.bindParameters(statement, query, dbAttributes);
@@ -585,7 +588,7 @@ public class DataNode implements QueryEngine {
                     QueryLogger.logQueryParameters(
                         logLevel,
                         "bind",
-                        query.getValuesForUpdateParameters());
+                        query.getValuesForUpdateParameters(useOptimisticLock ? false : true));
                 }
 
                 queryBuilder.bindParameters(statement, query, dbAttributes);
@@ -634,62 +637,102 @@ public class DataNode implements QueryEngine {
         CallableStatement statement =
             (CallableStatement) transl.createStatement(query.getLoggingLevel());
 
-        // stored procedure may contain a mixture of update counts and result sets,
-        // and out parameters. Read out parameters first, then
-        // iterate until we exhaust all results
-        boolean hasResultSet = statement.execute();
+        try {
+            // stored procedure may contain a mixture of update counts and result sets,
+            // and out parameters. Read out parameters first, then
+            // iterate until we exhaust all results
+            statement.execute();
 
-        // read out parameters
-        readStoredProcedureOutParameters(
-            statement,
-            transl.getProcedureResultDescriptor(),
-            query,
-            delegate);
+            // read out parameters
+            readStoredProcedureOutParameters(statement, transl, delegate);
 
-        // read the rest of the query
-        while (true) {
-            if (hasResultSet) {
-                ResultSet rs = statement.getResultSet();
+            // read the rest of the query
+            while (true) {
+                if (statement.getMoreResults()) {
+                    ResultSet rs = statement.getResultSet();
 
-                readResultSet(
-                    rs,
-                    transl.getResultDescriptor(rs),
-                    (GenericSelectQuery) query,
-                    delegate);
-            }
-            else {
-                int updateCount = statement.getUpdateCount();
-                if (updateCount == -1) {
-                    break;
+                    try {
+                        readResultSet(
+                                rs,
+                                transl.getResultDescriptor(rs),
+                                (GenericSelectQuery) query,
+                                delegate);
+                    }
+                    finally {
+                        try {
+                            rs.close();
+                        }
+                        catch (SQLException ex) {
+                        }
+                    }
                 }
-                QueryLogger.logUpdateCount(query.getLoggingLevel(), updateCount);
-                delegate.nextCount(query, updateCount);
+                else {
+                    int updateCount = statement.getUpdateCount();
+                    if (updateCount == -1) {
+                        break;
+                    }
+                    QueryLogger.logUpdateCount(query.getLoggingLevel(), updateCount);
+                    delegate.nextCount(query, updateCount);
+                }
             }
+        }
+        finally {
+            try {
+                statement.close();
+            }
+            catch (SQLException ex) {
 
-            hasResultSet = statement.getMoreResults();
+            }
         }
     }
 
     /**
      * Helper method that reads OUT parameters of a CallableStatement.
+     * 
+     * @deprecated since 1.1.3 Use a method that uses ProcedureTranslator parameter.
      */
     protected void readStoredProcedureOutParameters(
-        CallableStatement statement,
-        ResultDescriptor descriptor,
-        Query query,
-        OperationObserver delegate)
-        throws SQLException, Exception {
+            CallableStatement statement,
+            ResultDescriptor descriptor,
+            Query query,
+            OperationObserver delegate)
+            throws SQLException, Exception {
+
+            long t1 = System.currentTimeMillis();
+            Map row = DefaultResultIterator.readProcedureOutParameters(statement, descriptor);
+
+            if (!row.isEmpty()) {
+                // treat out parameters as a separate data row set
+                QueryLogger.logSelectCount(
+                    query.getLoggingLevel(),
+                    1,
+                    System.currentTimeMillis() - t1);
+                delegate.nextDataRows(query, Collections.singletonList(row));
+            }
+        }
+    
+    /**
+     * This method was added to 1.1 late in the game and does not exist in 1.2. It should not be called directly anyway.
+     * 
+     * @since 1.1.3 Replacement of
+     *        {@link #readStoredProcedureOutParameters(CallableStatement, ResultDescriptor, Query, OperationObserver)}
+     *        that supports custom result descriptors.
+     */
+    protected void readStoredProcedureOutParameters(
+            CallableStatement statement,
+            ProcedureTranslator translator,
+            OperationObserver delegate) throws SQLException, Exception {
 
         long t1 = System.currentTimeMillis();
-        Map row = DefaultResultIterator.readProcedureOutParameters(statement, descriptor);
+        Map row = DefaultResultIterator.readProcedureOutParameters(statement, translator
+                .getProcedureResultDescriptor());
 
         if (!row.isEmpty()) {
             // treat out parameters as a separate data row set
-            QueryLogger.logSelectCount(
-                query.getLoggingLevel(),
-                1,
-                System.currentTimeMillis() - t1);
-            delegate.nextDataRows(query, Collections.singletonList(row));
+            QueryLogger.logSelectCount(translator.getQuery().getLoggingLevel(), 1, System
+                    .currentTimeMillis()
+                    - t1);
+            delegate.nextDataRows(translator.getQuery(), Collections.singletonList(row));
         }
     }
 

@@ -2,8 +2,6 @@ bin
 dist
 velocity.log
 tmp
-.classpath
-.project
 testrun
 build.properties
 perfresults
