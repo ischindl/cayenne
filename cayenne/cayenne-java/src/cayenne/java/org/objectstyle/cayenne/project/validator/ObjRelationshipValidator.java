@@ -93,35 +93,39 @@ public class ObjRelationshipValidator extends TreeNodeValidator {
         }
         // check if there are attributes having the same name
         else if (rel.getSourceEntity().getAttribute(rel.getName()) != null) {
-            validator.registerWarning(
-                    "ObjRelationship " + objRelationshipIdentifier(rel) + " has the same name as one of ObjAttributes",
-                    path);
+            validator.registerWarning("ObjRelationship "
+                    + objRelationshipIdentifier(rel)
+                    + " has the same name as one of ObjAttributes", path);
         }
         else {
             MappingNamesHelper helper = MappingNamesHelper.getInstance();
             String invalidChars = helper.invalidCharsInObjPathComponent(rel.getName());
 
             if (invalidChars != null) {
-                validator.registerWarning(
-                        "ObjRelationship " + objRelationshipIdentifier(rel) + " name contains invalid characters: "
-                                + invalidChars,
-                        path);
+                validator.registerWarning("ObjRelationship "
+                        + objRelationshipIdentifier(rel)
+                        + " name contains invalid characters: "
+                        + invalidChars, path);
             }
             else if (helper.invalidDataObjectProperty(rel.getName())) {
-                validator.registerWarning("ObjRelationship " + objRelationshipIdentifier(rel) + " name is invalid.", path);
+                validator.registerWarning("ObjRelationship "
+                        + objRelationshipIdentifier(rel)
+                        + " name is invalid.", path);
             }
         }
 
         if (rel.getTargetEntity() == null) {
-            validator.registerWarning("ObjRelationship " + objRelationshipIdentifier(rel) + " has no target entity.", path);
+            validator.registerWarning("ObjRelationship "
+                    + objRelationshipIdentifier(rel)
+                    + " has no target entity.", path);
         }
         else {
             // check for missing DbRelationship mappings
             List dbRels = rel.getDbRelationships();
             if (dbRels.size() == 0) {
-                validator.registerWarning(
-                        "ObjRelationship " + objRelationshipIdentifier(rel) + " has no DbRelationship mapping.",
-                        path);
+                validator.registerWarning("ObjRelationship "
+                        + objRelationshipIdentifier(rel)
+                        + " has no DbRelationship mapping.", path);
             }
             else {
                 DbEntity expectedSrc = ((ObjEntity) rel.getSourceEntity()).getDbEntity();
@@ -131,15 +135,15 @@ public class ObjRelationshipValidator extends TreeNodeValidator {
                 if (((DbRelationship) dbRels.get(0)).getSourceEntity() != expectedSrc
                         || ((DbRelationship) dbRels.get(dbRels.size() - 1))
                                 .getTargetEntity() != expectedTarget) {
-                    validator.registerWarning(
-                            "ObjRelationship " + objRelationshipIdentifier(rel) + " has incomplete DbRelationship mapping.",
-                            path);
+                    validator.registerWarning("ObjRelationship "
+                            + objRelationshipIdentifier(rel)
+                            + " has incomplete DbRelationship mapping.", path);
                 }
             }
         }
 
-        //Disallow a Nullify delete rule where the relationship is toMany and the
-        //foreign key attributes are mandatory.
+        // Disallow a Nullify delete rule where the relationship is toMany and the
+        // foreign key attributes are mandatory.
         if (rel.isToMany()
                 && !rel.isFlattened()
                 && (rel.getDeleteRule() == DeleteRule.NULLIFY)) {
@@ -149,23 +153,31 @@ public class ObjRelationshipValidator extends TreeNodeValidator {
                         .getDbRelationships()
                         .get(0);
                 Iterator attributePairIterator = firstRel.getJoins().iterator();
+                // by default, the relation will be check for mandatory.
+                boolean check = true;
                 while (attributePairIterator.hasNext()) {
                     DbJoin pair = (DbJoin) attributePairIterator.next();
-                    if (pair.getSource().isMandatory()) {
-                        validator
-                                .registerWarning(
-                                        "ObjRelationship " + objRelationshipIdentifier(rel) + " has a Nullify delete rule and a mandatory reverse relationship ",
-                                        path);
+                    if (!pair.getSource().isMandatory()) {
+                        // a field of the fk can be nullable, cancel the check.
+                        check = false;
+                        break;
                     }
+                }
+                
+                if (check) {
+                    validator
+                            .registerWarning(
+                                    "ObjRelationship "
+                                            + objRelationshipIdentifier(rel)
+                                            + " has a Nullify delete rule and a mandatory reverse relationship ",
+                                    path);
                 }
             }
         }
     }
-    
-    public String objRelationshipIdentifier(ObjRelationship rel)
-    {
-        if (null == rel.getSourceEntity())
-        {
+
+    public String objRelationshipIdentifier(ObjRelationship rel) {
+        if (null == rel.getSourceEntity()) {
             return "<[null source entity]." + rel.getName() + ">";
         }
         return "<" + rel.getSourceEntity().getName() + "." + rel.getName() + ">";

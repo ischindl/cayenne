@@ -105,7 +105,7 @@ public class GraphMap implements GraphManager {
     }
 
     // *** methods for tracking local changes declared in GraphChangeHandler interface
-
+    
     public void arcCreated(Object nodeId, Object targetNodeId, Object arcId) {
         // noop
     }

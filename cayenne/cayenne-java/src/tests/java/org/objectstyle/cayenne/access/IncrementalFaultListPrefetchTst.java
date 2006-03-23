@@ -56,9 +56,12 @@
 
 package org.objectstyle.cayenne.access;
 
+import java.util.List;
+
 import org.objectstyle.art.Artist;
 import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.PersistenceState;
+import org.objectstyle.cayenne.ValueHolder;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.query.SelectQuery;
@@ -122,8 +125,8 @@ public class IncrementalFaultListPrefetchTst extends DataContextTestBase {
         for (int i = 4; i < 8; i++) {
             Artist a = (Artist) result.get(i);
 
-            ToManyList paintings = (ToManyList) a.getPaintingArray();
-            assertFalse(paintings.isFault());
+            List paintings = a.getPaintingArray();
+            assertFalse(((ValueHolder) paintings).isFault());
             assertEquals(1, paintings.size());
         }
     }

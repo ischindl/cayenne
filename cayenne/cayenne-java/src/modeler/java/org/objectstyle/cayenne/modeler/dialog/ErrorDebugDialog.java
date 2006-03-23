@@ -71,6 +71,7 @@ import javax.swing.JEditorPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.ScrollPaneConstants;
 
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.CayenneModelerFrame;
@@ -156,8 +157,8 @@ public class ErrorDebugDialog extends CayenneDialog implements ActionListener {
             JScrollPane exScroll =
                 new JScrollPane(
                     exText,
-                    JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                    JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                    ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                    ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
             exPanel = new JPanel();
             exPanel.setLayout(new BorderLayout());
             exPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));

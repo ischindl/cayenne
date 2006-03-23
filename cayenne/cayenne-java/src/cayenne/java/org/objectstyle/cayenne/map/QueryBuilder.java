@@ -93,6 +93,10 @@ public abstract class QueryBuilder {
     protected DataMap dataMap;
     protected String rootType;
     protected String rootName;
+
+    /**
+     * @deprecated since 1.2 as "selecting" query property is no longer relevant.
+     */
     protected boolean selecting = true;
     protected String resultEntity;
 
@@ -136,6 +140,9 @@ public abstract class QueryBuilder {
         return (root != null) ? root : dataMap;
     }
 
+    /**
+     * @deprecated since 1.2 as "selecting" query property is no longer relevant.
+     */
     public void setSelecting(String selecting) {
         // "true" is a default per DTD
         this.selecting = ("false".equalsIgnoreCase(selecting)) ? false : true;
@@ -153,7 +160,7 @@ public abstract class QueryBuilder {
             Iterator it = dataMap.getObjEntities().iterator();
             while (it.hasNext()) {
                 ObjEntity next = (ObjEntity) it.next();
-                if(resultType.equals(next.getClassName())) {
+                if (resultType.equals(next.getClassName())) {
                     this.resultEntity = next.getName();
                     break;
                 }

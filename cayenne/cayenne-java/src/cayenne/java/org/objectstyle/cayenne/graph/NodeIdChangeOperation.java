@@ -71,6 +71,11 @@ public class NodeIdChangeOperation extends NodeDiff {
         this.newNodeId = newNodeId;
     }
 
+    public NodeIdChangeOperation(Object nodeId, Object newNodeId, int diffId) {
+        super(nodeId, diffId);
+        this.newNodeId = newNodeId;
+    }
+
     public void apply(GraphChangeHandler tracker) {
         tracker.nodeIdChanged(nodeId, newNodeId);
     }

@@ -56,7 +56,9 @@
 package org.objectstyle.cayenne.dba.mysql;
 
 import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import org.objectstyle.cayenne.dba.DbAdapter;
 import org.objectstyle.cayenne.dba.DbAdapterFactory;
@@ -71,8 +73,33 @@ public class MySQLSniffer implements DbAdapterFactory {
 
     public DbAdapter createAdapter(DatabaseMetaData md) throws SQLException {
         String dbName = md.getDatabaseProductName();
-        return dbName != null && dbName.toUpperCase().indexOf("MYSQL") >= 0
-                ? new MySQLAdapter()
-                : null;
+        if (dbName == null || dbName.toUpperCase().indexOf("MYSQL") < 0) {
+            return null;
+        }
+
+        // if InnoDB is used as a default engine, allow PK
+        Statement statement = md.getConnection().createStatement();
+        boolean supportFK = false;
+
+        try {
+            ResultSet rs = statement.executeQuery("SHOW VARIABLES LIKE 'table_type'");
+            try {
+                if (rs.next()) {
+                    String tableType = rs.getString(2);
+                    supportFK = tableType != null
+                            && tableType.toUpperCase().equals("INNODB");
+                }
+            }
+            finally {
+                rs.close();
+            }
+        }
+        finally {
+            statement.close();
+        }
+
+        MySQLAdapter adapter = new MySQLAdapter();
+        adapter.setSupportsFkConstraints(supportFK);
+        return adapter;
     }
 }

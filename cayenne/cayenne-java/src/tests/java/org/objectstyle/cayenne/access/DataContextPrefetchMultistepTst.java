@@ -67,6 +67,7 @@ import org.objectstyle.art.Gallery;
 import org.objectstyle.cayenne.Fault;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
+import org.objectstyle.cayenne.ValueHolder;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.query.PrefetchTreeNode;
 import org.objectstyle.cayenne.query.SelectQuery;
@@ -139,18 +140,18 @@ public class DataContextPrefetchMultistepTst extends DataContextTestBase {
         Gallery g2 = (Gallery) galleries.get(0);
 
         // this relationship should be resolved
-        assertTrue(g2.readPropertyDirectly("exhibitArray") instanceof ToManyList);
-        ToManyList exhibits = (ToManyList) g2.readPropertyDirectly("exhibitArray");
-        assertFalse(exhibits.isFault());
+        assertTrue(g2.readPropertyDirectly("exhibitArray") instanceof ValueHolder);
+        List exhibits = (List) g2.readPropertyDirectly("exhibitArray");
+        assertFalse(((ValueHolder) exhibits).isFault());
         assertEquals(1, exhibits.size());
 
         Exhibit e1 = (Exhibit) exhibits.get(0);
         assertEquals(PersistenceState.COMMITTED, e1.getPersistenceState());
 
         // this to-many must also be resolved
-        assertTrue(e1.readPropertyDirectly("artistExhibitArray") instanceof ToManyList);
-        ToManyList aexhibits = (ToManyList) e1.readPropertyDirectly("artistExhibitArray");
-        assertFalse(aexhibits.isFault());
+        assertTrue(e1.readPropertyDirectly("artistExhibitArray") instanceof ValueHolder);
+        List aexhibits = (List) e1.readPropertyDirectly("artistExhibitArray");
+        assertFalse(((ValueHolder) aexhibits).isFault());
         assertEquals(1, exhibits.size());
 
         ArtistExhibit ae1 = (ArtistExhibit) aexhibits.get(0);
@@ -172,18 +173,18 @@ public class DataContextPrefetchMultistepTst extends DataContextTestBase {
         Gallery g2 = (Gallery) galleries.get(0);
 
         // this relationship should be resolved
-        assertTrue(g2.readPropertyDirectly("exhibitArray") instanceof ToManyList);
-        ToManyList exhibits = (ToManyList) g2.readPropertyDirectly("exhibitArray");
-        assertFalse(exhibits.isFault());
+        assertTrue(g2.readPropertyDirectly("exhibitArray") instanceof ValueHolder);
+        List exhibits = (List) g2.readPropertyDirectly("exhibitArray");
+        assertFalse(((ValueHolder) exhibits).isFault());
         assertEquals(1, exhibits.size());
 
         Exhibit e1 = (Exhibit) exhibits.get(0);
         assertEquals(PersistenceState.COMMITTED, e1.getPersistenceState());
 
         // this to-many must also be resolved
-        assertTrue(e1.readPropertyDirectly("artistExhibitArray") instanceof ToManyList);
-        ToManyList aexhibits = (ToManyList) e1.readPropertyDirectly("artistExhibitArray");
-        assertFalse(aexhibits.isFault());
+        assertTrue(e1.readPropertyDirectly("artistExhibitArray") instanceof ValueHolder);
+        List aexhibits = (List) e1.readPropertyDirectly("artistExhibitArray");
+        assertFalse(((ValueHolder) aexhibits).isFault());
         assertEquals(2, aexhibits.size());
 
         ArtistExhibit ae1 = (ArtistExhibit) aexhibits.get(0);
@@ -207,18 +208,18 @@ public class DataContextPrefetchMultistepTst extends DataContextTestBase {
         Gallery g2 = (Gallery) galleries.get(0);
 
         // this relationship should be resolved
-        assertTrue(g2.readPropertyDirectly("exhibitArray") instanceof ToManyList);
-        ToManyList exhibits = (ToManyList) g2.readPropertyDirectly("exhibitArray");
-        assertFalse(exhibits.isFault());
+        assertTrue(g2.readPropertyDirectly("exhibitArray") instanceof ValueHolder);
+        List exhibits = (List) g2.readPropertyDirectly("exhibitArray");
+        assertFalse(((ValueHolder) exhibits).isFault());
         assertEquals(1, exhibits.size());
 
         Exhibit e1 = (Exhibit) exhibits.get(0);
         assertEquals(PersistenceState.COMMITTED, e1.getPersistenceState());
 
         // this to-many must also be resolved
-        assertTrue(e1.readPropertyDirectly("artistExhibitArray") instanceof ToManyList);
-        ToManyList aexhibits = (ToManyList) e1.readPropertyDirectly("artistExhibitArray");
-        assertFalse(aexhibits.isFault());
+        assertTrue(e1.readPropertyDirectly("artistExhibitArray") instanceof ValueHolder);
+        List aexhibits = (List) e1.readPropertyDirectly("artistExhibitArray");
+        assertFalse(((ValueHolder) aexhibits).isFault());
         assertEquals(2, aexhibits.size());
 
         ArtistExhibit ae1 = (ArtistExhibit) aexhibits.get(0);

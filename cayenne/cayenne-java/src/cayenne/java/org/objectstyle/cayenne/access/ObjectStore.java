@@ -65,20 +65,22 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.DataRow;
 import org.objectstyle.cayenne.Fault;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
 import org.objectstyle.cayenne.Persistent;
+import org.objectstyle.cayenne.access.ObjectDiff.ArcOperation;
 import org.objectstyle.cayenne.access.event.SnapshotEvent;
 import org.objectstyle.cayenne.access.event.SnapshotEventListener;
 import org.objectstyle.cayenne.event.EventManager;
 import org.objectstyle.cayenne.graph.CompoundDiff;
 import org.objectstyle.cayenne.graph.GraphChangeHandler;
 import org.objectstyle.cayenne.graph.GraphDiff;
-import org.objectstyle.cayenne.graph.NodeIdChangeOperation;
+import org.objectstyle.cayenne.graph.NodeCreateOperation;
+import org.objectstyle.cayenne.graph.NodeDeleteOperation;
+import org.objectstyle.cayenne.graph.NodeDiff;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
 import org.objectstyle.cayenne.query.ObjectIdQuery;
@@ -107,18 +109,12 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
     protected Map objectMap = new HashMap();
     protected Map queryResultMap = new HashMap();
 
-    // TODO: we may implement more fine grained tracking of related objects
-    // changes, requiring more sophisticated data structure to hold them
-    protected List indirectlyModifiedIds = new ArrayList();
+    // changes by ObjectId
+    protected Map changes = new HashMap();
 
-    protected List flattenedInserts = new ArrayList();
-    protected List flattenedDeletes = new ArrayList();
-
-    /**
-     * Ensures access to the versions of DataObject snapshots (in the form of DataRows)
-     * taken when an object was first modified.
-     */
-    protected Map retainedSnapshotMap = new HashMap();
+    // a sequential id used to tag GraphDiffs so that they can later be sorted in the
+    // original creation order
+    int currentDiffId;
 
     /**
      * Stores a reference to the DataRowStore.
@@ -139,8 +135,129 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
     }
 
     public ObjectStore(DataRowStore dataRowCache) {
-        this();
         setDataRowCache(dataRowCache);
+    }
+
+    /**
+     * @since 1.2
+     */
+    void recordObjectDeleted(Persistent object) {
+        object.setPersistenceState(PersistenceState.DELETED);
+        registerDiff(object, new NodeDeleteOperation(object.getObjectId()));
+    }
+
+    /**
+     * @since 1.2
+     */
+    void recordObjectCreated(Persistent object) {
+        registerDiff(object, new NodeCreateOperation(object.getObjectId()));
+        recordObjectRegistered(object);
+    }
+
+    /**
+     * Performs tracking of object relationship changes.
+     * 
+     * @since 1.2
+     */
+    // TODO: Andrus, 3/14/2006 - this method should be made non-public once we remove
+    // direct ObjectStore access from CayenneDataObject.
+    public void recordArcCreated(
+            Persistent object,
+            ObjectId targetId,
+            String relationshipName) {
+
+        registerDiff(object, new ArcOperation(
+                object.getObjectId(),
+                targetId,
+                relationshipName,
+                false));
+    }
+
+    /**
+     * Performs tracking of object relationship changes.
+     * 
+     * @since 1.2
+     */
+    // TODO: Andrus, 3/14/2006 - this method should be made non-public once we remove
+    // direct ObjectStore access from CayenneDataObject.
+    public void recordArcDeleted(
+            Persistent object,
+            ObjectId targetId,
+            String relationshipName) {
+        registerDiff(object, new ArcOperation(
+                object.getObjectId(),
+                targetId,
+                relationshipName,
+                true));
+    }
+
+    /**
+     * Registers object change.
+     * 
+     * @since 1.2
+     */
+    synchronized ObjectDiff registerDiff(Persistent object, NodeDiff diff) {
+
+        ObjectId id = object.getObjectId();
+
+        if (object.getPersistenceState() == PersistenceState.COMMITTED) {
+            object.setPersistenceState(PersistenceState.MODIFIED);
+
+            // TODO: andrus 3/23/2006 snapshot versions are obsolete, but there is no
+            // replacement yet, so we still need to handle them...
+            if (object instanceof DataObject) {
+
+                DataObject dataObject = (DataObject) object;
+                DataRow snapshot = getCachedSnapshot(id);
+
+                if (snapshot != null
+                        && snapshot.getVersion() != dataObject.getSnapshotVersion()) {
+                    DataContextDelegate delegate = dataObject
+                            .getDataContext()
+                            .nonNullDelegate();
+                    if (delegate.shouldMergeChanges(dataObject, snapshot)) {
+                        ObjEntity entity = dataObject
+                                .getDataContext()
+                                .getEntityResolver()
+                                .lookupObjEntity(object);
+                        DataRowUtils.forceMergeWithSnapshot(entity, dataObject, snapshot);
+                        dataObject.setSnapshotVersion(snapshot.getVersion());
+                        delegate.finishedMergeChanges(dataObject);
+                    }
+                }
+            }
+        }
+
+        if (diff != null) {
+            diff.setDiffId(++currentDiffId);
+        }
+
+        ObjectDiff objectDiff = (ObjectDiff) changes.get(id);
+
+        if (objectDiff == null) {
+            objectDiff = new ObjectDiff(this, object);
+            objectDiff.setDiffId(++currentDiffId);
+            changes.put(id, objectDiff);
+
+        }
+
+        if (diff != null) {
+            objectDiff.addDiff(diff);
+        }
+
+        return objectDiff;
+    }
+
+    /**
+     * @since 1.2
+     */
+    void recordObjectRegistered(Persistent object) {
+
+        objectMap.put(object.getObjectId(), object);
+
+        if (newObjectsMap != null) {
+            newObjectsMap.put(object.getObjectId(), object);
+        }
     }
 
     /**
@@ -160,55 +277,6 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
      */
     public int cachedQueriesCount() {
         return queryResultMap.size();
-    }
-
-    /**
-     * Saves a committed snapshot for an object in a non-expiring cache. This ensures that
-     * Cayenne can track object changes even if the underlying cache entry has expired or
-     * replaced with a newer version. Retained snapshots are evicted when an object is
-     * committed or rolled back.
-     * <p>
-     * When committing modified objects, comparing them with retained snapshots instead of
-     * the currently cached snapshots would allow to resolve certain conflicts during
-     * concurrent modification of <strong>different attributes </strong> of the same
-     * objects by different DataContexts.
-     * </p>
-     * 
-     * @since 1.1
-     */
-    public synchronized void retainSnapshot(DataObject object) {
-        ObjectId oid = object.getObjectId();
-        DataRow snapshot = getCachedSnapshot(oid);
-
-        if (snapshot == null) {
-            snapshot = object.getDataContext().currentSnapshot(object);
-        }
-        // if a snapshot has changed underneath, try a merge...
-        else if (snapshot.getVersion() != object.getSnapshotVersion()) {
-            DataContextDelegate delegate = object.getDataContext().nonNullDelegate();
-            if (delegate.shouldMergeChanges(object, snapshot)) {
-                ObjEntity entity = object
-                        .getDataContext()
-                        .getEntityResolver()
-                        .lookupObjEntity(object);
-                DataRowUtils.forceMergeWithSnapshot(entity, object, snapshot);
-                object.setSnapshotVersion(snapshot.getVersion());
-                delegate.finishedMergeChanges(object);
-            }
-        }
-
-        retainSnapshot(object, snapshot);
-    }
-
-    /**
-     * Stores provided DataRow as a snapshot to be used to build UPDATE queries for an
-     * object. Updates object's snapshot version with the version of the new retained
-     * snapshot.
-     * 
-     * @since 1.1
-     */
-    protected synchronized void retainSnapshot(DataObject object, DataRow snapshot) {
-        this.retainedSnapshotMap.put(object.getObjectId(), snapshot);
     }
 
     /**
@@ -241,7 +309,7 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
      */
     // note that as of 1.2, ObjectStore does not access DataRowStore directly when
     // retrieving snapshots. Instead it sends a query via the DataContext's channel so
-    // that every element in the channel chain could intercept snapshot requests 
+    // that every element in the channel chain could intercept snapshot requests
     public void setDataRowCache(DataRowStore dataRowCache) {
         if (dataRowCache == this.dataRowCache) {
             return;
@@ -293,7 +361,7 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
             object.setPersistenceState(PersistenceState.HOLLOW);
 
             // remove cached changes
-            indirectlyModifiedIds.remove(object.getObjectId());
+            changes.remove(object.getObjectId());
 
             // remember the id
             ids.add(object.getObjectId());
@@ -328,10 +396,12 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
         while (it.hasNext()) {
             DataObject object = (DataObject) it.next();
 
+            ObjectId id = object.getObjectId();
+
             // remove object but not snapshot
-            objectMap.remove(object.getObjectId());
-            indirectlyModifiedIds.remove(object.getObjectId());
-            ids.add(object.getObjectId());
+            objectMap.remove(id);
+            changes.remove(id);
+            ids.add(id);
 
             object.setDataContext(null);
             object.setObjectId(null);
@@ -382,17 +452,15 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
         }
 
         // clear caches
-        // TODO: the same operation is performed on commit... must create a common method
-        this.retainedSnapshotMap.clear();
-        this.indirectlyModifiedIds.clear();
-        this.flattenedDeletes.clear();
-        this.flattenedInserts.clear();
+        this.changes.clear();
     }
 
     /**
      * Performs tracking of object relationship changes.
      * 
      * @since 1.1
+     * @deprecated since 1.2 use
+     *             {@link #recordArcDeleted(DataObject, DataObject, ObjRelationship)}.
      */
     public void objectRelationshipUnset(
             DataObject source,
@@ -400,17 +468,17 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
             ObjRelationship relationship,
             boolean processFlattened) {
 
-        objectRelationshipChanged(source, relationship);
+        ObjectId targetId = (target != null) ? target.getObjectId() : null;
 
-        if (processFlattened) {
-            flattenedRelationshipUnset(source, relationship, target);
-        }
+        recordArcDeleted(source, targetId, relationship.getName());
     }
 
     /**
      * Performs tracking of object relationship changes.
      * 
      * @since 1.1
+     * @deprecated since 1.2 use
+     *             {@link #recordArcCreated(DataObject, DataObject, ObjRelationship)}.
      */
     public void objectRelationshipSet(
             DataObject source,
@@ -418,31 +486,8 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
             ObjRelationship relationship,
             boolean processFlattened) {
 
-        objectRelationshipChanged(source, relationship);
-
-        if (processFlattened) {
-            flattenedRelationshipSet(source, relationship, target);
-        }
-    }
-
-    /**
-     * Performs tracking of object relationship changes.
-     * 
-     * @since 1.1
-     */
-    void objectRelationshipChanged(DataObject object, ObjRelationship relationship) {
-        // track modifications to an "independent" relationship
-        if (relationship.isSourceIndependentFromTargetChange()) {
-            int state = object.getPersistenceState();
-            if (state == PersistenceState.COMMITTED
-                    || state == PersistenceState.HOLLOW
-                    || state == PersistenceState.MODIFIED) {
-
-                synchronized (this) {
-                    indirectlyModifiedIds.add(object.getObjectId());
-                }
-            }
-        }
+        ObjectId targetId = (target != null) ? target.getObjectId() : null;
+        recordArcCreated(source, targetId, relationship.getName());
     }
 
     /**
@@ -534,14 +579,50 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
     }
 
     /**
-     * Internal unsynchronized method to processes objects state after commit was
-     * performed.
+     * Builds and returns GraphDiff reflecting all uncommitted object changes.
      * 
      * @since 1.2
      */
-    GraphDiff postprocessAfterCommit(GraphDiff parentChanges) {
+    ObjectStoreGraphDiff getChanges() {
+        return new ObjectStoreGraphDiff(this);
+    }
 
-        CompoundDiff diff = new CompoundDiff();
+    /**
+     * Returns internal changes map.
+     * 
+     * @since 1.2
+     */
+    Map getChangesByObjectId() {
+        return changes;
+    }
+
+    /**
+     * @since 1.2
+     */
+    void postprocessAfterPhantomCommit() {
+
+        Iterator it = changes.keySet().iterator();
+        while (it.hasNext()) {
+            ObjectId id = (ObjectId) it.next();
+
+            Persistent object = (Persistent) objectMap.get(id);
+
+            // assume that no new or deleted objects are present (as otherwise commit
+            // wouldn't have been phantom).
+            object.setPersistenceState(PersistenceState.COMMITTED);
+        }
+
+        // clear caches
+        this.changes.clear();
+    }
+
+    /**
+     * Internal unsynchronized method to process objects state after commit.
+     * 
+     * @since 1.2
+     */
+    void postprocessAfterCommit(GraphDiff parentChanges) {
+
         Iterator entries = objectMap.entrySet().iterator();
 
         // have to scan through all entries
@@ -549,8 +630,6 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
             Map.Entry entry = (Map.Entry) entries.next();
 
             DataObject object = (DataObject) entry.getValue();
-            ObjectId registeredId = (ObjectId) entry.getKey();
-            ObjectId id = object.getObjectId();
 
             switch (object.getPersistenceState()) {
                 case PersistenceState.DELETED:
@@ -560,42 +639,27 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
                     break;
                 case PersistenceState.NEW:
                 case PersistenceState.MODIFIED:
-
-                    // detect and handle manual id changes done via
-                    // Persistent.setObjectId()
-                    if (!id.equals(registeredId)) {
-                        diff.add(new NodeIdChangeOperation(registeredId, id));
-                    }
-
                     object.setPersistenceState(PersistenceState.COMMITTED);
                     break;
             }
         }
 
-        if (parentChanges != null && !parentChanges.isNoop()) {
-            diff.add(parentChanges);
-        }
-
         // re-register changed object ids
-        if (!diff.isNoop()) {
-            diff.apply(new IdUpdater());
+        if (!parentChanges.isNoop()) {
+            parentChanges.apply(new IdUpdater());
         }
 
         // clear caches
-        this.retainedSnapshotMap.clear();
-        this.indirectlyModifiedIds.clear();
-        this.flattenedDeletes.clear();
-        this.flattenedInserts.clear();
-
-        return diff;
+        this.changes.clear();
     }
 
+    /**
+     * Adds a new object to the ObjectStore.
+     * 
+     * @deprecated since 1.2 as a different change tracking algorithm is used.
+     */
     public synchronized void addObject(DataObject object) {
-        objectMap.put(object.getObjectId(), object);
-
-        if (newObjectsMap != null) {
-            newObjectsMap.put(object.getObjectId(), object);
-        }
+        recordObjectCreated(object);
     }
 
     /**
@@ -631,10 +695,6 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
         return (DataObject) objectMap.get(id);
     }
 
-    public synchronized DataRow getRetainedSnapshot(ObjectId oid) {
-        return (DataRow) retainedSnapshotMap.get(oid);
-    }
-
     /**
      * Returns a snapshot for ObjectId from the underlying snapshot cache. If cache
      * contains no snapshot, a null is returned.
@@ -642,11 +702,6 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
      * @since 1.1
      */
     public DataRow getCachedSnapshot(ObjectId oid) {
-
-        DataRow retained = getRetainedSnapshot(oid);
-        if (retained != null) {
-            return retained;
-        }
 
         if (context != null && context.getChannel() != null) {
             ObjectIdQuery query = new ObjectIdQuery(
@@ -693,8 +748,7 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
      * @deprecated since 1.2. Use {@link #getSnapshot(ObjectId)} instead.
      */
     public synchronized DataRow getSnapshot(ObjectId oid, QueryEngine engine) {
-        DataRow retained = getRetainedSnapshot(oid);
-        return (retained != null) ? retained : getDataRowCache().getSnapshot(oid, engine);
+        return getDataRowCache().getSnapshot(oid, engine);
     }
 
     /**
@@ -706,10 +760,6 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
      * @since 1.2
      */
     public synchronized DataRow getSnapshot(ObjectId oid) {
-        DataRow retained = getRetainedSnapshot(oid);
-        if (retained != null) {
-            return retained;
-        }
 
         if (context != null && context.getChannel() != null) {
             ObjectIdQuery query = new ObjectIdQuery(oid, true, ObjectIdQuery.CACHE);
@@ -754,27 +804,7 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
      * modified. Phantom modifications are only detected and discarded during commit.
      */
     public synchronized boolean hasChanges() {
-
-        if (checkIndirectChanges()) {
-            return true;
-        }
-
-        if (!retainedSnapshotMap.isEmpty()) {
-            return true;
-        }
-
-        Iterator it = getObjectIterator();
-        while (it.hasNext()) {
-            DataObject dataObject = (DataObject) it.next();
-            int state = dataObject.getPersistenceState();
-            if (state == PersistenceState.NEW
-                    || state == PersistenceState.DELETED
-                    || state == PersistenceState.MODIFIED) {
-                return true;
-            }
-        }
-
-        return false;
+        return !changes.isEmpty();
     }
 
     /**
@@ -832,6 +862,7 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
      * 
      * @since 1.1
      * @throws ValidationException
+     * @deprecated since 1.2 - This method is no longer used in Cayenne internally.
      */
     public synchronized void validateUncommittedObjects() throws ValidationException {
 
@@ -901,15 +932,6 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
     }
 
     /**
-     * Returns whether ObjectStore has changes not directly reflected in the object state.
-     * 
-     * @since 1.2
-     */
-    boolean checkIndirectChanges() {
-        return !flattenedInserts.isEmpty() || !flattenedDeletes.isEmpty();
-    }
-
-    /**
      * Initializes object with data from cache or from the database, if this object is not
      * fully resolved.
      * 
@@ -928,18 +950,27 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
         }
 
         synchronized (this) {
-            DataRow snapshot = getSnapshot(object.getObjectId());
+            ObjectIdQuery query = new ObjectIdQuery(
+                    object.getObjectId(),
+                    false,
+                    ObjectIdQuery.CACHE);
+            List results = context.getChannel().onQuery(context, query).firstList();
 
             // handle deleted object
-            if (snapshot == null) {
+            if (results.size() == 0) {
                 processDeletedIDs(Collections.singletonList(object.getObjectId()));
             }
-            else {
-                ObjEntity entity = context.getEntityResolver().lookupObjEntity(object);
-                DataRowUtils.refreshObjectWithSnapshot(entity, object, snapshot, true);
+            else if (object.getPersistenceState() == PersistenceState.HOLLOW) {
 
-                if (object.getPersistenceState() == PersistenceState.HOLLOW) {
-                    object.setPersistenceState(PersistenceState.COMMITTED);
+                // if HOLLOW is returned (from parent DC?), rerun the query with forced
+                // fetch
+                query = new ObjectIdQuery(
+                        object.getObjectId(),
+                        false,
+                        ObjectIdQuery.CACHE_REFRESH);
+                results = context.getChannel().onQuery(context, query).firstList();
+                if (results.size() == 0) {
+                    processDeletedIDs(Collections.singletonList(object.getObjectId()));
                 }
             }
         }
@@ -961,8 +992,6 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
 
                 DataContextDelegate delegate;
 
-                // TODO: refactor "switch" to avoid code duplication
-
                 switch (object.getPersistenceState()) {
                     case PersistenceState.COMMITTED:
                     case PersistenceState.HOLLOW:
@@ -973,7 +1002,7 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
 
                         if (delegate.shouldProcessDelete(object)) {
                             objectMap.remove(oid);
-                            retainedSnapshotMap.remove(oid);
+                            changes.remove(oid);
 
                             // setting DataContext to null will also set
                             // state to transient
@@ -989,6 +1018,8 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
                         delegate = object.getDataContext().nonNullDelegate();
                         if (delegate.shouldProcessDelete(object)) {
                             object.setPersistenceState(PersistenceState.NEW);
+                            changes.remove(oid);
+                            recordObjectCreated(object);
                             delegate.finishedProcessDelete(object);
                         }
 
@@ -1152,78 +1183,17 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
     }
 
     /**
-     * Records the fact that flattened relationship was created.
-     * 
-     * @since 1.1
+     * @since 1.2
      */
-    void flattenedRelationshipSet(
-            DataObject source,
-            ObjRelationship relationship,
-            DataObject destination) {
-
-        if (!relationship.isFlattened()) {
-            return;
-        }
-
-        if (relationship.isReadOnly()) {
-            throw new CayenneRuntimeException(
-                    "Cannot set the read-only flattened relationship "
-                            + relationship.getName());
-        }
-
-        // Register this combination (so we can remove it later if an insert occurs before
-        // commit)
-        FlattenedRelationshipUpdate info = new FlattenedRelationshipUpdate(
-                source,
-                destination,
-                relationship);
-
-        // If this combination has already been deleted, simply undelete it.
-        if (!flattenedDeletes.remove(info) && !flattenedInserts.contains(info)) {
-            flattenedInserts.add(info);
-        }
+    public DataContext getContext() {
+        return context;
     }
 
     /**
-     * Records the fact that flattened relationship was broken down.
-     * 
-     * @since 1.1
+     * @since 1.2
      */
-    void flattenedRelationshipUnset(
-            DataObject source,
-            ObjRelationship relationship,
-            DataObject destination) {
-
-        if (!relationship.isFlattened()) {
-            return;
-        }
-
-        if (relationship.isReadOnly()) {
-            throw new CayenneRuntimeException(
-                    "Cannot unset the read-only flattened relationship "
-                            + relationship.getName());
-        }
-
-        // Register this combination,
-        // so we can remove it later if an insert occurs before commit
-        FlattenedRelationshipUpdate info = new FlattenedRelationshipUpdate(
-                source,
-                destination,
-                relationship);
-
-        // If this combination has already been inserted, simply "uninsert" it
-        // also do not delete it twice
-        if (!flattenedInserts.remove(info) && !flattenedDeletes.contains(info)) {
-            flattenedDeletes.add(info);
-        }
-    }
-
-    List getFlattenedInserts() {
-        return flattenedInserts;
-    }
-
-    List getFlattenedDeletes() {
-        return flattenedDeletes;
+    public void setContext(DataContext context) {
+        this.context = context;
     }
 
     class IdUpdater implements GraphChangeHandler {
@@ -1260,19 +1230,5 @@ public class ObjectStore implements Serializable, SnapshotEventListener {
         public void arcDeleted(Object nodeId, Object targetNodeId, Object arcId) {
 
         }
-    }
-
-    /**
-     * @since 1.2
-     */
-    public DataContext getContext() {
-        return context;
-    }
-
-    /**
-     * @since 1.2
-     */
-    public void setContext(DataContext context) {
-        this.context = context;
     }
 }

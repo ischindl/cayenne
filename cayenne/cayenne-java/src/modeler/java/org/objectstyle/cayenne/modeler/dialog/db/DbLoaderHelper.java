@@ -266,7 +266,7 @@ public class DbLoaderHelper {
             }
             else if (existingMap) {
                 mediator
-                        .fireDbEntityEvent(new EntityEvent(this, entity, EntityEvent.ADD));
+                        .fireDbEntityEvent(new EntityEvent(this, entity, MapEvent.ADD));
             }
         }
 
@@ -276,8 +276,7 @@ public class DbLoaderHelper {
             loadStatusNote = "Creating ObjEntity '" + entity.getName() + "'...";
 
             if (existingMap) {
-                mediator
-                        .fireObjEntityEvent(new EntityEvent(this, entity, EntityEvent.ADD));
+                mediator.fireObjEntityEvent(new EntityEvent(this, entity, MapEvent.ADD));
             }
         }
 
@@ -288,7 +287,7 @@ public class DbLoaderHelper {
                 mediator.fireDbEntityEvent(new EntityEvent(
                         Application.getFrame(),
                         entity,
-                        EntityEvent.REMOVE));
+                        MapEvent.REMOVE));
             }
         }
 
@@ -297,7 +296,7 @@ public class DbLoaderHelper {
 
             if (existingMap) {
                 mediator.fireObjEntityEvent(new EntityEvent(Application
-                        .getFrame(), entity, EntityEvent.REMOVE));
+                        .getFrame(), entity, MapEvent.REMOVE));
             }
         }
 

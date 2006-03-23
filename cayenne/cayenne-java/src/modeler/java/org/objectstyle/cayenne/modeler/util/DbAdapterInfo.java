@@ -70,6 +70,7 @@ import org.objectstyle.cayenne.dba.derby.DerbyAdapter;
 import org.objectstyle.cayenne.dba.firebird.FirebirdAdapter;
 import org.objectstyle.cayenne.dba.frontbase.FrontBaseAdapter;
 import org.objectstyle.cayenne.dba.hsqldb.HSQLDBAdapter;
+import org.objectstyle.cayenne.dba.ingres.IngresAdapter;
 import org.objectstyle.cayenne.dba.mysql.MySQLAdapter;
 import org.objectstyle.cayenne.dba.openbase.OpenBaseAdapter;
 import org.objectstyle.cayenne.dba.oracle.OracleAdapter;
@@ -89,7 +90,8 @@ public final class DbAdapterInfo {
             PostgresAdapter.class.getName(), HSQLDBAdapter.class.getName(),
             DB2Adapter.class.getName(), SQLServerAdapter.class.getName(),
             FrontBaseAdapter.class.getName(), OpenBaseAdapter.class.getName(),
-            DerbyAdapter.class.getName(), FirebirdAdapter.class.getName()
+            DerbyAdapter.class.getName(), FirebirdAdapter.class.getName(),
+            IngresAdapter.class.getName()
     };
 
     private static final Map IMMUTABLE_LABELS = Collections
@@ -109,6 +111,7 @@ public final class DbAdapterInfo {
         DEFAULT_ADAPTER_LABELS.put(FrontBaseAdapter.class.getName(), "FrontBase Adapter");
         DEFAULT_ADAPTER_LABELS.put(OpenBaseAdapter.class.getName(), "OpenBase Adapter");
         DEFAULT_ADAPTER_LABELS.put(DerbyAdapter.class.getName(), "Derby Adapter");
+        DEFAULT_ADAPTER_LABELS.put(IngresAdapter.class.getName(), "Ingres Adapter");
         DEFAULT_ADAPTER_LABELS.put(FirebirdAdapter.class.getName(), "FireBird Adapter");
     }
 

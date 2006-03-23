@@ -56,6 +56,7 @@
 package org.objectstyle.cayenne.access;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.objectstyle.art.Artist;
@@ -207,15 +208,8 @@ public class DataContextSerializationTst extends CayenneTestCase {
         assertSame(deserializedContext, deserializedArtist.getDataContext());
 
         // test that to-many relationships are initialized
-        ToManyList paintings = (ToManyList) deserializedArtist.getPaintingArray();
+        List paintings = (List) deserializedArtist.getPaintingArray();
         assertNotNull(paintings);
-
-        // Andrus: Actually the fact that list data source is deserialized is somewhat odd
-        // There is no special handling to update relationship lists
-        // after deserialization is done in DataContext...Somehow Java sets
-        // a transient ivar of ToManyList...
-        assertNotNull(paintings.getRelationshipOwner());
-        assertSame(deserializedArtist, paintings.getRelationshipOwner());
         assertEquals(0, paintings.size());
     }
 

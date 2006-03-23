@@ -173,6 +173,10 @@ public class AccessStackAdapter {
     public boolean supportsLobInsertsAsStrings() {
         return supportsLobs();
     }
+    
+    public boolean supportsFKConstraints(DbEntity entity) {
+        return adapter.supportsFkConstraints();
+    }
 
     /**
      * Returns true if the target database has support for large objects (BLOB, CLOB).

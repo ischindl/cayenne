@@ -7,7 +7,7 @@
 <!-- Cayenne subproject layout, therefore they have  -->
 <!-- their own build.xml file called from here.      -->
 <!-- =============================================== -->
-<project default="...">
+<project>
 	
 	<property name="tutorials.src" value="${cayenne.java}/src/tutorials"/>
 	

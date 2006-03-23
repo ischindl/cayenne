@@ -33,7 +33,12 @@
  */
 package org.objectstyle.cayenne.access;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+
 import org.objectstyle.cayenne.PersistenceState;
+import org.objectstyle.cayenne.access.ObjectDiff.ArcOperation;
 import org.objectstyle.cayenne.map.DeleteRule;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
@@ -56,7 +61,7 @@ public class DeleteRulesTst extends RelationshipTestCase {
     }
 
     public void testDenyToOne() {
-        //DeleteRuleTest1 test2
+        // DeleteRuleTest1 test2
         DeleteRuleTest1 test1 = (DeleteRuleTest1) context
                 .createAndRegisterNewObject("DeleteRuleTest1");
         DeleteRuleTest2 test2 = (DeleteRuleTest2) context
@@ -69,7 +74,7 @@ public class DeleteRulesTst extends RelationshipTestCase {
             fail("Should have thrown an exception");
         }
         catch (Exception e) {
-            //GOOD!
+            // GOOD!
         }
         context.commitChanges();
 
@@ -124,7 +129,7 @@ public class DeleteRulesTst extends RelationshipTestCase {
             assertEquals(PersistenceState.COMMITTED, b.getPersistenceState());
             assertTrue(b.getUntitledRel().contains(a));
             context.commitChanges();
-            
+
         }
         finally {
             changeDeleteRule(oldRule);
@@ -178,7 +183,7 @@ public class DeleteRulesTst extends RelationshipTestCase {
             // assert that join is deleted
             assertJoinDeleted(a, b);
             context.commitChanges();
-            
+
             assertEquals(PersistenceState.TRANSIENT, a.getPersistenceState());
             assertEquals(PersistenceState.TRANSIENT, b.getPersistenceState());
         }
@@ -186,7 +191,7 @@ public class DeleteRulesTst extends RelationshipTestCase {
             changeDeleteRule(oldRule);
         }
     }
-    
+
     public void testCascadeFlattenedNoReverse() {
         // temporarily set delete rule to CASCADE...
         int oldRule = changeDeleteRule(DeleteRule.CASCADE);
@@ -241,7 +246,7 @@ public class DeleteRulesTst extends RelationshipTestCase {
             changeDeleteRule(oldRule);
         }
     }
-    
+
     public void testNullifyFlattenedNoReverse() {
         // temporarily set delete rule to NULLIFY...
         int oldRule = changeDeleteRule(DeleteRule.NULLIFY);
@@ -295,7 +300,7 @@ public class DeleteRulesTst extends RelationshipTestCase {
             changeDeleteRule(oldRule);
         }
     }
-    
+
     public void testDenyFlattenedNoReverse() {
         // temporarily set delete rule to DENY...
         int oldRule = changeDeleteRule(DeleteRule.DENY);
@@ -360,28 +365,51 @@ public class DeleteRulesTst extends RelationshipTestCase {
     }
 
     private void assertJoinDeleted(DeleteRuleFlatA a, DeleteRuleFlatB b) {
-        ObjEntity entity = context.getEntityResolver().lookupObjEntity(
-                DeleteRuleFlatA.class);
-        ObjRelationship relationship = (ObjRelationship) entity
-                .getRelationship(DeleteRuleFlatA.FLAT_B_PROPERTY);
 
-        FlattenedRelationshipUpdate info = new FlattenedRelationshipUpdate(a, b, relationship);
-        assertTrue("Join was not deleted for flattened relationship", context
-                .getObjectStore()
-                .getFlattenedDeletes()
-                .contains(info));
+        ObjectDiff changes = (ObjectDiff) context.getObjectStore().changes.get(a
+                .getObjectId());
+
+        assertNotNull(changes);
+        Collection diffs = new ArrayList();
+        changes.appendDiffs(diffs);
+        Iterator it = diffs.iterator();
+        while (it.hasNext()) {
+            Object diff = it.next();
+            if (diff instanceof ArcOperation) {
+                ArcOperation arcDelete = (ArcOperation) diff;
+                if (arcDelete.getNodeId().equals(a.getObjectId())
+                        && arcDelete.getTargetNodeId().equals(b.getObjectId())
+                        && arcDelete.getArcId().equals(DeleteRuleFlatA.FLAT_B_PROPERTY)
+                        && arcDelete.isDelete()) {
+                    return;
+                }
+            }
+        }
+
+        fail("Join was not deleted for flattened relationship");
     }
 
     private void assertJoinNotDeleted(DeleteRuleFlatA a, DeleteRuleFlatB b) {
-        ObjEntity entity = context.getEntityResolver().lookupObjEntity(
-                DeleteRuleFlatA.class);
-        ObjRelationship relationship = (ObjRelationship) entity
-                .getRelationship(DeleteRuleFlatA.FLAT_B_PROPERTY);
+        ObjectDiff changes = (ObjectDiff) context.getObjectStore().changes.get(a
+                .getObjectId());
 
-        FlattenedRelationshipUpdate info = new FlattenedRelationshipUpdate(a, b, relationship);
-        assertFalse("Join was deleted for flattened relationship", context
-                .getObjectStore()
-                .getFlattenedDeletes()
-                .contains(info));
+        if (changes != null) {
+            Collection diffs = new ArrayList();
+            changes.appendDiffs(diffs);
+            Iterator it = diffs.iterator();
+            while (it.hasNext()) {
+                Object diff = it.next();
+                if (diff instanceof ArcOperation) {
+                    ArcOperation arcDelete = (ArcOperation) diff;
+                    if (arcDelete.getNodeId().equals(a.getObjectId())
+                            && arcDelete.getTargetNodeId().equals(b.getObjectId())
+                            && arcDelete.getArcId().equals(
+                                    DeleteRuleFlatA.FLAT_B_PROPERTY)
+                            && !arcDelete.isDelete()) {
+                        fail("Join was  deleted for flattened relationship");
+                    }
+                }
+            }
+        }
     }
 }

@@ -86,6 +86,7 @@ import org.objectstyle.cayenne.map.event.DbRelationshipListener;
 import org.objectstyle.cayenne.map.event.DomainEvent;
 import org.objectstyle.cayenne.map.event.DomainListener;
 import org.objectstyle.cayenne.map.event.EntityEvent;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.map.event.ObjAttributeListener;
 import org.objectstyle.cayenne.map.event.ObjEntityListener;
 import org.objectstyle.cayenne.map.event.ObjRelationshipListener;
@@ -269,13 +270,12 @@ public class ProjectController extends CayenneController {
      * project is selected.
      */
     public Domain getPreferenceDomainForProject() {
-        Project project = getProject();
-        if (project == null) {
+        if (getProject() == null) {
             throw new CayenneRuntimeException("No Project selected");
         }
 
         if (projectPreferences == null) {
-            String key = project.isLocationUndefined() ? new String(IDUtil
+            String key = getProject().isLocationUndefined() ? new String(IDUtil
                     .pseudoUniqueByteSequence16()) : project
                     .getMainFile()
                     .getAbsolutePath();
@@ -636,7 +636,7 @@ public class ProjectController extends CayenneController {
     public void fireDomainEvent(DomainEvent e) {
         setDirty(true);
 
-        if (e.getId() == DomainEvent.REMOVE) {
+        if (e.getId() == MapEvent.REMOVE) {
             refreshNamespace();
             removeFromHistory(e);
         }
@@ -645,13 +645,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             DomainListener temp = (DomainListener) list[i];
             switch (e.getId()) {
-                case DomainEvent.ADD:
+                case MapEvent.ADD:
                     temp.domainAdded(e);
                     break;
-                case DomainEvent.CHANGE:
+                case MapEvent.CHANGE:
                     temp.domainChanged(e);
                     break;
-                case DomainEvent.REMOVE:
+                case MapEvent.REMOVE:
                     temp.domainRemoved(e);
                     break;
                 default:
@@ -699,7 +699,7 @@ public class ProjectController extends CayenneController {
     public void fireDataNodeEvent(DataNodeEvent e) {
         setDirty(true);
 
-        if (e.getId() == DataNodeEvent.REMOVE) {
+        if (e.getId() == MapEvent.REMOVE) {
             refreshNamespace();
             removeFromHistory(e);
         }
@@ -708,13 +708,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             DataNodeListener temp = (DataNodeListener) list[i];
             switch (e.getId()) {
-                case DataNodeEvent.ADD:
+                case MapEvent.ADD:
                     temp.dataNodeAdded(e);
                     break;
-                case DataNodeEvent.CHANGE:
+                case MapEvent.CHANGE:
                     temp.dataNodeChanged(e);
                     break;
-                case DataNodeEvent.REMOVE:
+                case MapEvent.REMOVE:
                     temp.dataNodeRemoved(e);
                     break;
                 default:
@@ -762,7 +762,7 @@ public class ProjectController extends CayenneController {
     public void fireDataMapEvent(DataMapEvent e) {
         setDirty(true);
 
-        if (e.getId() == DataMapEvent.REMOVE) {
+        if (e.getId() == MapEvent.REMOVE) {
             refreshNamespace();
             removeFromHistory(e);
         }
@@ -771,13 +771,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             DataMapListener listener = (DataMapListener) list[i];
             switch (e.getId()) {
-                case DataMapEvent.ADD:
+                case MapEvent.ADD:
                     listener.dataMapAdded(e);
                     break;
-                case DataMapEvent.CHANGE:
+                case MapEvent.CHANGE:
                     listener.dataMapChanged(e);
                     break;
-                case DataMapEvent.REMOVE:
+                case MapEvent.REMOVE:
                     listener.dataMapRemoved(e);
                     break;
                 default:
@@ -794,11 +794,11 @@ public class ProjectController extends CayenneController {
     public void fireObjEntityEvent(EntityEvent e) {
         setDirty(true);
 
-        if (currentState.map != null && e.getId() == EntityEvent.CHANGE) {
+        if (currentState.map != null && e.getId() == MapEvent.CHANGE) {
             currentState.map.objEntityChanged(e);
         }
 
-        if (e.getId() == EntityEvent.REMOVE) {
+        if (e.getId() == MapEvent.REMOVE) {
             refreshNamespace();
             removeFromHistory(e);
         }
@@ -807,13 +807,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             ObjEntityListener temp = (ObjEntityListener) list[i];
             switch (e.getId()) {
-                case EntityEvent.ADD:
+                case MapEvent.ADD:
                     temp.objEntityAdded(e);
                     break;
-                case EntityEvent.CHANGE:
+                case MapEvent.CHANGE:
                     temp.objEntityChanged(e);
                     break;
-                case EntityEvent.REMOVE:
+                case MapEvent.REMOVE:
                     temp.objEntityRemoved(e);
                     break;
                 default:
@@ -830,11 +830,11 @@ public class ProjectController extends CayenneController {
     public void fireDbEntityEvent(EntityEvent e) {
         setDirty(true);
 
-        if (currentState.map != null && e.getId() == EntityEvent.CHANGE) {
+        if (currentState.map != null && e.getId() == MapEvent.CHANGE) {
             currentState.map.dbEntityChanged(e);
         }
 
-        if (e.getId() == EntityEvent.REMOVE) {
+        if (e.getId() == MapEvent.REMOVE) {
             refreshNamespace();
             removeFromHistory(e);
         }
@@ -843,13 +843,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             DbEntityListener temp = (DbEntityListener) list[i];
             switch (e.getId()) {
-                case EntityEvent.ADD:
+                case MapEvent.ADD:
                     temp.dbEntityAdded(e);
                     break;
-                case EntityEvent.CHANGE:
+                case MapEvent.CHANGE:
                     temp.dbEntityChanged(e);
                     break;
-                case EntityEvent.REMOVE:
+                case MapEvent.REMOVE:
                     temp.dbEntityRemoved(e);
                     break;
                 default:
@@ -866,7 +866,7 @@ public class ProjectController extends CayenneController {
     public void fireQueryEvent(QueryEvent e) {
         setDirty(true);
 
-        if (e.getId() == QueryEvent.REMOVE) {
+        if (e.getId() == MapEvent.REMOVE) {
             refreshNamespace();
             removeFromHistory(e);
         }
@@ -875,13 +875,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             QueryListener listener = (QueryListener) list[i];
             switch (e.getId()) {
-                case QueryEvent.ADD:
+                case MapEvent.ADD:
                     listener.queryAdded(e);
                     break;
-                case QueryEvent.CHANGE:
+                case MapEvent.CHANGE:
                     listener.queryChanged(e);
                     break;
-                case QueryEvent.REMOVE:
+                case MapEvent.REMOVE:
                     listener.queryRemoved(e);
                     break;
                 default:
@@ -898,7 +898,7 @@ public class ProjectController extends CayenneController {
     public void fireProcedureEvent(ProcedureEvent e) {
         setDirty(true);
 
-        if (e.getId() == ProcedureEvent.REMOVE) {
+        if (e.getId() == MapEvent.REMOVE) {
             refreshNamespace();
             removeFromHistory(e);
         }
@@ -907,13 +907,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             ProcedureListener listener = (ProcedureListener) list[i];
             switch (e.getId()) {
-                case ProcedureEvent.ADD:
+                case MapEvent.ADD:
                     listener.procedureAdded(e);
                     break;
-                case ProcedureEvent.CHANGE:
+                case MapEvent.CHANGE:
                     listener.procedureChanged(e);
                     break;
-                case ProcedureEvent.REMOVE:
+                case MapEvent.REMOVE:
                     listener.procedureRemoved(e);
                     break;
                 default:
@@ -935,13 +935,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             ProcedureParameterListener listener = (ProcedureParameterListener) list[i];
             switch (e.getId()) {
-                case EntityEvent.ADD:
+                case MapEvent.ADD:
                     listener.procedureParameterAdded(e);
                     break;
-                case EntityEvent.CHANGE:
+                case MapEvent.CHANGE:
                     listener.procedureParameterChanged(e);
                     break;
-                case EntityEvent.REMOVE:
+                case MapEvent.REMOVE:
                     listener.procedureParameterRemoved(e);
                     break;
                 default:
@@ -1203,7 +1203,7 @@ public class ProjectController extends CayenneController {
     public void fireDbAttributeEvent(AttributeEvent e) {
         setDirty(true);
 
-        if (currentState.map != null && e.getId() == AttributeEvent.CHANGE) {
+        if (currentState.map != null && e.getId() == MapEvent.CHANGE) {
             currentState.map.dbAttributeChanged(e);
         }
 
@@ -1211,13 +1211,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             DbAttributeListener temp = (DbAttributeListener) list[i];
             switch (e.getId()) {
-                case AttributeEvent.ADD:
+                case MapEvent.ADD:
                     temp.dbAttributeAdded(e);
                     break;
-                case AttributeEvent.CHANGE:
+                case MapEvent.CHANGE:
                     temp.dbAttributeChanged(e);
                     break;
-                case AttributeEvent.REMOVE:
+                case MapEvent.REMOVE:
                     temp.dbAttributeRemoved(e);
                     break;
                 default:
@@ -1252,7 +1252,7 @@ public class ProjectController extends CayenneController {
     public void fireObjAttributeEvent(AttributeEvent e) {
         setDirty(true);
 
-        if (currentState.map != null && e.getId() == AttributeEvent.CHANGE) {
+        if (currentState.map != null && e.getId() == MapEvent.CHANGE) {
             currentState.map.objAttributeChanged(e);
         }
 
@@ -1260,13 +1260,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             ObjAttributeListener temp = (ObjAttributeListener) list[i];
             switch (e.getId()) {
-                case AttributeEvent.ADD:
+                case MapEvent.ADD:
                     temp.objAttributeAdded(e);
                     break;
-                case AttributeEvent.CHANGE:
+                case MapEvent.CHANGE:
                     temp.objAttributeChanged(e);
                     break;
-                case AttributeEvent.REMOVE:
+                case MapEvent.REMOVE:
                     temp.objAttributeRemoved(e);
                     break;
                 default:
@@ -1301,7 +1301,7 @@ public class ProjectController extends CayenneController {
     public void fireDbRelationshipEvent(RelationshipEvent e) {
         setDirty(true);
 
-        if (currentState.map != null && e.getId() == RelationshipEvent.CHANGE) {
+        if (currentState.map != null && e.getId() == MapEvent.CHANGE) {
             currentState.map.dbRelationshipChanged(e);
         }
 
@@ -1309,13 +1309,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             DbRelationshipListener temp = (DbRelationshipListener) list[i];
             switch (e.getId()) {
-                case RelationshipEvent.ADD:
+                case MapEvent.ADD:
                     temp.dbRelationshipAdded(e);
                     break;
-                case RelationshipEvent.CHANGE:
+                case MapEvent.CHANGE:
                     temp.dbRelationshipChanged(e);
                     break;
-                case RelationshipEvent.REMOVE:
+                case MapEvent.REMOVE:
                     temp.dbRelationshipRemoved(e);
                     break;
                 default:
@@ -1351,7 +1351,7 @@ public class ProjectController extends CayenneController {
     public void fireObjRelationshipEvent(RelationshipEvent e) {
         setDirty(true);
 
-        if (currentState.map != null && e.getId() == RelationshipEvent.CHANGE) {
+        if (currentState.map != null && e.getId() == MapEvent.CHANGE) {
             currentState.map.objRelationshipChanged(e);
         }
 
@@ -1359,13 +1359,13 @@ public class ProjectController extends CayenneController {
         for (int i = 0; i < list.length; i++) {
             ObjRelationshipListener temp = (ObjRelationshipListener) list[i];
             switch (e.getId()) {
-                case RelationshipEvent.ADD:
+                case MapEvent.ADD:
                     temp.objRelationshipAdded(e);
                     break;
-                case RelationshipEvent.CHANGE:
+                case MapEvent.CHANGE:
                     temp.objRelationshipChanged(e);
                     break;
-                case RelationshipEvent.REMOVE:
+                case MapEvent.REMOVE:
                     temp.objRelationshipRemoved(e);
                     break;
                 default:
@@ -1412,7 +1412,7 @@ public class ProjectController extends CayenneController {
             currentState.domain.reindexNodes();
         }
 
-        fireDataMapEvent(new DataMapEvent(src, map, DataMapEvent.ADD));
+        fireDataMapEvent(new DataMapEvent(src, map, MapEvent.ADD));
         if (makeCurrent) {
             fireDataMapDisplayEvent(new DataMapDisplayEvent(
                     src,
@@ -1430,8 +1430,7 @@ public class ProjectController extends CayenneController {
             application.getAction(RevertAction.getActionName()).setEnabled(dirty);
 
             if (dirty) {
-                CayenneModelerController parent = (CayenneModelerController) getParent();
-                parent.projectModifiedAction();
+                ((CayenneModelerController) getParent()).projectModifiedAction();
             }
         }
     }

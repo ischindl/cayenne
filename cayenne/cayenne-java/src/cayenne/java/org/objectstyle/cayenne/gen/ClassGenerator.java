@@ -65,85 +65,83 @@ import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.context.Context;
 import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.log.NullLogSystem;
-import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.ObjEntity;
-import org.objectstyle.cayenne.util.ResourceLocator;
 
 import foundrylogic.vpp.VPPConfig;
 
 /**
  * Class generation engine for ObjEntities based on <a
- * href="http://jakarta.apache.org/velocity/" target="_blank">Velocity templates
- * </a>. Instance of ClassGenerationInfo is available inside Velocity template under
- * the key "classGen".
+ * href="http://jakarta.apache.org/velocity/" target="_blank">Velocity templates </a>.
+ * Instance of ClassGenerationInfo is available inside Velocity template under the key
+ * "classGen".
  * 
  * @author Andrei Adamchik
  */
 public class ClassGenerator {
+
     public static final String VERSION_1_1 = "1.1";
     public static final String VERSION_1_2 = "1.2";
-    
+
     protected String versionString;
     protected Template classTemplate;
     protected Context velCtxt;
-    protected ClassGenerationInfo classGenerationInfo;  // only used for VERSION_1_1
-    
+    protected ClassGenerationInfo classGenerationInfo; // only used for VERSION_1_1
+
     /**
-     * @param cl
-     * @deprecated Since 1.2 use ClassGenerator constructor with classForClassLoader parameter
+     * @deprecated since 1.2, as now Cayenne uses thread ClassLoader.
      */
-    private static boolean deprecatedInitDone;
-    private static Class deprecatedClassForClassLoader;
     public synchronized static final void bootstrapVelocity(Class cl) {
-        if (deprecatedInitDone) {
-            return;
-        }
-        deprecatedClassForClassLoader = cl;
-    }
-    /**
-     * Creates a new ClassGenerationInfo that uses a specified Velocity template.
-     * @deprecated Since 1.2 use ClassGenerator(String template, String versionString) instead.
-     */
-    public ClassGenerator(String template) throws Exception {
-        this(template, "1.1", (Class)null);
+        // noop
     }
 
     /**
      * Creates a new ClassGenerationInfo that uses a specified Velocity template.
-	 * @since 1.2
+     * 
+     * @deprecated Since 1.2 use ClassGenerator(String template, String versionString)
+     *             instead.
+     */
+    public ClassGenerator(String template) throws Exception {
+        this(template, "1.1");
+    }
+
+    /**
+     * Creates a new ClassGenerationInfo that uses a specified Velocity template.
+     * 
+     * @since 1.2
      * @param template to use
      * @param versionString of cgen
-     * @param classForClassLoader for initializing VelocityEngine.  Can be null to use the ClassLoader of this class
      * @throws Exception
      */
-    public ClassGenerator(String template, String versionString, Class classForClassLoader) throws Exception {
+    public ClassGenerator(String template, String versionString) throws Exception {
         this.versionString = versionString;
-        
+
         if (false == VERSION_1_1.equals(versionString)) {
-            throw new IllegalStateException("Illegal Version in generateClass(Writer,ObjEntity): " + versionString);
+            throw new IllegalStateException(
+                    "Illegal Version in generateClass(Writer,ObjEntity): "
+                            + versionString);
         }
 
         velCtxt = new VelocityContext();
         classGenerationInfo = new ClassGenerationInfo();
         velCtxt.put("classGen", classGenerationInfo);
 
-        initializeClassTemplate(classForClassLoader, template);
+        initializeClassTemplate(template);
     }
 
     /**
      * Creates a new ClassGenerationInfo that uses a specified Velocity template.
-	 * @since 1.2
+     * 
+     * @since 1.2
      * @param template to use
      * @param versionString of cgen
      * @param vppConfig for configuring VelocityEngine and VelocityContext
-     * @param classForClassLoader for initializing VelocityEngine.  Can be null to use the ClassLoader of this class
      * @throws Exception
      */
-    public ClassGenerator(String template, String versionString, VPPConfig vppConfig, Class classForClassLoader)
+    public ClassGenerator(String template, String versionString, VPPConfig vppConfig)
             throws Exception {
-        
+
         this.versionString = versionString;
 
         if (false == VERSION_1_2.equals(versionString)) {
@@ -159,107 +157,90 @@ public class ClassGenerator {
             velCtxt = new VelocityContext();
         }
 
-        initializeClassTemplate(classForClassLoader, template);
+        initializeClassTemplate(template);
     }
 
-	/**
-	 * Sets up VelocityEngine properties, creates a VelocityEngine instance, and fetches a template using the VelocityEngine instance.
-	 * @since 1.2
-	 */
-	private void initializeClassTemplate(Class classForClassLoader, String template) throws CayenneRuntimeException {
-		VelocityEngine velocityEngine = new VelocityEngine();
-		try {
-			Class classForClassLoaderToUse = classForClassLoader;
-			if (null != deprecatedClassForClassLoader) {
-				classForClassLoaderToUse = deprecatedClassForClassLoader;
-			}
-			else if (null == classForClassLoader) {
-				classForClassLoaderToUse = this.getClass();
-			}
-			else {
-				classForClassLoaderToUse = classForClassLoader;
-			}
-				
-            String classLoaderUrl = ResourceLocator.classBaseUrl(classForClassLoaderToUse);
+    /**
+     * Sets up VelocityEngine properties, creates a VelocityEngine instance, and fetches a
+     * template using the VelocityEngine instance.
+     * 
+     * @since 1.2
+     */
+    private void initializeClassTemplate(String template) throws CayenneRuntimeException {
+        VelocityEngine velocityEngine = new VelocityEngine();
+        try {
 
             // use ClasspathResourceLoader for velocity templates lookup
             // if Cayenne URL is not null, load resource from this URL
             Properties props = new Properties();
-            
-            // set null logger
+
+            // null logger that will prevent velocity.log from being generated
             props.put(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, NullLogSystem.class
                     .getName());
 
-            String loaderProp = null;
-            // init special loaders
-            if (classLoaderUrl != null && classLoaderUrl.startsWith("jar:")) {
-                loaderProp = "jar";
-                props.put("jar.resource.loader.class", JarResourceLoader.class.getName());
-                props.put("jar.resource.loader.path", classLoaderUrl);
-            }
-            else if (classLoaderUrl != null && classLoaderUrl.startsWith("file:")) {
-                loaderProp = "file";
-                props.put("file.resource.loader.path", classLoaderUrl.substring(5));
-            }
+            props.put("resource.loader", "cayenne");
 
-            // always add Filesystem loader for default templates
-            if (loaderProp != null) {
-                if (loaderProp.indexOf("file") < 0) {
-                    loaderProp += ",file";
-                }
-            }
-
-            // use custom file loader
-            props
-                    .put("file.resource.loader.class", AbsFileResourceLoader.class
-                            .getName());
-
-            // always add Classpath loader for default templates
-            loaderProp = (loaderProp != null) ? loaderProp + ",class" : "class";
-            props.put("resource.loader", loaderProp);
-
+            props.put("cayenne.resource.loader.class", ClassGeneratorResourceLoader.class
+                    .getName());
             velocityEngine.init(props);
-		} catch (Exception ex) {
-            throw new CayenneRuntimeException("Can't initialize VTL", ex);
-		}
-		try {
-			classTemplate = velocityEngine.getTemplate(template);
-		} catch (Exception ex) {
-            throw new CayenneRuntimeException("Can't create template", ex);
-		}
-	}
+        }
+        catch (Exception ex) {
+            throw new CayenneRuntimeException("Can't initialize Velocity", ex);
+        }
+        
+        try {
+            classTemplate = velocityEngine.getTemplate(template);
+        }
+        catch (Exception ex) {
+            throw new CayenneRuntimeException("Can't create template: " + template, ex);
+        }
+    }
 
     /**
-     * Generates Java code for the ObjEntity. Output is written to the provided
-     * Writer.
+     * Generates Java code for the ObjEntity. Output is written to the provided Writer.
      */
     public void generateClass(Writer out, ObjEntity entity) throws Exception {
         if (false == VERSION_1_1.equals(versionString)) {
-            throw new IllegalStateException("Illegal Version in generateClass(Writer,ObjEntity): " + versionString);
+            throw new IllegalStateException(
+                    "Illegal Version in generateClass(Writer,ObjEntity): "
+                            + versionString);
         }
-        
+
         classGenerationInfo.setObjEntity(entity);
         classTemplate.merge(velCtxt, out);
     }
 
     /**
-     * Generates Java code for the ObjEntity. Output is written to the provided
-     * Writer.
+     * Generates Java code for the ObjEntity. Output is written to the provided Writer.
      */
-    public void generateClass(Writer out, DataMap dataMap, ObjEntity entity, String fqnBaseClass, String fqnSuperClass, String fqnSubClass) throws Exception {
+    public void generateClass(
+            Writer out,
+            DataMap dataMap,
+            ObjEntity entity,
+            String fqnBaseClass,
+            String fqnSuperClass,
+            String fqnSubClass) throws Exception {
         if (false == VERSION_1_2.equals(versionString)) {
-            throw new IllegalStateException("Illegal Version in generateClass(Writer,ObjEntity,String,String,String): " + versionString);
+            throw new IllegalStateException(
+                    "Illegal Version in generateClass(Writer,ObjEntity,String,String,String): "
+                            + versionString);
         }
-        
+
         if (null == dataMap) {
-            throw new IllegalStateException("DataMap MapClassGenerator constructor required for v1.2 templating.");
+            throw new IllegalStateException(
+                    "DataMap MapClassGenerator constructor required for v1.2 templating.");
         }
 
         velCtxt.put("objEntity", entity);
         velCtxt.put("stringUtils", StringUtils.getInstance());
-        velCtxt.put("entityUtils", new EntityUtils(dataMap, entity, fqnBaseClass, fqnSuperClass, fqnSubClass));
+        velCtxt.put("entityUtils", new EntityUtils(
+                dataMap,
+                entity,
+                fqnBaseClass,
+                fqnSuperClass,
+                fqnSubClass));
         velCtxt.put("importUtils", new ImportUtils());
-        
+
         classTemplate.merge(velCtxt, out);
     }
 
@@ -273,12 +254,13 @@ public class ClassGenerator {
 
     /**
      * Returns Java package name of the class associated with this generator.
+     * 
      * @deprecated Since 1.2 use getClassGenerationInfo().getPackageName()
      */
     public String getPackageName() {
         return classGenerationInfo.getPackageName();
     }
-    
+
     /**
      * Sets Java package name of the class associated with this generator.
      * 
@@ -289,8 +271,8 @@ public class ClassGenerator {
     }
 
     /**
-     * Sets <code>superPackageName</code> property that defines a superclass's
-     * package name.
+     * Sets <code>superPackageName</code> property that defines a superclass's package
+     * name.
      * 
      * @deprecated Since 1.2 use getClassGenerationInfo().setSuperPackageName()
      */
@@ -299,27 +281,28 @@ public class ClassGenerator {
     }
 
     /**
-     * Returns class name (without a package) of the class associated with this
-     * generator.
+     * Returns class name (without a package) of the class associated with this generator.
      * 
      * @deprecated Since 1.2 use getClassGenerationInfo().getClassName()
      */
     public String getClassName() {
         return classGenerationInfo.getClassName();
     }
+
     /**
-     * Sets class name of the class associated with this
-     * generator. Class name must not include a package.
+     * Sets class name of the class associated with this generator. Class name must not
+     * include a package.
      * 
      * @deprecated Since 1.2 use getClassGenerationInfo().setClassName()
      */
     public void setClassName(String className) {
         classGenerationInfo.setClassName(className);
     }
-    
+
     /**
-     * Sets the fully qualified super class of the data object class associated
-     * with this generator
+     * Sets the fully qualified super class of the data object class associated with this
+     * generator
+     * 
      * @deprecated Since 1.2 use getClassGenerationInfo().setSuperClassName()
      */
     public void setSuperClassName(String value) {
@@ -327,71 +310,65 @@ public class ClassGenerator {
     }
 
     /**
-     * Returns prefix used to distinguish between superclass and subclass when
-     * generating classes in pairs.
+     * Returns prefix used to distinguish between superclass and subclass when generating
+     * classes in pairs.
      * 
      * @deprecated Since 1.2 use getClassGenerationInfo().setSuperPrefix()
      */
     public void setSuperPrefix(String superPrefix) {
         classGenerationInfo.setSuperPrefix(superPrefix);
     }
-    
+
     // deprecated, delegated methods not used internally in cayenne
 
     /**
-     * Returns <code>superPackageName</code> property that defines a
-     * superclass's package name.
+     * Returns <code>superPackageName</code> property that defines a superclass's
+     * package name.
      * 
      * @deprecated Since 1.2 use getClassGenerationInfo().getSuperPackageName()
      */
-    public String getSuperPackageName()
-    {
+    public String getSuperPackageName() {
         return classGenerationInfo.getSuperPackageName();
     }
 
     /**
      * @deprecated use getClassGenerationInfo().formatJavaType(String)
      */
-    public String formatJavaType(String type)
-    {
+    public String formatJavaType(String type) {
         return classGenerationInfo.formatJavaType(type);
     }
 
     /**
      * @deprecated Since 1.2 use getClassGenerationInfo().formatVariableName(String)
      */
-    public String formatVariableName(String variableName)
-    {
+    public String formatVariableName(String variableName) {
         return classGenerationInfo.formatVariableName(variableName);
     }
 
     /**
-     * Returns prefix used to distinguish between superclass and subclass when
-     * generating classes in pairs.
+     * Returns prefix used to distinguish between superclass and subclass when generating
+     * classes in pairs.
      * 
      * @deprecated Since 1.2 use getClassGenerationInfo().getSuperPrefix()
      */
-    public String getSuperPrefix()
-    {
+    public String getSuperPrefix() {
         return classGenerationInfo.getSuperPrefix();
     }
 
     /**
-     * Sets current class property name. This method is called during template
-     * parsing for each of the class properties.
+     * Sets current class property name. This method is called during template parsing for
+     * each of the class properties.
      * 
      * @deprecated Since 1.2 use getClassGenerationInfo().setProp(String)
      */
-    public void setProp(String prop)
-    {
+    public void setProp(String prop) {
         classGenerationInfo.setProp(prop);
     }
 
     /**
      * @deprecated Since 1.2 use getClassGenerationInfo().getProp()
      */
-    public String getProp()
-    {
+    public String getProp() {
         return classGenerationInfo.getProp();
     }
 
@@ -401,8 +378,7 @@ public class ClassGenerator {
      * @since 1.1
      * @deprecated Since 1.2 use getClassGenerationInfo().capitalized(String)
      */
-    public String capitalized(String name)
-    {
+    public String capitalized(String name) {
         return classGenerationInfo.capitalized(name);
     }
 
@@ -412,28 +388,26 @@ public class ClassGenerator {
      * @since 1.1
      * @deprecated Since 1.2 use getClassGenerationInfo().capitalizedAsConstant(String)
      */
-    public String capitalizedAsConstant(String name)
-    {
+    public String capitalizedAsConstant(String name) {
         return classGenerationInfo.capitalizedAsConstant(name);
     }
 
-    /** Returns current property name with capitalized first letter
+    /**
+     * Returns current property name with capitalized first letter
+     * 
      * @deprecated Since 1.2 use getClassGenerationInfo().getCappedProp()
      */
-    public String getCappedProp()
-    {
+    public String getCappedProp() {
         return classGenerationInfo.getCappedProp();
     }
 
     /**
-     * @return a current property name converted to a format used by java static
-     *         final variables - all capitalized with underscores.
-     * 
+     * @return a current property name converted to a format used by java static final
+     *         variables - all capitalized with underscores.
      * @since 1.0.3
      * @deprecated Since 1.2 use getClassGenerationInfo().getPropAsConstantName()
      */
-    public String getPropAsConstantName()
-    {
+    public String getPropAsConstantName() {
         return classGenerationInfo.getPropAsConstantName();
     }
 
@@ -443,47 +417,46 @@ public class ClassGenerator {
      * @since 1.1
      * @deprecated Since 1.2 use getClassGenerationInfo().isContainingListProperties()
      */
-    public boolean isContainingListProperties()
-    {
+    public boolean isContainingListProperties() {
         return classGenerationInfo.isContainingListProperties();
     }
 
     /**
-     * Returns <code>true</code> if a class associated with this generator is
-     * located in a package.
+     * Returns <code>true</code> if a class associated with this generator is located in
+     * a package.
+     * 
      * @deprecated Since 1.2 use getClassGenerationInfo().isUsingPackage()
      */
-    public boolean isUsingPackage()
-    {
+    public boolean isUsingPackage() {
         return classGenerationInfo.isUsingPackage();
     }
 
     /**
-     * Returns <code>true</code> if a superclass class associated with this
-     * generator is located in a package.
+     * Returns <code>true</code> if a superclass class associated with this generator is
+     * located in a package.
+     * 
      * @deprecated Since 1.2 use getClassGenerationInfo().isUsingSuperPackage()
      */
-    public boolean isUsingSuperPackage()
-    {
+    public boolean isUsingSuperPackage() {
         return classGenerationInfo.isUsingSuperPackage();
     }
 
-    /** 
+    /**
      * Returns entity for the class associated with this generator.
+     * 
      * @deprecated Since 1.2 use getClassGenerationInfo().getEntity()
      */
-    public ObjEntity getEntity()
-    {
+    public ObjEntity getEntity() {
         return classGenerationInfo.getEntity();
     }
 
     /**
-     * Returns the fully qualified super class of the data object class
-     * associated with this generator
+     * Returns the fully qualified super class of the data object class associated with
+     * this generator
+     * 
      * @deprecated Since 1.2 use getClassGenerationInfo().getSuperClassName()
      */
-    public String getSuperClassName()
-    {
+    public String getSuperClassName() {
         return classGenerationInfo.getSuperClassName();
     }
 }

@@ -55,9 +55,7 @@
  */
 package org.objectstyle.cayenne.access;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.objectstyle.art.Artist;
 import org.objectstyle.art.Gallery;
@@ -129,14 +127,12 @@ public class DataRowUtilsTst extends CayenneTestCase {
         Artist artist = (Artist) context.performQuery(artistQ).get(0);
         assertNotSame(artist, painting.getToArtist());
 
-        Map map = new HashMap();
-        map.put("ARTIST_ID", painting.getToArtist().getObjectId().getIdSnapshot().get(
-                "ARTIST_ID"));
+        ObjectDiff diff = context.getObjectStore().registerDiff(painting, null);
 
-        assertFalse(DataRowUtils.isToOneTargetModified(toArtist, painting, map));
+        assertFalse(DataRowUtils.isToOneTargetModified(toArtist, painting, diff));
 
         painting.setToArtist(artist);
-        assertTrue(DataRowUtils.isToOneTargetModified(toArtist, painting, map));
+        assertTrue(DataRowUtils.isToOneTargetModified(toArtist, painting, diff));
     }
 
     public void testIsToOneTargetModifiedWithNewTarget() throws Exception {
@@ -147,39 +143,16 @@ public class DataRowUtilsTst extends CayenneTestCase {
         assertEquals(1, paintings.size());
         Painting p1 = (Painting) paintings.get(0);
 
-        Gallery g1 = (Gallery) context.createAndRegisterNewObject("Gallery");
-        g1.addToPaintingArray(p1);
-
         ObjEntity paintingEntity = context.getEntityResolver().lookupObjEntity(
                 Painting.class);
         ObjRelationship toGallery = (ObjRelationship) paintingEntity
                 .getRelationship("toGallery");
-        Map map = context.getObjectStore().getCachedSnapshot(p1.getObjectId());
 
-        // testing this:
-        assertTrue(DataRowUtils.isToOneTargetModified(toGallery, p1, map));
-    }
+        ObjectDiff diff = context.getObjectStore().registerDiff(p1, null);
+        assertFalse(DataRowUtils.isToOneTargetModified(toGallery, p1, diff));
 
-    public void testIsJoinAttributesModified() throws Exception {
-        ObjEntity paintingEntity = context.getEntityResolver().lookupObjEntity(
-                Painting.class);
-        ObjRelationship toArtist = (ObjRelationship) paintingEntity
-                .getRelationship("toArtist");
-
-        Map stored = new HashMap();
-        stored.put("ARTIST_ID", new Integer(1));
-
-        Map nullified = new HashMap();
-        nullified.put("ARTIST_ID", null);
-
-        Map updated = new HashMap();
-        updated.put("ARTIST_ID", new Integer(2));
-
-        Map same = new HashMap();
-        same.put("ARTIST_ID", new Integer(1));
-
-        assertFalse(DataRowUtils.isJoinAttributesModified(toArtist, stored, same));
-        assertTrue(DataRowUtils.isJoinAttributesModified(toArtist, stored, nullified));
-        assertTrue(DataRowUtils.isJoinAttributesModified(toArtist, stored, updated));
+        Gallery g1 = (Gallery) context.createAndRegisterNewObject("Gallery");
+        g1.addToPaintingArray(p1);
+        assertTrue(DataRowUtils.isToOneTargetModified(toGallery, p1, diff));
     }
 }

@@ -65,6 +65,7 @@ import org.objectstyle.cayenne.map.Entity;
 import org.objectstyle.cayenne.map.ObjAttribute;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.event.AttributeEvent;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.ProjectController;
 import org.objectstyle.cayenne.modeler.event.AttributeDisplayEvent;
@@ -118,7 +119,7 @@ public class CreateAttributeAction extends CayenneAction {
                 this,
                 attr,
                 objEntity,
-                AttributeEvent.ADD));
+                MapEvent.ADD));
 
         AttributeDisplayEvent ade = new AttributeDisplayEvent(
                 this,
@@ -150,7 +151,7 @@ public class CreateAttributeAction extends CayenneAction {
 
         ProjectController mediator = getProjectController();
         mediator.fireDbAttributeEvent(
-            new AttributeEvent(this, attr, dbEntity, AttributeEvent.ADD));
+            new AttributeEvent(this, attr, dbEntity, MapEvent.ADD));
 
         AttributeDisplayEvent ade = new AttributeDisplayEvent(
                 this,

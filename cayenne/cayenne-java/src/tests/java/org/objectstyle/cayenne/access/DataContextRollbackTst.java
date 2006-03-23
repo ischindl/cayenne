@@ -60,6 +60,7 @@ import java.util.List;
 import org.objectstyle.art.Artist;
 import org.objectstyle.art.Painting;
 import org.objectstyle.cayenne.PersistenceState;
+import org.objectstyle.cayenne.ValueHolder;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.query.SelectQuery;
 
@@ -166,7 +167,7 @@ public class DataContextRollbackTst extends DataContextTestBase {
         assertEquals(0, artist.getPaintingArray().size());
         context.rollbackChanges();
 
-        assertTrue(((ToManyList) artist.getPaintingArray()).isFault());
+        assertTrue(((ValueHolder) artist.getPaintingArray()).isFault());
         assertEquals(1, artist.getPaintingArray().size());
         assertEquals(artist, painting.getToArtist());
 

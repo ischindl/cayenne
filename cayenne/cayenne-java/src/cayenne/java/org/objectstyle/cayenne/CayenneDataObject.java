@@ -272,22 +272,17 @@ public class CayenneDataObject implements DataObject, XMLSerializable {
 
     public void removeToManyTarget(String relName, DataObject value, boolean setReverse) {
 
-        ObjRelationship relationship = this.getRelationshipNamed(relName);
-
-        if (relationship == null) {
-            throw new NullPointerException("Can't find relationship: " + relName);
-        }
-
-        // if "setReverse" is false, avoid unneeded processing of flattened relationship
-        getDataContext().getObjectStore().objectRelationshipUnset(
-                this,
-                value,
-                relationship,
-                setReverse);
-
         // Now do the rest of the normal handling (regardless of whether it was
         // flattened or not)
         List relList = (List) readProperty(relName);
+
+        // call 'recordArcDeleted' AFTER readProperty as readProperty ensures that this
+        // object fault is resolved
+        getDataContext().getObjectStore().recordArcDeleted(
+                this,
+                value != null ? value.getObjectId() : null,
+                relName);
+
         relList.remove(value);
         if (persistenceState == PersistenceState.COMMITTED) {
             persistenceState = PersistenceState.MODIFIED;
@@ -305,28 +300,18 @@ public class CayenneDataObject implements DataObject, XMLSerializable {
 
         willConnect(relName, value);
 
-        ObjRelationship relationship = this.getRelationshipNamed(relName);
-        if (relationship == null) {
-            throw new NullPointerException("Can't find relationship: " + relName);
-        }
-
-        getDataContext().getObjectStore().objectRelationshipSet(
-                this,
-                value,
-                relationship,
-                setReverse);
-
         // Now do the rest of the normal handling (regardless of whether it was
         // flattened or not)
         List list = (List) readProperty(relName);
-        list.add(value);
-        if (persistenceState == PersistenceState.COMMITTED) {
-            persistenceState = PersistenceState.MODIFIED;
 
-            // retaining a snapshot here is wasteful, but we have to do this for
-            // consistency (see CAY-213)
-            getDataContext().getObjectStore().retainSnapshot(this);
-        }
+        // call 'recordArcCreated' AFTER readProperty as readProperty ensures that this
+        // object fault is resolved
+        getDataContext().getObjectStore().recordArcCreated(
+                this,
+                value.getObjectId(),
+                relName);
+
+        list.add(value);
 
         if (value != null && setReverse) {
             setReverseRelationship(relName, value);
@@ -345,18 +330,10 @@ public class CayenneDataObject implements DataObject, XMLSerializable {
             return;
         }
 
-        ObjRelationship relationship = this.getRelationshipNamed(relationshipName);
-        if (relationship == null) {
-            throw new NullPointerException("Can't find relationship: " + relationshipName);
-        }
-
-        // if "setReverse" is false, avoid unneeded processing of flattened
-        // relationship
-        getDataContext().getObjectStore().objectRelationshipSet(
+        getDataContext().getObjectStore().recordArcCreated(
                 this,
-                value,
-                relationship,
-                setReverse);
+                value != null ? value.getObjectId() : null,
+                relationshipName);
 
         if (setReverse) {
             // unset old reverse relationship
@@ -370,7 +347,8 @@ public class CayenneDataObject implements DataObject, XMLSerializable {
             }
         }
 
-        writeProperty(relationshipName, value);
+        objectContext.prepareForAccess(this, relationshipName);
+        writePropertyDirectly(relationshipName, value);
     }
 
     /**
@@ -400,13 +378,6 @@ public class CayenneDataObject implements DataObject, XMLSerializable {
                             + relationshipName
                             + " because it is in a different DataContext");
         }
-    }
-
-    private ObjRelationship getRelationshipNamed(String relName) {
-        return (ObjRelationship) objectContext
-                .getEntityResolver()
-                .lookupObjEntity(this)
-                .getRelationship(relName);
     }
 
     /**
@@ -661,7 +632,7 @@ public class CayenneDataObject implements DataObject, XMLSerializable {
 
             // if db relationship is not based on a PK and is based on mandatory
             // attributes, see if we have a target object set
-            boolean validate = false;
+            boolean validate = true;
             DbRelationship dbRelationship = (DbRelationship) dbRels.get(0);
             Iterator joins = dbRelationship.getJoins().iterator();
             while (joins.hasNext()) {
@@ -669,20 +640,22 @@ public class CayenneDataObject implements DataObject, XMLSerializable {
                 DbAttribute source = join.getSource();
 
                 if (source.isMandatory()) {
-                    validate = true;
-
                     // clear attribute failures...
                     if (failedDbAttributes != null && !failedDbAttributes.isEmpty()) {
                         failedDbAttributes.remove(source.getName());
 
                         // loop through all joins if there were previous mandatory
-                        // attribute failures.... otherwise we can safely break away
+
+                        // attribute failures....
                         if (!failedDbAttributes.isEmpty()) {
                             continue;
                         }
                     }
-
-                    break;
+                }
+                else {
+                    // do not validate if the relation is based on
+                    // multiple keys with some that can be nullable.
+                    validate = false;
                 }
             }
 

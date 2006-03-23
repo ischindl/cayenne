@@ -3,7 +3,7 @@
 <!-- ========================================== -->
 <!-- Cayenne Data View Modeler subproject buildfile.-->
 <!-- ========================================== -->
-<project default="...">
+<project>
 	
 	<property name="dvmodeler.dist.src" value="${dist}/src/dvmodeler"/>
 	<property name="dvmodeler.build" value="${build}/dvmodeler/classes"/>

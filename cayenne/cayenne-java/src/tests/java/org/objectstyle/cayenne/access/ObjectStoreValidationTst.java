@@ -70,15 +70,19 @@ public class ObjectStoreValidationTst extends CayenneTestCase {
 
     private static int id = 1;
 
+    /**
+     * @deprecated since 1.2
+     */
     public void testValidateUncommittedObjects() {
         MockupValidatingObject deleted = createObject(PersistenceState.DELETED);
         MockupValidatingObject inserted = createObject(PersistenceState.NEW);
         MockupValidatingObject updated = createObject(PersistenceState.MODIFIED);
 
         ObjectStore store = new ObjectStore(new DataRowStore("test"));
-        store.addObject(deleted);
-        store.addObject(inserted);
-        store.addObject(updated);
+        store.setContext(createDataContext());
+        store.recordObjectCreated(deleted);
+        store.recordObjectCreated(inserted);
+        store.recordObjectCreated(updated);
 
         store.validateUncommittedObjects();
 
@@ -93,6 +97,9 @@ public class ObjectStoreValidationTst extends CayenneTestCase {
         assertTrue(updated.validatedForUpdate);
     }
 
+    /**
+     * @deprecated since 1.2
+     */
     public void testValidateUncommittedObjectsConcurrency() {
         DataContext context = createDataContext();
         DataObject updated1 = createActiveValidatingObject(
@@ -105,9 +112,9 @@ public class ObjectStoreValidationTst extends CayenneTestCase {
                 context,
                 PersistenceState.MODIFIED);
 
-        context.getObjectStore().addObject(updated1);
-        context.getObjectStore().addObject(updated2);
-        context.getObjectStore().addObject(updated3);
+        context.getObjectStore().recordObjectCreated(updated1);
+        context.getObjectStore().recordObjectCreated(updated2);
+        context.getObjectStore().recordObjectCreated(updated3);
         context.getObjectStore().validateUncommittedObjects();
     }
 

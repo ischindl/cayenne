@@ -77,10 +77,10 @@ import foundrylogic.vpp.VPPConfig;
  * Ant task to perform class generation from data map. This class is an Ant adapter to
  * DefaultClassGenerator class.
  * 
- * @author Andrei Adamchik
+ * @author Andrus Adamchik
  */
 public class CayenneGenerator extends CayenneTask {
-    
+
     protected String includeEntitiesPattern;
     protected String excludeEntitiesPattern;
     protected VPPConfig vppConfig;
@@ -91,7 +91,6 @@ public class CayenneGenerator extends CayenneTask {
 
     public CayenneGenerator() {
         generator = createGenerator();
-        generator.setClassForClassLoader(this.getClass());
     }
 
     /**
@@ -142,11 +141,13 @@ public class CayenneGenerator extends CayenneTask {
 
         List entityList = new ArrayList(dataMap.getObjEntities());
 
-        NamePatternMatcher namePatternMatcher = new NamePatternMatcher(this, includeEntitiesPattern, excludeEntitiesPattern);
+        NamePatternMatcher namePatternMatcher = new NamePatternMatcher(
+                this,
+                includeEntitiesPattern,
+                excludeEntitiesPattern);
         namePatternMatcher.filter(entityList);
 
-        if (false == ClassGenerator.VERSION_1_1.equals(generator.getVersionString()))
-        {
+        if (false == ClassGenerator.VERSION_1_1.equals(generator.getVersionString())) {
             initializeVppConfig();
             generator.setVppConfig(vppConfig);
         }
@@ -171,11 +172,10 @@ public class CayenneGenerator extends CayenneTask {
 
     /** Loads and returns DataMap based on <code>map</code> attribute. */
     protected DataMap[] loadAdditionalDataMaps() throws Exception {
-        if (null == additionalMaps)
-        {
+        if (null == additionalMaps) {
             return new DataMap[0];
         }
-        
+
         DataMap dataMaps[] = new DataMap[additionalMaps.length];
         for (int i = 0; i < additionalMaps.length; i++) {
             dataMaps[i] = loadDataMap(additionalMaps[i]);
@@ -240,14 +240,14 @@ public class CayenneGenerator extends CayenneTask {
     /**
      * Sets <code>template</code> property.
      */
-    public void setTemplate(File template) {
+    public void setTemplate(String template) {
         generator.setTemplate(template);
     }
 
     /**
      * Sets <code>supertemplate</code> property.
      */
-    public void setSupertemplate(File supertemplate) {
+    public void setSupertemplate(String supertemplate) {
         generator.setSuperTemplate(supertemplate);
     }
 
@@ -264,7 +264,6 @@ public class CayenneGenerator extends CayenneTask {
     public void setSuperpkg(String superpkg) {
         generator.setSuperPkg(superpkg);
     }
-    
 
     /**
      * Sets <code>client</code> property.
@@ -282,12 +281,13 @@ public class CayenneGenerator extends CayenneTask {
      */
     public void setVersion(String versionString) {
         try {
-			generator.setVersionString(versionString);
-		} catch (IllegalStateException e) {
+            generator.setVersionString(versionString);
+        }
+        catch (IllegalStateException e) {
             throw new BuildException(e.getMessage(), e);
-		}
+        }
     }
-    
+
     /**
      * Sets <code>encoding</code> property that allows to generate files using
      * non-default encoding.
@@ -297,7 +297,7 @@ public class CayenneGenerator extends CayenneTask {
     public void setEncoding(String encoding) {
         generator.setEncoding(encoding);
     }
-    
+
     /**
      * Sets <code>excludeEntitiesPattern</code> property.
      * 
@@ -306,7 +306,7 @@ public class CayenneGenerator extends CayenneTask {
     public void setExcludeEntities(String excludeEntitiesPattern) {
         this.excludeEntitiesPattern = excludeEntitiesPattern;
     }
-    
+
     /**
      * Sets <code>includeEntitiesPattern</code> property.
      * 
@@ -335,8 +335,8 @@ public class CayenneGenerator extends CayenneTask {
     }
 
     /**
-     * Provides a <code>VPPConfig</code> objec to configure.
-     * (Written with createConfig() instead of addConfig() to avoid run-time dependency on VPP).
+     * Provides a <code>VPPConfig</code> objec to configure. (Written with
+     * createConfig() instead of addConfig() to avoid run-time dependency on VPP).
      * 
      * @since 1.2
      */

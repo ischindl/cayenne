@@ -92,7 +92,7 @@
 		</constructor-arg>
 	</bean>
 	
-	<bean id="testFlushChangesMergeProperties" class="java.util.ArrayList">
+	<bean id="testCommitChangesToParent_MergeProperties" class="java.util.ArrayList">
 		<constructor-arg>
 			<list>
 				<ref bean="A1"/>

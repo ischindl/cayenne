@@ -82,7 +82,7 @@ public class MockGraphManager implements GraphManager {
     public Object unregisterNode(Object nodeId) {
         return map.remove(nodeId);
     }
-
+    
     public void arcCreated(Object nodeId, Object targetNodeId, Object arcId) {
     }
 

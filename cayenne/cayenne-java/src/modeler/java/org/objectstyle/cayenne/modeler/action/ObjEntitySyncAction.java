@@ -64,6 +64,7 @@ import javax.swing.KeyStroke;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.event.EntityEvent;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.ProjectController;
 import org.objectstyle.cayenne.modeler.event.EntityDisplayEvent;
@@ -110,8 +111,7 @@ public class ObjEntitySyncAction extends CayenneAction {
             EntityMergeSupport merger = new EntityMergeSupport(map);
             merger.synchronizeWithDbEntity(entity);
 
-            mediator
-                    .fireObjEntityEvent(new EntityEvent(this, entity, EntityEvent.CHANGE));
+            mediator.fireObjEntityEvent(new EntityEvent(this, entity, MapEvent.CHANGE));
             mediator.fireObjEntityDisplayEvent(new EntityDisplayEvent(
                     this,
                     entity,

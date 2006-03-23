@@ -64,6 +64,7 @@ import org.objectstyle.art.CompoundPkTest;
 import org.objectstyle.cayenne.CayenneDataObject;
 import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.PersistenceState;
+import org.objectstyle.cayenne.ValueHolder;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.query.Ordering;
@@ -97,9 +98,9 @@ public class DataContextPrefetchExtrasTst extends CayenneTestCase {
 
         CharPkTest pk1 = (CharPkTest) pks.get(0);
         assertEquals("n1", pk1.getOtherCol());
-        ToManyList toMany = (ToManyList) pk1.readPropertyDirectly("charFKs");
+        List toMany = (List) pk1.readPropertyDirectly("charFKs");
         assertNotNull(toMany);
-        assertFalse(toMany.isFault());
+        assertFalse(((ValueHolder)toMany).isFault());
         assertEquals(3, toMany.size());
 
         CharFkTest fk1 = (CharFkTest) toMany.get(0);
@@ -153,9 +154,9 @@ public class DataContextPrefetchExtrasTst extends CayenneTestCase {
         assertEquals(1, pks.size());
         CayenneDataObject pk1 = (CayenneDataObject) pks.get(0);
 
-        ToManyList toMany = (ToManyList) pk1.readPropertyDirectly("compoundFkArray");
+        List toMany = (List) pk1.readPropertyDirectly("compoundFkArray");
         assertNotNull(toMany);
-        assertFalse(toMany.isFault());
+        assertFalse(((ValueHolder) toMany).isFault());
         assertEquals(2, toMany.size());
 
         CayenneDataObject fk1 = (CayenneDataObject) toMany.get(0);

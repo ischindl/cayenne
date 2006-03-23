@@ -195,7 +195,7 @@ public class ValidatorDialog extends CayenneDialog {
             public void actionPerformed(ActionEvent e) {
                 setVisible(false);
                 dispose();
-            };
+            }
         });
 
         refreshButton.addActionListener(new ActionListener() {
@@ -205,7 +205,7 @@ public class ValidatorDialog extends CayenneDialog {
                         .getInstance()
                         .getAction(ValidateAction.getActionName())
                         .actionPerformed(e);
-            };
+            }
         });
 
         this.problemsTable.addMouseListener(new MouseAdapter() {

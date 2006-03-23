@@ -24,6 +24,9 @@
 				<entry key="org.objectstyle.cayenne.dba.postgres.PostgresAdapter">
 					<value>SELECT #result('ARTIST_ID'), RTRIM(#result('ARTIST_NAME')), #result('DATE_OF_BIRTH') FROM ARTIST ORDER BY ARTIST_ID</value>
 				</entry>
+				<entry key="org.objectstyle.cayenne.dba.ingres.IngresAdapter">
+					<value>SELECT #result('ARTIST_ID'), TRIM(#result('ARTIST_NAME')), #result('DATE_OF_BIRTH') FROM ARTIST ORDER BY ARTIST_ID</value>
+				</entry>
 				<entry key="org.objectstyle.cayenne.dba.openbase.OpenBaseAdapter">
 					<value>SELECT #result('ARTIST_ID'), #result('ARTIST_NAME'), #result('DATE_OF_BIRTH') FROM ARTIST ORDER BY ARTIST_ID</value>
 				</entry>
@@ -35,6 +38,9 @@
 			<map>
 				<entry key="org.objectstyle.cayenne.dba.postgres.PostgresAdapter">
 					<value>SELECT #result('ARTIST_ID'), RTRIM(#result('ARTIST_NAME')), #result('DATE_OF_BIRTH') FROM ARTIST WHERE ARTIST_ID = #bind($id)</value>
+				</entry>
+				<entry key="org.objectstyle.cayenne.dba.ingres.IngresAdapter">
+					<value>SELECT #result('ARTIST_ID'), TRIM(#result('ARTIST_NAME')), #result('DATE_OF_BIRTH') FROM ARTIST WHERE ARTIST_ID = #bind($id)</value>
 				</entry>
 				<entry key="org.objectstyle.cayenne.dba.openbase.OpenBaseAdapter">
 					<value>SELECT #result('ARTIST_ID'), #result('ARTIST_NAME'), #result('DATE_OF_BIRTH') FROM ARTIST WHERE ARTIST_ID = #bind($id)</value>

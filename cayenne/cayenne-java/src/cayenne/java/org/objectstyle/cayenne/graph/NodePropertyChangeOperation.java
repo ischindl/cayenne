@@ -76,6 +76,15 @@ public class NodePropertyChangeOperation extends NodeDiff {
         this.newValue = newValue;
     }
 
+    public NodePropertyChangeOperation(Object nodeId, String property, Object oldValue,
+            Object newValue, int diffId) {
+        super(nodeId, diffId);
+        
+        this.property = property;
+        this.oldValue = oldValue;
+        this.newValue = newValue;
+    }
+
     /**
      * Returns true if both old and new value are equal.
      */

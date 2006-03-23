@@ -62,7 +62,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.access.types.ByteArrayType;
 import org.objectstyle.cayenne.access.types.CharType;
@@ -76,19 +75,26 @@ import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.query.SQLAction;
 
 /**
- * DbAdapter implementation for <a href="http://www.mysql.com">MySQL RDBMS</a>. Sample <a
- * target="_top" href="../../../../../../../developerguide/unit-tests.html">connection
- * settings</a> to use with MySQL are shown below:
+ * DbAdapter implementation for <a href="http://www.mysql.com">MySQL RDBMS</a>.
+ * <h3>Foreign Key Constraint Handling</h3>
+ * <p>
+ * Foreign key constraints are supported by InnoDB engine and NOT supported by MyISAM
+ * engine. This adapter by default assumes MyISAM, so
+ * {@link org.objectstyle.cayenne.dba.JdbcAdapter#supportsFkConstraints()} will return
+ * false. Users can manually change this by calling
+ * <em>setSupportsFkConstraints(true)</em> or better by using an
+ * {@link org.objectstyle.cayenne.dba.AutoAdapter}, i.e. not entering the adapter name at
+ * all for the DataNode, letting Cayenne guess it in runtime. In the later case Cayenne
+ * will check the <em>table_type</em> MySQL variable to detect whether InnoDB is the
+ * default, and configure the adapter accordingly.
+ * <h3>Sample Connection Settings</h3>
+ * <ul>
+ * <li>Adapter name: org.objectstyle.cayenne.dba.mysql.MySQLAdapter</li>
+ * <li>DB URL: jdbc: mysql://serverhostname/dbname</li>
+ * <li>Driver Class: com.mysql.jdbc.Driver</li>
+ * </ul>
  * 
- * <pre>
- *                           test-mysql.cayenne.adapter = org.objectstyle.cayenne.dba.mysql.MySQLAdapter
- *                           test-mysql.jdbc.username = test
- *                           test-mysql.jdbc.password = secret
- *                           test-mysql.jdbc.url = jdbc:mysql://serverhostname/cayenne
- *                           test-mysql.jdbc.driver = com.mysql.jdbc.Driver
- * </pre>
- * 
- * @author Andrei Adamchik
+ * @author Andrus Adamchik
  */
 public class MySQLAdapter extends JdbcAdapter {
 
@@ -110,7 +116,7 @@ public class MySQLAdapter extends JdbcAdapter {
     }
 
     public String dropTable(DbEntity entity) {
-        return "DROP TABLE IF EXISTS " + entity.getFullyQualifiedName();
+        return "DROP TABLE IF EXISTS " + entity.getFullyQualifiedName() + " CASCADE";
     }
 
     /**
@@ -168,11 +174,6 @@ public class MySQLAdapter extends JdbcAdapter {
         return super.buildAttribute(name, typeName, type, size, precision, allowNulls);
     }
 
-    /** Throws an exception, since FK constraints are not supported by MySQL. */
-    public String createFkConstraint(DbRelationship rel) {
-        throw new CayenneRuntimeException("FK constraints are not supported.");
-    }
-
     /**
      * Returns null, since views are not yet supported in MySQL. Views are available on
      * newer versions of MySQL.
@@ -187,6 +188,21 @@ public class MySQLAdapter extends JdbcAdapter {
      */
     protected PkGenerator createPkGenerator() {
         return new MySQLPkGenerator();
+    }
+
+    /**
+     * Overrides super implementation to explicitly set table engine to InnoDB if FK
+     * constraints are supported by this adapter.
+     */
+    public String createTable(DbEntity entity) {
+        String ddlSQL = super.createTable(entity);
+
+        // force InnoDB tables if constraints are enabled
+        if (supportsFkConstraints()) {
+            ddlSQL += " ENGINE=InnoDB";
+        }
+
+        return ddlSQL;
     }
 
     /**
@@ -219,7 +235,34 @@ public class MySQLAdapter extends JdbcAdapter {
             }
             sqlBuffer.append(')');
         }
-    };
+
+        // if FK constraints are supported, we must add indices to all FKs
+        // Note that according to MySQL docs, FK indexes are created automatically when
+        // constraint is defined, starting at MySQL 4.1.2
+        if (supportsFkConstraints()) {
+            Iterator relationships = entity.getRelationships().iterator();
+            while (relationships.hasNext()) {
+                DbRelationship relationship = (DbRelationship) relationships.next();
+                if (relationship.getJoins().size() > 0
+                        && relationship.isToPK()
+                        && !relationship.isToDependentPK()) {
+
+                    sqlBuffer.append(", KEY (");
+
+                    Iterator columns = relationship.getSourceAttributes().iterator();
+                    DbAttribute column = (DbAttribute) columns.next();
+                    sqlBuffer.append(column.getName());
+
+                    while (columns.hasNext()) {
+                        column = (DbAttribute) columns.next();
+                        sqlBuffer.append(", ").append(column.getName());
+                    }
+
+                    sqlBuffer.append(")");
+                }
+            }
+        }
+    }
 
     /**
      * Appends AUTO_INCREMENT clause to the column definition for generated columns.

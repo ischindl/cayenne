@@ -65,8 +65,8 @@ import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
+import org.objectstyle.cayenne.ValueHolder;
 import org.objectstyle.cayenne.access.DataContext;
-import org.objectstyle.cayenne.access.ToManyList;
 import org.objectstyle.cayenne.exp.parser.ASTDbPath;
 import org.objectstyle.cayenne.exp.parser.ASTIn;
 import org.objectstyle.cayenne.exp.parser.ASTList;
@@ -220,9 +220,9 @@ public class PrefetchHelper {
         for (int i = 0; i < nobjects; i++) {
             DataObject object = (DataObject) objects.get(i);
             ObjectId oid = object.getObjectId();
-            List list = (List) listMap.get(oid.getValueForAttribute(dbKey));
+            Object list = listMap.get(oid.getValueForAttribute(dbKey));
 
-            ((ToManyList) object.readPropertyDirectly(relName)).setObjectList(list);
+            ((ValueHolder) object.readPropertyDirectly(relName)).setValueDirectly(list);
         }
     }
 }

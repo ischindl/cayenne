@@ -64,6 +64,7 @@ import java.util.Map;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.Fault;
+import org.objectstyle.cayenne.ValueHolder;
 import org.objectstyle.cayenne.map.ObjRelationship;
 import org.objectstyle.cayenne.query.PrefetchTreeNode;
 
@@ -208,11 +209,11 @@ class PrefetchProcessorNode extends PrefetchTreeNode {
 
     private final void connect(DataObject object, List related) {
         if (incoming.isToMany()) {
-            ToManyList toManyList = (ToManyList) object.readProperty(getName());
+            ValueHolder toManyList = (ValueHolder) object.readProperty(getName());
 
             // TODO, Andrus 11/15/2005 - if list is modified, shouldn't we attempt to
             // merge the changes instead of overwriting?
-            toManyList.setObjectList(related != null ? related : new ArrayList(1));
+            toManyList.setValueDirectly(related != null ? related : new ArrayList(1));
         }
         else {
             // this should've been handled elsewhere

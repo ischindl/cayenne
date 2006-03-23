@@ -3,7 +3,7 @@
 <!-- ========================================== -->
 <!-- Runs precompiled unit tests. -->
 <!-- ========================================== -->
-<project default="...">
+<project>
 	
 	<property name="test.output"
 		value="${build}/tests-xml-${cayenne.test.connection}"/>

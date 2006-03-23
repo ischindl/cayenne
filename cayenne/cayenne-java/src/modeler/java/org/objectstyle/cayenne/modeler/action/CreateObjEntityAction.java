@@ -61,6 +61,7 @@ import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.event.EntityEvent;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.ProjectController;
 import org.objectstyle.cayenne.modeler.event.EntityDisplayEvent;
@@ -136,7 +137,7 @@ public class CreateObjEntityAction extends CayenneAction {
         EntityMergeSupport merger = new EntityMergeSupport(dataMap);
 		merger.synchronizeWithDbEntity(entity);
 
-        mediator.fireObjEntityEvent(new EntityEvent(this, entity, EntityEvent.ADD));
+        mediator.fireObjEntityEvent(new EntityEvent(this, entity, MapEvent.ADD));
         EntityDisplayEvent displayEvent = new EntityDisplayEvent(
                 this,
                 entity,

@@ -62,7 +62,7 @@ import java.io.File;
 import java.util.Iterator;
 import java.util.Vector;
 
-import javax.swing.JFrame;
+import javax.swing.WindowConstants;
 
 import org.objectstyle.cayenne.modeler.action.ExitAction;
 import org.objectstyle.cayenne.modeler.action.OpenProjectAction;
@@ -118,7 +118,7 @@ public class CayenneModelerController extends CayenneController {
     }
 
     protected void initBindings() {
-        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 
         frame.addWindowListener(new WindowAdapter() {
 

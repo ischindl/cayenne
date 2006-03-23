@@ -321,8 +321,8 @@ public class HSQLEmbeddedPreferenceService extends CayennePreferenceService {
             String name = (dot > 0) ? fullName.substring(0, dot) : fullName;
 
             return baseName.equals(name);
-        };
-    };
+        }
+    }
 
     // addresses various issues with embedded database...
     final class HSQLDataSourceFactory implements DataSourceFactory {

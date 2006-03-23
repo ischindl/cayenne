@@ -55,12 +55,24 @@
  */
 package org.objectstyle.cayenne.unit;
 
+import java.sql.Connection;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+
 import org.objectstyle.cayenne.dba.DbAdapter;
+import org.objectstyle.cayenne.map.DataMap;
+import org.objectstyle.cayenne.map.DbEntity;
 
 /**
  * @author Andrei Adamchik
  */
 public class MySQLStackAdapter extends AccessStackAdapter {
+
+    static final Collection NO_CONSTRAINTS_TABLES = Arrays.asList(new Object[] {
+            "REFLEXIVE_AND_TO_ONE", "ARTGROUP"
+    });
 
     public MySQLStackAdapter(DbAdapter adapter) {
         super(adapter);
@@ -69,8 +81,44 @@ public class MySQLStackAdapter extends AccessStackAdapter {
     public boolean supportsLobs() {
         return true;
     }
-    
+
     public boolean supportsCaseSensitiveLike() {
         return false;
     }
+
+    public void willDropTables(Connection conn, DataMap map, Collection tablesToDrop)
+            throws Exception {
+        // special DROP CONSTRAINT syntax for MySQL
+        if (adapter.supportsFkConstraints()) {
+            Map constraintsMap = getConstraints(conn, map, tablesToDrop);
+
+            Iterator it = constraintsMap.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry entry = (Map.Entry) it.next();
+
+                Collection constraints = (Collection) entry.getValue();
+                if (constraints == null || constraints.isEmpty()) {
+                    continue;
+                }
+
+                Object tableName = entry.getKey();
+                Iterator cit = constraints.iterator();
+                while (cit.hasNext()) {
+                    Object constraint = cit.next();
+                    StringBuffer drop = new StringBuffer();
+                    drop.append("ALTER TABLE ").append(tableName).append(
+                            " DROP FOREIGN KEY ").append(constraint);
+                    executeDDL(conn, drop.toString());
+                }
+            }
+        }
+    }
+
+    public boolean supportsFKConstraints(DbEntity entity) {
+        // MySQL supports that, but there are problems deleting objects from such
+        // tables...
+        return adapter.supportsFkConstraints()
+                && !NO_CONSTRAINTS_TABLES.contains(entity.getName());
+    }
+
 }

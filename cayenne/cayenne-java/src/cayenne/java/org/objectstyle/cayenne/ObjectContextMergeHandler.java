@@ -186,7 +186,7 @@ class ObjectContextMergeHandler implements GraphChangeHandler, GraphEventListene
     }
 
     // ******* GraphChangeHandler methods *********
-
+    
     public void nodeIdChanged(Object nodeId, Object newId) {
         // do not unregister the node just yet... only put replaced id in deadIds to
         // remove it later. Otherwise stored operations will not work

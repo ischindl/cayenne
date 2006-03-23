@@ -87,7 +87,7 @@ public class ObjectIdQuery extends IndirectQuery {
 
     // needed for hessian serialization
     private ObjectIdQuery() {
-
+        this.cachePolicy = CACHE_REFRESH;
     }
 
     /**
@@ -161,11 +161,11 @@ public class ObjectIdQuery extends IndirectQuery {
     public int getCachePolicy() {
         return cachePolicy;
     }
-    
+
     public boolean isFetchMandatory() {
         return cachePolicy == CACHE_REFRESH;
     }
-    
+
     public boolean isFetchAllowed() {
         return cachePolicy != CACHE_NOREFRESH;
     }

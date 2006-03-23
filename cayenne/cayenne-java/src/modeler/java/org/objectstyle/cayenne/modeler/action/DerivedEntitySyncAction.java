@@ -59,6 +59,7 @@ import java.awt.event.ActionEvent;
 
 import org.objectstyle.cayenne.map.DerivedDbEntity;
 import org.objectstyle.cayenne.map.event.EntityEvent;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.util.CayenneAction;
 import org.objectstyle.cayenne.modeler.util.ProjectUtil;
@@ -94,8 +95,8 @@ public class DerivedEntitySyncAction extends CayenneAction {
             // fire a chain of "remove/add" events for entity
             // this seems to be the only way to refresh the view
             getProjectController().fireObjEntityEvent(
-                new EntityEvent(this, ent, EntityEvent.REMOVE));
-            getProjectController().fireObjEntityEvent(new EntityEvent(this, ent, EntityEvent.ADD));
+                new EntityEvent(this, ent, MapEvent.REMOVE));
+            getProjectController().fireObjEntityEvent(new EntityEvent(this, ent, MapEvent.ADD));
         }
     }
 

@@ -70,11 +70,25 @@ public class ArcCreateOperation extends NodeDiff {
         this.arcId = arcId;
     }
 
+    public ArcCreateOperation(Object nodeId, Object targetNodeId, Object arcId, int diffId) {
+        super(nodeId, diffId);
+        this.targetNodeId = targetNodeId;
+        this.arcId = arcId;
+    }
+
     public void apply(GraphChangeHandler tracker) {
         tracker.arcCreated(nodeId, targetNodeId, arcId);
     }
 
     public void undo(GraphChangeHandler tracker) {
         tracker.arcDeleted(nodeId, targetNodeId, arcId);
+    }
+
+    public Object getArcId() {
+        return arcId;
+    }
+
+    public Object getTargetNodeId() {
+        return targetNodeId;
     }
 }

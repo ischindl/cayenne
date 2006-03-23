@@ -55,6 +55,21 @@
  */
 package org.objectstyle.art;
 
-public class Painting extends org.objectstyle.art.auto._Painting {
+import org.objectstyle.cayenne.validation.ValidationResult;
 
+public class Painting extends org.objectstyle.art.auto._Painting {
+    protected boolean validateForSaveCalled;
+
+    public boolean isValidateForSaveCalled() {
+        return validateForSaveCalled;
+    }
+
+    public void resetValidationFlags() {
+        validateForSaveCalled = false;
+    }
+
+    public void validateForSave(ValidationResult validationResult) {
+        validateForSaveCalled = true;
+        super.validateForSave(validationResult);
+    }
 }

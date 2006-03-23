@@ -70,6 +70,7 @@ import org.objectstyle.cayenne.CayenneDataObject;
 import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.DataObjectUtils;
 import org.objectstyle.cayenne.PersistenceState;
+import org.objectstyle.cayenne.ValueHolder;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.map.ObjEntity;
@@ -104,18 +105,18 @@ public class DataContextPrefetchTst extends DataContextTestBase {
             assertEquals(2, artists.size());
 
             Artist a1 = (Artist) artists.get(0);
-            ToManyList toMany = (ToManyList) a1.readPropertyDirectly("paintingArray");
+            List toMany = (List) a1.readPropertyDirectly("paintingArray");
             assertNotNull(toMany);
-            assertFalse(toMany.isFault());
+            assertFalse(((ValueHolder) toMany).isFault());
             assertEquals(1, toMany.size());
 
             Painting p1 = (Painting) toMany.get(0);
             assertEquals("P_" + a1.getArtistName(), p1.getPaintingTitle());
 
             Artist a2 = (Artist) artists.get(1);
-            ToManyList toMany2 = (ToManyList) a2.readPropertyDirectly("paintingArray");
+            List toMany2 = (List) a2.readPropertyDirectly("paintingArray");
             assertNotNull(toMany2);
-            assertFalse(toMany2.isFault());
+            assertFalse(((ValueHolder) toMany2).isFault());
             assertEquals(1, toMany2.size());
 
             Painting p2 = (Painting) toMany2.get(0);
@@ -142,9 +143,9 @@ public class DataContextPrefetchTst extends DataContextTestBase {
 
             for (int i = 0; i < artistCount; i++) {
                 Artist a = (Artist) artists.get(i);
-                ToManyList toMany = (ToManyList) a.readPropertyDirectly("paintingArray");
+                List toMany = (List) a.readPropertyDirectly("paintingArray");
                 assertNotNull(toMany);
-                assertFalse(toMany.isFault());
+                assertFalse(((ValueHolder) toMany).isFault());
                 assertEquals(1, toMany.size());
 
                 Painting p = (Painting) toMany.get(0);
@@ -182,10 +183,9 @@ public class DataContextPrefetchTst extends DataContextTestBase {
 
             Artist a1 = (Artist) artists.get(0);
             assertEquals("artist1", a1.getArtistName());
-            ToManyList toMany = (ToManyList) a1
-                    .readPropertyDirectly("artistExhibitArray");
+            List toMany = (List) a1.readPropertyDirectly("artistExhibitArray");
             assertNotNull(toMany);
-            assertFalse(toMany.isFault());
+            assertFalse(((ValueHolder) toMany).isFault());
             assertEquals(2, toMany.size());
 
             ArtistExhibit artistExhibit = (ArtistExhibit) toMany.get(0);
@@ -220,9 +220,9 @@ public class DataContextPrefetchTst extends DataContextTestBase {
             try {
                 assertFalse(result.isEmpty());
                 CayenneDataObject a1 = (CayenneDataObject) result.get(0);
-                ToManyList toMany = (ToManyList) a1.readPropertyDirectly("paintingArray");
+                List toMany = (List) a1.readPropertyDirectly("paintingArray");
                 assertNotNull(toMany);
-                assertFalse(toMany.isFault());
+                assertFalse(((ValueHolder) toMany).isFault());
             }
             finally {
                 unblockQueries();
@@ -261,9 +261,9 @@ public class DataContextPrefetchTst extends DataContextTestBase {
                 assertFalse(result.isEmpty());
 
                 CayenneDataObject a1 = (CayenneDataObject) result.get(0);
-                ToManyList toMany = (ToManyList) a1.readPropertyDirectly("paintingArray");
+                List toMany = (List) a1.readPropertyDirectly("paintingArray");
                 assertNotNull(toMany);
-                assertFalse(toMany.isFault());
+                assertFalse(((ValueHolder) toMany).isFault());
             }
             finally {
                 unblockQueries();

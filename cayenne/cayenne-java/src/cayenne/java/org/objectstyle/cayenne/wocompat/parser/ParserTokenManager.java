@@ -162,22 +162,16 @@ private final void jjCheckNAddStates(int start, int end)
       jjCheckNAdd(jjnextStates[start]);
    } while (start++ != end);
 }
-private final void jjCheckNAddStates(int start)
-{
-   jjCheckNAdd(jjnextStates[start]);
-   jjCheckNAdd(jjnextStates[start + 1]);
-}
 static final long[] jjbitVec0 = {
    0x0L, 0x0L, 0xffffffffffffffffL, 0xffffffffffffffffL
 };
 private final int jjMoveNfa_0(int startState, int curPos)
 {
-   int[] nextStates;
    int startsAt = 0;
    jjnewStateCnt = 10;
    int i = 1;
    jjstateSet[0] = startState;
-   int j, kind = 0x7fffffff;
+   int kind = 0x7fffffff;
    for (;;)
    {
       if (++jjround == 0x7fffffff)
@@ -330,14 +324,6 @@ private final int jjStartNfa_2(int pos, long active0)
 {
    return jjMoveNfa_2(jjStopStringLiteralDfa_2(pos, active0), pos + 1);
 }
-private final int jjStartNfaWithStates_2(int pos, int kind, int state)
-{
-   jjmatchedKind = kind;
-   jjmatchedPos = pos;
-   try { curChar = input_stream.readChar(); }
-   catch(java.io.IOException e) { return pos + 1; }
-   return jjMoveNfa_2(state, pos + 1);
-}
 private final int jjMoveStringLiteralDfa0_2()
 {
    switch(curChar)
@@ -398,12 +384,11 @@ private final int jjMoveStringLiteralDfa1_2(long active0)
 }
 private final int jjMoveNfa_2(int startState, int curPos)
 {
-   int[] nextStates;
    int startsAt = 0;
    jjnewStateCnt = 11;
    int i = 1;
    jjstateSet[0] = startState;
-   int j, kind = 0x7fffffff;
+   int kind = 0x7fffffff;
    for (;;)
    {
       if (++jjround == 0x7fffffff)
@@ -548,12 +533,11 @@ private final int jjMoveStringLiteralDfa0_1()
 }
 private final int jjMoveNfa_1(int startState, int curPos)
 {
-   int[] nextStates;
    int startsAt = 0;
    jjnewStateCnt = 2;
    int i = 1;
    jjstateSet[0] = startState;
-   int j, kind = 0x7fffffff;
+   int kind = 0x7fffffff;
    for (;;)
    {
       if (++jjround == 0x7fffffff)
@@ -587,7 +571,6 @@ private final int jjMoveNfa_1(int startState, int curPos)
       }
       else if (curChar < 128)
       {
-         long l = 1L << (curChar & 077);
          MatchLoop: do
          {
             switch(jjstateSet[--i])
@@ -720,8 +703,6 @@ int jjmatchedKind;
 
 public Token getNextToken() 
 {
-  int kind;
-  Token specialToken = null;
   Token matchedToken;
   int curPos = 0;
 
@@ -896,9 +877,9 @@ void MoreLexicalActions()
          jjimageLen = 0;
         int oct;
         len = image.length();
-        oct = ((int)(image.charAt(len-1)-'0')) +
-              8 * ((int)(image.charAt(len-2)-'0')) +
-              64 * ((int)(image.charAt(len-3)-'0'));
+        oct = (image.charAt(len-1)-'0') +
+              8 * (image.charAt(len-2)-'0') +
+              64 * (image.charAt(len-3)-'0');
         image.setCharAt(len-4, (char)oct);
         image.setLength(len-3);
          break;
@@ -908,10 +889,10 @@ void MoreLexicalActions()
          else
             image.append(new String(input_stream.GetSuffix(jjimageLen)));
          jjimageLen = 0;
-        int dig,c, base=1,hex=0;
+        int c, base=1,hex=0;
         len = image.length();
         for(int i=0; i<4; ++i) {
-          c=(int)image.charAt(len-(i+1));
+          c=image.charAt(len-(i+1));
           if (c<='9') c-='0';
             else if (c<='F') c = (c -'A') + 10;
               else c =(c -'a') + 10;

@@ -245,8 +245,7 @@ public class DbEntityTab extends JPanel implements ExistingSelectionProcessor,
                                 dom));
                     }
                 }
-            };
-
+            }
         });
 
         pkGeneratorType.addItemListener(new ItemListener() {

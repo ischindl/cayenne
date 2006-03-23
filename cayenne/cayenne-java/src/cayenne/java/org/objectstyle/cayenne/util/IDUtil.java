@@ -67,10 +67,20 @@ import org.objectstyle.cayenne.CayenneRuntimeException;
  * @author Andrus Adamchik
  */
 public class IDUtil {
+    
+    private static final int BITMASK_0 = 0xff;
+    private static final int BITMASK_1 = 0xff << 8;
+    private static final int BITMASK_2 = 0xff << 16;
+    private static final int BITMASK_3 = 0xff << 24;
+    private static final int BITMASK_4 = 0xff << 32;
+    private static final int BITMASK_5 = 0xff << 40;
+    private static final int BITMASK_6 = 0xff << 48;
+    private static final int BITMASK_7 = 0xff << 56;
 
-    // this id sequence doesn't have to be very long... it only addresses the need to feel
+    // this id sequence needs to be long enough to feel
     // the gap within the same timestamp millisecond
-    private static volatile byte currentId = Byte.MIN_VALUE;
+    private static volatile int currentId;
+
     private static MessageDigest md;
     private static byte[] ipAddress;
 
@@ -168,22 +178,26 @@ public class IDUtil {
     public static final byte[] pseudoUniqueByteSequence8() {
         byte[] bytes = new byte[8];
 
-        // bytes 0 - incrementing #
-        // bytes 1..3 - timestamp high bytes
-        // bytes 4..7 - IP address
+        // bytes 0..2 - incrementing #
+        // bytes 3..5 - timestamp high bytes
+        // bytes 6..7 - IP address
 
-        bytes[0] = nextId();
+        int nextInt = nextInt();
+
+        bytes[0] = (byte) ((nextInt & (0xff << 16)) >>> 16);
+        bytes[1] = (byte) ((nextInt & (0xff << 8)) >>> 8);
+        bytes[2] = (byte) (nextInt & 0xff);
+
+        // append 3 high bytes of timestamp
 
         long t = System.currentTimeMillis();
-        
-        // append 3 high bytes
-        for (int i = 0; i < 3; ++i) {
-            int off = (3 - i) * 8;
-            bytes[i + 1] = (byte) ((t & (0xff << off)) >>> off);
-        }
 
-        System.arraycopy(ipAddress, 0, bytes, 4, 4);
+        bytes[3] = (byte) ((t & BITMASK_2) >>> 16);
+        bytes[4] = (byte) ((t & BITMASK_1) >>> 8);
+        bytes[5] = (byte) (t & BITMASK_0);
 
+        // append 2 last bytes of IP address
+        System.arraycopy(ipAddress, 2, bytes, 6, 2);
         return bytes;
     }
 
@@ -197,10 +211,25 @@ public class IDUtil {
         // bytes 4..11 - timestamp
         // bytes 12..15 - IP address
 
-        appendIntBytes(bytes, 0, nextId());
-        appendLongBytes(bytes, 4, System.currentTimeMillis());
-        System.arraycopy(ipAddress, 0, bytes, 12, 4);
+        int nextInt = nextInt();
 
+        bytes[0] = (byte) ((nextInt & BITMASK_3) >>> 24);
+        bytes[1] = (byte) ((nextInt & BITMASK_2) >>> 16);
+        bytes[2] = (byte) ((nextInt & BITMASK_1) >>> 8);
+        bytes[3] = (byte) (nextInt & BITMASK_0);
+
+        long t = System.currentTimeMillis();
+
+        bytes[4] = (byte) ((t & BITMASK_7) >>> 56);
+        bytes[5] = (byte) ((t & BITMASK_6) >>> 48);
+        bytes[6] = (byte) ((t & BITMASK_5) >>> 40);
+        bytes[7] = (byte) ((t & BITMASK_4) >>> 32);
+        bytes[8] = (byte) ((t & BITMASK_3) >>> 24);
+        bytes[9] = (byte) ((t & BITMASK_2) >>> 16);
+        bytes[10] = (byte) ((t & BITMASK_1) >>> 8);
+        bytes[11] = (byte) (t & BITMASK_0);
+
+        System.arraycopy(ipAddress, 0, bytes, 12, 4);
         return bytes;
     }
 
@@ -215,26 +244,12 @@ public class IDUtil {
         }
     }
 
-    private static final byte nextId() {
-        if (currentId >= Byte.MAX_VALUE - 1) {
-            currentId = Byte.MIN_VALUE;
+    private static final int nextInt() {
+        if (currentId == Integer.MAX_VALUE) {
+            currentId = 0;
         }
 
         return currentId++;
-    }
-
-    private static final void appendIntBytes(byte[] bytes, int offset, int value) {
-        for (int i = 0; i < 4; ++i) {
-            int off = (3 - i) * 8;
-            bytes[i + offset] = (byte) ((value & (0xff << off)) >>> off);
-        }
-    }
-
-    private static final void appendLongBytes(byte[] bytes, int offset, long value) {
-        for (int i = 0; i < 8; ++i) {
-            int off = (7 - i) * 8;
-            bytes[i + offset] = (byte) ((value & (0xff << off)) >>> off);
-        }
     }
 
     private IDUtil() {

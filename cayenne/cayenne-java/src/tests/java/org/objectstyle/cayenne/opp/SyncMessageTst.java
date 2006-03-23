@@ -70,10 +70,10 @@ public class SyncMessageTst extends TestCase {
     public void testConstructor() {
         ObjectContext source = new MockObjectContext();
         GraphDiff diff = new CompoundDiff();
-        SyncMessage message = new SyncMessage(source, DataChannel.FLUSH_SYNC_TYPE, diff);
+        SyncMessage message = new SyncMessage(source, DataChannel.FLUSH_NOCASCADE_SYNC, diff);
 
         assertSame(source, message.getSource());
-        assertEquals(DataChannel.FLUSH_SYNC_TYPE, message.getType());
+        assertEquals(DataChannel.FLUSH_NOCASCADE_SYNC, message.getType());
         assertSame(diff, message.getSenderChanges());
     }
 
@@ -81,7 +81,7 @@ public class SyncMessageTst extends TestCase {
         // id must be a serializable object; source doesn't have to be
         ObjectContext source = new MockObjectContext();
         GraphDiff diff = new NodeCreateOperation("id-string");
-        SyncMessage message = new SyncMessage(source, DataChannel.FLUSH_SYNC_TYPE, diff);
+        SyncMessage message = new SyncMessage(source, DataChannel.FLUSH_NOCASCADE_SYNC, diff);
 
         Object d = HessianUtil.cloneViaHessianSerialization(message);
         assertNotNull(d);
@@ -95,9 +95,9 @@ public class SyncMessageTst extends TestCase {
 
     public void testConstructorInvalid() {
         ObjectContext source = new MockObjectContext();
-        new SyncMessage(source, DataChannel.FLUSH_SYNC_TYPE, new CompoundDiff());
-        new SyncMessage(source, DataChannel.COMMIT_SYNC_TYPE, new CompoundDiff());
-        new SyncMessage(null, DataChannel.ROLLBACK_SYNC_TYPE, new CompoundDiff());
+        new SyncMessage(source, DataChannel.FLUSH_NOCASCADE_SYNC, new CompoundDiff());
+        new SyncMessage(source, DataChannel.FLUSH_CASCADE_SYNC, new CompoundDiff());
+        new SyncMessage(null, DataChannel.ROLLBACK_CASCADE_SYNC, new CompoundDiff());
 
         int bogusType = 45678;
         try {

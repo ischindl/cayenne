@@ -59,9 +59,6 @@
  */
 package org.objectstyle.cayenne.exp.parser;
 
-import java.io.*;
-import java.util.*;
-import java.math.*;
 import org.objectstyle.cayenne.exp.*;
 
 /**
@@ -96,7 +93,6 @@ public class ExpressionParser/*@bgen(jjtree)*/implements ExpressionParserTreeCon
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case 1:
-        ;
         break;
       default:
         jj_la1[0] = jj_gen;
@@ -136,7 +132,6 @@ public class ExpressionParser/*@bgen(jjtree)*/implements ExpressionParserTreeCon
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case 2:
-        ;
         break;
       default:
         jj_la1[1] = jj_gen;
@@ -571,7 +566,6 @@ public class ExpressionParser/*@bgen(jjtree)*/implements ExpressionParserTreeCon
       break;
     default:
       jj_la1[8] = jj_gen;
-      ;
     }
   }
 
@@ -729,7 +723,6 @@ public class ExpressionParser/*@bgen(jjtree)*/implements ExpressionParserTreeCon
       while (true) {
         switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
         case 19:
-          ;
           break;
         default:
           jj_la1[12] = jj_gen;
@@ -900,7 +893,6 @@ public class ExpressionParser/*@bgen(jjtree)*/implements ExpressionParserTreeCon
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case 20:
       case 21:
-        ;
         break;
       default:
         jj_la1[15] = jj_gen;
@@ -976,7 +968,6 @@ public class ExpressionParser/*@bgen(jjtree)*/implements ExpressionParserTreeCon
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case 22:
       case 23:
-        ;
         break;
       default:
         jj_la1[17] = jj_gen;
@@ -1061,7 +1052,6 @@ public class ExpressionParser/*@bgen(jjtree)*/implements ExpressionParserTreeCon
         break;
       default:
         jj_la1[19] = jj_gen;
-        ;
       }
       numericPrimary();
       break;

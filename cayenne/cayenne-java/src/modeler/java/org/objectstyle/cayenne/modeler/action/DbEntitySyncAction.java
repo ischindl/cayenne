@@ -61,6 +61,7 @@ import java.util.Collection;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.event.EntityEvent;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.ProjectController;
 import org.objectstyle.cayenne.modeler.util.CayenneAction;
@@ -107,10 +108,10 @@ public class DbEntitySyncAction extends CayenneAction {
 			// fire a chain of "remove/add" events for entity
 			// this seems to be the only way to refresh the view
 			mediator.fireObjEntityEvent(
-				new EntityEvent(this, ent, EntityEvent.REMOVE));
+				new EntityEvent(this, ent, MapEvent.REMOVE));
 
 			mediator.fireObjEntityEvent(
-				new EntityEvent(this, ent, EntityEvent.ADD));
+				new EntityEvent(this, ent, MapEvent.ADD));
 		}
 	}
 	

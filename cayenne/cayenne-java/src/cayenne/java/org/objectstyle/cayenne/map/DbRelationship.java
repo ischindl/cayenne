@@ -395,8 +395,17 @@ public class DbRelationship extends Relationship {
             idMap = new HashMap(numJoins * 2);
             for (int i = 0; i < numJoins; i++) {
                 DbJoin join = (DbJoin) joins.get(i);
+                DbAttribute source = join.getSource();
                 Object val = srcSnapshot.get(join.getSourceName());
+
                 if (val == null) {
+
+                    // some keys may be nulls and some not in case of multi-key
+                    // relationships where PK and FK partially overlap (see CAY-284)
+                    if (!source.isMandatory()) {
+                        return null;
+                    }
+
                     foundNulls++;
                 }
                 else {

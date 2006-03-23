@@ -119,16 +119,16 @@ public class ClientServerChannel implements DataChannel {
         this.lifecycleEventsEnabled = lifecycleEventsEnabled;
     }
 
-    public GraphDiff onSync(ObjectContext context, int syncType, GraphDiff contextChanges) {
+    public GraphDiff onSync(ObjectContext originatingContext, GraphDiff changes, int syncType) {
 
         // sync client changes
         switch (syncType) {
-            case DataChannel.ROLLBACK_SYNC_TYPE:
-                return onRollback(contextChanges);
-            case DataChannel.FLUSH_SYNC_TYPE:
-                return onFlush(contextChanges);
-            case DataChannel.COMMIT_SYNC_TYPE:
-                return onCommit(contextChanges);
+            case DataChannel.ROLLBACK_CASCADE_SYNC:
+                return onRollback(changes);
+            case DataChannel.FLUSH_NOCASCADE_SYNC:
+                return onFlush(changes);
+            case DataChannel.FLUSH_CASCADE_SYNC:
+                return onCommit(changes);
             default:
                 throw new CayenneRuntimeException("Unrecognized SyncMessage type: "
                         + syncType);
@@ -176,7 +176,7 @@ public class ClientServerChannel implements DataChannel {
      * Applies child diff, and then commits.
      */
     GraphDiff onCommit(GraphDiff childDiff) {
-        GraphDiff diff = serverContext.onContextCommit(null, childDiff);
+        GraphDiff diff = serverContext.onContextFlush(null, childDiff, true);
 
         GraphDiff returnClientDiff;
 

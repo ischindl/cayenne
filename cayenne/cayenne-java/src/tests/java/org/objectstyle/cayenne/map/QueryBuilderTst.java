@@ -78,17 +78,6 @@ public class QueryBuilderTst extends BasicTestCase {
         builder.setName("aaa");
         assertEquals("aaa", builder.name);
     }
-    
-    public void testSetSelecting() throws Exception {
-        builder.setSelecting(null);
-        assertTrue(builder.selecting);
-        
-        builder.setSelecting("false");
-        assertFalse(builder.selecting);
-        
-        builder.setSelecting("true");
-        assertTrue(builder.selecting);
-    }
 
     public void testSetRootInfoDbEntity() throws Exception {
         DataMap map = new DataMap("map");

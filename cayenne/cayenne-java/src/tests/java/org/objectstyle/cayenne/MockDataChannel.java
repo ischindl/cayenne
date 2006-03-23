@@ -117,8 +117,8 @@ public class MockDataChannel implements DataChannel {
         return requestObjects;
     }
 
-    public GraphDiff onSync(ObjectContext context, int syncType, GraphDiff contextChanges) {
-        requestObjects.add(contextChanges);
+    public GraphDiff onSync(ObjectContext originatingContext, GraphDiff changes, int syncType) {
+        requestObjects.add(changes);
         return commitResponse;
     }
 

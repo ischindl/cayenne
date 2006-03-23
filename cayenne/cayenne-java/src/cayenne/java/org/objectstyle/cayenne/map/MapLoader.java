@@ -711,11 +711,9 @@ public class MapLoader extends DefaultHandler {
         String rootName = attributes.getValue("", "root-name");
         String resultType = attributes.getValue("", "result-type");
         String resultEntity = attributes.getValue("", "result-entity");
-        String selecting = attributes.getValue("", "selecting");
 
         queryBuilder.setName(name);
         queryBuilder.setRoot(dataMap, rootType, rootName);
-        queryBuilder.setSelecting(selecting);
 
         // TODO: Andrus, 2/13/2006 'result-type' is only used in ProcedureQuery and is
         // deprecated in 1.2

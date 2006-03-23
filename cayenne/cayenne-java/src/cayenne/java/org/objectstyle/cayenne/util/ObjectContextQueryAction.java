@@ -208,30 +208,32 @@ public class ObjectContextQueryAction {
                     ClassDescriptor descriptor = actingContext
                             .getEntityResolver()
                             .getClassDescriptor(id.getEntityName());
-                    Object related = descriptor
-                            .getProperty(relationshipQuery.getRelationshipName())
-                            .readPropertyDirectly(object);
 
-                    if (!(related instanceof Fault)) {
-                        List result;
+                    if (!descriptor.isFault(object)) {
+                        Object related = descriptor
+                                .getProperty(relationshipQuery.getRelationshipName())
+                                .readPropertyDirectly(object);
 
-                        // null to-one
-                        if (related == null) {
-                            result = new ArrayList(1);
+                        if (!(related instanceof Fault)) {
+                            List result;
+
+                            // null to-one
+                            if (related == null) {
+                                result = new ArrayList(1);
+                            }
+                            // to-many
+                            else if (related instanceof List) {
+                                result = (List) related;
+                            }
+                            // non-null to-one
+                            else {
+                                result = new ArrayList(1);
+                                result.add(related);
+                            }
+
+                            this.response = new ListResponse(result);
+                            return DONE;
                         }
-                        // to-many
-                        else if (related instanceof List) {
-                            result = (List) related;
-                        }
-                        // non-null to-one
-                        else {
-                            result = new ArrayList(1);
-                            result.add(related);
-                        }
-
-                        this.response = new ListResponse(result);
-
-                        return DONE;
                     }
                 }
             }

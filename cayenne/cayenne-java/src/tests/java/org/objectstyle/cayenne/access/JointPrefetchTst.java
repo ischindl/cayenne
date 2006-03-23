@@ -69,6 +69,7 @@ import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.DataRow;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
+import org.objectstyle.cayenne.ValueHolder;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
 import org.objectstyle.cayenne.map.ObjAttribute;
@@ -172,10 +173,10 @@ public class JointPrefetchTst extends CayenneTestCase {
             Iterator it = objects.iterator();
             while (it.hasNext()) {
                 Artist a = (Artist) it.next();
-                ToManyList list = (ToManyList) a.getPaintingArray();
+                List list = (List) a.getPaintingArray();
 
                 assertNotNull(list);
-                assertFalse(list.isFault());
+                assertFalse(((ValueHolder) list).isFault());
                 assertTrue(list.size() > 0);
 
                 Iterator children = list.iterator();
@@ -299,10 +300,10 @@ public class JointPrefetchTst extends CayenneTestCase {
             Iterator it = objects.iterator();
             while (it.hasNext()) {
                 Artist a = (Artist) it.next();
-                ToManyList list = (ToManyList) a.getPaintingArray();
+                List list = (List) a.getPaintingArray();
 
                 assertNotNull(list);
-                assertFalse(list.isFault());
+                assertFalse(((ValueHolder) list).isFault());
                 assertTrue(list.size() > 0);
 
                 Iterator children = list.iterator();
@@ -342,10 +343,10 @@ public class JointPrefetchTst extends CayenneTestCase {
             assertEquals(1, objects.size());
 
             Artist a = (Artist) objects.get(0);
-            ToManyList list = (ToManyList) a.getPaintingArray();
+            List list = (List) a.getPaintingArray();
 
             assertNotNull(list);
-            assertFalse(list.isFault());
+            assertFalse(((ValueHolder) list).isFault());
             assertEquals(2, list.size());
 
             Iterator children = list.iterator();
@@ -395,7 +396,7 @@ public class JointPrefetchTst extends CayenneTestCase {
             Iterator it = objects.iterator();
             while (it.hasNext()) {
                 Artist a = (Artist) it.next();
-                ToManyList list = (ToManyList) a.getPaintingArray();
+                ValueHolder list = (ValueHolder) a.getPaintingArray();
 
                 assertNotNull(list);
 

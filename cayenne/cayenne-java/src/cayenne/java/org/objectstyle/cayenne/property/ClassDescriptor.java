@@ -131,4 +131,9 @@ public interface ClassDescriptor {
      * properties returned true, false - if one property returned false.
      */
     boolean visitProperties(PropertyVisitor visitor);
+
+    /**
+     * Returns true if an object is not fully resolved.
+     */
+    boolean isFault(Object object);
 }

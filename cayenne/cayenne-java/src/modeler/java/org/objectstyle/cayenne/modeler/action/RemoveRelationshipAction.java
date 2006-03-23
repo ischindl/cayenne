@@ -63,6 +63,7 @@ import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
 import org.objectstyle.cayenne.map.Relationship;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.map.event.RelationshipEvent;
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.ProjectController;
@@ -116,7 +117,7 @@ public class RemoveRelationshipAction extends RemoveAction {
                 Application.getFrame(),
                 rel,
                 entity,
-                RelationshipEvent.REMOVE);
+                MapEvent.REMOVE);
         mediator.fireObjRelationshipEvent(e);
     }
 
@@ -131,7 +132,7 @@ public class RemoveRelationshipAction extends RemoveAction {
                 Application.getFrame(),
                 rel,
                 entity,
-                RelationshipEvent.REMOVE);
+                MapEvent.REMOVE);
         mediator.fireDbRelationshipEvent(e);
     }
 }

@@ -93,7 +93,7 @@ public class CayenneGeneratorTst extends CayenneTestCase {
         task.setMap(map);
         task.setMakepairs(false);
         task.setUsepkgpath(true);
-        task.setTemplate(template);
+        task.setTemplate(template.getPath());
 
         // run task
         task.execute();

@@ -95,10 +95,10 @@ public class MockObjectContext implements ObjectContext {
         return null;
     }
 
-    public void flushChanges() {
+    public void commitChangesToParent() {
     }
 
-    public void revertChanges() {
+    public void rollbackChangesLocally() {
     }
 
     public void rollbackChanges() {

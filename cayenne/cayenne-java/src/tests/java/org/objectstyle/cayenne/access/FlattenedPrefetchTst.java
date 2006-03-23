@@ -64,6 +64,7 @@ import org.objectstyle.art.ArtGroup;
 import org.objectstyle.art.Artist;
 import org.objectstyle.art.Painting;
 import org.objectstyle.cayenne.PersistenceState;
+import org.objectstyle.cayenne.ValueHolder;
 import org.objectstyle.cayenne.query.PrefetchTreeNode;
 import org.objectstyle.cayenne.query.SelectQuery;
 import org.objectstyle.cayenne.unit.CayenneTestCase;
@@ -98,10 +99,10 @@ public class FlattenedPrefetchTst extends CayenneTestCase {
             Iterator it = objects.iterator();
             while (it.hasNext()) {
                 Artist a = (Artist) it.next();
-                ToManyList list = (ToManyList) a.getGroupArray();
+                List list = (List) a.getGroupArray();
 
                 assertNotNull(list);
-                assertFalse("artist's groups not resolved: " + a, list.isFault());
+                assertFalse("artist's groups not resolved: " + a, ((ValueHolder) list).isFault());
                 assertTrue(list.size() > 0);
 
                 Iterator children = list.iterator();
@@ -142,9 +143,9 @@ public class FlattenedPrefetchTst extends CayenneTestCase {
                 Artist a = p.getToArtist();
                 assertEquals(PersistenceState.COMMITTED, a.getPersistenceState());
 
-                ToManyList list = (ToManyList) a.getGroupArray();
+                List list = a.getGroupArray();
                 assertNotNull(list);
-                assertFalse("artist's groups not resolved: " + a, list.isFault());
+                assertFalse("artist's groups not resolved: " + a, ((ValueHolder)list).isFault());
                 assertTrue(list.size() > 0);
 
                 Iterator children = list.iterator();
@@ -183,10 +184,10 @@ public class FlattenedPrefetchTst extends CayenneTestCase {
             Iterator it = objects.iterator();
             while (it.hasNext()) {
                 Artist a = (Artist) it.next();
-                ToManyList list = (ToManyList) a.getGroupArray();
+                List list = (List) a.getGroupArray();
 
                 assertNotNull(list);
-                assertFalse("artist's groups not resolved: " + a, list.isFault());
+                assertFalse("artist's groups not resolved: " + a, ((ValueHolder) list).isFault());
                 assertTrue(list.size() > 0);
 
                 Iterator children = list.iterator();
@@ -230,9 +231,9 @@ public class FlattenedPrefetchTst extends CayenneTestCase {
                 Artist a = p.getToArtist();
                 assertEquals(PersistenceState.COMMITTED, a.getPersistenceState());
 
-                ToManyList list = (ToManyList) a.getGroupArray();
+                List list = (List) a.getGroupArray();
                 assertNotNull(list);
-                assertFalse("artist's groups not resolved: " + a, list.isFault());
+                assertFalse("artist's groups not resolved: " + a, ((ValueHolder) list).isFault());
                 assertTrue(list.size() > 0);
 
                 Iterator children = list.iterator();

@@ -3,7 +3,7 @@ package org.objectstyle.cayenne.modeler.dialog;
 import java.awt.Component;
 import java.util.Iterator;
 
-import javax.swing.JDialog;
+import javax.swing.WindowConstants;
 
 import org.objectstyle.cayenne.modeler.util.CayenneController;
 import org.objectstyle.cayenne.swing.BindingBuilder;
@@ -50,7 +50,7 @@ public class ValidationResultBrowser extends CayenneController {
         this.view.getErrorsDisplay().setText(buildValidationText(validationResult));
 
         view.pack();
-        view.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        view.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         view.setModal(true);
         makeCloseableOnEscape();
         centerView();

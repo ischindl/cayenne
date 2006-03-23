@@ -55,6 +55,7 @@
  */
 package org.objectstyle.cayenne.access;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -342,8 +343,6 @@ public class DataContextSharedCacheTst extends MultiContextTestCase {
      * Test case to prove that deleting an object in one ObjectStore and committed to the
      * database will be reflected in the peer ObjectStore using the same DataRowCache. By
      * default MODIFIED objects will be changed to NEW.
-     * 
-     * @throws Exception
      */
     public void testSnapshotDeletePropagationToModified() throws Exception {
 
@@ -506,7 +505,7 @@ public class DataContextSharedCacheTst extends MultiContextTestCase {
                         .getPersistenceState());
                 assertEquals(PersistenceState.COMMITTED, altArtist.getPersistenceState());
 
-                ToManyList list = (ToManyList) altArtist.getPaintingArray();
+                Collection list = altArtist.getPaintingArray();
                 assertEquals(1, list.size());
                 assertFalse(list.contains(altPainting1));
             }
@@ -551,11 +550,7 @@ public class DataContextSharedCacheTst extends MultiContextTestCase {
         Painting painting2 = (Painting) context.createAndRegisterNewObject("Painting");
         painting2.setPaintingTitle("p2");
         painting2.setToArtist(artist);
-        assertTrue(context.getObjectStore().indirectlyModifiedIds.contains(artist
-                .getObjectId()));
         context.commitChanges();
-        assertFalse(context.getObjectStore().indirectlyModifiedIds.contains(artist
-                .getObjectId()));
 
         // check peer artist
 
@@ -568,7 +563,7 @@ public class DataContextSharedCacheTst extends MultiContextTestCase {
             }
         };
         helper.assertWithTimeout(3000);
-        ToManyList list = (ToManyList) altArtist.getPaintingArray();
+        List list = altArtist.getPaintingArray();
         assertEquals(2, list.size());
     }
 

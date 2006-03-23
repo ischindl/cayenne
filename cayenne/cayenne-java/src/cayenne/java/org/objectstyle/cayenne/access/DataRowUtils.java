@@ -66,7 +66,6 @@ import org.objectstyle.cayenne.ObjectContext;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
 import org.objectstyle.cayenne.ValueHolder;
-import org.objectstyle.cayenne.map.DbJoin;
 import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.ObjAttribute;
 import org.objectstyle.cayenne.map.ObjEntity;
@@ -75,7 +74,7 @@ import org.objectstyle.cayenne.util.Util;
 
 /**
  * DataRowUtils contains a number of static methods to work with DataRows. This is a
- * helper class for DataContext and ObjectStore
+ * helper class for DataContext and ObjectStore.
  * 
  * @author Andrus Adamchik
  * @since 1.1
@@ -169,9 +168,7 @@ class DataRowUtils {
         }
         else {
             object.setPersistenceState(PersistenceState.COMMITTED);
-            object.setSnapshotVersion(snapshot.getVersion());
         }
-
     }
 
     static void forceMergeWithSnapshot(
@@ -180,7 +177,10 @@ class DataRowUtils {
             DataRow snapshot) {
 
         DataContext context = object.getDataContext();
-        Map oldSnap = context.getObjectStore().getSnapshot(object.getObjectId());
+        ObjectDiff diff = (ObjectDiff) context
+                .getObjectStore()
+                .getChangesByObjectId()
+                .get(object.getObjectId());
 
         // attributes
         Map attrMap = entity.getAttributeMap();
@@ -204,7 +204,7 @@ class DataRowUtils {
             }
 
             Object curVal = object.readPropertyDirectly(attrName);
-            Object oldVal = oldSnap.get(dbAttrPath);
+            Object oldVal = diff != null ? diff.getSnapshotValue(attrName) : null;
 
             // if value not modified, update it from snapshot,
             // otherwise leave it alone
@@ -227,8 +227,7 @@ class DataRowUtils {
 
             // if value not modified, update it from snapshot,
             // otherwise leave it alone
-            if (!isToOneTargetModified(rel, object, oldSnap)
-                    && isJoinAttributesModified(rel, snapshot, oldSnap)) {
+            if (!isToOneTargetModified(rel, object, diff)) {
 
                 DbRelationship dbRelationship = (DbRelationship) rel
                         .getDbRelationships()
@@ -237,37 +236,16 @@ class DataRowUtils {
                 ObjectId id = snapshot.createTargetObjectId(
                         rel.getTargetEntityName(),
                         dbRelationship);
-                Object target = (id != null) ? context.localObject(id, null) : null;
-                object.writePropertyDirectly(rel.getName(), target);
+
+                if (diff == null
+                        || !diff.containsArcSnapshot(rel.getName())
+                        || !Util.nullSafeEquals(id, diff.getArcSnapshotValue(rel
+                                .getName()))) {
+                    Object target = (id != null) ? context.localObject(id, null) : null;
+                    object.writeProperty(rel.getName(), target);
+                }
             }
         }
-    }
-
-    /**
-     * Checks if a new snapshot has a modified to-one relationship compared to the cached
-     * snapshot.
-     */
-    static boolean isJoinAttributesModified(
-            ObjRelationship relationship,
-            Map newSnapshot,
-            Map storedSnapshot) {
-
-        Iterator it = ((DbRelationship) relationship.getDbRelationships().get(0))
-                .getJoins()
-                .iterator();
-        while (it.hasNext()) {
-            DbJoin join = (DbJoin) it.next();
-            String propertyName = join.getSourceName();
-
-            // for equality to be true, snapshot must contain all matching pk
-            // values
-            if (!Util.nullSafeEquals(newSnapshot.get(propertyName), storedSnapshot
-                    .get(propertyName))) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -276,9 +254,9 @@ class DataRowUtils {
     static boolean isToOneTargetModified(
             ObjRelationship relationship,
             DataObject object,
-            Map storedSnapshot) {
+            ObjectDiff diff) {
 
-        if (object.getPersistenceState() != PersistenceState.MODIFIED) {
+        if (object.getPersistenceState() != PersistenceState.MODIFIED || diff == null) {
             return false;
         }
 
@@ -296,35 +274,12 @@ class DataRowUtils {
             return true;
         }
 
-        // check if ObjectId map is a subset of a stored snapshot;
-        // this is an equality condition
-        Iterator it = ((DbRelationship) relationship.getDbRelationships().get(0))
-                .getJoins()
-                .iterator();
-
-        while (it.hasNext()) {
-            DbJoin join = (DbJoin) it.next();
-            String propertyName = join.getSourceName();
-
-            if (currentId == null) {
-                // for equality to be true, snapshot must contain no pk values
-                if (storedSnapshot.get(propertyName) != null) {
-                    return true;
-                }
-            }
-            else {
-                // for equality to be true, snapshot must contain all matching
-                // pk values
-                // note that we must use target entity names to extract id
-                // values.
-                if (!Util.nullSafeEquals(currentId.getIdSnapshot().get(
-                        join.getTarget().getName()), storedSnapshot.get(propertyName))) {
-                    return true;
-                }
-            }
+        if (!diff.containsArcSnapshot(relationship.getName())) {
+            return false;
         }
 
-        return false;
+        ObjectId targetId = diff.getArcSnapshotValue(relationship.getName());
+        return !Util.nullSafeEquals(currentId, targetId);
     }
 
     // not for instantiation

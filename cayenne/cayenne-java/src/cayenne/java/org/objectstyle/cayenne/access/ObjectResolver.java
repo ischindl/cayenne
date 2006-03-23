@@ -252,11 +252,11 @@ class ObjectResolver {
                 }
             case PersistenceState.HOLLOW:
                 DataRowUtils.mergeObjectWithSnapshot(objectEntity, object, row);
+                object.setSnapshotVersion(row.getVersion());
             default:
                 break;
         }
 
-        object.setSnapshotVersion(row.getVersion());
         object.fetchFinished();
         return object;
     }

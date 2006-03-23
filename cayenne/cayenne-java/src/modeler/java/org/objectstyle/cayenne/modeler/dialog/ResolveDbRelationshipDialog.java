@@ -80,6 +80,7 @@ import org.objectstyle.cayenne.map.DbJoin;
 import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.Entity;
 import org.objectstyle.cayenne.map.Relationship;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.map.event.RelationshipEvent;
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.util.CayenneDialog;
@@ -168,24 +169,25 @@ public class ResolveDbRelationshipDialog extends CayenneDialog {
         }), BorderLayout.SOUTH);
     }
 
-    private void initWithModel(DbRelationship relationship) {
-
+    private void initWithModel(DbRelationship aRelationship) {
         // sanity check
-        if (relationship.getSourceEntity() == null) {
-            throw new CayenneRuntimeException("Null source entity: " + relationship);
+        if (aRelationship.getSourceEntity() == null) {
+            throw new CayenneRuntimeException("Null source entity: " + aRelationship);
         }
 
-        if (relationship.getTargetEntity() == null) {
-            throw new CayenneRuntimeException("Null target entity: " + relationship);
+        if (aRelationship.getTargetEntity() == null) {
+            throw new CayenneRuntimeException("Null target entity: " + aRelationship);
         }
 
-        if (relationship.getSourceEntity().getDataMap() == null) {
+        if (aRelationship.getSourceEntity().getDataMap() == null) {
             throw new CayenneRuntimeException("Null DataMap: "
-                    + relationship.getSourceEntity());
+                    + aRelationship.getSourceEntity());
         }
 
-        this.relationship = relationship;
-        this.reverseRelationship = relationship.getReverseRelationship();
+        // Once assigned, can reference relationship directly.  Would it be
+        // OK to assign relationship at the very top of this method?
+        relationship        = aRelationship;
+        reverseRelationship = relationship.getReverseRelationship();
 
         // init UI components
         setTitle("DbRelationship Info: "
@@ -270,31 +272,31 @@ public class ResolveDbRelationshipDialog extends CayenneDialog {
     }
 
     private void save() {
-
         // extract names...
-        String name = this.name.getText();
-        if (name.length() == 0) {
-            name = null;
+        String sourceEntityName = name.getText();
+        if (sourceEntityName.length() == 0) {
+            sourceEntityName = null;
         }
 
-        if (name == null) {
-            name = NamedObjectFactory.createName(DbRelationship.class, relationship
-                    .getSourceEntity());
+        if (sourceEntityName == null) {
+            sourceEntityName =
+                NamedObjectFactory.createName(DbRelationship.class,
+                                             relationship.getSourceEntity());
         }
 
-        if (!validateName(relationship.getSourceEntity(), relationship, name)) {
+        if (!validateName(relationship.getSourceEntity(), relationship, sourceEntityName)) {
             return;
         }
 
-        String reverseName = this.reverseName.getText().trim();
-        if (reverseName.length() == 0) {
-            reverseName = null;
+        String targetEntityName = reverseName.getText().trim();
+        if (targetEntityName.length() == 0) {
+            targetEntityName = null;
         }
 
-        if (reverseName == null) {
-            reverseName = NamedObjectFactory.createName(
-                    DbRelationship.class,
-                    relationship.getTargetEntity());
+        if (targetEntityName == null) {
+            targetEntityName =
+                NamedObjectFactory.createName(DbRelationship.class,
+                                              relationship.getTargetEntity());
         }
 
         // check if reverse name is valid
@@ -305,17 +307,17 @@ public class ResolveDbRelationshipDialog extends CayenneDialog {
                 && !validateName(
                         relationship.getTargetEntity(),
                         reverseRelationship,
-                        reverseName)) {
+                        targetEntityName)) {
             return;
         }
 
         // handle name update
-        if (!Util.nullSafeEquals(name, relationship.getName())) {
+        if (!Util.nullSafeEquals(sourceEntityName, relationship.getName())) {
             String oldName = relationship.getName();
             ProjectUtil.setRelationshipName(
                     relationship.getSourceEntity(),
                     relationship,
-                    name);
+                    sourceEntityName);
 
             getMediator().fireDbRelationshipEvent(
                     new RelationshipEvent(this, relationship, relationship
@@ -336,7 +338,7 @@ public class ResolveDbRelationshipDialog extends CayenneDialog {
 
             // If didn't find anything, create reverseDbRel
             if (reverseRelationship == null) {
-                reverseRelationship = new DbRelationship(reverseName);
+                reverseRelationship = new DbRelationship(targetEntityName);
                 reverseRelationship.setSourceEntity(relationship.getTargetEntity());
                 reverseRelationship.setTargetEntity(relationship.getSourceEntity());
                 reverseRelationship.setToMany(!relationship.isToMany());
@@ -350,15 +352,15 @@ public class ResolveDbRelationshipDialog extends CayenneDialog {
                                     this,
                                     reverseRelationship,
                                     reverseRelationship.getSourceEntity(),
-                                    RelationshipEvent.ADD));
+                                    MapEvent.ADD));
                 }
             }
-            else if (!Util.nullSafeEquals(reverseName, reverseRelationship.getName())) {
+            else if (!Util.nullSafeEquals(targetEntityName, reverseRelationship.getName())) {
                 String oldName = reverseRelationship.getName();
                 ProjectUtil.setRelationshipName(
                         reverseRelationship.getSourceEntity(),
                         reverseRelationship,
-                        reverseName);
+                        targetEntityName);
 
                 getMediator().fireDbRelationshipEvent(
                         new RelationshipEvent(
@@ -397,10 +399,9 @@ public class ResolveDbRelationshipDialog extends CayenneDialog {
         dispose();
     }
 
-    private boolean validateName(Entity entity, Relationship relationship, String newName) {
-
+    private boolean validateName(Entity entity, Relationship aRelationship, String newName) {
         Relationship existing = entity.getRelationship(newName);
-        if (existing != null && (relationship == null || relationship != existing)) {
+        if (existing != null && (aRelationship == null || aRelationship != existing)) {
             JOptionPane.showMessageDialog(
                     this,
                     "There is an existing relationship named \""

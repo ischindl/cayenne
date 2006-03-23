@@ -63,6 +63,10 @@ public class MockClassDescriptor implements ClassDescriptor {
         return null;
     }
 
+    public boolean isFault(Object object) {
+        return false;
+    }
+
     public Iterator getProperties() {
         return null;
     }

@@ -62,7 +62,6 @@ import java.util.List;
 
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataObject;
-import org.objectstyle.cayenne.DataRow;
 import org.objectstyle.cayenne.PersistenceState;
 import org.objectstyle.cayenne.Persistent;
 import org.objectstyle.cayenne.map.DeleteRule;
@@ -139,25 +138,9 @@ class DataContextDeleteAction {
 
     private void deletePersistent(DataObject object, int oldState)
             throws DeleteDenyException {
-
-        // duplicating some code from ObjectStore.retainSnapshot, as we have to do it
-        // in two phases, extracting snapshot here, but retaining it after the
-        // successful deletion only...
-        DataRow snapshot = dataContext.getObjectStore().getCachedSnapshot(
-                object.getObjectId());
-        if (snapshot == null) {
-            snapshot = dataContext.currentSnapshot(object);
-        }
-
-        // We cannot delay setting state to deleted, as Cascade deletes might cause
-        // recursion, and the "deleted" state is the best way we have of noticing that and
-        // bailing out (see above)
-
-        object.setPersistenceState(PersistenceState.DELETED);
+        
+        dataContext.getObjectStore().recordObjectDeleted(object);
         processDeleteRules(object, oldState);
-
-        // must retain snapshot for optimistic locking to work ...
-        dataContext.getObjectStore().retainSnapshot(object, snapshot);
     }
 
     private void deleteNew(DataObject object, int oldState) throws DeleteDenyException {
@@ -228,10 +211,10 @@ class DataContextDeleteAction {
                 Iterator iterator = relatedObjects.iterator();
                 while (iterator.hasNext()) {
                     DataObject relatedObject = (DataObject) iterator.next();
-                    objectStore.flattenedRelationshipUnset(
+                    objectStore.recordArcDeleted(
                             object,
-                            relationship,
-                            relatedObject);
+                            relatedObject.getObjectId(),
+                            relationship.getName());
                 }
             }
 

@@ -81,9 +81,9 @@ public class SyncMessage implements OPPMessage {
 
     public SyncMessage(ObjectContext source, int syncType, GraphDiff senderChanges) {
         // validate type
-        if (syncType != DataChannel.FLUSH_SYNC_TYPE
-                && syncType != DataChannel.COMMIT_SYNC_TYPE
-                && syncType != DataChannel.ROLLBACK_SYNC_TYPE) {
+        if (syncType != DataChannel.FLUSH_NOCASCADE_SYNC
+                && syncType != DataChannel.FLUSH_CASCADE_SYNC
+                && syncType != DataChannel.ROLLBACK_CASCADE_SYNC) {
             throw new IllegalArgumentException("'type' is invalid: " + syncType);
         }
 
@@ -109,14 +109,14 @@ public class SyncMessage implements OPPMessage {
 
     public String toString() {
         switch (type) {
-            case DataChannel.FLUSH_SYNC_TYPE:
-                return "Sync-flush";
-            case DataChannel.COMMIT_SYNC_TYPE:
-                return "Sync-commit";
-            case DataChannel.ROLLBACK_SYNC_TYPE:
-                return "Sync-rollback";
+            case DataChannel.FLUSH_NOCASCADE_SYNC:
+                return "flush-sync";
+            case DataChannel.FLUSH_CASCADE_SYNC:
+                return "flush-cascade-sync";
+            case DataChannel.ROLLBACK_CASCADE_SYNC:
+                return "rollback-cascade-sync";
             default:
-                return "Sync-unknown";
+                return "unknown-sync";
         }
     }
 }

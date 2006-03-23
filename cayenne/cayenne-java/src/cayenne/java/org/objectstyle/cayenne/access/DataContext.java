@@ -99,11 +99,11 @@ import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
 import org.objectstyle.cayenne.property.ClassDescriptor;
 import org.objectstyle.cayenne.query.NamedQuery;
+import org.objectstyle.cayenne.query.ObjectIdQuery;
 import org.objectstyle.cayenne.query.PrefetchTreeNode;
 import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.query.QueryMetadata;
 import org.objectstyle.cayenne.query.SelectQuery;
-import org.objectstyle.cayenne.query.ObjectIdQuery;
 import org.objectstyle.cayenne.util.GenericResponse;
 import org.objectstyle.cayenne.util.Util;
 
@@ -900,7 +900,7 @@ public class DataContext implements ObjectContext, DataChannel, QueryEngine, Ser
             }
         }
 
-        getObjectStore().addObject(dataObject);
+        getObjectStore().recordObjectCreated(dataObject);
         dataObject.setDataContext(this);
         dataObject.setPersistenceState(PersistenceState.NEW);
     }
@@ -1034,7 +1034,7 @@ public class DataContext implements ObjectContext, DataChannel, QueryEngine, Ser
      * @since 1.2
      */
     // TODO: Andrus, 1/19/2006: implement for nested DataContexts
-    public void revertChanges() {
+    public void rollbackChangesLocally() {
         if (getChannel() instanceof DataDomain) {
             rollbackChanges();
         }
@@ -1051,7 +1051,7 @@ public class DataContext implements ObjectContext, DataChannel, QueryEngine, Ser
         getObjectStore().objectsRolledBack();
 
         if (channel != null) {
-            channel.onSync(this, DataChannel.ROLLBACK_SYNC_TYPE, null);
+            channel.onSync(this, null, DataChannel.ROLLBACK_CASCADE_SYNC);
         }
     }
 
@@ -1065,7 +1065,7 @@ public class DataContext implements ObjectContext, DataChannel, QueryEngine, Ser
      * @since 1.2
      * @see #commitChanges()
      */
-    public void flushChanges() {
+    public void commitChangesToParent() {
         flushToParent(false);
     }
 
@@ -1099,18 +1099,18 @@ public class DataContext implements ObjectContext, DataChannel, QueryEngine, Ser
      * 
      * @since 1.2
      */
-    public GraphDiff onSync(ObjectContext context, int syncType, GraphDiff contextChanges) {
+    public GraphDiff onSync(
+            ObjectContext originatingContext,
+            GraphDiff changes,
+            int syncType) {
         // sync client changes
         switch (syncType) {
-            // apply the changes locally; send down to the channel
-            case DataChannel.ROLLBACK_SYNC_TYPE:
-                return onContextRollback(context, contextChanges);
-            // apply the changes locally only
-            case DataChannel.FLUSH_SYNC_TYPE:
-                return onContextFlush(context, contextChanges);
-            // apply the changes locally; commit self to the channel
-            case DataChannel.COMMIT_SYNC_TYPE:
-                return onContextCommit(context, contextChanges);
+            case DataChannel.ROLLBACK_CASCADE_SYNC:
+                return onContextRollback(originatingContext, changes);
+            case DataChannel.FLUSH_NOCASCADE_SYNC:
+                return onContextFlush(originatingContext, changes, false);
+            case DataChannel.FLUSH_CASCADE_SYNC:
+                return onContextFlush(originatingContext, changes, true);
             default:
                 throw new CayenneRuntimeException("Unrecognized SyncMessage type: "
                         + syncType);
@@ -1121,87 +1121,24 @@ public class DataContext implements ObjectContext, DataChannel, QueryEngine, Ser
         rollbackChanges();
         return (channel != null) ? channel.onSync(
                 this,
-                DataChannel.ROLLBACK_SYNC_TYPE,
-                null) : new CompoundDiff();
+                null,
+                DataChannel.ROLLBACK_CASCADE_SYNC) : new CompoundDiff();
     }
 
-    GraphDiff onContextFlush(ObjectContext originatingContext, GraphDiff diff) {
-        syncChildChanges(originatingContext, diff);
+    GraphDiff onContextFlush(
+            ObjectContext originatingContext,
+            GraphDiff changes,
+            boolean cascade) {
 
-        return new CompoundDiff();
-    }
-
-    GraphDiff onContextCommit(ObjectContext originatingContext, GraphDiff diff) {
-        syncChildChanges(originatingContext, diff);
-        return flushToParent(true);
-    }
-
-    /**
-     * Loads changes from another context.
-     */
-    void syncChildChanges(ObjectContext originatingContext, GraphDiff diff) {
-        if (this != originatingContext) {
-            if (diff != null) {
-                diff.apply(new ChildDiffLoader(this));
-            }
-            // (andrus) if a child is a DataContext, we need to pull the changes from it,
-            // as it can't push them; maybe there are better ways to do that, but they are
-            // not obvious to me at this point.
-            else if (originatingContext instanceof DataContext) {
-                DataContext context = (DataContext) originatingContext;
-
-                synchronized (getObjectStore()) {
-
-                    Iterator it = context.getObjectStore().getObjectIterator();
-                    while (it.hasNext()) {
-                        Persistent source = (Persistent) it.next();
-
-                        // TODO, andrus, 2/17/2006 - 'localObject' doesn't do
-                        // merge if the underlying object is modified...
-
-                        switch (source.getPersistenceState()) {
-                            case PersistenceState.DELETED:
-                                deleteObject(localObject(source.getObjectId(), source));
-                                break;
-
-                            case PersistenceState.NEW:
-                                Persistent localNew = localObject(
-                                        source.getObjectId(),
-                                        source);
-                                localNew.setPersistenceState(PersistenceState.NEW);
-                                break;
-
-                            case PersistenceState.MODIFIED:
-
-                                // retain snapshot before merge
-                                DataObject localModified = getObjectStore().getObject(
-                                        source.getObjectId());
-                                if (localModified != null
-                                        && (localModified.getPersistenceState() == PersistenceState.COMMITTED || localModified
-                                                .getPersistenceState() == PersistenceState.HOLLOW)) {
-
-                                    getObjectStore().retainSnapshot(localModified);
-                                }
-
-                                localModified = (DataObject) localObject(source
-                                        .getObjectId(), source);
-
-                                if (localModified.getPersistenceState() == PersistenceState.COMMITTED
-                                        || localModified.getPersistenceState() == PersistenceState.HOLLOW) {
-                                    localModified
-                                            .setPersistenceState(PersistenceState.MODIFIED);
-                                }
-
-                                break;
-                        }
-                    }
-                }
-            }
+        if (this != originatingContext && changes != null) {
+            changes.apply(new ChildDiffLoader(this));
         }
+
+        return (cascade) ? flushToParent(true) : new CompoundDiff();
     }
 
     /**
-     * Synchronizes with the parent channel, performing a flus or a commit.
+     * Synchronizes with the parent channel, performing a flush or a commit.
      * 
      * @since 1.2
      */
@@ -1213,22 +1150,42 @@ public class DataContext implements ObjectContext, DataChannel, QueryEngine, Ser
         }
 
         int syncType = cascade
-                ? DataChannel.COMMIT_SYNC_TYPE
-                : DataChannel.FLUSH_SYNC_TYPE;
+                ? DataChannel.FLUSH_CASCADE_SYNC
+                : DataChannel.FLUSH_NOCASCADE_SYNC;
 
         // prevent multiple commits occuring simulteneously
         synchronized (getObjectStore()) {
 
-            try {
-                // TODO: Andrus, 12/06/2005 - this is a violation of OPP rules, as we
-                // do not pass changes down the stack. Instead this code assumes that
-                // a channel will get them directly from the context.
-                GraphDiff parentChanges = getChannel().onSync(this, syncType, null);
+            DataContextFlushEventHandler eventHandler = null;
 
-                return getObjectStore().postprocessAfterCommit(parentChanges);
+            ObjectStoreGraphDiff changes = getObjectStore().getChanges();
+            boolean noop = isValidatingObjectsOnCommit()
+                    ? changes.validateAndCheckNoop()
+                    : changes.isNoop();
+
+            if (noop) {
+                // need to clear phantom changes
+                getObjectStore().postprocessAfterPhantomCommit();
+                return new CompoundDiff();
+            }
+
+            if (isTransactionEventsEnabled()) {
+                eventHandler = new DataContextFlushEventHandler(this);
+                eventHandler.registerForDataContextEvents();
+                fireWillCommit();
+            }
+
+            try {
+                GraphDiff returnChanges = getChannel().onSync(this, changes, syncType);
+                getObjectStore().postprocessAfterCommit(returnChanges);
+
+                fireTransactionCommitted();
+                return returnChanges;
             }
             // "catch" is needed to unwrap OptimisticLockExceptions
             catch (CayenneRuntimeException ex) {
+                fireTransactionRolledback();
+
                 Throwable unwound = Util.unwindException(ex);
 
                 if (unwound instanceof CayenneRuntimeException) {
@@ -1236,6 +1193,12 @@ public class DataContext implements ObjectContext, DataChannel, QueryEngine, Ser
                 }
                 else {
                     throw new CayenneRuntimeException("Commit Exception", unwound);
+                }
+            }
+            finally {
+
+                if (isTransactionEventsEnabled()) {
+                    eventHandler.unregisterFromDataContextEvents();
                 }
             }
         }
@@ -1725,14 +1688,7 @@ public class DataContext implements ObjectContext, DataChannel, QueryEngine, Ser
             Object newValue) {
 
         if (object.getPersistenceState() == PersistenceState.COMMITTED) {
-
-            if (!(object instanceof DataObject)) {
-                throw new CayenneRuntimeException("Can only handle DataObjects. Got: "
-                        + object);
-            }
-
-            object.setPersistenceState(PersistenceState.MODIFIED);
-            getObjectStore().retainSnapshot((DataObject) object);
+            getObjectStore().registerDiff(object, null);
         }
     }
 
@@ -1785,9 +1741,16 @@ public class DataContext implements ObjectContext, DataChannel, QueryEngine, Ser
                     && cachedObject.getPersistenceState() != PersistenceState.MODIFIED
                     && cachedObject.getPersistenceState() != PersistenceState.DELETED) {
 
-                if (prototype != null) {
-                    descriptor.injectValueHolders(cachedObject);
+                descriptor.injectValueHolders(cachedObject);
+                
+                if (prototype != null
+                        && prototype.getPersistenceState() != PersistenceState.HOLLOW) {
+                    
                     descriptor.shallowMerge(prototype, cachedObject);
+
+                    if (cachedObject.getPersistenceState() == PersistenceState.HOLLOW) {
+                        cachedObject.setPersistenceState(PersistenceState.COMMITTED);
+                    }
                 }
             }
 

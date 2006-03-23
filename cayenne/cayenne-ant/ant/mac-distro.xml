@@ -3,7 +3,7 @@
 <!-- ========================================== -->
 <!-- Creates Mac OS X-friendly distribution.    -->
 <!-- ========================================== -->
-<project name="MacDistro" default="...">
+<project name="MacDistro">
 	
 	<property name="dist.mac" value="${dist.base}/macosx"/>
 	<property name="build.mac" value="${build}/macosx"/>

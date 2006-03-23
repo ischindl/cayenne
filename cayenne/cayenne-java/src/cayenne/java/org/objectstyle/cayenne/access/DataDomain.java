@@ -121,7 +121,6 @@ public class DataDomain implements QueryEngine, DataChannel {
     protected Map properties = Collections.synchronizedMap(new TreeMap());
 
     protected EntityResolver entityResolver;
-    PrimaryKeyHelper primaryKeyHelper;
     protected DataRowStore sharedSnapshotCache;
     protected TransactionDelegate transactionDelegate;
     protected DataContextFactory dataContextFactory;
@@ -484,8 +483,6 @@ public class DataDomain implements QueryEngine, DataChannel {
             nodes.clear();
             nodesByDataMapName.clear();
 
-            primaryKeyHelper = null;
-
             if (entityResolver != null) {
                 entityResolver.clearCache();
                 entityResolver = null;
@@ -668,21 +665,6 @@ public class DataDomain implements QueryEngine, DataChannel {
     }
 
     /**
-     * @since 1.2
-     */
-    PrimaryKeyHelper primaryKeyHelper() {
-        if (this.primaryKeyHelper == null) {
-            synchronized (this) {
-                if (this.primaryKeyHelper == null) {
-                    this.primaryKeyHelper = new PrimaryKeyHelper(this);
-                }
-            }
-        }
-
-        return primaryKeyHelper;
-    }
-
-    /**
      * Shutdowns all owned data nodes. Invokes DataNode.shutdown().
      */
     public void shutdown() {
@@ -750,21 +732,21 @@ public class DataDomain implements QueryEngine, DataChannel {
      * @since 1.2
      */
     public GraphDiff onSync(
-            final ObjectContext context,
-            int syncType,
-            final GraphDiff contextChanges) {
+            final ObjectContext originatingContext,
+            final GraphDiff changes,
+            int syncType) {
 
         switch (syncType) {
-            case DataChannel.ROLLBACK_SYNC_TYPE:
-                return onSyncRollbackInternal(context);
-            // "commit" and "flush" are the same from the DataDomain perspective,
+            case DataChannel.ROLLBACK_CASCADE_SYNC:
+                return onSyncRollback(originatingContext);
+            // "cascade" and "no_cascade" are the same from the DataDomain perspective,
             // including transaction handling logic
-            case DataChannel.FLUSH_SYNC_TYPE:
-            case DataChannel.COMMIT_SYNC_TYPE:
+            case DataChannel.FLUSH_NOCASCADE_SYNC:
+            case DataChannel.FLUSH_CASCADE_SYNC:
                 return (GraphDiff) runInTransaction(new Transformer() {
 
                     public Object transform(Object input) {
-                        return onSyncFlushInternal(context, contextChanges);
+                        return onSyncFlush(originatingContext, changes);
                     }
                 });
             default:
@@ -773,7 +755,7 @@ public class DataDomain implements QueryEngine, DataChannel {
         }
     }
 
-    GraphDiff onSyncRollbackInternal(ObjectContext originatingContext) {
+    GraphDiff onSyncRollback(ObjectContext originatingContext) {
         // if there is a transaction in progress, roll it back
 
         Transaction transaction = Transaction.getThreadTransaction();
@@ -784,7 +766,7 @@ public class DataDomain implements QueryEngine, DataChannel {
         return new CompoundDiff();
     }
 
-    GraphDiff onSyncFlushInternal(ObjectContext originatingContext, GraphDiff childChanges) {
+    GraphDiff onSyncFlush(ObjectContext originatingContext, GraphDiff childChanges) {
 
         if (!(originatingContext instanceof DataContext)) {
             throw new CayenneRuntimeException(
@@ -793,14 +775,9 @@ public class DataDomain implements QueryEngine, DataChannel {
                             + originatingContext);
         }
 
-        DataContext dataContext = (DataContext) originatingContext;
-
-        DataDomainPrecommitAction precommit = new DataDomainPrecommitAction();
-        if (!precommit.precommit(this, dataContext)) {
-            return new CompoundDiff();
-        }
-
-        return new DataDomainFlushAction(this).flush(dataContext, childChanges);
+        return new DataDomainFlushAction(this).flush(
+                (DataContext) originatingContext,
+                childChanges);
     }
 
     /**

@@ -73,17 +73,18 @@ import org.objectstyle.cayenne.query.DeleteBatchQuery;
  */
 
 public class DeleteBatchQueryBuilder extends BatchQueryBuilder {
-	public DeleteBatchQueryBuilder(DbAdapter adapter) {
-		super(adapter);
-	}
-	
-	public String createSqlString(BatchQuery batch) {
+
+    public DeleteBatchQueryBuilder(DbAdapter adapter) {
+        super(adapter);
+    }
+
+    public String createSqlString(BatchQuery batch) {
         DeleteBatchQuery deleteBatch = (DeleteBatchQuery) batch;
-		String table = batch.getDbEntity().getFullyQualifiedName();
+        String table = batch.getDbEntity().getFullyQualifiedName();
         List qualifierAttributes = deleteBatch.getQualifierAttributes();
-        
-		StringBuffer query = new StringBuffer("DELETE FROM ");
-		query.append(table).append(" WHERE ");
+
+        StringBuffer query = new StringBuffer("DELETE FROM ");
+        query.append(table).append(" WHERE ");
 
         Iterator i = qualifierAttributes.iterator();
         while (i.hasNext()) {
@@ -96,8 +97,8 @@ public class DeleteBatchQueryBuilder extends BatchQueryBuilder {
             }
         }
 
-		return query.toString();
-	}
+        return query.toString();
+    }
 
     /**
      * Binds BatchQuery parameters to the PreparedStatement.
@@ -125,4 +126,5 @@ public class DeleteBatchQueryBuilder extends BatchQueryBuilder {
                     attribute.getType(),
                     attribute.getPrecision());
         }
-    }}
+    }
+}

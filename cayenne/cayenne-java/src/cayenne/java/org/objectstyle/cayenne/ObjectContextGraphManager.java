@@ -287,7 +287,7 @@ final class ObjectContextGraphManager extends GraphMap {
     }
 
     class NullChangeHandler implements GraphChangeHandler {
-
+        
         public void arcCreated(Object nodeId, Object targetNodeId, Object arcId) {
         }
 

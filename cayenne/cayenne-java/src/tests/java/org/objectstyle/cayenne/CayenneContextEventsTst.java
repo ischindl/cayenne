@@ -75,9 +75,9 @@ public class CayenneContextEventsTst extends TestCase {
             }
 
             public GraphDiff onSync(
-                    ObjectContext context,
-                    int syncType,
-                    GraphDiff contextChanges) {
+                    ObjectContext originatingContext,
+                    GraphDiff changes,
+                    int syncType) {
 
                 return new CompoundDiff();
             }
@@ -116,9 +116,9 @@ public class CayenneContextEventsTst extends TestCase {
             }
 
             public GraphDiff onSync(
-                    ObjectContext context,
-                    int syncType,
-                    GraphDiff contextChanges) {
+                    ObjectContext originatingContext,
+                    GraphDiff changes,
+                    int syncType) {
 
                 return new CompoundDiff();
             }

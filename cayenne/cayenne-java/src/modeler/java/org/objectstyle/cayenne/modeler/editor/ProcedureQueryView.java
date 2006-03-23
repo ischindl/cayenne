@@ -61,7 +61,6 @@ import java.awt.event.ActionListener;
 import java.util.Arrays;
 
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -95,7 +94,6 @@ public class ProcedureQueryView extends JPanel {
     protected ProjectController mediator;
     protected TextAdapter name;
     protected JComboBox queryRoot;
-    protected JCheckBox selecting;
     protected SelectPropertiesPanel properties;
 
     public ProcedureQueryView(ProjectController mediator) {
@@ -113,7 +111,7 @@ public class ProcedureQueryView extends JPanel {
                 setQueryName(text);
             }
         };
-        selecting = new JCheckBox();
+
         queryRoot = CayenneWidgetFactory.createComboBox();
         queryRoot.setRenderer(CellRenderers.listRendererWithIcons());
         properties = new RawQueryPropertiesPanel(mediator) {
@@ -135,7 +133,7 @@ public class ProcedureQueryView extends JPanel {
         CellConstraints cc = new CellConstraints();
         FormLayout layout = new FormLayout(
                 "right:max(80dlu;pref), 3dlu, fill:max(200dlu;pref)",
-                "p, 3dlu, p, 3dlu, p, 3dlu, p");
+                "p, 3dlu, p, 3dlu, p");
         PanelBuilder builder = new PanelBuilder(layout);
         builder.setDefaultDialogBorder();
 
@@ -144,8 +142,6 @@ public class ProcedureQueryView extends JPanel {
         builder.add(name.getComponent(), cc.xy(3, 3));
         builder.addLabel("Procedure:", cc.xy(1, 5));
         builder.add(queryRoot, cc.xy(3, 5));
-        builder.addLabel("Is Selecting:", cc.xy(1, 7));
-        builder.add(selecting, cc.xy(3, 7));
 
         this.setLayout(new BorderLayout());
         this.add(builder.getPanel(), BorderLayout.NORTH);
@@ -171,19 +167,6 @@ public class ProcedureQueryView extends JPanel {
                 initFromModel();
             }
         });
-
-        selecting.addActionListener(new ActionListener() {
-
-            public void actionPerformed(ActionEvent event) {
-                properties.setEnabled(selecting.isSelected());
-
-                Query query = mediator.getCurrentQuery();
-                if (query instanceof ProcedureQuery) {
-                    ((ProcedureQuery) query).setSelecting(selecting.isSelected());
-                    mediator.fireQueryEvent(new QueryEvent(this, query));
-                }
-            }
-        });
     }
 
     /**
@@ -200,8 +183,8 @@ public class ProcedureQueryView extends JPanel {
 
         ProcedureQuery procedureQuery = (ProcedureQuery) query;
 
-        selecting.setSelected(procedureQuery.isSelecting());
-        properties.setEnabled(procedureQuery.isSelecting());
+     
+        properties.setEnabled(true);
         name.setText(procedureQuery.getName());
 
         // init root choices and title label..

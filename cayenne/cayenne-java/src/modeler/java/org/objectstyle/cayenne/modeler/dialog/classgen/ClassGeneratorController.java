@@ -219,8 +219,8 @@ public class ClassGeneratorController extends BasicController {
         generator.setDestDir(outputDir);
         generator.setMakePairs(model.isPairs());
         generator.setSuperPkg(model.getSuperClassPackage());
-        generator.setSuperTemplate(superClassTemplate);
-        generator.setTemplate(classTemplate);
+        generator.setSuperTemplate(superClassTemplate.getPath());
+        generator.setTemplate(classTemplate.getPath());
 
         try {
             generator.execute();

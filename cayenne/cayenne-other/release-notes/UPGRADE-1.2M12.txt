@@ -4,12 +4,13 @@ Date:
 
 UPGRADE FROM M11:
 
-* SingleObjectQuery is renamed to ObjectIdQuery to reflect the fact that it supports data rows as well.
+* SingleObjectQuery is renamed to ObjectIdQuery to reflect the fact that it supports data rows as well. 
+  For documentation see http://objectstyle.org/confluence/display/CAY/ObjectIdQuery
 
 
 GENERAL UPGRADE NOTES:
 
-*  WARNING: Most API deprecated in 1.1 is removed from 1.2.
+*  WARNING: API deprecated in 1.1 is removed from 1.2.
 
 *  For the complete list of new features since the last stable release see 
     User Guide page at  [cayenne_install_dir]/doc/userguide/introduction/whats-new.html
@@ -82,3 +83,6 @@ UPGRADE FROM 1.1:
   original purpose - refreshing individual objects, not list contents). 
   
   http://objectstyle.org/confluence/display/CAYDOC/Caching+Query+Results
+  
+* ObjectStore no longer stores database snapshots of object. As a result a method "retainSnapshot(DataObject object)" 
+  is removed, as its meaningful deprecation is not possible.

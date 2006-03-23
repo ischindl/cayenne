@@ -164,9 +164,7 @@ public static void main(String args[]) {
       keyValuePair(h);
       label_1:
       while (true) {
-        if (jj_2_1(2)) {
-          ;
-        } else {
+        if (!jj_2_1(2)) {
           break label_1;
         }
         jj_consume_token(13);
@@ -178,12 +176,10 @@ public static void main(String args[]) {
         break;
       default:
         jj_la1[2] = jj_gen;
-        ;
       }
       break;
     default:
       jj_la1[3] = jj_gen;
-      ;
     }
     jj_consume_token(11);
               {if (true) return h;}
@@ -216,7 +212,6 @@ public static void main(String args[]) {
       while (true) {
         switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
         case 12:
-          ;
           break;
         default:
           jj_la1[4] = jj_gen;
@@ -229,7 +224,6 @@ public static void main(String args[]) {
       break;
     default:
       jj_la1[5] = jj_gen;
-      ;
     }
     jj_consume_token(9);
         {if (true) return v;}
@@ -335,7 +329,6 @@ public static void main(String args[]) {
   private Token jj_scanpos, jj_lastpos;
   private int jj_la;
   public boolean lookingAhead = false;
-  private boolean jj_semLA;
   private int jj_gen;
   final private int[] jj_la1 = new int[6];
   static private int[] jj_la1_0;

@@ -78,4 +78,17 @@ public class NodeDiffTst extends TestCase {
         assertNotNull(((NodeDiff) d).getNodeId());
         assertEquals(id, ((NodeDiff) d).getNodeId());
     }
+
+    public void testCompareTo() {
+        NodeDiff d1 = new MockNodeDiff("x", 1);
+        NodeDiff d2 = new MockNodeDiff("y", 2);
+        NodeDiff d3 = new MockNodeDiff("z", 3);
+        NodeDiff d4 = new MockNodeDiff("a", 2);
+
+        assertTrue(d1.compareTo(d2) < 0);
+        assertTrue(d2.compareTo(d1) > 0);
+        assertTrue(d1.compareTo(d3) < 0);
+        assertTrue(d2.compareTo(d4) == 0);
+        assertTrue(d2.compareTo(d3) < 0);
+    }
 }

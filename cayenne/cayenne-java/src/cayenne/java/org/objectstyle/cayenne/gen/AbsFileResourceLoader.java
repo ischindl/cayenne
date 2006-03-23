@@ -69,7 +69,10 @@ import org.apache.velocity.runtime.resource.loader.FileResourceLoader;
  * Special Velocity resource loader that allows loading files using absolute path and
  * current directory.
  * 
- * @author Andrei Adamchik
+ * @author Andrus Adamchik
+ * @deprecated since 1.2 as
+ *             {@link org.objectstyle.cayenne.gen.ClassGeneratorResourceLoader} superceeds
+ *             this class.
  */
 public class AbsFileResourceLoader extends FileResourceLoader {
 

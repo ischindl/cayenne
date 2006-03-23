@@ -64,7 +64,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.objectstyle.cayenne.CayenneException;
 import org.objectstyle.cayenne.access.OperationObserver;
 import org.objectstyle.cayenne.access.ResultIterator;
@@ -84,7 +83,6 @@ import org.objectstyle.cayenne.util.Util;
  */
 public class DefaultOperationObserver implements OperationObserver {
 
-    private static Logger logObj = Logger.getLogger(DefaultOperationObserver.class);
 
     /**
      * @deprecated Unused since 1.2
@@ -171,11 +169,7 @@ public class DefaultOperationObserver implements OperationObserver {
     }
 
     public void nextBatchCount(Query query, int[] resultCount) {
-        if (logObj.isDebugEnabled()) {
-            for (int i = 0; i < resultCount.length; i++) {
-                logObj.debug("batch count: " + resultCount[i]);
-            }
-        }
+        
     }
 
     public void nextDataRows(Query query, List dataRows) {

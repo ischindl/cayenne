@@ -230,10 +230,8 @@ public class CayenneContext implements ObjectContext {
                 graphManager.graphCommitStarted();
 
                 try {
-                    commitDiff = channel.onSync(
-                            this,
-                            DataChannel.COMMIT_SYNC_TYPE,
-                            graphManager.getDiffsSinceLastFlush());
+                    commitDiff = channel.onSync(this, graphManager
+                            .getDiffsSinceLastFlush(), DataChannel.FLUSH_CASCADE_SYNC);
                 }
                 catch (Throwable th) {
                     graphManager.graphCommitAborted();
@@ -260,22 +258,22 @@ public class CayenneContext implements ObjectContext {
                 GraphDiff diff = graphManager.getDiffs();
                 graphManager.graphReverted();
 
-                channel.onSync(this, DataChannel.ROLLBACK_SYNC_TYPE, diff);
+                channel.onSync(this, diff, DataChannel.ROLLBACK_CASCADE_SYNC);
             }
         }
     }
 
-    public void flushChanges() {
+    public void commitChangesToParent() {
         synchronized (graphManager) {
             if (graphManager.hasChangesSinceLastFlush()) {
                 GraphDiff diff = graphManager.getDiffsSinceLastFlush();
                 graphManager.graphFlushed();
-                channel.onSync(this, DataChannel.FLUSH_SYNC_TYPE, diff);
+                channel.onSync(this, diff, DataChannel.FLUSH_NOCASCADE_SYNC);
             }
         }
     }
 
-    public void revertChanges() {
+    public void rollbackChangesLocally() {
         synchronized (graphManager) {
             if (graphManager.hasChanges()) {
                 graphManager.graphReverted();
@@ -378,10 +376,15 @@ public class CayenneContext implements ObjectContext {
                     && cachedObject.getPersistenceState() != PersistenceState.MODIFIED
                     && cachedObject.getPersistenceState() != PersistenceState.DELETED) {
 
-                if (prototype != null) {
-                    descriptor.injectValueHolders(cachedObject);
+                descriptor.injectValueHolders(cachedObject);
+                if (prototype != null
+                        && prototype.getPersistenceState() != PersistenceState.HOLLOW) {
+
                     descriptor.shallowMerge(prototype, cachedObject);
-                    cachedObject.setPersistenceState(PersistenceState.COMMITTED);
+
+                    if (cachedObject.getPersistenceState() == PersistenceState.HOLLOW) {
+                        cachedObject.setPersistenceState(PersistenceState.COMMITTED);
+                    }
                 }
             }
 

@@ -59,12 +59,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.objectstyle.cayenne.access.DataContext;
-import org.objectstyle.cayenne.access.MockupDataRowUtils;
-import org.objectstyle.cayenne.access.ToManyList;
 import org.objectstyle.cayenne.exp.Expression;
 import org.objectstyle.cayenne.exp.ExpressionFactory;
-import org.objectstyle.cayenne.map.ObjEntity;
-import org.objectstyle.cayenne.map.ObjRelationship;
 import org.objectstyle.cayenne.query.SQLTemplate;
 import org.objectstyle.cayenne.query.SelectQuery;
 import org.objectstyle.cayenne.testdo.relationship.FlattenedTest1;
@@ -112,10 +108,10 @@ public class FlattenedRelationshipsTst extends RelationshipTestCase {
                 pk);
 
         assertEquals("t01", fresh01.getName());
-        ToManyList related = (ToManyList) fresh01.getFt3OverComplex();
+        ValueHolder related = (ValueHolder) fresh01.getFt3OverComplex();
         assertTrue(related.isFault());
 
-        assertEquals(2, related.size());
+        assertEquals(2, ((List) related).size());
     }
 
     public void testUnsetJoinWithPK() throws Exception {
@@ -133,8 +129,8 @@ public class FlattenedRelationshipsTst extends RelationshipTestCase {
                 2);
 
         assertEquals("ft12", ft1.getName());
-        ToManyList related = (ToManyList) ft1.getFt3OverComplex();
-        assertTrue(related.isFault());
+        List related = (List) ft1.getFt3OverComplex();
+        assertTrue(((ValueHolder) related).isFault());
 
         assertEquals(2, related.size());
 
@@ -247,30 +243,6 @@ public class FlattenedRelationshipsTst extends RelationshipTestCase {
         assertEquals("ft3", snapshot.get("NAME"));
         assertTrue(ft3.readPropertyDirectly("toFT1") instanceof Fault);
 
-    }
-
-    public void testIsToOneTargetModifiedFlattenedFault1() throws Exception {
-        createTestData("test");
-
-        // fetch
-        List ft3s = context.performQuery(new SelectQuery(FlattenedTest3.class));
-        assertEquals(1, ft3s.size());
-        FlattenedTest3 ft3 = (FlattenedTest3) ft3s.get(0);
-
-        // mark as dirty for the purpose of the test...
-        ft3.setPersistenceState(PersistenceState.MODIFIED);
-
-        assertTrue(ft3.readPropertyDirectly("toFT1") instanceof Fault);
-
-        // test that checking for modifications does not trigger a fault, and generally
-        // works well
-        ObjEntity entity = context.getEntityResolver().lookupObjEntity(
-                FlattenedTest3.class);
-        ObjRelationship flattenedRel = (ObjRelationship) entity.getRelationship("toFT1");
-        assertFalse(MockupDataRowUtils.isToOneTargetModified(flattenedRel, ft3, context
-                .getObjectStore()
-                .getCachedSnapshot(ft3.getObjectId())));
-        assertTrue(ft3.readPropertyDirectly("toFT1") instanceof Fault);
     }
 
     public void testRefetchWithFlattenedFaultToOneTarget1() throws Exception {

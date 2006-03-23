@@ -198,9 +198,9 @@ public class CayenneContextTst extends CayenneTestCase {
         MockDataChannel channel = new MockDataChannel() {
 
             public GraphDiff onSync(
-                    ObjectContext context,
-                    int syncType,
-                    GraphDiff contextChanges) {
+                    ObjectContext originatingContext,
+                    GraphDiff changes,
+                    int syncType) {
 
                 return diff;
             }

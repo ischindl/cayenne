@@ -56,9 +56,10 @@
 
 package org.objectstyle.cayenne;
 
+import java.util.List;
+
 import org.objectstyle.art.Artist;
 import org.objectstyle.cayenne.access.DataContext;
-import org.objectstyle.cayenne.access.ToManyList;
 import org.objectstyle.cayenne.unit.CayenneTestCase;
 import org.objectstyle.cayenne.util.Util;
 
@@ -99,10 +100,8 @@ public class DataObjectSerializationTst extends CayenneTestCase {
             deserialized.getDataContext());
 
         // test that to-many relationships are initialized
-        ToManyList paintings = (ToManyList) deserialized.getPaintingArray();
+        List paintings = deserialized.getPaintingArray();
         assertNotNull(paintings);
-        assertNotNull(paintings.getRelationshipOwner());
-        assertSame(deserialized, paintings.getRelationshipOwner());
         assertEquals(0, paintings.size());
     }
 

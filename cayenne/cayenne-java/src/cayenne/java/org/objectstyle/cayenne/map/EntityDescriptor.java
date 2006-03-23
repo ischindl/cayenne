@@ -64,6 +64,7 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.ValueHolder;
 import org.objectstyle.cayenne.property.BaseClassDescriptor;
+import org.objectstyle.cayenne.property.BeanAccessor;
 import org.objectstyle.cayenne.property.ClassDescriptor;
 import org.objectstyle.cayenne.property.DataObjectAccessor;
 import org.objectstyle.cayenne.property.FieldAccessor;
@@ -96,6 +97,15 @@ public class EntityDescriptor extends BaseClassDescriptor {
     public EntityDescriptor(ObjEntity entity, ClassDescriptor superclassDescriptor) {
         super(superclassDescriptor);
         this.entity = entity;
+    }
+
+    public void shallowMerge(Object from, Object to) throws PropertyAccessException {
+        super.shallowMerge(from, to);
+
+        if (dataObject && from instanceof DataObject && to instanceof DataObject) {
+            ((DataObject) to)
+                    .setSnapshotVersion(((DataObject) from).getSnapshotVersion());
+        }
     }
 
     /**
@@ -135,6 +145,8 @@ public class EntityDescriptor extends BaseClassDescriptor {
         this.objectClass = entity.getJavaClass();
         this.dataObject = DataObject.class.isAssignableFrom(objectClass);
 
+        compileSpecialProperties();
+
         // init property descriptors...
         Map allDescriptors = new HashMap();
         compileAttributes(allDescriptors);
@@ -167,6 +179,16 @@ public class EntityDescriptor extends BaseClassDescriptor {
             EntityInheritanceTree child = (EntityInheritanceTree) it.next();
             compileSubclassMapping(resolver, subclassDescriptors, child);
         }
+    }
+
+    /**
+     * Implements an attributes compilation step. Called internally from "compile".
+     */
+    protected void compileSpecialProperties() {
+        this.persistenceStateProperty = new BeanAccessor(
+                objectClass,
+                "persistenceState",
+                Integer.TYPE);
     }
 
     /**

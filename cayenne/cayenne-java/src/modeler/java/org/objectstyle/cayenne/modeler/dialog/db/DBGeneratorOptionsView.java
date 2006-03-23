@@ -71,6 +71,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingConstants;
 
 import com.jgoodies.forms.builder.PanelBuilder;
 import com.jgoodies.forms.layout.CellConstraints;
@@ -104,7 +106,7 @@ public class DBGeneratorOptionsView extends JDialog {
         this.createPK = new JCheckBox("Create Primary Key Support");
         this.dropPK = new JCheckBox("Drop Primary Key Support");
         this.tables = tables;
-        this.tabs = new JTabbedPane(JTabbedPane.TOP);
+        this.tabs = new JTabbedPane(SwingConstants.TOP);
         this.sql = new JTextArea();
         sql.setEditable(false);
         sql.setLineWrap(true);
@@ -122,8 +124,8 @@ public class DBGeneratorOptionsView extends JDialog {
         JPanel sqlTextPanel = new JPanel(new BorderLayout());
         sqlTextPanel.add(new JScrollPane(
                 sql,
-                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
 
         CellConstraints cc = new CellConstraints();
         PanelBuilder builder = new PanelBuilder(new FormLayout(
@@ -138,8 +140,8 @@ public class DBGeneratorOptionsView extends JDialog {
         tabs.addTab("SQL Options", builder.getPanel());
         tabs.addTab("Tables", new JScrollPane(
                 tables,
-                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED));
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED));
 
         // we need the right preferred size so that dialog "pack()" produces decent
         // default size...

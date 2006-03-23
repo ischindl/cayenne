@@ -77,7 +77,6 @@ public class ProcedureQueryValidator extends TreeNodeValidator {
 
         validateName(query, treeNodePath, validator);
         validateRoot(query, treeNodePath, validator);
-        validateResultType(query, treeNodePath, validator);
     }
 
     protected void validateRoot(
@@ -140,17 +139,4 @@ public class ProcedureQueryValidator extends TreeNodeValidator {
         }
     }
 
-    protected void validateResultType(
-            ProcedureQuery query,
-            ProjectPath path,
-            Validator validator) {
-
-        if (query.isSelecting()
-                && !query.isFetchingDataRows()
-                && query.getResultEntityName() == null) {
-            validator.registerWarning(
-                    "Missing result entity for Procedure query fetching DataObjects.",
-                    path);
-        }
-    }
 }

@@ -66,7 +66,6 @@ import java.util.Map;
 import org.objectstyle.cayenne.access.jdbc.ColumnDescriptor;
 import org.objectstyle.cayenne.access.jdbc.RowDescriptor;
 import org.objectstyle.cayenne.map.EntityResolver;
-import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.Procedure;
 import org.objectstyle.cayenne.map.QueryBuilder;
 import org.objectstyle.cayenne.util.XMLEncoder;
@@ -117,7 +116,12 @@ public class ProcedureQuery extends AbstractQuery implements GenericSelectQuery,
     protected Class resultClass;
 
     protected Map parameters = new HashMap();
+
+    /**
+     * @deprecated since 1.2 as this information is no longer relavant to Cayenne
+     */
     protected boolean selecting;
+
     ProcedureQueryMetadata metaData = new ProcedureQueryMetadata();
 
     // TODO: ColumnDescriptor is not XMLSerializable so we can't store
@@ -304,12 +308,7 @@ public class ProcedureQuery extends AbstractQuery implements GenericSelectQuery,
             encoder.print(resultEntityName);
         }
 
-        if (!selecting) {
-            encoder.print("\" selecting=\"false");
-        }
-
         encoder.println("\">");
-
         encoder.indent(1);
 
         metaData.encodeAsXML(encoder);
@@ -473,6 +472,7 @@ public class ProcedureQuery extends AbstractQuery implements GenericSelectQuery,
      * Returns true if ProcedureQuery is expected to return a ResultSet.
      * 
      * @since 1.1
+     * @deprecated since 1.2 as this information is no longer relavant to Cayenne
      */
     public boolean isSelecting() {
         return selecting;
@@ -482,6 +482,7 @@ public class ProcedureQuery extends AbstractQuery implements GenericSelectQuery,
      * Sets whether ProcedureQuery is expected to return a ResultSet.
      * 
      * @since 1.1
+     * @deprecated since 1.2 as this information is no longer relavant to Cayenne
      */
     public void setSelecting(boolean b) {
         selecting = b;

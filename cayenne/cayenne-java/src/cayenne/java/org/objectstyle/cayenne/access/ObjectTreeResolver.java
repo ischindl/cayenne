@@ -187,7 +187,7 @@ class ObjectTreeResolver {
             boolean result = addNode(decorated);
 
             // set "jointChildren" flag on all nodes in the same "join group"
-            PrefetchProcessorNode groupNode = (PrefetchProcessorNode) decorated;
+            PrefetchProcessorNode groupNode = decorated;
             while (groupNode.getParent() != null && !groupNode.isDisjointPrefetch()) {
                 groupNode = (PrefetchProcessorNode) groupNode.getParent();
                 groupNode.setJointChildren(true);
@@ -434,7 +434,7 @@ class ObjectTreeResolver {
             if (object == null) {
 
                 DataRow row = processorNode.rowFromFlatRow(currentFlatRow);
-                object = (DataObject) processorNode.getResolver().objectFromDataRow(row);
+                object = processorNode.getResolver().objectFromDataRow(row);
 
                 processorNode.putResolved(id, object);
                 processorNode.addObject(object, row);

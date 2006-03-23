@@ -456,8 +456,7 @@ public class DataContextTst extends DataContextTestBase {
 
     public void testCommitChangesRO2() throws Exception {
         ROArtist a1 = fetchROArtist("artist1");
-        a1.writePropertyDirectly("artistName", "abc");
-        a1.setPersistenceState(PersistenceState.MODIFIED);
+        a1.writeProperty("artistName", "abc");
 
         try {
             context.commitChanges();

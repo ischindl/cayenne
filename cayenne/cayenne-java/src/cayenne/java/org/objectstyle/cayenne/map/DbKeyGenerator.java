@@ -115,9 +115,7 @@ public class DbKeyGenerator implements CayenneMapEntry, XMLSerializable, Seriali
      * @since 1.1
      */
     public void encodeAsXML(XMLEncoder encoder) {
-
-        String type = getGeneratorType();
-        if (type == null) {
+        if (getGeneratorType() == null) {
             return;
         }
 
@@ -125,20 +123,18 @@ public class DbKeyGenerator implements CayenneMapEntry, XMLSerializable, Seriali
         encoder.indent(1);
 
         encoder.print("<db-generator-type>");
-        encoder.print(type);
+        encoder.print(getGeneratorType());
         encoder.println("</db-generator-type>");
 
-        String name = getGeneratorName();
-        if (name != null) {
+        if (getGeneratorName() != null) {
             encoder.print("<db-generator-name>");
-            encoder.print(name);
+            encoder.print(getGeneratorName());
             encoder.println("</db-generator-name>");
         }
 
-        Integer cacheSize = getKeyCacheSize();
-        if (cacheSize != null) {
+        if (getKeyCacheSize() != null) {
             encoder.print("<db-key-cache-size>");
-            encoder.print(String.valueOf(cacheSize));
+            encoder.print(String.valueOf(getKeyCacheSize()));
             encoder.println("</db-key-cache-size>");
         }
 

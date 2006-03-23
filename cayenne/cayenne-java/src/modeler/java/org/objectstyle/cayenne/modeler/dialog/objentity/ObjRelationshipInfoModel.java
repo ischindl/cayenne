@@ -73,6 +73,7 @@ import org.objectstyle.cayenne.modeler.util.Comparators;
 import org.objectstyle.cayenne.util.Util;
 import org.scopemvc.core.IntIndexSelector;
 import org.scopemvc.core.ModelChangeEvent;
+import org.scopemvc.core.ModelChangeTypes;
 import org.scopemvc.core.Selector;
 import org.scopemvc.model.basic.BasicModel;
 import org.scopemvc.model.collection.ListModel;
@@ -165,7 +166,7 @@ public class ObjRelationshipInfoModel extends BasicModel {
             this.selectedPathComponent = selectedPathComponent;
             listenNewSubmodel(SELECTED_PATH_COMPONENT_SELECTOR);
             fireModelChange(
-                ModelChangeEvent.VALUE_CHANGED,
+                ModelChangeTypes.VALUE_CHANGED,
                 SELECTED_PATH_COMPONENT_SELECTOR);
         }
     }
@@ -185,13 +186,13 @@ public class ObjRelationshipInfoModel extends BasicModel {
             unlistenOldSubmodel(OBJECT_TARGET_SELECTOR);
             this.objectTarget = objectTarget;
             listenNewSubmodel(OBJECT_TARGET_SELECTOR);
-            fireModelChange(ModelChangeEvent.VALUE_CHANGED, OBJECT_TARGET_SELECTOR);
+            fireModelChange(ModelChangeTypes.VALUE_CHANGED, OBJECT_TARGET_SELECTOR);
 
             // change the list of relationships 
             breakChain(-1);
             connectEnds();
             fireModelChange(
-                ModelChangeEvent.VALUE_CHANGED,
+                ModelChangeTypes.VALUE_CHANGED,
                 DB_RELATIONSHIP_PATH_SELECTOR);
         }
     }

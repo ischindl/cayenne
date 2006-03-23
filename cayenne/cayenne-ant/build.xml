@@ -43,6 +43,8 @@
        testcoverage - runs JUnit test coverage analysis
        regression   - runs regression test application
 	   pdf          - builds PDF documentation
+	   mvn-install  - installs Cayenne in a local Maven2 repo (use "m2.repo" property to install in a non-default location)
+	   mvn-bundle   - creates a Maven2 bundle in the format needed for Ibiblio upload
 
 ENVIRONMENT:
 ============== 
@@ -186,5 +188,20 @@ ENVIRONMENT:
     <!-- ========================================== -->
     <target name="pdf" description="builds PDF documentation.">
 		<ant antfile="ant/doc.xml" target="pdf" inheritrefs="true"/>
-    </target> 
+    </target>
+	
+	<!-- ========================================== -->
+    <!-- Installs Cayenne in the local M2 rep       -->
+    <!-- ========================================== -->
+    <target name="mvn-install" description="Installs Cayenne in the local M2 repo">
+		<ant antfile="maven/build.xml" target="install-all"/>
+    </target>
+	
+	<!-- ========================================== -->
+    <!-- Bundles Cayenne for M2 ibiblio upload      -->
+    <!-- ========================================== -->
+    <target name="mvn-bundle" description="Bundles Cayenne for M2 ibiblio upload">
+		<ant antfile="maven/build.xml" target="bundle-all"/>
+    </target>
+
 </project>

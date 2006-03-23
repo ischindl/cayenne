@@ -243,12 +243,11 @@ public abstract class Entity implements CayenneMapEntry, XMLSerializable, Serial
      * @since 1.1
      */
     public Relationship getAnyRelationship(Entity targetEntity) {
-        Collection relationships = getRelationships();
-        if (relationships.isEmpty()) {
+        if (getRelationships().isEmpty()) {
             return null;
         }
 
-        Iterator it = relationships.iterator();
+        Iterator it = getRelationships().iterator();
         while (it.hasNext()) {
             Relationship r = (Relationship) it.next();
             if (r.getTargetEntity() == targetEntity) {

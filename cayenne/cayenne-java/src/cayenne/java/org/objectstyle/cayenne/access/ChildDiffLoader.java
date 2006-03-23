@@ -60,6 +60,7 @@ import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.Persistent;
 import org.objectstyle.cayenne.graph.GraphChangeHandler;
+import org.objectstyle.cayenne.graph.GraphManager;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.Relationship;
 
@@ -73,14 +74,15 @@ import org.objectstyle.cayenne.map.Relationship;
 class ChildDiffLoader implements GraphChangeHandler {
 
     DataContext context;
+    GraphManager graphManager;
 
     ChildDiffLoader(DataContext context) {
         this.context = context;
+        this.graphManager = context.getGraphManager();
     }
 
     public void nodeIdChanged(Object nodeId, Object newId) {
-        throw new CayenneRuntimeException(
-                "Not supported - client is not allowed to change ObjectId of a server object.");
+        throw new CayenneRuntimeException("Not supported");
     }
 
     public void nodeCreated(Object nodeId) {
@@ -141,10 +143,10 @@ class ChildDiffLoader implements GraphChangeHandler {
 
         DataObject target = findObject(targetNodeId);
         if (relationship.isToMany()) {
-            source.addToManyTarget(relationship.getName(), target, true);
+            source.addToManyTarget(relationship.getName(), target, false);
         }
         else {
-            source.setToOneTarget(relationship.getName(), target, true);
+            source.setToOneTarget(relationship.getName(), target, false);
         }
     }
 
@@ -157,14 +159,14 @@ class ChildDiffLoader implements GraphChangeHandler {
 
         DataObject target = findObject(targetNodeId);
         if (relationship.isToMany()) {
-            source.removeToManyTarget(relationship.getName(), target, true);
+            source.removeToManyTarget(relationship.getName(), target, false);
         }
         else {
-            source.setToOneTarget(relationship.getName(), null, true);
+            source.setToOneTarget(relationship.getName(), null, false);
         }
     }
 
     DataObject findObject(Object nodeId) {
-        return context.getObjectStore().getObject((ObjectId) nodeId);
+        return (DataObject) graphManager.getNode(nodeId);
     }
 }

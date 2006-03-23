@@ -81,6 +81,7 @@ public abstract class BaseClassDescriptor implements ClassDescriptor {
     protected Class objectClass;
     protected Map declaredProperties;
     protected Map subclassDescriptors;
+    protected PropertyAccessor persistenceStateProperty;
 
     /**
      * Creates an uncompiled BaseClassDescriptor. Subclasses may add a call to "compile"
@@ -88,6 +89,18 @@ public abstract class BaseClassDescriptor implements ClassDescriptor {
      */
     public BaseClassDescriptor(ClassDescriptor superclassDescriptor) {
         this.superclassDescriptor = superclassDescriptor;
+    }
+
+    public boolean isFault(Object object) {
+        if (superclassDescriptor != null) {
+            return superclassDescriptor.isFault(object);
+        }
+
+        if (object == null) {
+            return false;
+        }
+
+        return HOLLOW_STATE.equals(persistenceStateProperty.readPropertyDirectly(object));
     }
 
     /**

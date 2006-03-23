@@ -196,24 +196,24 @@ public class OPPServerChannel implements DataChannel {
         return response;
     }
 
-    public GraphDiff onSync(ObjectContext context, int syncType, GraphDiff contextChanges) {
+    public GraphDiff onSync(ObjectContext originatingContext, GraphDiff changes, int syncType) {
 
         GraphDiff replyDiff = (GraphDiff) send(new SyncMessage(
-                context,
+                originatingContext,
                 syncType,
-                contextChanges), GraphDiff.class);
+                changes), GraphDiff.class);
 
         if (channelEventsEnabled) {
             EventSubject subject;
 
             switch (syncType) {
-                case DataChannel.ROLLBACK_SYNC_TYPE:
+                case DataChannel.ROLLBACK_CASCADE_SYNC:
                     subject = DataChannel.GRAPH_ROLLEDBACK_SUBJECT;
                     break;
-                case DataChannel.FLUSH_SYNC_TYPE:
+                case DataChannel.FLUSH_NOCASCADE_SYNC:
                     subject = DataChannel.GRAPH_CHANGED_SUBJECT;
                     break;
-                case DataChannel.COMMIT_SYNC_TYPE:
+                case DataChannel.FLUSH_CASCADE_SYNC:
                     subject = DataChannel.GRAPH_COMMITTED_SUBJECT;
                     break;
                 default:
@@ -224,21 +224,21 @@ public class OPPServerChannel implements DataChannel {
 
                 // combine message sender changes and message receiver changes into a
                 // single event
-                boolean sentNoop = contextChanges == null || contextChanges.isNoop();
+                boolean sentNoop = changes == null || changes.isNoop();
                 boolean receivedNoop = replyDiff == null || replyDiff.isNoop();
 
                 if (!sentNoop || !receivedNoop) {
                     CompoundDiff notification = new CompoundDiff();
 
                     if (!sentNoop) {
-                        notification.add(contextChanges);
+                        notification.add(changes);
                     }
 
                     if (!receivedNoop) {
                         notification.add(replyDiff);
                     }
 
-                    Object eventSource = (context != null) ? (Object) context : this;
+                    Object eventSource = (originatingContext != null) ? (Object) originatingContext : this;
                     GraphEvent e = new GraphEvent(eventSource, notification);
                     e.setPostedBy(this);
                     eventManager.postEvent(e, subject);

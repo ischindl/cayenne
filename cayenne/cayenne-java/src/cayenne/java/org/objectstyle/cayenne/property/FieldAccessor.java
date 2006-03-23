@@ -106,7 +106,7 @@ public class FieldAccessor implements PropertyAccessor {
 
     public void writePropertyDirectly(Object object, Object oldValue, Object newValue)
             throws PropertyAccessException {
-        // this would take care of primitives.
+        // this will take care of primitives.
         if (newValue == null) {
             newValue = this.nullValue;
         }

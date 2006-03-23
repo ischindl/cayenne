@@ -64,9 +64,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.objectstyle.ashwood.dbutil.Table;
@@ -110,6 +112,12 @@ public class DbLoader {
 
     /** List of db entities to process. */
     private List dbEntityList = new ArrayList();
+    
+    /**
+     * CAY-479 - need to track which entities are skipped in 
+     * the loader so that relationships to non-skipped entities can be loaded 
+     */
+    private Set skippedEntities = new HashSet();
 
     /** Creates default name for loaded relationship */
     private static String defaultRelName(String dstName, boolean toMany) {
@@ -353,6 +361,10 @@ public class DbLoader {
                     }
                     else {
                         logObj.debug("Keep old: " + oldEnt.getName());
+                        
+                        // cay-479 - need to track entities that were not loaded for 
+                        // relationships exported to entities that were
+                        skippedEntities.add(oldEnt);
                         continue;
                     }
                 }
@@ -467,7 +479,17 @@ public class DbLoader {
                 rs.close();
             }
         }
+        
+        // cay-479 - iterate skipped DbEntities to populate exported keys
+        Iterator skippedEntityIter = skippedEntities.iterator();
+        while (skippedEntityIter.hasNext()) {
+
+            DbEntity skippedEntity = (DbEntity) skippedEntityIter.next();
+            loadDbRelationships(skippedEntity, map);
+        }
+            
         return true;
+        
     }
 
     /**
@@ -533,123 +555,130 @@ public class DbLoader {
 
     /** Loads database relationships into a DataMap. */
     public void loadDbRelationships(DataMap map) throws SQLException {
-        DatabaseMetaData md = getMetaData();
         Iterator it = dbEntityList.iterator();
         while (it.hasNext()) {
             DbEntity pkEntity = (DbEntity) it.next();
-            String pkEntName = pkEntity.getName();
-
-            // Get all the foreign keys referencing this table
-            ResultSet rs = null;
-
-            try {
-                rs = md.getExportedKeys(
-                        pkEntity.getCatalog(),
-                        pkEntity.getSchema(),
-                        pkEntity.getName());
-            }
-            catch (SQLException cay182Ex) {
-                // Sybase-specific - the line above blows on VIEWS, see CAY-182.
-                logObj.info("Error getting relationships for '"
-                        + pkEntName
-                        + "', ignoring.");
-                continue;
-            }
-
-            try {
-                if (!rs.next())
-                    continue;
-
-                // these will be initailzed every time a new target entity
-                // is found in the result set (which should be ordered by table name among
-                // other things)
-                DbRelationship forwardRelationship = null;
-                DbRelationship reverseRelationship = null;
-                DbEntity fkEntity = null;
-
-                do {
-                    short keySeq = rs.getShort("KEY_SEQ");
-                    if (keySeq == 1) {
-
-                        if (forwardRelationship != null) {
-                            postprocessMasterDbRelationship(forwardRelationship);
-                            forwardRelationship = null;
-                        }
-
-                        // start new entity
-                        String fkEntityName = rs.getString("FKTABLE_NAME");
-
-                        fkEntity = map.getDbEntity(fkEntityName);
-
-                        if (fkEntity == null) {
-                            logObj.info("FK warning: no entity found for name '"
-                                    + fkEntityName
-                                    + "'");
-                        }
-                        else {
-
-                            // init relationship
-                            forwardRelationship = new DbRelationship(DbLoader
-                                    .uniqueRelName(pkEntity, fkEntityName, true));
-
-                            forwardRelationship.setSourceEntity(pkEntity);
-                            forwardRelationship.setTargetEntity(fkEntity);
-                            pkEntity.addRelationship(forwardRelationship);
-
-                            reverseRelationship = new DbRelationship(uniqueRelName(
-                                    fkEntity,
-                                    pkEntName,
-                                    false));
-                            reverseRelationship.setToMany(false);
-                            reverseRelationship.setSourceEntity(fkEntity);
-                            reverseRelationship.setTargetEntity(pkEntity);
-                            fkEntity.addRelationship(reverseRelationship);
-                        }
-                    }
-
-                    if (fkEntity != null) {
-                        // Create and append joins
-                        String pkName = rs.getString("PKCOLUMN_NAME");
-                        String fkName = rs.getString("FKCOLUMN_NAME");
-
-                        // skip invalid joins...
-                        DbAttribute pkAtt = (DbAttribute) pkEntity.getAttribute(pkName);
-                        if (pkAtt == null) {
-                            logObj.info("no attribute for declared primary key: "
-                                    + pkName);
-                            continue;
-                        }
-
-                        DbAttribute fkAtt = (DbAttribute) fkEntity.getAttribute(fkName);
-                        if (fkAtt == null) {
-                            logObj.info("no attribute for declared foreign key: "
-                                    + fkName);
-                            continue;
-                        }
-
-                        forwardRelationship.addJoin(new DbJoin(
-                                forwardRelationship,
-                                pkName,
-                                fkName));
-                        reverseRelationship.addJoin(new DbJoin(
-                                reverseRelationship,
-                                fkName,
-                                pkName));
-                    }
-                } while (rs.next());
-
-                if (forwardRelationship != null) {
-                    postprocessMasterDbRelationship(forwardRelationship);
-                    forwardRelationship = null;
-                }
-
-            }
-            finally {
-                rs.close();
-            }
+            loadDbRelationships(pkEntity, map);
         }
     }
 
+    private void loadDbRelationships(DbEntity pkEntity, DataMap map) throws SQLException {
+        DatabaseMetaData md = getMetaData();
+        String pkEntName = pkEntity.getName();
+
+        // Get all the foreign keys referencing this table
+        ResultSet rs = null;
+
+        try {
+            rs = md.getExportedKeys(
+                    pkEntity.getCatalog(),
+                    pkEntity.getSchema(),
+                    pkEntity.getName());
+        }
+        catch (SQLException cay182Ex) {
+            // Sybase-specific - the line above blows on VIEWS, see CAY-182.
+            logObj.info("Error getting relationships for '"
+                    + pkEntName
+                    + "', ignoring.");
+            return;
+        }
+
+        try {
+            if (!rs.next())
+                return;
+
+            // these will be initailzed every time a new target entity
+            // is found in the result set (which should be ordered by table name among
+            // other things)
+            DbRelationship forwardRelationship = null;
+            DbRelationship reverseRelationship = null;
+            DbEntity fkEntity = null;
+
+            do {
+                short keySeq = rs.getShort("KEY_SEQ");
+                if (keySeq == 1) {
+
+                    if (forwardRelationship != null) {
+                        postprocessMasterDbRelationship(forwardRelationship);
+                        forwardRelationship = null;
+                    }
+
+                    // start new entity
+                    String fkEntityName = rs.getString("FKTABLE_NAME");
+
+                    fkEntity = map.getDbEntity(fkEntityName);
+
+                    if (fkEntity == null) {
+                        logObj.info("FK warning: no entity found for name '"
+                                + fkEntityName
+                                + "'");
+                    } else if (skippedEntities.contains(pkEntity) && skippedEntities.contains(fkEntity)) {
+                        // cay-479 - don't load relationships between two
+                        // skipped entities.
+                        continue;
+                    }
+                    else {
+
+                        // init relationship
+                        forwardRelationship = new DbRelationship(DbLoader
+                                .uniqueRelName(pkEntity, fkEntityName, true));
+
+                        forwardRelationship.setSourceEntity(pkEntity);
+                        forwardRelationship.setTargetEntity(fkEntity);
+                        pkEntity.addRelationship(forwardRelationship);
+
+                        reverseRelationship = new DbRelationship(uniqueRelName(
+                                fkEntity,
+                                pkEntName,
+                                false));
+                        reverseRelationship.setToMany(false);
+                        reverseRelationship.setSourceEntity(fkEntity);
+                        reverseRelationship.setTargetEntity(pkEntity);
+                        fkEntity.addRelationship(reverseRelationship);
+                    }
+                }
+
+                if (fkEntity != null) {
+                    // Create and append joins
+                    String pkName = rs.getString("PKCOLUMN_NAME");
+                    String fkName = rs.getString("FKCOLUMN_NAME");
+
+                    // skip invalid joins...
+                    DbAttribute pkAtt = (DbAttribute) pkEntity.getAttribute(pkName);
+                    if (pkAtt == null) {
+                        logObj.info("no attribute for declared primary key: "
+                                + pkName);
+                        continue;
+                    }
+
+                    DbAttribute fkAtt = (DbAttribute) fkEntity.getAttribute(fkName);
+                    if (fkAtt == null) {
+                        logObj.info("no attribute for declared foreign key: "
+                                + fkName);
+                        continue;
+                    }
+
+                    forwardRelationship.addJoin(new DbJoin(
+                            forwardRelationship,
+                            pkName,
+                            fkName));
+                    reverseRelationship.addJoin(new DbJoin(
+                            reverseRelationship,
+                            fkName,
+                            pkName));
+                }
+            } while (rs.next());
+
+            if (forwardRelationship != null) {
+                postprocessMasterDbRelationship(forwardRelationship);
+                forwardRelationship = null;
+            }
+
+        }
+        finally {
+            rs.close();
+        }
+    }
     /**
      * Detects correct relationship multiplicity and "to dep pk" flag. Only called on
      * relationships from PK to FK, not the reverse ones.

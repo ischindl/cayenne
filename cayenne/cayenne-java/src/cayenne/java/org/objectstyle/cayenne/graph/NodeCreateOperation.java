@@ -65,6 +65,10 @@ public class NodeCreateOperation extends NodeDiff {
         super(nodeId);
     }
 
+    public NodeCreateOperation(Object nodeId, int diffId) {
+        super(nodeId, diffId);
+    }
+
     public void apply(GraphChangeHandler tracker) {
         tracker.nodeCreated(nodeId);
     }

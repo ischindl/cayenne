@@ -3,7 +3,7 @@
 <!-- ================================================= -->
 <!-- Common build paths.                               -->
 <!-- ================================================= -->
-<project default="...">
+<project>
 	
 	<property environment="cayenne.env"/>
 	

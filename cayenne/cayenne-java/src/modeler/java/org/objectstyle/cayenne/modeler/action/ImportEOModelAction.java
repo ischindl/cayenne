@@ -81,6 +81,7 @@ import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.Entity;
 import org.objectstyle.cayenne.map.event.DataNodeEvent;
 import org.objectstyle.cayenne.map.event.EntityEvent;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.map.event.QueryEvent;
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.ProjectController;
@@ -223,7 +224,7 @@ public class ImportEOModelAction extends CayenneAction {
 
             // send events after the node creation is complete
             getProjectController().fireDataNodeEvent(
-                    new DataNodeEvent(this, node, DataNodeEvent.ADD));
+                    new DataNodeEvent(this, node, MapEvent.ADD));
             getProjectController().fireDataNodeDisplayEvent(
                     new DataNodeDisplayEvent(this, getProjectController()
                             .getCurrentDataDomain(), node));
@@ -279,7 +280,7 @@ public class ImportEOModelAction extends CayenneAction {
             while (it.hasNext()) {
                 Entity e = (Entity) it.next();
                 entityEvent.setEntity(e);
-                entityEvent.setId(EntityEvent.ADD);
+                entityEvent.setId(MapEvent.ADD);
                 mediator.fireObjEntityEvent(entityEvent);
             }
 
@@ -288,7 +289,7 @@ public class ImportEOModelAction extends CayenneAction {
             while (it.hasNext()) {
                 Entity e = (Entity) it.next();
                 entityEvent.setEntity(e);
-                entityEvent.setId(EntityEvent.REMOVE);
+                entityEvent.setId(MapEvent.REMOVE);
                 mediator.fireObjEntityEvent(entityEvent);
             }
 
@@ -297,7 +298,7 @@ public class ImportEOModelAction extends CayenneAction {
             while (it.hasNext()) {
                 Entity e = (Entity) it.next();
                 entityEvent.setEntity(e);
-                entityEvent.setId(EntityEvent.ADD);
+                entityEvent.setId(MapEvent.ADD);
                 mediator.fireDbEntityEvent(entityEvent);
             }
 
@@ -306,7 +307,7 @@ public class ImportEOModelAction extends CayenneAction {
             while (it.hasNext()) {
                 Entity e = (Entity) it.next();
                 entityEvent.setEntity(e);
-                entityEvent.setId(EntityEvent.REMOVE);
+                entityEvent.setId(MapEvent.REMOVE);
                 mediator.fireDbEntityEvent(entityEvent);
             }
             
@@ -316,7 +317,7 @@ public class ImportEOModelAction extends CayenneAction {
             while (it.hasNext()) {
                 Query q = (Query) it.next();
                 queryEvent.setQuery(q);
-                queryEvent.setId(QueryEvent.ADD);
+                queryEvent.setId(MapEvent.ADD);
                 mediator.fireQueryEvent(queryEvent);
             }
 
@@ -325,7 +326,7 @@ public class ImportEOModelAction extends CayenneAction {
             while (it.hasNext()) {
             	Query q = (Query) it.next();
                 queryEvent.setQuery(q);
-                queryEvent.setId(QueryEvent.REMOVE);
+                queryEvent.setId(MapEvent.REMOVE);
                 mediator.fireQueryEvent(queryEvent);
             }
 

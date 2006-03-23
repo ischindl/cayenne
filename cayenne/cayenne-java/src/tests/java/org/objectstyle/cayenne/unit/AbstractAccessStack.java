@@ -69,12 +69,12 @@ import java.util.List;
 import java.util.ListIterator;
 
 import org.apache.log4j.Logger;
+import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.access.DbGenerator;
 import org.objectstyle.cayenne.access.QueryLogger;
 import org.objectstyle.cayenne.dba.DbAdapter;
-import org.objectstyle.cayenne.dba.firebird.FirebirdAdapter;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbAttribute;
 import org.objectstyle.cayenne.map.DbEntity;
@@ -180,8 +180,6 @@ public abstract class AbstractAccessStack {
     }
 
     protected void deleteTestData(DataNode node, DataMap map) throws Exception {
-        // TODO: move this to delegate
-        boolean isFirebird = node.getAdapter() instanceof FirebirdAdapter;
 
         Connection conn = node.getDataSource().getConnection();
         List list = this.dbEntitiesInInsertOrder(node, map);
@@ -199,23 +197,18 @@ public abstract class AbstractAccessStack {
                     continue;
                 }
 
-                // this may not work on tables with reflexive relationships
-                // at least on Firebird it doesn't...
-
-                if (isFirebird && "ARTGROUP".equalsIgnoreCase(ent.getName())) {
-                    int deleted = 0;
-                    String deleteChildren = "DELETE FROM "
-                            + ent.getName()
-                            + " WHERE GROUP_ID NOT IN (SELECT DISTINCT PARENT_GROUP_ID FROM "
-                            + ent.getName()
-                            + ")";
-                    do {
-                        deleted = stmt.executeUpdate(deleteChildren);
-                    } while (deleted > 0);
-                }
-
                 String deleteSql = "DELETE FROM " + ent.getName();
-                stmt.executeUpdate(deleteSql);
+
+                try {
+                    stmt.executeUpdate(deleteSql);
+                }
+                catch (SQLException e) {
+                    throw new CayenneRuntimeException(
+                            "Error deleting test data for entity '"
+                                    + ent.getName()
+                                    + "': "
+                                    + e.getLocalizedMessage());
+                }
             }
             conn.commit();
             stmt.close();
@@ -341,7 +334,8 @@ public abstract class AbstractAccessStack {
             it = orderedEnts.iterator();
             while (it.hasNext()) {
                 DbEntity ent = (DbEntity) it.next();
-                if (ent instanceof DerivedDbEntity) {
+                if (ent instanceof DerivedDbEntity
+                        || !getAdapter(node).supportsFKConstraints(ent)) {
                     continue;
                 }
 

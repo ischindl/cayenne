@@ -60,6 +60,7 @@ import java.awt.event.ActionEvent;
 import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.event.EntityEvent;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.ProjectController;
 import org.objectstyle.cayenne.modeler.event.EntityDisplayEvent;
@@ -97,7 +98,7 @@ public class CreateDbEntityAction extends CayenneAction {
         ProjectController mediator = getProjectController();
         DbEntity entity = createEntity(mediator.getCurrentDataMap());
 
-        mediator.fireDbEntityEvent(new EntityEvent(this, entity, EntityEvent.ADD));
+        mediator.fireDbEntityEvent(new EntityEvent(this, entity, MapEvent.ADD));
         EntityDisplayEvent displayEvent = new EntityDisplayEvent(this, entity, mediator
                 .getCurrentDataMap(), mediator.getCurrentDataNode(), mediator
                 .getCurrentDataDomain());

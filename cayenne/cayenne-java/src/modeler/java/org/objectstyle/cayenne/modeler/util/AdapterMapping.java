@@ -8,6 +8,7 @@ import org.objectstyle.cayenne.dba.derby.DerbyAdapter;
 import org.objectstyle.cayenne.dba.firebird.FirebirdAdapter;
 import org.objectstyle.cayenne.dba.frontbase.FrontBaseAdapter;
 import org.objectstyle.cayenne.dba.hsqldb.HSQLDBAdapter;
+import org.objectstyle.cayenne.dba.ingres.IngresAdapter;
 import org.objectstyle.cayenne.dba.mysql.MySQLAdapter;
 import org.objectstyle.cayenne.dba.openbase.OpenBaseAdapter;
 import org.objectstyle.cayenne.dba.oracle.OracleAdapter;
@@ -63,6 +64,8 @@ public class AdapterMapping {
                 DerbyAdapter.class.getName());
         jdbcDriverToAdapterMap.put("jdbc.FrontBase.FBJDriver", FrontBaseAdapter.class
                 .getName());
+        jdbcDriverToAdapterMap.put("com.ingres.jdbc.IngresDriver", IngresAdapter.class
+                .getName());
 
         // urls
         adapterToJDBCURLMap.put(
@@ -102,6 +105,9 @@ public class AdapterMapping {
         adapterToJDBCURLMap.put(
                 FrontBaseAdapter.class.getName(),
                 "jdbc:FrontBase://localhost/database");
+        adapterToJDBCURLMap.put(
+                IngresAdapter.class.getName(),
+                "jdbc:ingres://127.0.0.1:II7/database");
 
         // adapters
         adapterToJDBCDriverMap.put(
@@ -135,6 +141,10 @@ public class AdapterMapping {
         adapterToJDBCDriverMap.put(
                 FrontBaseAdapter.class.getName(),
                 "jdbc.FrontBase.FBJDriver");
+
+        adapterToJDBCDriverMap.put(
+                IngresAdapter.class.getName(),
+                "com.ingres.jdbc.IngresDriver");
 
         // EOF plugins...
         eofPluginToAdapterMap.put(

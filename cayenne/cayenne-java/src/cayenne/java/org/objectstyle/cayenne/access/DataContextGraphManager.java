@@ -58,8 +58,8 @@ package org.objectstyle.cayenne.access;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.ObjectId;
+import org.objectstyle.cayenne.Persistent;
 import org.objectstyle.cayenne.graph.GraphManager;
 
 /**
@@ -87,7 +87,7 @@ class DataContextGraphManager implements GraphManager {
     }
 
     public void registerNode(Object nodeId, Object nodeObject) {
-        context.getObjectStore().addObject((DataObject) nodeObject);
+        context.getObjectStore().recordObjectRegistered((Persistent) nodeObject);
     }
 
     public Object unregisterNode(Object nodeId) {

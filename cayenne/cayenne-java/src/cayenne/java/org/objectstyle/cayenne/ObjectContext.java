@@ -160,49 +160,30 @@ public interface ObjectContext extends Serializable {
             Object newValue);
 
     /**
-     * Performs a cascading commit of changes made in this ObjectContext and its parents.
+     * Flushes all changes to objects in this context to the parent DataChannel, cascading
+     * flush operation all the way through the stack, ultimately saving data in the
+     * database.
      */
     void commitChanges();
 
     /**
-     * Notifies parent ObjectContext about the changes made to objects of this
-     * ObjectContext since the last sync. No commit occurs as a result.
+     * Flushes all changes to objects in this context to the parent DataChannel. Same as
+     * {@link #commitChanges()}, but no cascading flush occurs.
      */
-    void flushChanges();
+    void commitChangesToParent();
 
     /**
-     * Resets all changes made to the objects in the DataChannel, and recursively all
-     * parent contexts on the other end of the DataChannel.
-     * <h4>Difference Between "revertChanges" And "rollbackChanges"</h4>
-     * <p>
-     * Revert is an operation local to this ObjectContext, that doesn't affect parent
-     * contexts on the other end of the DataChannel. "Revert" means "undo all changes made
-     * to this context to make the context look like its parent".
-     * </p>
-     * <p>
-     * "Rollback" on the other hand undoes changes in the whole stack of ObjectContexts.
-     * So "rollback" means "undo all changes in this context and its parents so that they
-     * all look like they did after the last commit".
-     * </p>
+     * Resets all uncommitted changes made to the objects in this ObjectContext, cascading
+     * rollback operation all the way through the stack.
      */
     void rollbackChanges();
 
     /**
-     * Resets changes made to the objects in the ObjectContext since the last sync with
-     * DataChannel.
-     * <h4>Difference Between "revertChanges" And "rollbackChanges"</h4>
-     * <p>
-     * Revert is an operation local to this ObjectContext, that doesn't affect parent
-     * contexts on the other end of the DataChannel. "Revert" means "undo all changes made
-     * to this context to make the context look like its parent".
-     * </p>
-     * <p>
-     * "Rollback" on the other hand undoes changes in the whole stack of ObjectContexts.
-     * So "rollback" means "undo all changes in this context and its parents so that they
-     * all look like they did after the last commit".
-     * </p>
+     * Resets all uncommitted changes made to the objects in this ObjectContext. Same as
+     * {@link #rollbackChanges()()}, but rollback is local to this context and no
+     * cascading changes undoing occurs.
      */
-    void revertChanges();
+    void rollbackChangesLocally();
 
     /**
      * Executes a selecting query, returning a list of persistent objects or data rows.

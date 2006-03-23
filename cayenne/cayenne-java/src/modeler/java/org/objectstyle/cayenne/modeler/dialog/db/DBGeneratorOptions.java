@@ -63,9 +63,9 @@ import java.io.PrintWriter;
 import java.util.Iterator;
 
 import javax.sql.DataSource;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -228,7 +228,7 @@ public class DBGeneratorOptions extends CayenneController {
      */
     public void startupAction() {
         view.pack();
-        view.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        view.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         view.setModal(true);
         makeCloseableOnEscape();
         centerView();

@@ -70,9 +70,26 @@ import org.objectstyle.cayenne.query.Query;
  */
 public interface DataChannel {
 
-    public static final int FLUSH_SYNC_TYPE = 1;
-    public static final int COMMIT_SYNC_TYPE = 2;
-    public static final int ROLLBACK_SYNC_TYPE = 3;
+    /**
+     * A synchronization type that results in changes from an ObjectContext to be recorded
+     * in the parent DataChannel. If the parent is itself an ObjectContext, changes are
+     * NOT propagated any further.
+     */
+    public static final int FLUSH_NOCASCADE_SYNC = 1;
+
+    /**
+     * A synchronization type that results in changes from an ObjectContext to be recorded
+     * in the parent DataChannel. If the parent is itself an ObjectContext, it is expected
+     * to send its own sync message to its parent DataChannel to cascade sycnhronization
+     * all the way down the stack.
+     */
+    public static final int FLUSH_CASCADE_SYNC = 2;
+
+    /**
+     * A synchronization type that results in cascading rollback of changes through the
+     * DataChannel stack.
+     */
+    public static final int ROLLBACK_CASCADE_SYNC = 3;
 
     public static final EventSubject GRAPH_CHANGED_SUBJECT = EventSubject.getSubject(
             DataChannel.class,
@@ -101,14 +118,20 @@ public interface DataChannel {
      * Executes a query, using provided <em>context</em> to register persistent objects
      * if query returns any objects.
      * 
+     * @param originatingContext an ObjectContext that originated the query, used to
+     *            register result objects.
      * @return a generic response object that encapsulates result of the execution.
      */
-    QueryResponse onQuery(ObjectContext context, Query query);
+    QueryResponse onQuery(ObjectContext originatingContext, Query query);
 
     /**
      * Processes synchronization request from a child ObjectContext, returning a GraphDiff
      * that describes changes to objects made on the receiving end as a result of
      * syncronization.
+     * @param originatingContext an ObjectContext that initiated the sync. Can be null.
+     * @param changes diff from the context that initiated the sync.
+     * @param syncType One of {@link #FLUSH_NOCASCADE_SYNC}, {@link #FLUSH_CASCADE_SYNC},
+     *            {@link #ROLLBACK_CASCADE_SYNC}.
      */
-    GraphDiff onSync(ObjectContext context, int syncType, GraphDiff contextChanges);
+    GraphDiff onSync(ObjectContext originatingContext, GraphDiff changes, int syncType);
 }

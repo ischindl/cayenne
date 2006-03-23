@@ -246,7 +246,7 @@ public class MemoryBlob implements Blob {
 
         final long plen = pattern.length();
 
-        if (plen == 0 || start > ((long) dlen) - plen) {
+        if (plen == 0 || start > dlen - plen) {
             return -1;
         }
 

@@ -64,6 +64,7 @@ import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.conf.DriverDataSourceFactory;
 import org.objectstyle.cayenne.conn.DataSourceInfo;
 import org.objectstyle.cayenne.map.event.DataNodeEvent;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.ProjectController;
 import org.objectstyle.cayenne.modeler.event.DataNodeDisplayEvent;
@@ -105,7 +106,7 @@ public class CreateNodeAction extends CayenneAction {
         // use domain name as DataNode base, as node names must be unique across the
         // project...
         DataNode node = buildDataNode();
-        mediator.fireDataNodeEvent(new DataNodeEvent(this, node, DataNodeEvent.ADD));
+        mediator.fireDataNodeEvent(new DataNodeEvent(this, node, MapEvent.ADD));
         mediator.fireDataNodeDisplayEvent(new DataNodeDisplayEvent(this, domain, node));
     }
 

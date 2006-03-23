@@ -3,7 +3,7 @@
 <!-- ================================================= -->
 <!--         Cayenne documentation buildfile.          -->
 <!-- ================================================= -->
-<project default="...">
+<project>
 	
 	<!-- can't use common build folder, as Anakia requires relative path -->
 	<property name="build.suffix" value="build/ant/docs"/>

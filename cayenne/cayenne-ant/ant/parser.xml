@@ -3,7 +3,7 @@
 <!-- ================================================= -->
 <!--  Parser Build Tasks                               -->
 <!-- ================================================= -->
-<project default="...">
+<project>
 	
 	<target name="javacc" depends="javacc-nodir,javacc-nogrammar">
 		<java fork="true" classname="javacc" failonerror="true">

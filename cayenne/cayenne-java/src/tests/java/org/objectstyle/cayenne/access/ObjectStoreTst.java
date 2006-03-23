@@ -66,8 +66,6 @@ import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.DataRow;
 import org.objectstyle.cayenne.MockDataObject;
 import org.objectstyle.cayenne.ObjectId;
-import org.objectstyle.cayenne.PersistenceState;
-import org.objectstyle.cayenne.graph.CompoundDiff;
 import org.objectstyle.cayenne.unit.CayenneTestCase;
 
 /**
@@ -81,19 +79,19 @@ public class ObjectStoreTst extends CayenneTestCase {
 
         DataObject o1 = new MockDataObject();
         o1.setObjectId(new ObjectId("T", "key1", "v1"));
-        context.getObjectStore().addObject(o1);
+        context.getObjectStore().recordObjectCreated(o1);
         assertEquals(1, context.getObjectStore().registeredObjectsCount());
 
         // test object with same id
         DataObject o2 = new MockDataObject();
         o2.setObjectId(new ObjectId("T", "key1", "v1"));
-        context.getObjectStore().addObject(o2);
+        context.getObjectStore().recordObjectCreated(o2);
         assertEquals(1, context.getObjectStore().registeredObjectsCount());
 
         // test new object
         DataObject o3 = new MockDataObject();
         o3.setObjectId(new ObjectId("T", "key3", "v3"));
-        context.getObjectStore().addObject(o3);
+        context.getObjectStore().recordObjectCreated(o3);
         assertEquals(2, context.getObjectStore().registeredObjectsCount());
     }
 
@@ -138,7 +136,7 @@ public class ObjectStoreTst extends CayenneTestCase {
         ObjectId oid = object.getObjectId();
 
         // insert object into the ObjectStore
-        context.getObjectStore().addObject(object);
+        context.getObjectStore().recordObjectCreated(object);
 
         assertSame(object, context.getObjectStore().getObject(oid));
         assertNotNull(context.getObjectStore().getCachedSnapshot(oid));
@@ -161,7 +159,7 @@ public class ObjectStoreTst extends CayenneTestCase {
         ObjectId oid = object.getObjectId();
 
         // insert object into the ObjectStore
-        context.getObjectStore().addObject(object);
+        context.getObjectStore().recordObjectCreated(object);
         assertSame(object, context.getObjectStore().getObject(oid));
         assertNotNull(context.getObjectStore().getCachedSnapshot(oid));
 
@@ -173,27 +171,4 @@ public class ObjectStoreTst extends CayenneTestCase {
         // in the future this may not be the case
         assertNull(context.getObjectStore().getCachedSnapshot(oid));
     }
-
-    /**
-     * Tests a condition when a user substitutes object id of a new object instead of
-     * setting replacement. This is demonstrated here -
-     * http://objectstyle.org/cayenne/lists/cayenne-user/2005/01/0210.html
-     */
-    public void testPostprocessAfterCommit() throws Exception {
-        DataContext context = createDataContext();
-
-        Artist object = (Artist) context.createAndRegisterNewObject(Artist.class);
-        object.setArtistName("ABC");
-        assertEquals(PersistenceState.NEW, object.getPersistenceState());
-        context.getObjectStore().addObject(object);
-
-        // do a manual ID substitution
-        ObjectId manualId = new ObjectId("T", Artist.ARTIST_ID_PK_COLUMN, 3);
-        object.setObjectId(manualId);
-
-        context.getObjectStore().postprocessAfterCommit(new CompoundDiff());
-        assertEquals(PersistenceState.COMMITTED, object.getPersistenceState());
-        assertSame(object, context.getObjectStore().getObject(manualId));
-    }
-
 }

@@ -169,7 +169,7 @@ class ObjectContextStateLog implements GraphChangeHandler {
     }
 
     // *** GraphChangeHandler methods
-
+    
     public void nodeIdChanged(Object nodeId, Object newId) {
         if (dirtyIds.remove(nodeId)) {
             dirtyIds.add(newId);

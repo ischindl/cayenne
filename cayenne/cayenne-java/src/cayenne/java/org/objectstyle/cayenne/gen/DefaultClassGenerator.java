@@ -81,12 +81,12 @@ public class DefaultClassGenerator extends MapClassGenerator {
     protected boolean overwrite;
     protected boolean usePkgPath = true;
     protected boolean makePairs = true;
-    protected File template;
-    protected File superTemplate;
+    protected String template;
+    protected String superTemplate;
     protected long timestamp = System.currentTimeMillis();
     private static final String WILDCARD = "*";
     protected String outputPattern = "*.java";
-    
+
     /**
      * Stores the encoding of the generated file.
      * 
@@ -116,7 +116,9 @@ public class DefaultClassGenerator extends MapClassGenerator {
     /**
      * Creates class generator and initializes it with the list of ObjEntities that will
      * be used in class generation.
-     * @deprecated Use DefaultClassGenerator(DataMap, List) to provide support for v1.2 templates.
+     * 
+     * @deprecated Use DefaultClassGenerator(DataMap, List) to provide support for v1.2
+     *             templates.
      */
     public DefaultClassGenerator(List selectedObjEntities) {
         super(selectedObjEntities);
@@ -132,7 +134,9 @@ public class DefaultClassGenerator extends MapClassGenerator {
             generateClassPairs(t, st, MapClassGenerator.SUPERCLASS_PREFIX);
         }
         else {
-            generateSingleClasses(getTemplateForSingles(), MapClassGenerator.SUPERCLASS_PREFIX);
+            generateSingleClasses(
+                    getTemplateForSingles(),
+                    MapClassGenerator.SUPERCLASS_PREFIX);
         }
     }
 
@@ -153,16 +157,13 @@ public class DefaultClassGenerator extends MapClassGenerator {
             throw new Exception("Do not have write permissions for " + destDir);
         }
 
-        if (template != null && !template.canRead()) {
-            throw new Exception("Can't read template from " + template);
-        }
-
-        if (makePairs && superTemplate != null && !superTemplate.canRead()) {
-            throw new Exception("Can't read super template from " + superTemplate);
-        }
-        
-        if ( (false == VERSION_1_1.equals(versionString)) && (false == VERSION_1_2.equals(versionString)) ) {
-            throw new Exception("'version' must be '" + VERSION_1_1 + "' or '" + VERSION_1_2 + "'.");
+        if ((false == VERSION_1_1.equals(versionString))
+                && (false == VERSION_1_2.equals(versionString))) {
+            throw new Exception("'version' must be '"
+                    + VERSION_1_1
+                    + "' or '"
+                    + VERSION_1_2
+                    + "'.");
         }
     }
 
@@ -189,15 +190,35 @@ public class DefaultClassGenerator extends MapClassGenerator {
 
     /**
      * Sets <code>template</code> property.
+     * 
+     * @deprecated since 1.2 use {@link #setTemplate(String)} as custom template can also
+     *             be looked up in CLASSPATH.
      */
     public void setTemplate(File template) {
+        this.template = template != null ? template.getPath() : null;
+    }
+
+    /**
+     * Sets <code>superTemplate</code> property.
+     * 
+     * @deprecated since 1.2 use {@link #setSuperTemplate(String)} as custom template can
+     *             also be looked up in CLASSPATH.
+     */
+    public void setSuperTemplate(File superTemplate) {
+        this.superTemplate = superTemplate != null ? superTemplate.getPath() : null;
+    }
+
+    /**
+     * Sets <code>template</code> property.
+     */
+    public void setTemplate(String template) {
         this.template = template;
     }
 
     /**
      * Sets <code>superTemplate</code> property.
      */
-    public void setSuperTemplate(File superTemplate) {
+    public void setSuperTemplate(String superTemplate) {
         this.superTemplate = superTemplate;
     }
 
@@ -225,9 +246,9 @@ public class DefaultClassGenerator extends MapClassGenerator {
      */
     public Writer openWriter(ObjEntity entity, String pkgName, String className)
             throws Exception {
-        File outFile = (className.startsWith(SUPERCLASS_PREFIX))
-                ? fileForSuperclass(pkgName, className)
-                : fileForClass(pkgName, className);
+        File outFile = (className.startsWith(SUPERCLASS_PREFIX)) ? fileForSuperclass(
+                pkgName,
+                className) : fileForClass(pkgName, className);
 
         if (outFile == null) {
             return null;
@@ -247,17 +268,25 @@ public class DefaultClassGenerator extends MapClassGenerator {
      */
     protected File fileForSuperclass(String pkgName, String className) throws Exception {
 
-        String filename = NamePatternMatcher.replaceWildcardInStringWithString(WILDCARD, outputPattern, className);
+        String filename = NamePatternMatcher.replaceWildcardInStringWithString(
+                WILDCARD,
+                outputPattern,
+                className);
         File dest = new File(mkpath(destDir, pkgName), filename);
 
         // Ignore if the destination is newer than the map
         // (internal timestamp), i.e. has been generated after the map was
         // last saved AND the template is older than the destination file
-        if (dest.exists()
-                && !isOld(dest)
-                && (superTemplate == null || superTemplate.lastModified() < dest
-                        .lastModified())) {
-            return null;
+        if (dest.exists() && !isOld(dest)) {
+
+            if (superTemplate == null) {
+                return null;
+            }
+
+            File superTemplateFile = new File(superTemplate);
+            if (superTemplateFile.lastModified() < dest.lastModified()) {
+                return null;
+            }
         }
 
         return dest;
@@ -269,7 +298,10 @@ public class DefaultClassGenerator extends MapClassGenerator {
      */
     protected File fileForClass(String pkgName, String className) throws Exception {
 
-        String filename = NamePatternMatcher.replaceWildcardInStringWithString(WILDCARD, outputPattern, className);
+        String filename = NamePatternMatcher.replaceWildcardInStringWithString(
+                WILDCARD,
+                outputPattern,
+                className);
         File dest = new File(mkpath(destDir, pkgName), filename);
 
         if (dest.exists()) {
@@ -286,9 +318,16 @@ public class DefaultClassGenerator extends MapClassGenerator {
             // Ignore if the destination is newer than the map
             // (internal timestamp), i.e. has been generated after the map was
             // last saved AND the template is older than the destination file
-            if (!isOld(dest)
-                    && (template == null || template.lastModified() < dest.lastModified())) {
-                return null;
+            if (!isOld(dest)) {
+
+                if (template == null) {
+                    return null;
+                }
+
+                File templateFile = new File(template);
+                if (templateFile.lastModified() < dest.lastModified()) {
+                    return null;
+                }
             }
         }
 
@@ -327,23 +366,21 @@ public class DefaultClassGenerator extends MapClassGenerator {
      * Returns template file path for Java class when generating single classes.
      */
     protected String getTemplateForSingles() throws IOException {
-        return (template != null) ? template.getPath() : defaultSingleClassTemplate();
+        return (template != null) ? template : defaultSingleClassTemplate();
     }
 
     /**
      * Returns template file path for Java subclass when generating class pairs.
      */
     protected String getTemplateForPairs() throws IOException {
-        return (template != null) ? template.getPath() : defaultSubclassTemplate();
+        return (template != null) ? template : defaultSubclassTemplate();
     }
 
     /**
      * Returns template file path for Java superclass when generating class pairs.
      */
     protected String getSupertemplateForPairs() throws IOException {
-        return (superTemplate != null)
-                ? superTemplate.getPath()
-                : defaultSuperclassTemplate();
+        return (superTemplate != null) ? superTemplate : defaultSuperclassTemplate();
     }
 
     /**

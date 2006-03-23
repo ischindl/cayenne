@@ -62,7 +62,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JDialog;
+import javax.swing.WindowConstants;
 
 import org.objectstyle.cayenne.modeler.ClassLoadingService;
 import org.objectstyle.cayenne.modeler.dialog.pref.PreferenceDialog;
@@ -150,7 +150,7 @@ public class DataSourceWizard extends CayenneController {
         refreshDataSources();
 
         view.pack();
-        view.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        view.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         view.setModal(true);
         makeCloseableOnEscape();
         centerView();

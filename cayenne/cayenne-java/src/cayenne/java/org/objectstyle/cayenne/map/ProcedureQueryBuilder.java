@@ -71,8 +71,6 @@ class ProcedureQueryBuilder extends QueryBuilder {
      */
     public Query getQuery() {
         ProcedureQuery query = new ProcedureQuery();
-        query.setSelecting(selecting);
-
         Object root = getRoot();
 
         if (root != null) {

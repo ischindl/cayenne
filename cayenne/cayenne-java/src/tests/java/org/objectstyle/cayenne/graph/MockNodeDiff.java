@@ -60,6 +60,10 @@ public class MockNodeDiff extends NodeDiff {
     public MockNodeDiff(Object nodeId) {
         super(nodeId);
     }
+    
+    public MockNodeDiff(Object nodeId, int diffId) {
+        super(nodeId, diffId);
+    }
 
     public void apply(GraphChangeHandler tracker) {
     }

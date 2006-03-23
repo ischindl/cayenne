@@ -59,6 +59,7 @@ import java.awt.event.ActionEvent;
 
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.map.event.DomainEvent;
+import org.objectstyle.cayenne.map.event.MapEvent;
 import org.objectstyle.cayenne.modeler.Application;
 import org.objectstyle.cayenne.modeler.ProjectController;
 import org.objectstyle.cayenne.modeler.event.DomainDisplayEvent;
@@ -103,7 +104,7 @@ public class CreateDomainAction extends CayenneAction {
                 project.getConfiguration());
         domain.getEntityResolver().setIndexedByClass(false);
         project.getConfiguration().addDomain(domain);
-        mediator.fireDomainEvent(new DomainEvent(this, domain, DomainEvent.ADD));
+        mediator.fireDomainEvent(new DomainEvent(this, domain, MapEvent.ADD));
         mediator.fireDomainDisplayEvent(new DomainDisplayEvent(this, domain));
     }
 

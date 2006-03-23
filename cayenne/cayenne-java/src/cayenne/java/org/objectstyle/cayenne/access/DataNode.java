@@ -115,6 +115,7 @@ public class DataNode implements QueryEngine {
     protected Map dataMaps;
 
     TransactionDataSource readThroughDataSource;
+    DataNodePKGenerationAction pkGenerationAction;
 
     /**
      * Creates a new unnamed DataNode.
@@ -169,6 +170,21 @@ public class DataNode implements QueryEngine {
 
     public void setDataSourceFactory(String dataSourceFactory) {
         this.dataSourceFactory = dataSourceFactory;
+    }
+    
+    /**
+     * @since 1.2
+     */
+    DataNodePKGenerationAction pkGenerationAction() {
+        if (this.pkGenerationAction == null) {
+            synchronized (this) {
+                if (this.pkGenerationAction == null) {
+                    this.pkGenerationAction = new DataNodePKGenerationAction(this);
+                }
+            }
+        }
+
+        return pkGenerationAction;
     }
 
     /**
@@ -574,7 +590,7 @@ public class DataNode implements QueryEngine {
             Transaction t = Transaction.getThreadTransaction();
             if (t != null) {
                 String key = CONNECTION_RESOURCE_PREFIX + name;
-                Connection c = (Connection) t.getConnection(key);
+                Connection c = t.getConnection(key);
 
                 if (c == null || c.isClosed()) {
                     c = dataSource.getConnection();
@@ -596,7 +612,7 @@ public class DataNode implements QueryEngine {
             Transaction t = Transaction.getThreadTransaction();
             if (t != null) {
                 String key = CONNECTION_RESOURCE_PREFIX + name;
-                Connection c = (Connection) t.getConnection(key);
+                Connection c = t.getConnection(key);
 
                 if (c == null || c.isClosed()) {
                     c = dataSource.getConnection();

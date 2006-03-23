@@ -64,8 +64,10 @@ import java.util.Map;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.objectstyle.art.Artist;
+import org.objectstyle.art.Painting;
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataObject;
+import org.objectstyle.cayenne.DataObjectUtils;
 import org.objectstyle.cayenne.DataRow;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
@@ -86,6 +88,26 @@ import org.objectstyle.cayenne.unit.CayenneTestCase;
  * @author Andrei Adamchik
  */
 public class DataContextExtrasTst extends CayenneTestCase {
+
+    public void testManualIdProcessingOnCommit() throws Exception {
+        deleteTestData();
+        DataContext context = createDataContext();
+
+        Artist object = (Artist) context.createAndRegisterNewObject(Artist.class);
+        object.setArtistName("ABC");
+        assertEquals(PersistenceState.NEW, object.getPersistenceState());
+        context.getObjectStore().recordObjectCreated(object);
+
+        // do a manual ID substitution
+        ObjectId manualId = new ObjectId("Artist", Artist.ARTIST_ID_PK_COLUMN, 77777);
+        object.setObjectId(manualId);
+
+        context.commitChanges();
+
+        assertEquals(PersistenceState.COMMITTED, object.getPersistenceState());
+        assertSame(object, context.getObjectStore().getObject(manualId));
+        assertEquals(manualId, object.getObjectId());
+    }
 
     public void testResolveFault() {
         DataContext context = createDataContext();
@@ -267,9 +289,9 @@ public class DataContextExtrasTst extends CayenneTestCase {
         assertNotNull(context.getEntityResolver());
     }
 
-    public void testValidatePhantomModifications() throws Exception {
+    public void testPhantomModificationsValidate() throws Exception {
         deleteTestData();
-        createTestData("testValidatePhantomModifications");
+        createTestData("testPhantomModification");
         DataContext context = createDataContext();
 
         List objects = context.performQuery(new SelectQuery(Artist.class));
@@ -298,5 +320,78 @@ public class DataContextExtrasTst extends CayenneTestCase {
 
         assertTrue(a2.isValidateForSaveCalled());
         assertFalse(a1.isValidateForSaveCalled());
+    }
+
+    public void testPhantomAttributeModificationCommit() throws Exception {
+        deleteTestData();
+        createTestData("testPhantomModification");
+        DataContext context = createDataContext();
+
+        List objects = context.performQuery(new SelectQuery(Artist.class));
+        Artist a1 = (Artist) objects.get(0);
+
+        String oldName = a1.getArtistName();
+
+        a1.setArtistName(oldName + ".mod");
+        a1.setArtistName(oldName);
+
+        context.commitChanges();
+        assertEquals(PersistenceState.COMMITTED, a1.getPersistenceState());
+    }
+
+    public void testPhantomRelationshipModificationCommit() throws Exception {
+        deleteTestData();
+        createTestData("testPhantomRelationshipModificationCommit");
+        DataContext context = createDataContext();
+
+        SelectQuery query = new SelectQuery(Painting.class);
+        List objects = context.performQuery(query);
+        assertEquals(1, objects.size());
+
+        Painting p1 = (Painting) objects.get(0);
+
+        Artist oldArtist = p1.getToArtist();
+        Artist newArtist = (Artist) DataObjectUtils.objectForPK(
+                context,
+                Artist.class,
+                33002);
+
+        assertNotSame(oldArtist, newArtist);
+
+        p1.setToArtist(newArtist);
+        p1.setToArtist(oldArtist);
+
+        context.commitChanges();
+
+        assertEquals(PersistenceState.COMMITTED, p1.getPersistenceState());
+        assertEquals(PersistenceState.COMMITTED, oldArtist.getPersistenceState());
+        assertEquals(PersistenceState.COMMITTED, newArtist.getPersistenceState());
+    }
+
+    public void testPhantomRelationshipModificationValidate() throws Exception {
+        deleteTestData();
+        createTestData("testPhantomRelationshipModificationCommit");
+        DataContext context = createDataContext();
+
+        SelectQuery query = new SelectQuery(Painting.class);
+        List objects = context.performQuery(query);
+        assertEquals(1, objects.size());
+
+        Painting p1 = (Painting) objects.get(0);
+
+        Artist oldArtist = p1.getToArtist();
+        Artist newArtist = (Artist) DataObjectUtils.objectForPK(
+                context,
+                Artist.class,
+                33002);
+
+        assertNotSame(oldArtist, newArtist);
+
+        p1.setToArtist(newArtist);
+        p1.setToArtist(oldArtist);
+
+        p1.resetValidationFlags();
+        context.commitChanges();
+        assertFalse(p1.isValidateForSaveCalled());
     }
 }

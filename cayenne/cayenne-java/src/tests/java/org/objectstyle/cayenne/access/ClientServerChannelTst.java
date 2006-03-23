@@ -112,13 +112,13 @@ public class ClientServerChannelTst extends CayenneTestCase {
 
         // no changes...
         ClientServerChannel channel = new ClientServerChannel(context, false);
-        channel.onSync(context, DataChannel.COMMIT_SYNC_TYPE, new MockGraphDiff());
+        channel.onSync(context, new MockGraphDiff(), DataChannel.FLUSH_CASCADE_SYNC);
 
         assertEquals(0, context.performQuery(query).size());
 
         // introduce changes
-        channel.onSync(context, DataChannel.COMMIT_SYNC_TYPE, new NodeCreateOperation(
-                new ObjectId("MtTable1")));
+        channel.onSync(context, new NodeCreateOperation(
+                new ObjectId("MtTable1")), DataChannel.FLUSH_CASCADE_SYNC);
 
         assertEquals(1, context.performQuery(query).size());
     }

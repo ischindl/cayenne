@@ -386,7 +386,7 @@ class BaseQueryMetadata implements QueryMetadata, XMLSerializable, Serializable 
 
         if (prefetches != null && !prefetches.isEmpty()) {
 
-            Iterator it = (Iterator) prefetches.iterator();
+            Iterator it = prefetches.iterator();
             while (it.hasNext()) {
                 String prefetch = (String) it.next();
                 addPrefetch(prefetch, semantics);

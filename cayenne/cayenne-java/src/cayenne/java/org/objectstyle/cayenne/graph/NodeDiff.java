@@ -61,14 +61,20 @@ package org.objectstyle.cayenne.graph;
  * @since 1.2
  * @author Andrus Adamchik
  */
-public abstract class NodeDiff implements GraphDiff {
+public abstract class NodeDiff implements GraphDiff, Comparable {
 
+    protected int diffId;
     protected Object nodeId;
 
     public NodeDiff(Object nodeId) {
         this.nodeId = nodeId;
     }
-    
+
+    public NodeDiff(Object nodeId, int diffId) {
+        this.nodeId = nodeId;
+        this.diffId = diffId;
+    }
+
     public boolean isNoop() {
         return false;
     }
@@ -79,5 +85,32 @@ public abstract class NodeDiff implements GraphDiff {
 
     public Object getNodeId() {
         return nodeId;
+    }
+
+    /**
+     * Returns an id of this diff that can be used for various purposes, such as
+     * identifying the order of the diff in a sequence.
+     */
+    public int getDiffId() {
+        return diffId;
+    }
+
+    /**
+     * Sets an id of this diff that can be used for various purposes, such as identifying
+     * the order of the diff in a sequence.
+     */
+    public void setDiffId(int diffId) {
+        this.diffId = diffId;
+    }
+
+    /**
+     * Implements a Comparable interface method to compare based on diffId property.
+     */
+    public int compareTo(Object o) {
+        if (!(o instanceof NodeDiff)) {
+            throw new IllegalArgumentException("Can't compare to " + o);
+        }
+
+        return diffId - ((NodeDiff) o).getDiffId();
     }
 }

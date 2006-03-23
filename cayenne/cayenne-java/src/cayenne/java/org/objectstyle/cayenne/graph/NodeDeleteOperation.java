@@ -64,6 +64,10 @@ public class NodeDeleteOperation extends NodeDiff {
     public NodeDeleteOperation(Object nodeId) {
         super(nodeId);
     }
+    
+    public NodeDeleteOperation(Object nodeId, int diffId) {
+        super(nodeId, diffId);
+    }
 
     public void apply(GraphChangeHandler tracker) {
         tracker.nodeRemoved(nodeId);

@@ -3,7 +3,7 @@
 <!-- ========================================== -->
 <!-- Core Cayenne subproject buildfile.         -->
 <!-- ========================================== -->
-<project default="...">
+<project>
 	<property name="core.dist.src" value="${dist}/src/cayenne"/>
 	<property name="core.build" value="${build}/cayenne-1_4/classes"/>
 	<property name="core.build.1_5" value="${build}/cayenne-1_5/classes"/>
@@ -203,12 +203,6 @@
 		<jar jarfile="${dist}/lib/cayenne.jar">
 			<fileset dir="${core.build}"/>
 			<fileset dir="${core.build.1_5}"/>
-			
-			<fileset dir="${core.src}">
-				<include name="**/*.xml"/>
-				<include name="**/*.gif"/>
-				<include name="**/*.jpg"/>
-			</fileset>
 			
 			<fileset dir="${core.build.deps}"/>
 			

@@ -3,7 +3,7 @@
 <!-- ========================================== -->
 <!-- Creates Windows-friendly distribution.    -->
 <!-- ========================================== -->
-<project name="WinDistro" default="...">
+<project name="WinDistro">
 	
 	<property name="dist.win" value="${dist.base}/win"/>
 	<property name="build.win" value="${build}/win"/>

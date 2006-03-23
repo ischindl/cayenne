@@ -70,13 +70,14 @@ import java.io.InputStreamReader;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingConstants;
+import javax.swing.WindowConstants;
 
 import org.objectstyle.cayenne.modeler.CayenneModelerFrame;
 import org.objectstyle.cayenne.modeler.util.CayenneDialog;
@@ -201,7 +202,7 @@ public class AboutDialog extends CayenneDialog {
         super(frame, "About CayenneModeler", true);
         init();
 
-        this.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         this.pack();
         this.centerWindow();
         this.setVisible(true);
@@ -228,7 +229,7 @@ public class AboutDialog extends CayenneDialog {
             }
         };
 
-        tabPanel.setTabPlacement(JTabbedPane.TOP);
+        tabPanel.setTabPlacement(SwingConstants.TOP);
         tabPanel.addTab("About CayenneModeler", new JScrollPane(initInfoPanel()));
         tabPanel.addTab("License", new JScrollPane(initLicensePanel()));
 

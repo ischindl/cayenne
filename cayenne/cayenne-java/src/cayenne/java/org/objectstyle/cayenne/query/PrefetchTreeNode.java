@@ -319,7 +319,7 @@ public class PrefetchTreeNode implements Serializable, XMLSerializable {
 
     protected void removeChild(String segment) {
         if (children != null) {
-            PrefetchTreeNode child = (PrefetchTreeNode) getChild(segment);
+            PrefetchTreeNode child = getChild(segment);
             if (child != null) {
                 children.remove(child);
                 child.parent = null;

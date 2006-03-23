@@ -111,7 +111,7 @@ public class DeepMergeOperation {
             return seenTarget;
         }
 
-        final Persistent target = context.localObject(id, (Persistent) source);
+        final Persistent target = context.localObject(id, source);
         seen.put(id, target);
 
         descriptor = descriptor.getSubclassDescriptor(source.getClass());

@@ -79,7 +79,7 @@ class DispatchHelper {
         }
         else if (message instanceof SyncMessage) {
             SyncMessage sync = (SyncMessage) message;
-            return channel.onSync(null, sync.getType(), sync.getSenderChanges());
+            return channel.onSync(null, sync.getSenderChanges(), sync.getType());
         }
         else if (message instanceof BootstrapMessage) {
             return channel.getEntityResolver();
