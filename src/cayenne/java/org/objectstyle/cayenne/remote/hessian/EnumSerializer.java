@@ -53,7 +53,7 @@
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
  */
-package org.objectstyle.cayenne.opp.hessian;
+package org.objectstyle.cayenne.remote.hessian;
 
 import java.io.IOException;
 

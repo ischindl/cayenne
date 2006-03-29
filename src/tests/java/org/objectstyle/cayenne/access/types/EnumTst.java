@@ -62,7 +62,7 @@ import java.util.Map;
 
 import junit.framework.TestCase;
 
-import org.objectstyle.cayenne.opp.hessian.HessianUtil;
+import org.objectstyle.cayenne.remote.hessian.HessianUtil;
 import org.objectstyle.cayenne.util.Util;
 
 /**
