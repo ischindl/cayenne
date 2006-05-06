@@ -62,7 +62,8 @@ import java.util.Map;
 
 import junit.framework.TestCase;
 
-import org.objectstyle.cayenne.remote.hessian.HessianUtil;
+import org.objectstyle.cayenne.map.EntityResolver;
+import org.objectstyle.cayenne.remote.hessian.service.HessianUtil;
 import org.objectstyle.cayenne.util.Util;
 
 /**
@@ -76,7 +77,9 @@ public class EnumTst extends TestCase {
         MockEnum before = MockEnum.a;
 
         // test standalone
-        Object after = HessianUtil.cloneViaHessianSerialization(before);
+        Object after = HessianUtil.cloneViaClientServerSerialization(
+                before,
+                new EntityResolver());
         assertNotNull(after);
         assertSame(before, after);
     }
@@ -86,7 +89,9 @@ public class EnumTst extends TestCase {
         Map<String, MockEnum> map = new HashMap<String, MockEnum>();
         map.put("a", MockEnum.b);
 
-        Map after = (Map) HessianUtil.cloneViaHessianSerialization((Serializable) map);
+        Map after = (Map) HessianUtil.cloneViaClientServerSerialization(
+                (Serializable) map,
+                new EntityResolver());
         assertNotNull(map);
         assertSame(MockEnum.b, after.get("a"));
 
@@ -98,7 +103,7 @@ public class EnumTst extends TestCase {
         object.setMockEnum(MockEnum.b);
 
         MockEnumHolder after = (MockEnumHolder) HessianUtil
-                .cloneViaHessianSerialization(object);
+                .cloneViaClientServerSerialization(object, new EntityResolver());
         assertNotNull(after);
         assertSame(MockEnum.b, after.getMockEnum());
     }
@@ -117,7 +122,9 @@ public class EnumTst extends TestCase {
         l.add(o1);
         l.add(o2);
 
-        ArrayList ld = (ArrayList) HessianUtil.cloneViaHessianSerialization(l);
+        ArrayList ld = (ArrayList) HessianUtil.cloneViaClientServerSerialization(
+                l,
+                new EntityResolver());
         assertEquals(2, ld.size());
 
         MockEnumHolder o1d = (MockEnumHolder) ld.get(0);

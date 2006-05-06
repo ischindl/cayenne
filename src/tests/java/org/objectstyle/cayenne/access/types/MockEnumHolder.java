@@ -60,6 +60,7 @@ import java.io.Serializable;
 public class MockEnumHolder implements Serializable {
 
     protected MockEnum mockEnum;
+    protected int number;
 
     public MockEnum getMockEnum() {
         return mockEnum;
@@ -68,4 +69,13 @@ public class MockEnumHolder implements Serializable {
     public void setMockEnum(MockEnum mockEnum) {
         this.mockEnum = mockEnum;
     }
+
+    public int getNumber() {
+        return number;
+    }
+
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
 }
