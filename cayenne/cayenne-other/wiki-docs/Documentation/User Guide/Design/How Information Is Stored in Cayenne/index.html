@@ -1,0 +1,65 @@
+<html>
+  <head>
+    <title>Cayenne Documentation - How Information Is Stored in Cayenne</title>
+    <style type="text/css">@import "../../../../style.css";</style>
+  </head>
+<body>
+  <div class="header">
+    <div style="float: left;"><a href="http://objectstyle.org/cayenne/"><img src="../../../../images/logo.gif" align="absmiddle" border="0"></a></div>
+    <span class="logoSpaceLink"><a href="../../../../index.html">Cayenne User Documentation</a></span><br />
+    <span class="pagetitle">How Information Is Stored in Cayenne</span>
+  </div>
+<div id="cayenne_toc">
+<ul>
+<li><a href="../../../../Documentation/User Guide/Introduction/index.html">Introduction</a></li>
+<li><a href="../../../../Documentation/User Guide/Installation/index.html">Installation</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/index.html">Quick Start</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/index.html">Design</a><ul>
+<li><a href="../../../../Documentation/User Guide/Design/Access Classes/index.html">Access Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Cayenne DataSource/index.html">Cayenne DataSource</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Cross-Database Issues/index.html">Cross-Database Issues</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Data Objects/index.html">Data Objects</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Event Package/index.html">Event Package</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Generated Columns/index.html">Generated Columns</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/How Information Is Stored in Cayenne/index.html">How Information Is Stored in Cayenne</a><ul>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Design/Object Graph/index.html">Object Graph</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Object Relational Mapping/index.html">Object Relational Mapping</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Primary Key Generation/index.html">Primary Key Generation</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Understanding Caching/index.html">Understanding Caching</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Understanding Transactions/index.html">Understanding Transactions</a></li>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Generating Classes/index.html">Generating Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/DataContext/index.html">DataContext</a></li>
+<li><a href="../../../../Documentation/User Guide/Queries/index.html">Queries</a></li>
+<li><a href="../../../../Documentation/User Guide/DataObjects/index.html">DataObjects</a></li>
+<li><a href="../../../../Documentation/User Guide/Stored Procedures/index.html">Stored Procedures</a></li>
+<li><a href="../../../../Documentation/User Guide/Expressions/index.html">Expressions</a></li>
+<li><a href="../../../../Documentation/User Guide/Performance Tuning/index.html">Performance Tuning</a></li>
+<li><a href="../../../../Documentation/User Guide/Deployment/index.html">Deployment</a></li>
+<li><a href="../../../../Documentation/User Guide/Ant Tasks/index.html">Ant Tasks</a></li>
+<li><a href="../../../../Documentation/User Guide/Access Stack Internals/index.html">Access Stack Internals</a></li>
+<li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
+</ul>
+</div>
+<div id="ConfluenceContent"><p>There are two types of data items stored by Cayenne - DataObjects and DataRows.</p>
+
+<p>The DataObject graph is stored by instances of ObjectStore associated with every DataContext. As discussed earlier, "graph" is simply a set of DataObjects interconnected to each other via relationships.</p>
+
+<p>DataRows are snapshots of database table rows. They are stored by DataRowStore. DataRows are used internally for many tasks performed by Cayenne, including creation of DataObjects, tracking changes to DataObjects, and caching.</p>
+
+<p>Both DataRowStore and ObjectStore use ObjectIds as lookup keys to their corresponding data items.</p>
+
+<table cellpadding='5' width='85%' cellspacing='8px' class='infoMacro' border="0" align='center'><colgroup><col width='24'><col></colgroup><tr><td valign='top'><img src="../../../../images/emoticons/information.gif" width="16" height="16" align="absmiddle" alt="" border="0"></td><td>The relationship between ObjectStore and DataRow store is discussed in <a href="../../../../Documentation/User Guide/Design/Understanding Caching/index.html" title="Understanding Caching">Understanding Caching</a>.</td></tr></table></div>
+</div>
+  <div class="clearer">.</div>
+  <div style="height: 12px; background-image: url('../../../../images/border_bottom.gif'); background-repeat: repeat-x;"></div>
+
+  <div class="smalltext copyright">
+    Copyright &copy;2001-2006 ObjectStyle Group and content authors
+  </div>
+
+</body>
+</html>

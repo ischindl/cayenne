@@ -1,0 +1,76 @@
+<html>
+  <head>
+    <title>Cayenne Documentation - Object Graph</title>
+    <style type="text/css">@import "../../../../style.css";</style>
+  </head>
+<body>
+  <div class="header">
+    <div style="float: left;"><a href="http://objectstyle.org/cayenne/"><img src="../../../../images/logo.gif" align="absmiddle" border="0"></a></div>
+    <span class="logoSpaceLink"><a href="../../../../index.html">Cayenne User Documentation</a></span><br />
+    <span class="pagetitle">Object Graph</span>
+  </div>
+<div id="cayenne_toc">
+<ul>
+<li><a href="../../../../Documentation/User Guide/Introduction/index.html">Introduction</a></li>
+<li><a href="../../../../Documentation/User Guide/Installation/index.html">Installation</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/index.html">Quick Start</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/index.html">Design</a><ul>
+<li><a href="../../../../Documentation/User Guide/Design/Access Classes/index.html">Access Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Cayenne DataSource/index.html">Cayenne DataSource</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Cross-Database Issues/index.html">Cross-Database Issues</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Data Objects/index.html">Data Objects</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Event Package/index.html">Event Package</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Generated Columns/index.html">Generated Columns</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/How Information Is Stored in Cayenne/index.html">How Information Is Stored in Cayenne</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Object Graph/index.html">Object Graph</a><ul>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Design/Object Relational Mapping/index.html">Object Relational Mapping</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Primary Key Generation/index.html">Primary Key Generation</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Understanding Caching/index.html">Understanding Caching</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Understanding Transactions/index.html">Understanding Transactions</a></li>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Generating Classes/index.html">Generating Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/DataContext/index.html">DataContext</a></li>
+<li><a href="../../../../Documentation/User Guide/Queries/index.html">Queries</a></li>
+<li><a href="../../../../Documentation/User Guide/DataObjects/index.html">DataObjects</a></li>
+<li><a href="../../../../Documentation/User Guide/Stored Procedures/index.html">Stored Procedures</a></li>
+<li><a href="../../../../Documentation/User Guide/Expressions/index.html">Expressions</a></li>
+<li><a href="../../../../Documentation/User Guide/Performance Tuning/index.html">Performance Tuning</a></li>
+<li><a href="../../../../Documentation/User Guide/Deployment/index.html">Deployment</a></li>
+<li><a href="../../../../Documentation/User Guide/Ant Tasks/index.html">Ant Tasks</a></li>
+<li><a href="../../../../Documentation/User Guide/Access Stack Internals/index.html">Access Stack Internals</a></li>
+<li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
+</ul>
+</div>
+<div id="ConfluenceContent"><p>Mapping discussed in the previous chapter is used to translate data coming from the database into a bunch of DataObjects. DataObjects interconnected with each other using relationships form an object graph. Object graph is a useful abstraction when thinking about interactions between persistent objects in Cayenne application.</p>
+<table cellpadding='5' width='85%' cellspacing='8px' class='infoMacro' border="0" align='center'><colgroup><col width='24'><col></colgroup><tr><td valign='top'><img src="../../../../images/emoticons/information.gif" width="16" height="16" align="absmiddle" alt="" border="0"></td><td>There is no "ObjectGraph" class in Cayenne - this is a pure logical concept transparent to the user. Other terms describing the same concept as object graph are "business objects layer", "persistent objects", etc. Object graph is stored in memory and manipulated by the ObjectStore instance.</td></tr></table>
+
+<table cellpadding='5' width='85%' cellspacing='8px' class='infoMacro' border="0" align='center'><colgroup><col width='24'><col></colgroup><tr><td valign='top'><img src="../../../../images/emoticons/information.gif" width="16" height="16" align="absmiddle" alt="" border="0"></td><td>While relationships between objects are represented as ObjRelationship instances in the DataMap, objects themselves implement relationships as simple List or DataObject properties.</td></tr></table>
+
+<p>Cayenne object graph has the following principal properties that make it useful and easy to use in the application:</p>
+
+<ul>
+	<li><em>All operations on the object graph are controllable by the application.</em><br/>
+      Developers can add/remove/modify objects related to a given object via corresponding method calls.</li>
+	<li><em>Initial set of objects is obtained by running a select query, or creating new DataObjects.</em></li>
+	<li><em>Most objects related to the initial objects can be obtained via simple method calls on initial objects.</em></li>
+	<li><em>Object identity and uniquing in a certain context.</em><br/>
+      Cayenne ensures that there will be no more than one object in any given DataContext that corresponds to a given database row. For instance if an object is obtained via a relationship method call, and later another object is obtained via a query interface for the same database row (think same primary key), only one object will be created in Cayenne. For the later case an object will not be created, but rather an already existing object will be reused.</li>
+	<li><em>Synchronization with the database.</em><br/>
+      Object graph changes can be synchronized with the database in a single method call. This greatly simplifies management of changes and solves transactional issues.</li>
+	<li><em>Discarding changes.</em><br/>
+      Object graph changes made since last commit can be discarded using a single method call.</li>
+</ul>
+</div>
+</div>
+  <div class="clearer">.</div>
+  <div style="height: 12px; background-image: url('../../../../images/border_bottom.gif'); background-repeat: repeat-x;"></div>
+
+  <div class="smalltext copyright">
+    Copyright &copy;2001-2006 ObjectStyle Group and content authors
+  </div>
+
+</body>
+</html>

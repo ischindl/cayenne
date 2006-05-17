@@ -1,0 +1,65 @@
+<html>
+  <head>
+    <title>Cayenne Documentation - Cayenne Application</title>
+    <style type="text/css">@import "../../../../style.css";</style>
+  </head>
+<body>
+  <div class="header">
+    <div style="float: left;"><a href="http://objectstyle.org/cayenne/"><img src="../../../../images/logo.gif" align="absmiddle" border="0"></a></div>
+    <span class="logoSpaceLink"><a href="../../../../index.html">Cayenne User Documentation</a></span><br />
+    <span class="pagetitle">Cayenne Application</span>
+  </div>
+<div id="cayenne_toc">
+<ul>
+<li><a href="../../../../Documentation/User Guide/Introduction/index.html">Introduction</a></li>
+<li><a href="../../../../Documentation/User Guide/Installation/index.html">Installation</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/index.html">Quick Start</a><ul>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Cayenne Application/index.html">Cayenne Application</a><ul>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Command-Line Tutorial/index.html">Command-Line Tutorial</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Common Setup Steps/index.html">Common Setup Steps</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/JSP-Struts Tutorial/index.html">JSP-Struts Tutorial</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Tapestry/index.html">Tapestry</a></li>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Design/index.html">Design</a></li>
+<li><a href="../../../../Documentation/User Guide/Generating Classes/index.html">Generating Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/DataContext/index.html">DataContext</a></li>
+<li><a href="../../../../Documentation/User Guide/Queries/index.html">Queries</a></li>
+<li><a href="../../../../Documentation/User Guide/DataObjects/index.html">DataObjects</a></li>
+<li><a href="../../../../Documentation/User Guide/Stored Procedures/index.html">Stored Procedures</a></li>
+<li><a href="../../../../Documentation/User Guide/Expressions/index.html">Expressions</a></li>
+<li><a href="../../../../Documentation/User Guide/Performance Tuning/index.html">Performance Tuning</a></li>
+<li><a href="../../../../Documentation/User Guide/Deployment/index.html">Deployment</a></li>
+<li><a href="../../../../Documentation/User Guide/Ant Tasks/index.html">Ant Tasks</a></li>
+<li><a href="../../../../Documentation/User Guide/Access Stack Internals/index.html">Access Stack Internals</a></li>
+<li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
+</ul>
+</div>
+<div id="ConfluenceContent"><p>This is an approximate simplified algorithm for creating a Cayenne-enabled application. This should give you some understanding of what is going on in the following chapters. You can skip this page for now and proceed to the tutorials.</p>
+
+<h3><a name="CayenneApplication-CreateCayenneProject"></a>Create Cayenne Project</h3>
+<p>Cayenne project is a set of XML mapping and deployment files used by a Cayenne Java application. Projects are normally created and edited in CayenneModeler GUI tool. All the needed mapping information is either obtained by reverse-engineering an existing database (as shown later in this chapter), or by creating individual mapping components in the Modeler.</p>
+
+<h3><a name="CayenneApplication-GenerateJavaClasses"></a>Generate Java Classes</h3>
+<p>Persistent Java classes (aka DataObjects) are generated and synchronized with the mapping using the Modeler (or alternatively with a "cgen" Ant task).</p>
+
+<h3><a name="CayenneApplication-%28optional%29GenerateDBSchema"></a>(optional) Generate DB Schema</h3>
+<p>If a project wasn't reverse-engineered from an existing database, but rather created manually in the Modeler, a matching database schema can be generated from the Modeler.</p>
+
+<h3><a name="CayenneApplication-WritetheActualApplication"></a>Write the Actual Application</h3>
+<p>Write a Java application taking advantage of Cayenne functionality. Hint: <a href="../../../../Documentation/User Guide/DataContext/index.html" title="DataContext">DataContext</a> is normally a starting point providing an application with access to Cayenne.</p>
+
+<h3><a name="CayenneApplication-ConfigureDeploymentSettings"></a>Configure Deployment Settings</h3>
+<p>Depending on how you plan to deploy your application you may configure Cayenne in a few ways. Possible deployment scenarious include standalone application, web application, EJB application. Standalone applications usually do not require any special configuration. Web applications usually need an entry in a web.xml file. </p></div>
+</div>
+  <div class="clearer">.</div>
+  <div style="height: 12px; background-image: url('../../../../images/border_bottom.gif'); background-repeat: repeat-x;"></div>
+
+  <div class="smalltext copyright">
+    Copyright &copy;2001-2006 ObjectStyle Group and content authors
+  </div>
+
+</body>
+</html>

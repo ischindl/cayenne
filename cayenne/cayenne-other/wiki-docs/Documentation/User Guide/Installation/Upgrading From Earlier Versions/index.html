@@ -1,0 +1,62 @@
+<html>
+  <head>
+    <title>Cayenne Documentation - Upgrading From Earlier Versions</title>
+    <style type="text/css">@import "../../../../style.css";</style>
+  </head>
+<body>
+  <div class="header">
+    <div style="float: left;"><a href="http://objectstyle.org/cayenne/"><img src="../../../../images/logo.gif" align="absmiddle" border="0"></a></div>
+    <span class="logoSpaceLink"><a href="../../../../index.html">Cayenne User Documentation</a></span><br />
+    <span class="pagetitle">Upgrading From Earlier Versions</span>
+  </div>
+<div id="cayenne_toc">
+<ul>
+<li><a href="../../../../Documentation/User Guide/Introduction/index.html">Introduction</a></li>
+<li><a href="../../../../Documentation/User Guide/Installation/index.html">Installation</a><ul>
+<li><a href="../../../../Documentation/User Guide/Installation/JAR Files and Dependencies/index.html">JAR Files and Dependencies</a></li>
+<li><a href="../../../../Documentation/User Guide/Installation/Upgrading From Earlier Versions/index.html">Upgrading From Earlier Versions</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/index.html">Quick Start</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/index.html">Design</a></li>
+<li><a href="../../../../Documentation/User Guide/Generating Classes/index.html">Generating Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/DataContext/index.html">DataContext</a></li>
+<li><a href="../../../../Documentation/User Guide/Queries/index.html">Queries</a></li>
+<li><a href="../../../../Documentation/User Guide/DataObjects/index.html">DataObjects</a></li>
+<li><a href="../../../../Documentation/User Guide/Stored Procedures/index.html">Stored Procedures</a></li>
+<li><a href="../../../../Documentation/User Guide/Expressions/index.html">Expressions</a></li>
+<li><a href="../../../../Documentation/User Guide/Performance Tuning/index.html">Performance Tuning</a></li>
+<li><a href="../../../../Documentation/User Guide/Deployment/index.html">Deployment</a></li>
+<li><a href="../../../../Documentation/User Guide/Ant Tasks/index.html">Ant Tasks</a></li>
+<li><a href="../../../../Documentation/User Guide/Access Stack Internals/index.html">Access Stack Internals</a></li>
+<li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
+</ul>
+</div>
+<div id="ConfluenceContent"><h3><a name="UpgradingFromEarlierVersions-GeneralUpgradeRecommendations"></a>General Upgrade Recommendations</h3>
+
+<ul>
+	<li>Upgrade XML files. Open your project with the version of the Modeler that came with the latest download. If an upgrade dialog pops up, select "yes" to do an upgrade. Also if you are using a milestone or a nightly build it is also a good idea to make some insignificant change to the model (so that a "Save" button is activated) and do a save.</li>
+	<li>Do a clean recomplie. Recompile all your code, to make sure that you are not using any old classes or methods. Pay attention to deprecation warnings. It is always a good idea to update your code to avoid deprecated API.</li>
+</ul>
+
+
+<table cellpadding='5' width='85%' cellspacing='8px' class='warningMacro' border="0" align='center'><colgroup><col width='24'><col></colgroup><tr><td valign='top'><img src="../../../../images/emoticons/forbidden.gif" width="16" height="16" align="absmiddle" alt="" border="0"></td><td>Upgrading project XML files will likely make them unusable with earlier versions of Cayenne.</td></tr></table>
+
+<h3><a name="UpgradingFromEarlierVersions-Upgradingfrom1.1and1.0"></a>Upgrading from 1.1 and 1.0</h3>
+
+<ul>
+	<li><b>PostgreSQL PK Generator</b> (For PostgreSQL users only) Since Cayenne 1.2 default PK generator for PostgreSQL database uses database sequences instead of AUTO_PK_TABLE. To port an existing application, you will need to create those sequences and assign correct current values to them (e.g. taken from the old AUTO_PK_TABLE). After that AUTO_PK_TABLE can be dropped.</li>
+</ul>
+</div>
+</div>
+  <div class="clearer">.</div>
+  <div style="height: 12px; background-image: url('../../../../images/border_bottom.gif'); background-repeat: repeat-x;"></div>
+
+  <div class="smalltext copyright">
+    Copyright &copy;2001-2006 ObjectStyle Group and content authors
+  </div>
+
+</body>
+</html>
