@@ -3,6 +3,7 @@
 -->
 <project default="jmeter">
 	
+	<property name="jmeter.html" value="target/jmeter/cayenne-profile.html"/>
 	<path id="jmeter.classpath">
 			<fileset dir="${jmeter.home}/" includes="**/*.jar"/>
 	</path>
@@ -13,6 +14,7 @@
 		    classname="org.programmerplanet.ant.taskdefs.jmeter.JMeterTask" 
 			classpathref="jmeter.classpath"/>
 		
+		<mkdir dir="target/jmeter"/>
 		<delete>
 			<fileset dir="target/jmeter"/>
 		</delete>
@@ -24,7 +26,7 @@
 		
 		<xslt
 		    in="target/jmeter/cayenne-profile.jtl"
-		    out="target/jmeter/cayenne-profile.html"
+		    out="${jmeter.html}"
 		    style="src/main/jmeter/jmeter-results-report.xsl"/>
 	</target>
 	
