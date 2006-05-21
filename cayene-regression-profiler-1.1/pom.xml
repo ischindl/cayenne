@@ -4,17 +4,8 @@
   <artifactId>cayenne-regression-profiler</artifactId>
   <packaging>war</packaging>
   <name>Cayenne Regression Profiler Web Application</name>
-  <version>1.2-SNAPSHOT</version>
+  <version>1.1-SNAPSHOT</version>
   <url>http://incubator.apache.org/cayenne/</url>
-  
-  <repositories>
-		<repository>
-			<id>objectstyle</id>
-			<name>ObjectStyle Public Maven2 repo</name>
-			<url>http://objectstyle.org/maven2</url>
-		</repository>
-  </repositories>
-  
   <build>
     <finalName>cayenne-regression-profiler</finalName>
     <plugins>
@@ -41,9 +32,6 @@
           </execution>
         </executions>
       </plugin>
-      <!-- before running , do this:
-           export MAVEN_OPTS="-Xms128M -Xmx128M"
-      -->
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>maven-jetty6-plugin</artifactId>
@@ -62,6 +50,61 @@
       </plugin>
     </plugins>
   </build>
+    <profiles>
+    <!-- Database profiles -->
+    <profile>
+      <id>default-db</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+        <property>
+      		<name>cayenne.test.connection</name>
+      		<value>internal_embedded_datasource</value>
+      	</property>
+      </activation>
+      <dependencies>
+        <dependency>
+      		<groupId>hsqldb</groupId>
+      		<artifactId>hsqldb</artifactId>
+     		<version>1.8.0.1</version>
+      		<scope>runtime</scope>
+    	</dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>mysql</id>
+      <activation>
+      	<property>
+      		<name>cayenne.test.connection</name>
+      		<value>mysql</value>
+      	</property>
+      </activation>
+      <dependencies>
+        <dependency>
+      		<groupId>mysql</groupId>
+      		<artifactId>mysql-connector-java</artifactId>
+      		<version>3.1.11</version>
+      		<scope>runtime</scope>
+    	</dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>oracle</id>
+      <activation>
+      <property>
+      	<name>cayenne.test.connection</name>
+      	<value>oracle</value>
+      </property>
+      </activation>
+      <dependencies>
+        <dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>oracle-driver</artifactId>
+			<version>10</version>
+			<scope>runtime</scope>
+		</dependency>
+      </dependencies>
+    </profile>
+  </profiles>
   <dependencies>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -75,15 +118,9 @@
 		<version>3.8.1</version>
 	</dependency>
     <dependency>
-      <groupId>hsqldb</groupId>
-      <artifactId>hsqldb</artifactId>
-      <version>1.8.0.1</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
 			<groupId>org.objectstyle.cayenne</groupId>
 			<artifactId>cayenne</artifactId>
 			<version>1.1.4</version>
-		</dependency>
+	</dependency>
   </dependencies>
 </project>

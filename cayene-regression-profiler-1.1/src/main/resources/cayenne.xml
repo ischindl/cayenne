@@ -4,9 +4,9 @@
 	<map name="regression-profile" location="regression-profile.map.xml"/>
 
 	<node name="regression-profile"
-		 datasource="regression-profile.driver.xml"
-		 adapter="org.objectstyle.cayenne.dba.hsqldb.HSQLDBAdapter"
-		 factory="org.objectstyle.cayenne.conf.DriverDataSourceFactory">
+		 datasource="regression-profile"
+		 adapter="org.objectstyle.cayenne.dba.JdbcAdapter"
+		 factory="org.apache.cayenne.profile.TestDataSourceFactory">
 			<map-ref name="regression-profile"/>
 	 </node>
 </domain>

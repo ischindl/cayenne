@@ -18,8 +18,8 @@ package org.apache.cayenne.profile.cases;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.cayenne.profile.AbstractCase;
 import org.apache.cayenne.profile.entity.Entity1;
-import org.apache.cayenne.profile.servlet.AbstractCase;
 import org.objectstyle.cayenne.access.DataContext;
 import org.objectstyle.cayenne.query.SQLTemplate;
 

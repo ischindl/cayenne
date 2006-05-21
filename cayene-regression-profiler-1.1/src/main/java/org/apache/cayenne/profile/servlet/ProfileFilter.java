@@ -15,19 +15,18 @@
  */
 package org.apache.cayenne.profile.servlet;
 
-import java.io.File;
-
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 
+import org.apache.cayenne.profile.TestDataSourceFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
 import org.objectstyle.cayenne.access.DbGenerator;
 import org.objectstyle.cayenne.conf.Configuration;
+import org.objectstyle.cayenne.dba.DbAdapter;
 import org.objectstyle.cayenne.util.LocalizedStringsHandler;
-import org.objectstyle.cayenne.util.Util;
 
 /**
  * A filter that sets up DB schema.
@@ -38,20 +37,6 @@ public class ProfileFilter extends WebApplicationContextFilter {
 
     public synchronized void init(FilterConfig config) throws ServletException {
 
-        // remove old database
-        // store this value and log it after Cayenne logging is initialized.
-        boolean deletedOldDb = false;
-        File dbDir = new File("target/regression-db");
-        if (dbDir.isDirectory()) {
-            if (Util.delete(dbDir.getAbsolutePath(), true)) {
-                deletedOldDb = true;
-            }
-            
-            if (dbDir.isDirectory()) {
-                throw new ServletException("Can't delete the old database");
-            }
-        }
-
         // start Cayenne stack
         super.init(config);
 
@@ -59,14 +44,35 @@ public class ProfileFilter extends WebApplicationContextFilter {
         if (cayenneVersion == null) {
             cayenneVersion = "unknown";
         }
-        logger.info("Started Cayenne version - '" + cayenneVersion + "'");
-        if(deletedOldDb) {
-            logger.info("deleted old database");
-        }
 
-        // create fresh database
         DataDomain domain = Configuration.getSharedConfiguration().getDomain();
         DataNode node = domain.getNode("regression-profile");
+
+        // 1.1 doesn't have AutoAdapter - set the right adapter manually.
+        String adapterName = TestDataSourceFactory
+                .getDataSourceInfo()
+                .getAdapterClassName();
+
+        try {
+            node.setAdapter((DbAdapter) Class.forName(
+                    adapterName,
+                    true,
+                    Thread.currentThread().getContextClassLoader()).newInstance());
+        }
+        catch (Exception e) {
+            throw new ServletException("Error instantiating adapter - " + adapterName, e);
+        }
+
+        logger.info("Started Cayenne... Version - '"
+                + cayenneVersion
+                + "'; connection: '"
+                + TestDataSourceFactory.getDataSourceName()
+                + "'; adapter: '"
+                + adapterName
+                + "'");
+
+        // create fresh database
+
         DbGenerator generator = new DbGenerator(node.getAdapter(), domain
                 .getMap("regression-profile"));
         try {

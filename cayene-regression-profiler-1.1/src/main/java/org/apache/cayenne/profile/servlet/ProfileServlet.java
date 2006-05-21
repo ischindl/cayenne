@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.cayenne.profile.AbstractCase;
 import org.objectstyle.cayenne.access.DataContext;
 
 /**
