@@ -1,0 +1,31 @@
+<!-- 
+	An ant file to run JMeter client.
+-->
+<project default="jmeter">
+	
+	<path id="jmeter.classpath">
+			<fileset dir="${jmeter.home}/" includes="**/*.jar"/>
+	</path>
+	
+	<target name="jmeter">
+		<taskdef
+		    name="jmeter"
+		    classname="org.programmerplanet.ant.taskdefs.jmeter.JMeterTask" 
+			classpathref="jmeter.classpath"/>
+		
+		<delete>
+			<fileset dir="target/jmeter"/>
+		</delete>
+		
+		<jmeter
+		    jmeterhome="${jmeter.home}"
+		    testplan="src/main/jmeter/cayenne-profile.jmx"
+		    resultlog="target/jmeter/cayenne-profile.jtl"/>
+		
+		<xslt
+		    in="target/jmeter/cayenne-profile.jtl"
+		    out="target/jmeter/cayenne-profile.html"
+		    style="src/main/jmeter/jmeter-results-report.xsl"/>
+	</target>
+	
+</project>
