@@ -5,6 +5,7 @@
 
 	<node name="regression-profile"
 		 datasource="regression-profile.driver.xml"
+		 adapter="org.objectstyle.cayenne.dba.hsqldb.HSQLDBAdapter"
 		 factory="org.objectstyle.cayenne.conf.DriverDataSourceFactory">
 			<map-ref name="regression-profile"/>
 	 </node>

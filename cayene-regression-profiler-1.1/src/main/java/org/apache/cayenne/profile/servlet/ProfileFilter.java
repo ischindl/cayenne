@@ -39,9 +39,17 @@ public class ProfileFilter extends WebApplicationContextFilter {
     public synchronized void init(FilterConfig config) throws ServletException {
 
         // remove old database
+        // store this value and log it after Cayenne logging is initialized.
+        boolean deletedOldDb = false;
         File dbDir = new File("target/regression-db");
         if (dbDir.isDirectory()) {
-            Util.delete(dbDir.getAbsolutePath(), true);
+            if (Util.delete(dbDir.getAbsolutePath(), true)) {
+                deletedOldDb = true;
+            }
+            
+            if (dbDir.isDirectory()) {
+                throw new ServletException("Can't delete the old database");
+            }
         }
 
         // start Cayenne stack
@@ -52,6 +60,9 @@ public class ProfileFilter extends WebApplicationContextFilter {
             cayenneVersion = "unknown";
         }
         logger.info("Started Cayenne version - '" + cayenneVersion + "'");
+        if(deletedOldDb) {
+            logger.info("deleted old database");
+        }
 
         // create fresh database
         DataDomain domain = Configuration.getSharedConfiguration().getDomain();

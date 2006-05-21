@@ -18,6 +18,8 @@ package org.apache.cayenne.profile.servlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import junit.framework.TestCase;
+
 import org.objectstyle.cayenne.access.DataContext;
 
 /**
@@ -25,7 +27,7 @@ import org.objectstyle.cayenne.access.DataContext;
  * 
  * @author Andrus Adamchik
  */
-public class AbstractCase {
+public class AbstractCase extends TestCase {
 
     public void doGet(
             DataContext context,

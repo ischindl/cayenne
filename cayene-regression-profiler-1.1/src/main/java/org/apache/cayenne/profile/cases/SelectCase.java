@@ -33,6 +33,6 @@ public class SelectCase extends AbstractCase {
 
         SelectQuery q = new SelectQuery(Entity1.class, Expression
                 .fromString("name like 'Name_11%'"));
-        context.performQuery(q);
+        assertEquals(1100, context.performQuery(q).size());
     }
 }
