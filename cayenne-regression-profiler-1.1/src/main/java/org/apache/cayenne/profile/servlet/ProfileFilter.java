@@ -23,7 +23,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.objectstyle.cayenne.access.DataDomain;
 import org.objectstyle.cayenne.access.DataNode;
-import org.objectstyle.cayenne.access.DbGenerator;
 import org.objectstyle.cayenne.conf.Configuration;
 import org.objectstyle.cayenne.dba.DbAdapter;
 import org.objectstyle.cayenne.util.LocalizedStringsHandler;
@@ -70,17 +69,5 @@ public class ProfileFilter extends WebApplicationContextFilter {
                 + "'; adapter: '"
                 + adapterName
                 + "'");
-
-        // create fresh database
-
-        DbGenerator generator = new DbGenerator(node.getAdapter(), domain
-                .getMap("regression-profile"));
-        try {
-            generator.runGenerator(node.getDataSource());
-        }
-        catch (Exception e) {
-            throw new ServletException("Error generating schema", e);
-        }
-
     }
 }

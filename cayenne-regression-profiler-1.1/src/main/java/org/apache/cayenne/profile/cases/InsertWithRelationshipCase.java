@@ -13,41 +13,36 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package org.apache.cayenne.profile;
+package org.apache.cayenne.profile.cases;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-
+import org.apache.cayenne.profile.AbstractCase;
+import org.apache.cayenne.profile.entity.Entity2;
+import org.apache.cayenne.profile.entity.Entity3;
 import org.objectstyle.cayenne.access.DataContext;
 
-/**
- * An noop profiling case.
- * 
- * @author Andrus Adamchik
- */
-public abstract class AbstractCase extends TestCase {
-
-    public void doGet(
-            DataContext context,
-            HttpServletRequest request,
-            HttpServletResponse response) {
-
-        doRequest(context, request, response);
-    }
-
-    public void doPost(
-            DataContext context,
-            HttpServletRequest request,
-            HttpServletResponse response) {
-        doRequest(context, request, response);
-    }
+public class InsertWithRelationshipCase extends AbstractCase {
 
     protected void doRequest(
             DataContext context,
             HttpServletRequest request,
             HttpServletResponse response) {
 
+        for (int i = 0; i < 500; i++) {
+            Entity2 e = (Entity2) context.createAndRegisterNewObject(Entity2.class);
+            e.setName("Name_" + i);
+
+            Entity3 e31 = (Entity3) context.createAndRegisterNewObject(Entity3.class);
+            e31.setName("E31_" + i);
+            e31.setEntity2(e);
+
+            Entity3 e32 = (Entity3) context.createAndRegisterNewObject(Entity3.class);
+            e32.setName("E32_" + i);
+            e32.setEntity2(e);
+        }
+
+        context.commitChanges();
     }
 }

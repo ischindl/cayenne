@@ -13,41 +13,33 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package org.apache.cayenne.profile;
+package org.apache.cayenne.profile.cases;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-
+import org.apache.cayenne.profile.AbstractCase;
+import org.apache.cayenne.profile.entity.Entity1;
+import org.objectstyle.cayenne.DataObjectUtils;
 import org.objectstyle.cayenne.access.DataContext;
 
-/**
- * An noop profiling case.
- * 
- * @author Andrus Adamchik
- */
-public abstract class AbstractCase extends TestCase {
+public class UpdateAttributeCase extends AbstractCase {
 
-    public void doGet(
-            DataContext context,
-            HttpServletRequest request,
-            HttpServletResponse response) {
-
-        doRequest(context, request, response);
-    }
-
-    public void doPost(
-            DataContext context,
-            HttpServletRequest request,
-            HttpServletResponse response) {
-        doRequest(context, request, response);
-    }
+    private static volatile int suffix = 1;
 
     protected void doRequest(
             DataContext context,
             HttpServletRequest request,
             HttpServletResponse response) {
 
+        for (int i = 600; i < 1100; i++) {
+            Entity1 o = (Entity1) DataObjectUtils.objectForPK(context, Entity1.class, i);
+
+            assertNotNull("No object for id: " + i, o);
+
+            o.setDescription("x_" + suffix++);
+        }
+
+        context.commitChanges();
     }
 }

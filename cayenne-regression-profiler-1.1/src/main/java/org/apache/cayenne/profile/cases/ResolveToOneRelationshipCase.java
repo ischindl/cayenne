@@ -15,24 +15,37 @@
  */
 package org.apache.cayenne.profile.cases;
 
+import java.util.Iterator;
+import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.cayenne.profile.AbstractCase;
-import org.apache.cayenne.profile.entity.Entity1;
+import org.apache.cayenne.profile.entity.Entity3;
+import org.objectstyle.cayenne.Fault;
 import org.objectstyle.cayenne.access.DataContext;
-import org.objectstyle.cayenne.query.SQLTemplate;
+import org.objectstyle.cayenne.exp.Expression;
+import org.objectstyle.cayenne.query.SelectQuery;
 
-public class DeleteCase extends AbstractCase {
+public class ResolveToOneRelationshipCase extends AbstractCase {
 
     protected void doRequest(
             DataContext context,
             HttpServletRequest request,
             HttpServletResponse response) {
 
-        context.performNonSelectingQuery(new SQLTemplate(
-                Entity1.class,
-                "delete from ENTITY1",
-                false));
+        SelectQuery q = new SelectQuery(Entity3.class, Expression
+                .fromString("name like '%_111%'"));
+        List results = context.performQuery(q);
+        assertEquals(200, results.size());
+
+        Iterator it = results.iterator();
+        while (it.hasNext()) {
+            Entity3 e3 = (Entity3) it.next();
+            assertTrue(e3.readPropertyDirectly("entity2") instanceof Fault);
+            e3.getEntity2().getName();
+            assertFalse(e3.readPropertyDirectly("entity2") instanceof Fault);
+        }
     }
 }
