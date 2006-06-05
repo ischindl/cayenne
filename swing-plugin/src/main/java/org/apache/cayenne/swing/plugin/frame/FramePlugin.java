@@ -30,15 +30,17 @@ import org.platonos.pluginengine.PluginLifecycle;
  */
 public class FramePlugin extends PluginLifecycle {
 
-    public static final String QUIT_ACTION = "frame.action.quit";
+    public static final String QUIT_ACTION = "action.quit";
 
     public static final String FRAME_BUILDERS_EXT = "frameBuilders";
 
+    protected FrameMenuBuilder menuBuilder;
     protected FrameController frameController;
     protected ActionMap actionMap;
 
     protected void start() {
 
+        menuBuilder = new FrameMenuBuilder(this);
         frameController = new FrameController(this);
         actionMap = new ActionMap();
 
@@ -106,5 +108,9 @@ public class FramePlugin extends PluginLifecycle {
 
     public void setFrameController(FrameController frameController) {
         this.frameController = frameController;
+    }
+
+    public FrameMenuBuilder getMenuBuilder() {
+        return menuBuilder;
     }
 }
