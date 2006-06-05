@@ -1,0 +1,15 @@
+<plugin start="true">
+   <uid>org.apache.cayenne:modeler-plugin</uid>
+   <name>CayenneModeler Core</name>
+   <lifecycleclass>org.apache.cayenne.modeler.plugin.ModelerPlugin</lifecycleclass>
+   
+   <dependencies>
+      <dependency uid="org.apache.cayenne:swing-plugin"/>
+   </dependencies>
+   
+   <extensions>
+      <extension uid="org.apache.cayenne:swing-plugin" 
+      	name="frameBuilders" 
+      	class="org.apache.cayenne.modeler.plugin.ModelerFrameBuilderExtension" />
+   </extensions>
+</plugin>
