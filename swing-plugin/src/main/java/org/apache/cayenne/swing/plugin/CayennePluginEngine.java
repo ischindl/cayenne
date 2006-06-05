@@ -27,82 +27,83 @@ import org.platonos.pluginengine.logging.ILogger;
 import org.platonos.pluginengine.logging.LoggerLevel;
 
 /**
- * An extension of PluginEngine that allows to store arbitrary attributes in the
- * engine and also load plugins from CLASSPATH.
+ * An extension of PluginEngine that allows to store arbitrary attributes in the engine
+ * and also load plugins from CLASSPATH.
  * 
  * @author andrus
  */
 public class CayennePluginEngine extends PluginEngine {
 
-	public static final String PLUGIN_LOCATION = "plugin.xml";
+    public static final String PLUGIN_LOCATION = "plugin.xml";
 
-	protected Map attributes = new HashMap();
+    protected Map attributes = new HashMap();
 
-	public CayennePluginEngine(String uid, ILogger logger) {
-		super(uid, logger);
-	}
+    public CayennePluginEngine(String uid, ILogger logger) {
+        super(uid, logger);
+    }
 
-	public CayennePluginEngine(String uid) {
-		super(uid);
-	}
+    public CayennePluginEngine(String uid) {
+        super(uid);
+    }
 
-	/**
-	 * Loads all plugin descriptors that are available to the current
-	 * ClassLoader.
-	 */
-	public void loadBundledPlugins() {
-		Enumeration urls;
+    /**
+     * Loads all plugin descriptors that are available to the current ClassLoader.
+     */
+    public void loadBundledPlugins() {
+        Enumeration urls;
 
-		try {
-			urls = Thread.currentThread().getContextClassLoader().getResources(
-					PLUGIN_LOCATION);
+        try {
+            urls = Thread.currentThread().getContextClassLoader().getResources(
+                    PLUGIN_LOCATION);
 
-		} catch (IOException e) {
-			throw new RuntimeException(
-					"Error reading plugins infor from ClassLoader", e);
-		}
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Error reading plugins infor from ClassLoader", e);
+        }
 
-		while (urls.hasMoreElements()) {
-			URL pluginURL = (URL) urls.nextElement();
-			try {
-				// TODO, andrus, 6/5/2006 - plugins loaded in this fashion will
-				// only be able to resolve classes from the same filesystem
-				// folder as plugin.xml. Will need a specialized ClassLoader for
-				// this case.
-				loadPluginXML(pluginURL);
-			} catch (PluginEngineException ex) {
-				getLogger().log(LoggerLevel.SEVERE,
-						"Error loading Plugin archive from URL: " + pluginURL,
-						ex);
-			}
-		}
-	}
+        while (urls.hasMoreElements()) {
+            URL pluginURL = (URL) urls.nextElement();
+            try {
+                // TODO, andrus, 6/5/2006 - plugins loaded in this fashion will
+                // only be able to resolve classes from the same filesystem
+                // folder as plugin.xml. Will need a specialized ClassLoader for
+                // this case.
+                loadPluginXML(pluginURL);
+            }
+            catch (PluginEngineException ex) {
+                getLogger().log(
+                        LoggerLevel.SEVERE,
+                        "Error loading Plugin archive from URL: " + pluginURL,
+                        ex);
+            }
+        }
+    }
 
-	/**
-	 * Returns a previously stored attribute for a given key or null if no
-	 * attribute matches the key.
-	 */
-	public Object getAttribute(String key) {
-		if (key == null) {
-			throw new NullPointerException("Invalid argument: key");
-		}
+    /**
+     * Returns a previously stored attribute for a given key or null if no attribute
+     * matches the key.
+     */
+    public Object getAttribute(String key) {
+        if (key == null) {
+            throw new NullPointerException("Invalid argument: key");
+        }
 
-		return (String) attributes.get(key);
-	}
+        return (String) attributes.get(key);
+    }
 
-	public void setAttribute(String key, Object value) {
-		if (key == null) {
-			throw new NullPointerException("Invalid argument: key");
-		}
+    public void setAttribute(String key, Object value) {
+        if (key == null) {
+            throw new NullPointerException("Invalid argument: key");
+        }
 
-		attributes.put(key, value);
-	}
+        attributes.put(key, value);
+    }
 
-	public void removeAttribute(String key) {
-		if (key == null) {
-			throw new NullPointerException("Invalid argument: key");
-		}
+    public void removeAttribute(String key) {
+        if (key == null) {
+            throw new NullPointerException("Invalid argument: key");
+        }
 
-		attributes.remove(key);
-	}
+        attributes.remove(key);
+    }
 }

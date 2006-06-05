@@ -32,7 +32,6 @@ import org.objectstyle.cayenne.swing.ObjectBinding;
 
 public class FrameController extends CayenneController {
 
-    protected String name;
     protected JFrame frame;
     protected FramePlugin framePlugin;
     protected ObjectBinding boundsBinding;
@@ -80,12 +79,8 @@ public class FrameController extends CayenneController {
      */
     public void startup() {
 
-        if (name == null) {
-            name = framePlugin.getPlugin().getName();
-        }
-
         if (frame.getTitle() == null || frame.getTitle().trim().length() == 0) {
-            frame.setTitle(name);
+            frame.setTitle(framePlugin.getPlugin().getName());
         }
 
         // make closeable frame
@@ -124,14 +119,6 @@ public class FrameController extends CayenneController {
         System.exit(0);
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public Rectangle getBounds() {
         Preferences prefs = getPreferences();
 
@@ -155,7 +142,7 @@ public class FrameController extends CayenneController {
     }
 
     protected Preferences getPreferences() {
-        return Preferences.userNodeForPackage(getClass()).node(name);
+        return Preferences.userNodeForPackage(getClass()).node(frame.getTitle());
     }
 
     public int getNewFrameOffset() {

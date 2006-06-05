@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.Action;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -66,33 +67,41 @@ public class FrameMenuBuilder {
         List children = XMLUtil.getChildren(doc.getDocumentElement(), "menu");
         Iterator it = children.iterator();
         while (it.hasNext()) {
-            menu.add(processMenu((Element) it.next()));
+            menu.add(processMenu(plugin, (Element) it.next(), 1));
         }
-
     }
 
     /**
      * Recursively loads menus from the DOM tree.
      */
-    protected JMenuItem processMenu(Element menuXML) {
+    protected JComponent processMenu(Plugin plugin, Element menuXML, int depth) {
 
         List children = XMLUtil.getChildren(menuXML, "menu");
 
         Action action = framePlugin.getActionMap().get(menuXML.getAttribute("action"));
         String key = menuXML.getAttribute("name");
 
-        JMenuItem menu = (children.isEmpty()) ? new JMenuItem() : new JMenu();
+        JMenuItem menu = (children.isEmpty() && depth > 1)
+                ? new JMenuItem()
+                : new JMenu();
 
         if (action != null) {
             menu.setAction(action);
         }
         else if (key != null) {
-            menu.setText(key);
+            menu.setText(plugin.replaceToken(key));
         }
 
+        depth++;
         Iterator it = children.iterator();
         while (it.hasNext()) {
-            menu.add(processMenu((Element) it.next()));
+            JComponent component = processMenu(plugin, (Element) it.next(), depth);
+            menu.add(component);
+        }
+
+        // disable empty menus
+        if (children.isEmpty() && action == null) {
+            menu.setEnabled(false);
         }
 
         return menu;
