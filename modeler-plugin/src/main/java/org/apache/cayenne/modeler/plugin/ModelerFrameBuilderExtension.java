@@ -15,6 +15,7 @@
  */
 package org.apache.cayenne.modeler.plugin;
 
+import org.apache.cayenne.swing.plugin.frame.FrameBuilder;
 import org.apache.cayenne.swing.plugin.frame.FrameBuilderExtension;
 import org.apache.cayenne.swing.plugin.frame.FramePlugin;
 import org.platonos.pluginengine.Plugin;
@@ -34,16 +35,20 @@ public class ModelerFrameBuilderExtension implements FrameBuilderExtension {
         this.plugin = PluginEngine.getPlugin(ModelerPlugin.class);
     }
 
-    public void initActions(FramePlugin plugin) {
-        plugin.getFrameBuilder().addActions(this.plugin, "actions.xml");
-    }
-
     public void initFrame(FramePlugin plugin) {
         plugin.getFrameController().getFrame().setTitle(
                 this.plugin.replaceToken("$$frame.title$$"));
     }
 
-    public void initMenus(FramePlugin plugin) {
-        plugin.getFrameBuilder().addMenus(this.plugin, "menus.xml");
+    public void initActions(FrameBuilder builder) {
+        builder.addActions(this.plugin, "actions.xml");
+    }
+
+    public void initMenus(FrameBuilder builder) {
+        builder.addMenus(this.plugin, "menus.xml");
+    }
+
+    public void initToolbars(FrameBuilder builder) {
+        builder.addToolbars(this.plugin, "toolbars.xml");
     }
 }
