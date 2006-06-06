@@ -1,0 +1,23 @@
+<assembly>
+  <id>deps</id>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <fileSets>
+    <fileSet>
+      <directory>target/classes</directory>
+      <outputDirectory>/</outputDirectory>
+    </fileSet>
+  </fileSets>
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/</outputDirectory>
+      
+      <!-- this line puts all dependencies as jars in the assembly jar - exactly what we need -->
+      <unpack>false</unpack>
+      
+      <scope>runtime</scope>
+    </dependencySet>
+  </dependencySets>
+</assembly>
