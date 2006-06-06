@@ -1,6 +1,6 @@
 <plugin start="true">
    <uid>org.apache.cayenne:swing-plugin</uid>
-   <name>Generic Application Frame</name>
+   <name>Application Frame</name>
    <lifecycleclass>org.apache.cayenne.swing.plugin.frame.FramePlugin</lifecycleclass>
    <extensionpoints>
 		<extensionpoint name="frameBuilders" interface="org.apache.cayenne.swing.plugin.frame.FrameBuilderExtension"/>
