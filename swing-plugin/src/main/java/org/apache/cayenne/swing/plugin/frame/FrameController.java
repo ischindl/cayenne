@@ -22,8 +22,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.prefs.Preferences;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.JFrame;
 
 import org.apache.cayenne.swing.BoundsBinding;
@@ -58,23 +56,6 @@ public class FrameController extends CayenneController {
     }
 
     /**
-     * Returns an action that calls 'shutdownAction' on this controller.
-     */
-    public Action getDefaultShutdownAction() {
-        return new AbstractAction() {
-
-            public void actionPerformed(ActionEvent e) {
-                shutdown();
-            }
-        };
-    }
-
-    public Action getShutdownAction() {
-        Action action = framePlugin.getActionMap().get(FramePlugin.QUIT_ACTION);
-        return action != null ? action : getDefaultShutdownAction();
-    }
-
-    /**
      * Starts the application frame.
      */
     public void startup() {
@@ -87,7 +68,8 @@ public class FrameController extends CayenneController {
         frame.addWindowListener(new WindowAdapter() {
 
             public void windowClosing(WindowEvent e) {
-                getShutdownAction().actionPerformed(new ActionEvent(this, 1, null));
+                framePlugin.getActionMap().get(FramePlugin.QUIT_ACTION).actionPerformed(
+                        new ActionEvent(this, 1, null));
             }
         });
 

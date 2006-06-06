@@ -24,6 +24,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.collections.Predicate;
 import org.objectstyle.cayenne.CayenneRuntimeException;
+import org.w3c.dom.CharacterData;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -67,6 +68,30 @@ class XMLUtil {
         };
 
         return allMatches(node.getChildNodes(), p);
+    }
+    
+    /**
+     * Returns text content of a given Node.
+     */
+    static String getText(Node node) {
+
+        NodeList nodes = node.getChildNodes();
+        int len = nodes.getLength();
+
+        if (len == 0) {
+            return null;
+        }
+
+        StringBuffer text = new StringBuffer();
+        for (int i = 0; i < len; i++) {
+            Node child = nodes.item(i);
+
+            if (child instanceof CharacterData) {
+                text.append(((CharacterData) child).getData());
+            }
+        }
+
+        return text.length() == 0 ? null : text.toString();
     }
     
     private static List allMatches(NodeList list, Predicate predicate) {

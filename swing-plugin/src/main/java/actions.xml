@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<actions>
+	
+	<action name="action.quit" class="org.apache.cayenne.swing.plugin.frame.QuitAction">
+		<!--
+			"menu" - boolean specifying whether 
+		           "Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()" should be used as modifier
+		     text is compatible with KeyStroke.getKeyStroke(String)
+		-->
+		<accelerator menu="true">Q</accelerator>
+	</action>
+</actions>

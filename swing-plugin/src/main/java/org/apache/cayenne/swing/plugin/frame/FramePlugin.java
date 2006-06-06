@@ -34,13 +34,13 @@ public class FramePlugin extends PluginLifecycle {
 
     public static final String FRAME_BUILDERS_EXT = "frameBuilders";
 
-    protected FrameMenuBuilder menuBuilder;
+    protected FrameBuilder frameBuilder;
     protected FrameController frameController;
     protected ActionMap actionMap;
 
     protected void start() {
 
-        menuBuilder = new FrameMenuBuilder(this);
+        frameBuilder = new FrameBuilder(this);
         frameController = new FrameController(this);
         actionMap = new ActionMap();
 
@@ -55,6 +55,9 @@ public class FramePlugin extends PluginLifecycle {
 
     protected void initActions(List extensions) {
 
+        // init default actions that can be later overriden by plugins
+        frameBuilder.addActions(this.getPlugin(), "actions.xml");
+
         Iterator it = extensions.iterator();
         while (it.hasNext()) {
             Extension extension = (Extension) it.next();
@@ -62,11 +65,6 @@ public class FramePlugin extends PluginLifecycle {
                     .getExtensionInstance();
 
             ext.initActions(this);
-        }
-
-        // add default close action
-        if (actionMap.get(QUIT_ACTION) == null) {
-            actionMap.put(QUIT_ACTION, frameController.getDefaultShutdownAction());
         }
     }
 
@@ -110,7 +108,7 @@ public class FramePlugin extends PluginLifecycle {
         this.frameController = frameController;
     }
 
-    public FrameMenuBuilder getMenuBuilder() {
-        return menuBuilder;
+    public FrameBuilder getFrameBuilder() {
+        return frameBuilder;
     }
 }
