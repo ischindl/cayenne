@@ -35,7 +35,7 @@ public class ModelerFrameBuilderExtension implements FrameBuilderExtension {
     }
 
     public void initActions(FramePlugin plugin) {
-
+        plugin.getFrameBuilder().addActions(this.plugin, "actions.xml");
     }
 
     public void initFrame(FramePlugin plugin) {
@@ -44,6 +44,6 @@ public class ModelerFrameBuilderExtension implements FrameBuilderExtension {
     }
 
     public void initMenus(FramePlugin plugin) {
-        plugin.getMenuBuilder().addMenu(this.plugin, "menu.xml");
+        plugin.getFrameBuilder().addMenus(this.plugin, "menus.xml");
     }
 }

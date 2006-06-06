@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<menu>
+    <menu name="menu.file">
+		<menu action="action.new"/>
+		<menu separator="true"/>
+		<menu action="action.quit"/>
+    </menu>
+    <menu name="menu.project">
+       
+    </menu>
+    <menu name="menu.tools">
+       
+    </menu>
+    <menu name="menu.help">
+       
+    </menu>
+</menu>

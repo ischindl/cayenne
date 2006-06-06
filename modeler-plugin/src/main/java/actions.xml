@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<actions>
+	
+	<action name="action.new" class="NewAction">
+		<accelerator menu="true">N</accelerator>
+	</action>
+</actions>
