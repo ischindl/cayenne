@@ -1,0 +1,18 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.apache.cayenne</groupId>
+	<artifactId>modeler</artifactId>
+	<packaging>pom</packaging>
+	<version>3.0-SNAPSHOT</version>
+	<name>CayenneModeler Assembly</name>
+	<url>http://incubator.apache.org/cayenne/</url>
+
+	<modules>
+		<module>modeler-launcher</module>
+		<module>swing-plugin</module>
+		<module>modeler-plugin</module>
+	</modules>
+	
+	<build>		<plugins>			<plugin>				<artifactId>maven-assembly-plugin</artifactId>				<configuration>					<descriptor>assembly.xml</descriptor>					<finalName>modeler</finalName>					<outputDirectory>target</outputDirectory>					<workDirectory>target/assembly/work</workDirectory>				</configuration>			</plugin>		</plugins>	</build>
+</project>
