@@ -1,51 +1,41 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.apache.cayenne</groupId>
-  <artifactId>swing-plugin</artifactId>
-  <packaging>jar</packaging>
-  <version>3.0-SNAPSHOT</version>
-  <name>Generic Swing Plugin</name>
-  <url>http://maven.apache.org</url>
-	
-	<build>
-		<plugins>
-			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<configuration>
-					<descriptor>assembly.xml</descriptor>
-					<finalName>swing-plugin-${version}</finalName>
-					<outputDirectory>target</outputDirectory>
-					<workDirectory>target/assembly/work</workDirectory>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-	
-	
-	<dependencies>
-		
-		<dependency>
-			<groupId>org.objectstyle.cayenne</groupId>
-			<artifactId>cayenne-modeler</artifactId>
-			<version>1.2-SNAPSHOT</version>
-		</dependency>
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     
-		<!-- provided dependencies -->
-		<dependency>
-			<groupId>org.platonos</groupId>
-			<artifactId>plugin-engine</artifactId>
-			<version>1.1-SNAPSHOT</version>
-			<scope>provided</scope>
-		</dependency>
+    <parent>
+        <groupId>org.apache.cayenne</groupId>
+        <artifactId>modeler</artifactId>
+        <version>3.0-SNAPSHOT</version>
+    </parent>
+    
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.apache.cayenne</groupId>
+    <artifactId>swing-plugin</artifactId>
+    <packaging>jar</packaging>
+    <version>3.0-SNAPSHOT</version>
+    <name>Generic Swing Plugin</name>
+	
+    <dependencies>
 		
-  </dependencies>
+        <dependency>
+            <groupId>org.objectstyle.cayenne</groupId>
+            <artifactId>cayenne-modeler</artifactId>
+            <version>1.2-SNAPSHOT</version>
+        </dependency>
+    
+        <dependency>
+            <groupId>org.platonos</groupId>
+            <artifactId>plugin-engine</artifactId>
+            <version>1.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+		
+    </dependencies>
   
-  <repositories>
-		<repository>
-			<id>objectstyle</id>
-			<name>ObjectStyle Public Maven2 repo</name>
-			<url>http://objectstyle.org/maven2</url>
-		</repository>
-	</repositories>
+    <repositories>
+        <repository>
+            <id>objectstyle</id>
+            <name>ObjectStyle Public Maven2 repo</name>
+            <url>http://objectstyle.org/maven2</url>
+        </repository>
+    </repositories>
 </project>
