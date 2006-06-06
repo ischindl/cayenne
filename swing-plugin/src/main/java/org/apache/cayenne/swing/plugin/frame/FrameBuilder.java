@@ -15,6 +15,7 @@
  */
 package org.apache.cayenne.swing.plugin.frame;
 
+import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.io.InputStream;
@@ -23,11 +24,14 @@ import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.ActionMap;
+import javax.swing.ImageIcon;
 import javax.swing.JComponent;
-import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 
 import org.apache.cayenne.swing.CayenneSwingException;
@@ -40,9 +44,47 @@ import org.w3c.dom.Element;
 public class FrameBuilder {
 
     protected FramePlugin framePlugin;
+    protected ActionMap actionMap;
+    protected JPanel toolbarsPanel;
+    protected JMenuBar menuBar;
 
     public FrameBuilder(FramePlugin framePlugin) {
         this.framePlugin = framePlugin;
+        this.actionMap = new ActionMap();
+        this.toolbarsPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
+        this.menuBar = new JMenuBar();
+    }
+
+    public ActionMap getActionMap() {
+        return actionMap;
+    }
+
+    public FramePlugin getFramePlugin() {
+        return framePlugin;
+    }
+
+    public JMenuBar getMenuBar() {
+        return menuBar;
+    }
+
+    public JPanel getToolbarsPanel() {
+        return toolbarsPanel;
+    }
+
+    public void setActionMap(ActionMap actionMap) {
+        this.actionMap = actionMap;
+    }
+
+    public void setFramePlugin(FramePlugin framePlugin) {
+        this.framePlugin = framePlugin;
+    }
+
+    public void setMenuBar(JMenuBar menuBar) {
+        this.menuBar = menuBar;
+    }
+
+    public void setToolbarsPanel(JPanel toolbarsPanel) {
+        this.toolbarsPanel = toolbarsPanel;
     }
 
     public void addActions(Plugin plugin, String xmlPath) {
@@ -130,7 +172,16 @@ public class FrameBuilder {
                 + Action.LONG_DESCRIPTION
                 + "$$"));
 
-        framePlugin.getActionMap().put(key, action);
+        String iconPath = plugin
+                .replaceToken("$$" + key + '.' + Action.SMALL_ICON + "$$");
+
+        if (!Util.isEmptyString(iconPath) && !iconPath.startsWith("$$")) {
+            action.putValue(Action.SMALL_ICON, new ImageIcon(plugin
+                    .getPluginClassLoader()
+                    .getResource(iconPath)));
+        }
+
+        actionMap.put(key, action);
     }
 
     protected KeyStroke processAcceleratorKey(Element acceleratorXML) {
@@ -154,16 +205,74 @@ public class FrameBuilder {
     }
 
     /**
-     * Adds a menu contributed by plugin.
+     * Adds toolbars contributed by plugin.
+     */
+    public void addToolbars(Plugin plugin, String xmlPath) {
+
+        InputStream toolbarXML = plugin.getPluginClassLoader().getResourceAsStream(
+                xmlPath);
+        if (toolbarXML == null) {
+            throw new CayenneSwingException("No toolbar XML file found at " + xmlPath);
+        }
+
+        Document doc;
+        try {
+            doc = XMLUtil.newBuilder().parse(toolbarXML);
+        }
+        catch (Exception e) {
+            throw new CayenneSwingException(
+                    "Error parsing toolbar XML '" + xmlPath + "'",
+                    e);
+        }
+
+        List children = XMLUtil.getChildren(doc.getDocumentElement(), "toolbar");
+        Iterator it = children.iterator();
+        while (it.hasNext()) {
+            JToolBar child = processToolbar(plugin, (Element) it.next());
+            if (child != null) {
+                getToolbarsPanel().add(child);
+            }
+        }
+    }
+
+    protected JToolBar processToolbar(Plugin plugin, Element toolbarXML) {
+
+        List children = XMLUtil.getChildren(toolbarXML, "button");
+        if (children.isEmpty()) {
+            return null;
+        }
+
+        JToolBar toolbar = new JToolBar();
+        Iterator it = children.iterator();
+        while (it.hasNext()) {
+            Element buttonXML = (Element) it.next();
+
+            if ("true".equalsIgnoreCase(buttonXML.getAttribute("separator"))) {
+                toolbar.addSeparator();
+            }
+            else {
+                Action action = actionMap.get(buttonXML.getAttribute("action"));
+
+                if (action != null) {
+                    toolbar.add(action);
+                }
+                else {
+                    plugin.getPluginEngine().getLogger().log(
+                            LoggerLevel.WARNING,
+                            "Invalid button: " + buttonXML,
+                            null);
+                }
+
+            }
+        }
+
+        return toolbar;
+    }
+
+    /**
+     * Adds menus contributed by plugin.
      */
     public void addMenus(Plugin plugin, String xmlPath) {
-        JFrame frame = framePlugin.getFrameController().getFrame();
-
-        JMenuBar menu = frame.getJMenuBar();
-        if (menu == null) {
-            menu = new JMenuBar();
-            frame.setJMenuBar(menu);
-        }
 
         InputStream menuXML = plugin.getPluginClassLoader().getResourceAsStream(xmlPath);
         if (menuXML == null) {
@@ -183,7 +292,7 @@ public class FrameBuilder {
         while (it.hasNext()) {
             JComponent child = processMenu(plugin, (Element) it.next(), 1);
             if (child != null) {
-                menu.add(child);
+                menuBar.add(child);
             }
         }
     }
@@ -199,7 +308,7 @@ public class FrameBuilder {
 
         List children = XMLUtil.getChildren(menuXML, "menu");
 
-        Action action = framePlugin.getActionMap().get(menuXML.getAttribute("action"));
+        Action action = actionMap.get(menuXML.getAttribute("action"));
         String key = menuXML.getAttribute("name");
 
         JMenuItem menu = (children.isEmpty() && depth > 1)

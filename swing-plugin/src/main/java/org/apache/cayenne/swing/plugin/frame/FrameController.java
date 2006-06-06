@@ -15,6 +15,7 @@
  */
 package org.apache.cayenne.swing.plugin.frame;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
@@ -60,6 +61,18 @@ public class FrameController extends CayenneController {
      */
     public void startup() {
 
+        FrameBuilder builder = framePlugin.getFrameBuilder();
+        if (builder.getMenuBar() != null) {
+            frame.setJMenuBar(builder.getMenuBar());
+        }
+
+        if (builder.getToolbarsPanel() != null
+                && builder.getToolbarsPanel().getComponents().length > 0) {
+            frame.getContentPane().add(
+                    builder.getToolbarsPanel(),
+                    BorderLayout.PAGE_START);
+        }
+
         if (frame.getTitle() == null || frame.getTitle().trim().length() == 0) {
             frame.setTitle(framePlugin.getPlugin().getName());
         }
@@ -68,8 +81,11 @@ public class FrameController extends CayenneController {
         frame.addWindowListener(new WindowAdapter() {
 
             public void windowClosing(WindowEvent e) {
-                framePlugin.getActionMap().get(FramePlugin.QUIT_ACTION).actionPerformed(
-                        new ActionEvent(this, 1, null));
+                framePlugin
+                        .getFrameBuilder()
+                        .getActionMap()
+                        .get(FramePlugin.QUIT_ACTION)
+                        .actionPerformed(new ActionEvent(this, 1, null));
             }
         });
 

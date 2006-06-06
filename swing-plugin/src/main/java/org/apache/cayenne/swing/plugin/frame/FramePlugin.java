@@ -18,13 +18,11 @@ package org.apache.cayenne.swing.plugin.frame;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.swing.ActionMap;
-
 import org.platonos.pluginengine.Extension;
 import org.platonos.pluginengine.PluginLifecycle;
 
 /**
- * A plugin that starts an empty closeable frame intended for customization by extension.
+ * A plugin that starts an empty closeable frame intended for customization by extensions.
  * 
  * @author Andrus Adamchik
  */
@@ -36,18 +34,17 @@ public class FramePlugin extends PluginLifecycle {
 
     protected FrameBuilder frameBuilder;
     protected FrameController frameController;
-    protected ActionMap actionMap;
 
     protected void start() {
 
         frameBuilder = new FrameBuilder(this);
         frameController = new FrameController(this);
-        actionMap = new ActionMap();
 
         List extensions = getExtensionPoint(FRAME_BUILDERS_EXT).getExtensions();
 
         initActions(extensions);
         initMenus(extensions);
+        initToolbars(extensions);
         initFrame(extensions);
 
         frameController.startup();
@@ -64,7 +61,7 @@ public class FramePlugin extends PluginLifecycle {
             FrameBuilderExtension ext = (FrameBuilderExtension) extension
                     .getExtensionInstance();
 
-            ext.initActions(this);
+            ext.initActions(frameBuilder);
         }
     }
 
@@ -76,7 +73,19 @@ public class FramePlugin extends PluginLifecycle {
             FrameBuilderExtension ext = (FrameBuilderExtension) extension
                     .getExtensionInstance();
 
-            ext.initMenus(this);
+            ext.initMenus(frameBuilder);
+        }
+    }
+
+    protected void initToolbars(List extensions) {
+
+        Iterator it = extensions.iterator();
+        while (it.hasNext()) {
+            Extension extension = (Extension) it.next();
+            FrameBuilderExtension ext = (FrameBuilderExtension) extension
+                    .getExtensionInstance();
+
+            ext.initToolbars(frameBuilder);
         }
     }
 
@@ -90,14 +99,6 @@ public class FramePlugin extends PluginLifecycle {
 
             ext.initFrame(this);
         }
-    }
-
-    public ActionMap getActionMap() {
-        return actionMap;
-    }
-
-    public void setActionMap(ActionMap actionMap) {
-        this.actionMap = actionMap;
     }
 
     public FrameController getFrameController() {
