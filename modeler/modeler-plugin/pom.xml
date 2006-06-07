@@ -8,12 +8,10 @@
     </parent>
     
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.apache.cayenne</groupId>
     <artifactId>modeler-plugin</artifactId>
     <packaging>jar</packaging>
-    <version>3.0-SNAPSHOT</version>
     <name>CayenneModeler Plugin</name>
-
+    
     <dependencies>
     
         <dependency>
