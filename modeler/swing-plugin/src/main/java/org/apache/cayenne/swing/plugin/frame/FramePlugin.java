@@ -17,6 +17,8 @@ package org.apache.cayenne.swing.plugin.frame;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
+import java.util.StringTokenizer;
 
 import org.platonos.pluginengine.Extension;
 import org.platonos.pluginengine.PluginLifecycle;
@@ -32,8 +34,45 @@ public class FramePlugin extends PluginLifecycle {
 
     public static final String FRAME_BUILDERS_EXT = "frameBuilders";
 
+    /**
+     * A system property that defines application locale. If not set default system locae
+     * is used. This is used mostly for localization debugging.
+     */
+    public static final String LOCALE_PROPERTY = "cayenne.ui.locale";
+
     protected FrameBuilder frameBuilder;
     protected FrameController frameController;
+
+    /**
+     * Changes default locale if {@link #LOCALE_PROPERTY} is set.
+     */
+    protected void initialize() {
+        // change default locale
+        String locale = System.getProperty(LOCALE_PROPERTY);
+        if (locale != null) {
+
+            StringTokenizer toks = new StringTokenizer(locale, "_");
+
+            if (toks.hasMoreTokens()) {
+                // note that default local parts must be empty strings, not nulls...
+                String language = "";
+                String country = "";
+                String variant = "";
+
+                language = toks.nextToken();
+
+                if (toks.hasMoreTokens()) {
+                    country = toks.nextToken();
+
+                    if (toks.hasMoreTokens()) {
+                        variant = toks.nextToken();
+                    }
+                }
+
+                Locale.setDefault(new Locale(language, country, variant));
+            }
+        }
+    }
 
     protected void start() {
 
