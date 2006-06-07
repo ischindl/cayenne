@@ -1,2 +1,2 @@
-Main-Class: org.apache.cayenne.modeler.launcher.Launcher
+Main-Class: Launcher
 Class-Path: plugin-engine-1.1-SNAPSHOT.jar
