@@ -20,7 +20,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
                     <descriptors>
-                        <descriptor>plugin-launcher/src/main/assembly/bin.xml</descriptor>
+                        <descriptor>assembly.xml</descriptor>
                     </descriptors>
                     <finalName>modeler-${version}</finalName>
                 </configuration>
