@@ -9,7 +9,6 @@
     <url>http://incubator.apache.org/cayenne/</url>
 
     <modules>
-        <module>startup</module>
         <module>plugin-launcher</module>
         <module>swing-plugin</module>
         <module>modeler-plugin</module>
@@ -21,7 +20,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
                     <descriptors>
-                        <descriptor>startup/src/main/assembly/bin.xml</descriptor>
+                        <descriptor>plugin-launcher/src/main/assembly/bin.xml</descriptor>
                     </descriptors>
                     <finalName>modeler-${version}</finalName>
                 </configuration>
