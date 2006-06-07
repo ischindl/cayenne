@@ -1,5 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.apache.cayenne</groupId>
     <artifactId>modeler</artifactId>
@@ -9,7 +9,8 @@
     <url>http://incubator.apache.org/cayenne/</url>
 
     <modules>
-        <module>modeler-launcher</module>
+        <module>startup</module>
+        <module>plugin-launcher</module>
         <module>swing-plugin</module>
         <module>modeler-plugin</module>
     </modules>
@@ -20,7 +21,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
                     <descriptors>
-                        <descriptor>src/main/assembly/bin.xml</descriptor>
+                        <descriptor>startup/src/main/assembly/bin.xml</descriptor>
                     </descriptors>
                     <finalName>modeler-${version}</finalName>
                 </configuration>
