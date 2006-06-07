@@ -1,5 +1,3 @@
-
-
 import java.io.File;
 import java.util.Iterator;
 import java.util.StringTokenizer;
@@ -41,12 +39,23 @@ public class Launcher {
         // load plugins...
         String pluginDirectories = System.getProperty(PLUGINS_DIR_PROPERTY);
 
+        // try "../plugins"
         if (pluginDirectories == null) {
-            File defaultDir = new File(PLUGINS_DIR_DEFAULT);
+            File dir = new File(System.getProperty("user.dir")).getParentFile();
+
+            File defaultDir = dir != null
+                    ? new File(dir, PLUGINS_DIR_DEFAULT)
+                    : new File(PLUGINS_DIR_DEFAULT);
+                    
             if (defaultDir.isDirectory()) {
                 pluginDirectories = defaultDir.getAbsolutePath();
             }
         }
+
+        pluginEngine.getLogger().log(
+                LoggerLevel.INFO,
+                "Plugins directory: " + pluginDirectories,
+                null);
 
         if (pluginDirectories != null) {
             StringTokenizer toks = new StringTokenizer(pluginDirectories, ",");
