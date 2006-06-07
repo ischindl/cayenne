@@ -41,12 +41,18 @@ public class Launcher {
 
         // try "../plugins"
         if (pluginDirectories == null) {
-            File dir = new File(System.getProperty("user.dir")).getParentFile();
 
-            File defaultDir = dir != null
-                    ? new File(dir, PLUGINS_DIR_DEFAULT)
-                    : new File(PLUGINS_DIR_DEFAULT);
-                    
+            // try relative to current dir
+            File defaultDir = new File(PLUGINS_DIR_DEFAULT);
+
+            // try relative to parent dir
+            if (!defaultDir.isDirectory()) {
+                File parent = new File(System.getProperty("user.dir")).getParentFile();
+                if (parent != null) {
+                    defaultDir = new File(parent, PLUGINS_DIR_DEFAULT);
+                }
+            }
+
             if (defaultDir.isDirectory()) {
                 pluginDirectories = defaultDir.getAbsolutePath();
             }
