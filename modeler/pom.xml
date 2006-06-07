@@ -9,9 +9,9 @@
     <url>http://incubator.apache.org/cayenne/</url>
 
     <modules>
-        <module>plugin-launcher</module>
         <module>swing-plugin</module>
         <module>modeler-plugin</module>
+        <module>plugin-launcher</module>
     </modules>
 	
     <build>
