@@ -23,11 +23,6 @@
                         <descriptor>src/main/assembly/bin.xml</descriptor>
                     </descriptors>
                     <finalName>modeler-${version}</finalName>
-                    <archive>
-                        <manifest>
-                            <mainClass>org.apache.cayenne.modeler.launcher.Launcher</mainClass>
-                        </manifest>
-                    </archive>
                 </configuration>
             </plugin>
         </plugins>
