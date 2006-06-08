@@ -9,27 +9,43 @@
     <packaging>jar</packaging>
     <name>CayenneModeler Plugin</name>
     
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>package</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>attached</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>src/main/assembly/package.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                    </execution>
-                </executions> 
-            </plugin>
-        </plugins>
-    </build>
+    <profiles>
+        <profile>
+            <id>standalone</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
+            <id>assembly</id>
+            <activation>
+                <property>
+                    <name>assembly-profile</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>package</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>attached</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assembly/package.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions> 
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
     
     <dependencies>
         <dependency>
