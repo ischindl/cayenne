@@ -1,0 +1,107 @@
+<html>
+  <head>
+    <title>Cayenne Documentation - JSP-Struts Tutorial</title>
+    <style type="text/css">@import "../../../../style.css";</style>
+  </head>
+<body>
+  <div class="header">
+    <div style="float: left;"><a href="http://objectstyle.org/cayenne/"><img src="../../../../images/logo.gif" align="absmiddle" border="0"></a></div>
+    <span class="logoSpaceLink"><a href="../../../../index.html">Cayenne User Documentation</a></span><br />
+    <span class="pagetitle">JSP-Struts Tutorial</span>
+  </div>
+<div id="cayenne_toc">
+<ul>
+<li><a href="../../../../Documentation/User Guide/Introduction/index.html">Introduction</a></li>
+<li><a href="../../../../Documentation/User Guide/Installation/index.html">Installation</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/index.html">Quick Start</a><ul>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Common Setup Steps/index.html">Common Setup Steps</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Command-Line Tutorial/index.html">Command-Line Tutorial</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/JSP-Struts Tutorial/index.html">JSP-Struts Tutorial</a><ul>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Tapestry Tutorial/index.html">Tapestry Tutorial</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Cayenne Application/index.html">Cayenne Application</a></li>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Design/index.html">Design</a></li>
+<li><a href="../../../../Documentation/User Guide/Generating Classes/index.html">Generating Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/DataContext/index.html">DataContext</a></li>
+<li><a href="../../../../Documentation/User Guide/Queries/index.html">Queries</a></li>
+<li><a href="../../../../Documentation/User Guide/DataObjects/index.html">DataObjects</a></li>
+<li><a href="../../../../Documentation/User Guide/Stored Procedures/index.html">Stored Procedures</a></li>
+<li><a href="../../../../Documentation/User Guide/Expressions/index.html">Expressions</a></li>
+<li><a href="../../../../Documentation/User Guide/Performance Tuning/index.html">Performance Tuning</a></li>
+<li><a href="../../../../Documentation/User Guide/Deployment/index.html">Deployment</a></li>
+<li><a href="../../../../Documentation/User Guide/Ant Tasks/index.html">Ant Tasks</a></li>
+<li><a href="../../../../Documentation/User Guide/Access Stack Internals/index.html">Access Stack Internals</a></li>
+<li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
+</ul>
+</div>
+<div id="ConfluenceContent"><p>This is a simple Cayenne web application tutorial. Full tutorial source code is included in Cayenne distribution in "src/tutorials" folder.</p>
+
+<h3><a name="JSP-StrutsTutorial-PreparetheEnvironment"></a>Prepare the Environment</h3>
+
+<p>Make sure you successfully finished <a href="../../../../Documentation/User Guide/Quick Start/Common Setup Steps/index.html" title="Common Setup Steps">common setup steps</a>.</p>
+
+<p>Install a web container. This tutorial was tested with <span class="nobr"><a href="http://jakarta.apache.org/tomcat/index.html" title="Visit page outside Confluence" rel="nofollow">Tomcat<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span>. It should work with any other container that is compliant with Servlet 2.3 specification. All references to Tomcat below should apply in some form to other web containers as well.</p>
+
+<p>Use tutorial source directory distributed with Cayenne at $CAYENNE_HOME/src/tutorials/cayenne-web-app as a project directory.</p>
+
+<p>Copy cayenne.jar to the WEB-INF/lib subdirectory of the tutorial project directory.</p>
+
+<p>Copy JDBC driver jar file to WEB-INF/lib subdirectory of the tutorial project.</p>
+
+<p>Install Struts (Tutorial was testsed with Struts 1.1, other versions of Struts may require a different setup):</p>
+
+<ul>
+	<li>Download Struts from <span class="nobr"><a href="http://jakarta.apache.org/struts/index.html" title="Visit page outside Confluence" rel="nofollow">Jakarta Struts site<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span>, unpack it to any convenient directory.</li>
+	<li>Copy all JAR files distributed with Struts (located in lib subdirectory) to WEB-INF/lib subdirectory of the tutorial project.</li>
+	<li>Copy all the *.tld files and validator-rules.xml from Struts lib subdirectory to WEB-INF subdirectory of the tutorial project.</li>
+</ul>
+
+
+
+
+<h3><a name="JSP-StrutsTutorial-PrepareTutorialDatabase"></a>Prepare Tutorial Database</h3>
+<p>See <a href="http://www.objectstyle.org/confluence/confluence/display/CAYDOC/Command-Line+Tutorial#Command-LineTutorial-PrepareTutorialDatabase" title="Prepare Tutorial Database on Command-Line Tutorial">Command&#45;Line Tutorial#Prepare Tutorial Database</a>. </p>
+<h3><a name="JSP-StrutsTutorial-SetupDataNode"></a>Setup DataNode</h3>
+
+<p>See <a href="http://www.objectstyle.org/confluence/confluence/display/CAYDOC/Command-Line+Tutorial#Command-LineTutorial-SetupDataNode" title="Setup DataNode on Command-Line Tutorial">Command&#45;Line Tutorial#Setup DataNode</a>.</p>
+
+<h3><a name="JSP-StrutsTutorial-SetupAutomaticPrimaryKeyGeneration"></a>Setup Automatic Primary Key Generation</h3>
+
+<p>See <a href="http://www.objectstyle.org/confluence/confluence/display/CAYDOC/Command-Line+Tutorial#Command-LineTutorial-SetupAutomaticPrimaryKeyGeneration" title="Setup Automatic Primary Key Generation on Command-Line Tutorial">Command&#45;Line Tutorial#Setup Automatic Primary Key Generation</a>.</p>
+
+<h3><a name="JSP-StrutsTutorial-GenerateJavaCodeforDataObjects"></a>Generate Java Code for DataObjects</h3>
+
+<p>See <a href="http://www.objectstyle.org/confluence/confluence/display/CAYDOC/Command-Line+Tutorial#Command-LineTutorial-GenerateJavaCodeforDataObjects" title="Generate Java Code for Data Objects on Command-Line Tutorial">Command&#45;Line Tutorial#Generate Java Code for Data Objects</a>.</p>
+
+<h3><a name="JSP-StrutsTutorial-CompileandDeploytheApplication"></a>Compile and Deploy the Application</h3>
+
+<p>Compile the source code like you would normally compile a webapplication. The example is given for javac from the command line (assuming that JAVA_HOME variable points to the JDK 1.3 or 1.4 installation). Substitute [servlet.jar] with the path to the actiual JAR file, for instance tomcat/common/lib/servlet.jar On Windows:</p>
+
+<div class="preformatted"><div class="preformattedContent">
+<pre>cayenne-web-app&gt; cd WEB-INF\classes
+classes&gt; set CLASSPATH=%CLASSPATH%;[servlet.jar] 
+classes&gt; set CLASSPATH=%CLASSPATH%;..\lib\struts.jar;..\lib\cayenne.jar
+classes&gt; %JAVA_HOME%\bin\javac webtest\*.java formbean\*.java action\*.java
+</pre>
+</div></div>
+<p>On UNIX:</p>
+<div class="preformatted"><div class="preformattedContent">
+<pre>cayenne-web-app# cd WEB-INF/classes
+classes# export CLASSPATH=$CLASSPATH:[servlet.jar]:../lib/struts.jar:../lib/cayenne.jar
+classes# $JAVA_HOME/bin/javac webtest/*.java formbean/*.java action/*.java
+</pre>
+</div></div>
+<p>To deploy, simply copy cayenne-web-app directory to Tomcat webapps directory and restart the Tomcat. URL of the new applications is <span class="nobr"><a href="http://localhost:8080/cayenne-web-app/" title="Visit page outside Confluence" rel="nofollow">http://localhost:8080/cayenne-web-app/<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span> (on containers other then Tomcat, this will be different). </p></div>
+</div>
+  <div class="clearer">.</div>
+  <div style="height: 12px; background-image: url('../../../../images/border_bottom.gif'); background-repeat: repeat-x;"></div>
+
+  <div class="smalltext copyright">
+    Copyright &copy;2001-2006 ObjectStyle Group and content authors
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,86 @@
+<html>
+  <head>
+    <title>Cayenne Documentation - Tapestry Tutorial</title>
+    <style type="text/css">@import "../../../../style.css";</style>
+  </head>
+<body>
+  <div class="header">
+    <div style="float: left;"><a href="http://objectstyle.org/cayenne/"><img src="../../../../images/logo.gif" align="absmiddle" border="0"></a></div>
+    <span class="logoSpaceLink"><a href="../../../../index.html">Cayenne User Documentation</a></span><br />
+    <span class="pagetitle">Tapestry Tutorial</span>
+  </div>
+<div id="cayenne_toc">
+<ul>
+<li><a href="../../../../Documentation/User Guide/Introduction/index.html">Introduction</a></li>
+<li><a href="../../../../Documentation/User Guide/Installation/index.html">Installation</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/index.html">Quick Start</a><ul>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Common Setup Steps/index.html">Common Setup Steps</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Command-Line Tutorial/index.html">Command-Line Tutorial</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/JSP-Struts Tutorial/index.html">JSP-Struts Tutorial</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Tapestry Tutorial/index.html">Tapestry Tutorial</a><ul>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/Cayenne Application/index.html">Cayenne Application</a></li>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Design/index.html">Design</a></li>
+<li><a href="../../../../Documentation/User Guide/Generating Classes/index.html">Generating Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/DataContext/index.html">DataContext</a></li>
+<li><a href="../../../../Documentation/User Guide/Queries/index.html">Queries</a></li>
+<li><a href="../../../../Documentation/User Guide/DataObjects/index.html">DataObjects</a></li>
+<li><a href="../../../../Documentation/User Guide/Stored Procedures/index.html">Stored Procedures</a></li>
+<li><a href="../../../../Documentation/User Guide/Expressions/index.html">Expressions</a></li>
+<li><a href="../../../../Documentation/User Guide/Performance Tuning/index.html">Performance Tuning</a></li>
+<li><a href="../../../../Documentation/User Guide/Deployment/index.html">Deployment</a></li>
+<li><a href="../../../../Documentation/User Guide/Ant Tasks/index.html">Ant Tasks</a></li>
+<li><a href="../../../../Documentation/User Guide/Access Stack Internals/index.html">Access Stack Internals</a></li>
+<li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
+</ul>
+</div>
+<div id="ConfluenceContent"><p><span class="nobr"><a href="http://jakarta.apache.org/tapestry/" title="Visit page outside Confluence" rel="nofollow">Tapestry<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span> is a powerful component-based web application framework. This section shows how to write and a deploy a Tapestry web application using Cayenne as an O/R layer.</p>
+
+<h3><a name="TapestryTutorial-TutorialSetup"></a>Tutorial Setup</h3>
+
+<p>Make sure you successfully finished <a href="../../../../Documentation/User Guide/Quick Start/Common Setup Steps/index.html" title="Common Setup Steps">common setup steps</a>.</p>
+
+<p>Install a web container. This tutorial was tested with <span class="nobr"><a href="http://jakarta.apache.org/tomcat/index.html" title="Visit page outside Confluence" rel="nofollow">Tomcat<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span>. It should work with any other container that is compliant with Servlet 2.3 or 2.2 specification. All references to Tomcat below should apply in some form to other web containers as well.</p>
+
+<p>Use tutorial source directory distributed with Cayenne at $CAYENNE_HOME/src/tutorials/cayenne-tapestry-app as a project directory.</p>
+
+<p>Copy cayenne.jar to the WEB-INF/lib subdirectory of the tutorial project directory.</p>
+
+<p>Copy JDBC driver jar file to WEB-INF/lib subdirectory of the tutorial project.</p>
+
+<p>Obtain the latest <span class="nobr"><a href="http://jakarta.apache.org/tapestry/" title="Visit page outside Confluence" rel="nofollow">Tapestry distribution<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span> and unzip somewhere. This tutorial targets Tapestry version 3.0 and will not work with earlier versions. Copy tapestry-*.jar and other libraries required by Tapestry from the Tapestry distribution to WEB-INF/lib subdirectory of the tutorial project.</p>
+
+<h3><a name="TapestryTutorial-PrepareTutorialDatabase"></a>Prepare Tutorial Database</h3>
+<p>See <a href="http://www.objectstyle.org/confluence/confluence/display/CAYDOC/Command-Line+Tutorial#Command-LineTutorial-PrepareTutorialDatabase" title="Prepare Tutorial Database on Command-Line Tutorial">Command&#45;Line Tutorial#Prepare Tutorial Database</a>.</p>
+
+<h3><a name="TapestryTutorial-SetupDataNode"></a>Setup DataNode</h3>
+
+<p>See <a href="http://www.objectstyle.org/confluence/confluence/display/CAYDOC/Command-Line+Tutorial#Command-LineTutorial-SetupDataNode" title="Setup DataNode on Command-Line Tutorial">Command&#45;Line Tutorial#Setup DataNode</a>.</p>
+
+<h3><a name="TapestryTutorial-SetupAutomaticPrimaryKeyGeneration"></a>Setup Automatic Primary Key Generation</h3>
+
+<p>See <a href="http://www.objectstyle.org/confluence/confluence/display/CAYDOC/Command-Line+Tutorial#Command-LineTutorial-SetupAutomaticPrimaryKeyGeneration" title="Setup Automatic Primary Key Generation on Command-Line Tutorial">Command&#45;Line Tutorial#Setup Automatic Primary Key Generation</a>.</p>
+
+<h3><a name="TapestryTutorial-GenerateJavaCodeforDataObjects"></a>Generate Java Code for DataObjects</h3>
+
+<p>See <a href="http://www.objectstyle.org/confluence/confluence/display/CAYDOC/Command-Line+Tutorial#Command-LineTutorial-GenerateJavaCodeforDataObjects" title="Generate Java Code for Data Objects on Command-Line Tutorial">Command&#45;Line Tutorial#Generate Java Code for Data Objects</a>.</p>
+
+
+<h3><a name="TapestryTutorial-CompileandDeploytheApplication"></a>Compile and Deploy the Application</h3>
+
+<p>To compile the application, the easiest way is to use ant. Change into the cayenne-tapestry-app directory and invoke ant. The application will be built. Note that "servlet.jar" (or an appropriate jar file with all the servlet classes) must be accessible to ant. Feel free to modify the buildfile accordingly.</p>
+
+<p>To deploy, simply copy cayenne-tapestry-app directory to Tomcat webapps directory and restart the Tomcat. URL of the new applications is <span class="nobr"><a href="http://localhost:8080/cayenne-tapestry-app/artist" title="Visit page outside Confluence" rel="nofollow">http://localhost:8080/cayenne-tapestry-app/artist<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span> (on containers other then Tomcat, the prefix will probably be different). </p></div>
+</div>
+  <div class="clearer">.</div>
+  <div style="height: 12px; background-image: url('../../../../images/border_bottom.gif'); background-repeat: repeat-x;"></div>
+
+  <div class="smalltext copyright">
+    Copyright &copy;2001-2006 ObjectStyle Group and content authors
+  </div>
+
+</body>
+</html>
