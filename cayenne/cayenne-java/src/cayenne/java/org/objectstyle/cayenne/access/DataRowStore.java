@@ -444,6 +444,13 @@ public class DataRowStore implements Serializable {
             return snapshot;
         }
     }
+    
+    /**
+     * @since 3.0
+     */
+    Map getCachedSnapshots() {
+        return snapshotLists;
+    }
 
     /**
      * Registers a list of snapshots with internal cache, using a String key.

@@ -55,14 +55,18 @@
  */
 package org.objectstyle.cayenne.access;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.ObjectContext;
 import org.objectstyle.cayenne.QueryResponse;
+import org.objectstyle.cayenne.query.InvalidateListCacheQuery;
+import org.objectstyle.cayenne.query.ObjectIdQuery;
 import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.query.QueryMetadata;
-import org.objectstyle.cayenne.query.ObjectIdQuery;
+import org.objectstyle.cayenne.util.GenericResponse;
 import org.objectstyle.cayenne.util.ListResponse;
 import org.objectstyle.cayenne.util.ObjectContextQueryAction;
 
@@ -86,8 +90,10 @@ class DataContextQueryAction extends ObjectContextQueryAction {
         if (interceptPaginatedQuery() != DONE) {
             if (interceptOIDQuery() != DONE) {
                 if (interceptRelationshipQuery() != DONE) {
-                    if (interceptLocalCache() != DONE) {
-                        runQuery();
+                    if (interceptInvalidateQuery() != DONE) {
+                        if (interceptLocalCache() != DONE) {
+                            runQuery();
+                        }
                     }
                 }
             }
@@ -165,5 +171,37 @@ class DataContextQueryAction extends ObjectContextQueryAction {
         runQuery();
         objectStore.cacheQueryResult(cacheKey, response.firstList());
         return DONE;
+    }
+
+    private boolean interceptInvalidateQuery() {
+        if (query instanceof InvalidateListCacheQuery) {
+            InvalidateListCacheQuery invalidateQuery = (InvalidateListCacheQuery) query;
+
+            ObjectStore objectStore = ((DataContext) actingContext).getObjectStore();
+
+            int count = 0;
+            synchronized (objectStore) {
+                Iterator it = objectStore.getCachedQueryResults().entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry entry = (Map.Entry) it.next();
+                    if (invalidateQuery.matchesCacheKey((String) entry.getKey())) {
+                        count++;
+                        it.remove();
+                    }
+                }
+            }
+
+            if (invalidateQuery.isCascade()) {
+                return !DONE;
+            }
+            else {
+                GenericResponse response = new GenericResponse();
+                response.addUpdateCount(count);
+                this.response = response;
+                return DONE;
+            }
+        }
+
+        return !DONE;
     }
 }

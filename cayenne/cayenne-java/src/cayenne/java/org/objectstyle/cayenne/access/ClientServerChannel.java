@@ -55,8 +55,7 @@
  */
 package org.objectstyle.cayenne.access;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.DataChannel;
@@ -80,8 +79,7 @@ public class ClientServerChannel implements DataChannel {
 
     protected DataContext serverContext;
     protected boolean lifecycleEventsEnabled;
-    protected Map paginatedResults;
-
+  
     public ClientServerChannel(DataDomain domain) {
         this(domain, false);
     }
@@ -99,17 +97,15 @@ public class ClientServerChannel implements DataChannel {
         return new ClientServerChannelQueryAction(this, query).execute();
     }
 
-    synchronized void addPaginatedResult(String cacheKey, IncrementalFaultList result) {
-        if (paginatedResults == null) {
-            paginatedResults = new HashMap();
-        }
-
-        paginatedResults.put(cacheKey, result);
+    void addPaginatedResult(String cacheKey, IncrementalFaultList result) {
+        serverContext.getObjectStore().cacheQueryResult(cacheKey, result);
     }
 
-    synchronized IncrementalFaultList getPaginatedResult(String cacheKey) {
-        return (paginatedResults != null) ? (IncrementalFaultList) paginatedResults
-                .get(cacheKey) : null;
+    IncrementalFaultList getPaginatedResult(String cacheKey) {
+        List result = serverContext.getObjectStore().getCachedQueryResult(cacheKey);
+        return (result instanceof IncrementalFaultList)
+                ? (IncrementalFaultList) result
+                : null;
     }
 
     DataContext getServerContext() {

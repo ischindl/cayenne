@@ -119,6 +119,13 @@ final class CayenneContextGraphManager extends GraphMap {
     synchronized List getCachedQueryResult(String name) {
         return (List) queryResultMap.get(name);
     }
+    
+    /**
+     * @since 3.0
+     */
+    Map getCachedQueryResults() {
+        return queryResultMap;
+    }
 
     boolean hasChangesSinceLastFlush() {
         int size = changeLog.hasMarker(FLUSH_MARKER) ? changeLog

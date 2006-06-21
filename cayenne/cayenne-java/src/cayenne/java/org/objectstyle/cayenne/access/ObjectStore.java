@@ -698,6 +698,13 @@ public class ObjectStore implements Serializable, SnapshotEventListener, GraphMa
         // they were originally cached... do no conversions here
         return (List) queryResultMap.get(name);
     }
+    
+    /**
+     * @since 3.0
+     */
+    Map getCachedQueryResults() {
+        return queryResultMap;
+    }
 
     /**
      * Caches a list of query results.

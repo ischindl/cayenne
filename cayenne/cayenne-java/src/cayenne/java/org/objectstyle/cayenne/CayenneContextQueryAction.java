@@ -55,11 +55,15 @@
  */
 package org.objectstyle.cayenne;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
+import org.objectstyle.cayenne.query.InvalidateListCacheQuery;
 import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.query.QueryMetadata;
 import org.objectstyle.cayenne.remote.RemoteIncrementalFaultList;
+import org.objectstyle.cayenne.util.GenericResponse;
 import org.objectstyle.cayenne.util.ListResponse;
 import org.objectstyle.cayenne.util.ObjectContextQueryAction;
 
@@ -78,9 +82,11 @@ class CayenneContextQueryAction extends ObjectContextQueryAction {
 
         if (interceptOIDQuery() != DONE) {
             if (interceptRelationshipQuery() != DONE) {
-                if (interceptLocalCache() != DONE) {
-                    if (interceptPaginatedQuery() != DONE) {
-                        runQuery();
+                if (interceptInvalidateQuery() != DONE) {
+                    if (interceptLocalCache() != DONE) {
+                        if (interceptPaginatedQuery() != DONE) {
+                            runQuery();
+                        }
                     }
                 }
             }
@@ -133,5 +139,38 @@ class CayenneContextQueryAction extends ObjectContextQueryAction {
 
         graphManager.cacheQueryResult(cacheKey, response.firstList());
         return DONE;
+    }
+    
+    private boolean interceptInvalidateQuery() {
+        if (query instanceof InvalidateListCacheQuery) {
+            InvalidateListCacheQuery invalidateQuery = (InvalidateListCacheQuery) query;
+
+            CayenneContextGraphManager graphManager = ((CayenneContext) actingContext)
+                    .internalGraphManager();
+
+            int count = 0;
+            synchronized (graphManager) {
+                Iterator it = graphManager.getCachedQueryResults().entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry entry = (Map.Entry) it.next();
+                    if (invalidateQuery.matchesCacheKey((String) entry.getKey())) {
+                        count++;
+                        it.remove();
+                    }
+                }
+            }
+
+            if (invalidateQuery.isCascade()) {
+                return !DONE;
+            }
+            else {
+                GenericResponse response = new GenericResponse();
+                response.addUpdateCount(count);
+                this.response = response;
+                return DONE;
+            }
+        }
+
+        return !DONE;
     }
 }

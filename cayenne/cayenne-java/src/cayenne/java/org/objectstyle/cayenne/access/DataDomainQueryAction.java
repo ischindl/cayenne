@@ -75,6 +75,7 @@ import org.objectstyle.cayenne.map.DataMap;
 import org.objectstyle.cayenne.map.DbRelationship;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
+import org.objectstyle.cayenne.query.InvalidateListCacheQuery;
 import org.objectstyle.cayenne.query.PrefetchSelectQuery;
 import org.objectstyle.cayenne.query.PrefetchTreeNode;
 import org.objectstyle.cayenne.query.Query;
@@ -141,8 +142,10 @@ class DataDomainQueryAction implements QueryRouter, OperationObserver {
         // run chain...
         if (interceptOIDQuery() != DONE) {
             if (interceptRelationshipQuery() != DONE) {
-                if (interceptSharedCache() != DONE) {
-                    runQueryInTransaction();
+                if (interceptInvalidateQuery() != DONE) {
+                    if (interceptSharedCache() != DONE) {
+                        runQueryInTransaction();
+                    }
                 }
             }
         }
@@ -267,6 +270,35 @@ class DataDomainQueryAction implements QueryRouter, OperationObserver {
         return !DONE;
     }
 
+    /**
+     * @since 3.0
+     */
+    private boolean interceptInvalidateQuery() {
+        if (query instanceof InvalidateListCacheQuery) {
+            InvalidateListCacheQuery invalidateQuery = (InvalidateListCacheQuery) query;
+
+            int count = 0;
+            synchronized (cache) {
+                Iterator it = cache.getCachedSnapshots().entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry entry = (Map.Entry) it.next();
+                    if (invalidateQuery.matchesCacheKey((String) entry.getKey())) {
+                        count++;
+                        it.remove();
+                    }
+                }
+            }
+
+            // ignore 'cascade' setting - we are at the bottom of the stack already...
+            GenericResponse response = new GenericResponse();
+            response.addUpdateCount(count);
+            this.response = response;
+            return DONE;
+        }
+
+        return !DONE;
+    }
+    
     /*
      * Wraps execution in shared cache checks
      */
