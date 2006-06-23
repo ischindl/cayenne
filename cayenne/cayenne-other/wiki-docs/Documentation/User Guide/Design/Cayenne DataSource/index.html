@@ -1,0 +1,60 @@
+<html>
+  <head>
+    <title>Cayenne Documentation - Cayenne DataSource</title>
+    <style type="text/css">@import "../../../../style.css";</style>
+  </head>
+<body>
+  <div class="header">
+    <div style="float: left;"><a href="http://objectstyle.org/cayenne/"><img src="../../../../images/logo.gif" align="absmiddle" border="0"></a></div>
+    <span class="logoSpaceLink"><a href="../../../../index.html">Cayenne User Documentation</a></span><br />
+    <span class="pagetitle">Cayenne DataSource</span>
+  </div>
+<div id="cayenne_toc">
+<ul>
+<li><a href="../../../../Documentation/User Guide/Introduction/index.html">Introduction</a></li>
+<li><a href="../../../../Documentation/User Guide/Installation/index.html">Installation</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/index.html">Quick Start</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/index.html">Design</a><ul>
+<li><a href="../../../../Documentation/User Guide/Design/Object Relational Mapping/index.html">Object Relational Mapping</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Object Graph/index.html">Object Graph</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Data Objects/index.html">Data Objects</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Access Classes/index.html">Access Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Cayenne DataSource/index.html">Cayenne DataSource</a><ul>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Design/Cross-Database Issues/index.html">Cross-Database Issues</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Primary Key Generation/index.html">Primary Key Generation</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/How Information Is Stored in Cayenne/index.html">How Information Is Stored in Cayenne</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Understanding Caching/index.html">Understanding Caching</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Understanding Transactions/index.html">Understanding Transactions</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Event Package/index.html">Event Package</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Generated Columns/index.html">Generated Columns</a></li>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Generating Classes/index.html">Generating Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/DataContext/index.html">DataContext</a></li>
+<li><a href="../../../../Documentation/User Guide/Queries/index.html">Queries</a></li>
+<li><a href="../../../../Documentation/User Guide/DataObjects/index.html">DataObjects</a></li>
+<li><a href="../../../../Documentation/User Guide/Stored Procedures/index.html">Stored Procedures</a></li>
+<li><a href="../../../../Documentation/User Guide/Expressions/index.html">Expressions</a></li>
+<li><a href="../../../../Documentation/User Guide/Performance Tuning/index.html">Performance Tuning</a></li>
+<li><a href="../../../../Documentation/User Guide/Deployment/index.html">Deployment</a></li>
+<li><a href="../../../../Documentation/User Guide/Ant Tasks/index.html">Ant Tasks</a></li>
+<li><a href="../../../../Documentation/User Guide/Access Stack Internals/index.html">Access Stack Internals</a></li>
+<li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
+</ul>
+</div>
+<div id="ConfluenceContent"><p>The default implementation of DataNode accesses persistent storage via JDBC. Database connections are obtained via javax.sql.DataSource. If an application is deployed in a J2EE container, DataSource is normally provided by container via JNDI. For standalone applications Cayenne includes a full implementation of DataSource functionality, including connection pooling. Cayenne DataSource is implemented as org.objectstyle.cayenne.conn  package. Normally instances of PoolManager  class serve as a publicly accessible DataSource objects.</p>
+
+<p>DataSource configuration is done as a part of the mapping, so normally there is no need to access it in the code.</p>
+<table cellpadding='5' width='85%' cellspacing='8px' class='infoMacro' border="0" align='center'><colgroup><col width='24'><col></colgroup><tr><td valign='top'><img src="../../../../images/emoticons/information.gif" width="16" height="16" align="absmiddle" alt="" border="0"></td><td>Cayenne DataSource implementation is fully independent from the rest of the framework and can be used as a standalone module. But since Cayenne's main focus is on O/R features, DataSource use outside of Cayenne is not supported. You may use other standalone implementations of DataSource, e.g. Jakarta commons-dbcp.</td></tr></table></div>
+</div>
+  <div class="clearer">.</div>
+  <div style="height: 12px; background-image: url('../../../../images/border_bottom.gif'); background-repeat: repeat-x;"></div>
+
+  <div class="smalltext copyright">
+    Copyright &copy;2001-2006 ObjectStyle Group and content authors
+  </div>
+
+</body>
+</html>

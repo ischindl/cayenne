@@ -1,0 +1,68 @@
+<html>
+  <head>
+    <title>Cayenne Documentation - Data Objects</title>
+    <style type="text/css">@import "../../../../style.css";</style>
+  </head>
+<body>
+  <div class="header">
+    <div style="float: left;"><a href="http://objectstyle.org/cayenne/"><img src="../../../../images/logo.gif" align="absmiddle" border="0"></a></div>
+    <span class="logoSpaceLink"><a href="../../../../index.html">Cayenne User Documentation</a></span><br />
+    <span class="pagetitle">Data Objects</span>
+  </div>
+<div id="cayenne_toc">
+<ul>
+<li><a href="../../../../Documentation/User Guide/Introduction/index.html">Introduction</a></li>
+<li><a href="../../../../Documentation/User Guide/Installation/index.html">Installation</a></li>
+<li><a href="../../../../Documentation/User Guide/Quick Start/index.html">Quick Start</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/index.html">Design</a><ul>
+<li><a href="../../../../Documentation/User Guide/Design/Object Relational Mapping/index.html">Object Relational Mapping</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Object Graph/index.html">Object Graph</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Data Objects/index.html">Data Objects</a><ul>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Design/Access Classes/index.html">Access Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Cayenne DataSource/index.html">Cayenne DataSource</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Cross-Database Issues/index.html">Cross-Database Issues</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Primary Key Generation/index.html">Primary Key Generation</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/How Information Is Stored in Cayenne/index.html">How Information Is Stored in Cayenne</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Understanding Caching/index.html">Understanding Caching</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Understanding Transactions/index.html">Understanding Transactions</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Event Package/index.html">Event Package</a></li>
+<li><a href="../../../../Documentation/User Guide/Design/Generated Columns/index.html">Generated Columns</a></li>
+</ul>
+</li>
+<li><a href="../../../../Documentation/User Guide/Generating Classes/index.html">Generating Classes</a></li>
+<li><a href="../../../../Documentation/User Guide/DataContext/index.html">DataContext</a></li>
+<li><a href="../../../../Documentation/User Guide/Queries/index.html">Queries</a></li>
+<li><a href="../../../../Documentation/User Guide/DataObjects/index.html">DataObjects</a></li>
+<li><a href="../../../../Documentation/User Guide/Stored Procedures/index.html">Stored Procedures</a></li>
+<li><a href="../../../../Documentation/User Guide/Expressions/index.html">Expressions</a></li>
+<li><a href="../../../../Documentation/User Guide/Performance Tuning/index.html">Performance Tuning</a></li>
+<li><a href="../../../../Documentation/User Guide/Deployment/index.html">Deployment</a></li>
+<li><a href="../../../../Documentation/User Guide/Ant Tasks/index.html">Ant Tasks</a></li>
+<li><a href="../../../../Documentation/User Guide/Access Stack Internals/index.html">Access Stack Internals</a></li>
+<li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
+</ul>
+</div>
+<div id="ConfluenceContent"><p>Cayenne's main function is to provide object-based access to relational data sources. DataObjects in Cayenne are fully portable and contain only data and business logic. It is a task of the framework to perform operations required to provide objects persistence.</p>
+
+<p>All objects that represent persistent data in Cayenne must implement DataObject interface. Default implementation of DataObject is CayenneDataObject. In most cases application classes that are used for data access would extend CayenneDataObject. DataContext provides persistence services to DataObjects:<br/>
+<img src="data-objects.gif" align="absmiddle" border="0" /></p>
+
+<h3><a name="DataObjects-ObjectId"></a>ObjectId</h3>
+<p>Each object in Cayenne is identified by ObjectId. ObjectId is an abstraction similar to the Primary Key concept in relational databases. Its internal implementation in fact uses primary key values from the database. Cayenne takes care of creating and managing ObjectId's. Application developers normally do not work with ObjectId directly.</p>
+<table cellpadding='5' width='85%' cellspacing='8px' class='infoMacro' border="0" align='center'><colgroup><col width='24'><col></colgroup><tr><td valign='top'><img src="../../../../images/emoticons/information.gif" width="16" height="16" align="absmiddle" alt="" border="0"></td><td>The fact that ObjectIds are opaque has a consequence that primary key columns are normally not included as class properties of DataObjects. From the DataMap perspective, this means that while DbEntities would have attributes that map to primary key columns, ObjEntities will not.</td></tr></table>
+
+<h3><a name="DataObjects-ObjectPersistenceStates"></a>Object Persistence States</h3>
+<p>DataObjects can be in one of the few persistence states. Transitions between the states occur when user (or Cayenne framework on user's behalf) performs certain operations. The following state diagram lists these transitions for the most common scenarious:<br/>
+<img src="dataobject-state.gif" align="absmiddle" border="0" /></p></div>
+</div>
+  <div class="clearer">.</div>
+  <div style="height: 12px; background-image: url('../../../../images/border_bottom.gif'); background-repeat: repeat-x;"></div>
+
+  <div class="smalltext copyright">
+    Copyright &copy;2001-2006 ObjectStyle Group and content authors
+  </div>
+
+</body>
+</html>
