@@ -148,4 +148,25 @@ public class CayenneContextDeleteRulesTst extends CayenneTestCase {
         // And be sure that the commit works afterwards, just for sanity
         context.commitChanges();
     }
+
+    public void testCascadeToOneNewObject() {
+        CayenneContext context = createClientContext();
+
+        ClientMtDeleteRule related = (ClientMtDeleteRule) context
+                .newObject(ClientMtDeleteRule.class);
+        context.commitChanges();
+
+        ClientMtDeleteCascade object = (ClientMtDeleteCascade) context
+                .newObject(ClientMtDeleteCascade.class);
+        object.setName("object");
+        object.setCascade(related);
+
+        context.deleteObject(object);
+        assertEquals(PersistenceState.TRANSIENT, object.getPersistenceState());
+        assertEquals(PersistenceState.DELETED, related.getPersistenceState());
+        assertFalse(context.deletedObjects().contains(object));
+        assertTrue(context.deletedObjects().contains(related));
+
+        context.commitChanges();
+    }
 }

@@ -65,6 +65,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.objectstyle.cayenne.graph.ArcCreateOperation;
+import org.objectstyle.cayenne.graph.ArcDeleteOperation;
 import org.objectstyle.cayenne.graph.CompoundDiff;
 import org.objectstyle.cayenne.graph.GraphDiff;
 import org.objectstyle.cayenne.graph.NodeDiff;
@@ -94,6 +96,16 @@ class ObjectContextChangeLog {
 
                 if (nodeId.equals(((NodeDiff) next).getNodeId())) {
                     it.remove();
+                }
+                else if (next instanceof ArcCreateOperation) {
+                    if (nodeId.equals(((ArcCreateOperation) next).getTargetNodeId())) {
+                        it.remove();
+                    }
+                }
+                else if (next instanceof ArcDeleteOperation) {
+                    if (nodeId.equals(((ArcDeleteOperation) next).getTargetNodeId())) {
+                        it.remove();
+                    }
                 }
             }
         }
