@@ -56,14 +56,13 @@
 package org.objectstyle.cayenne;
 
 import org.objectstyle.cayenne.access.DataContext;
-import org.objectstyle.cayenne.validation.ValidationResult;
 
 /**
  * Defines basic methods for a persistent object in Cayenne.
  * 
  * @author Andrei Adamchik
  */
-public interface DataObject extends Persistent {
+public interface DataObject extends Persistent, Validating {
 
     public static final long DEFAULT_VERSION = Long.MIN_VALUE;
 
@@ -202,31 +201,4 @@ public interface DataObject extends Persistent {
      * @deprecated since 1.2 use 'getObjectContext().prepareForAccess(object)'
      */
     public void resolveFault();
-
-    /**
-     * Performs property validation of the NEW object, appending any validation failures
-     * to the provided validationResult object. This method is invoked by DataContext
-     * before committing a NEW object to the database.
-     * 
-     * @since 1.1
-     */
-    public void validateForInsert(ValidationResult validationResult);
-
-    /**
-     * Performs property validation of the MODIFIED object, appending any validation
-     * failures to the provided validationResult object. This method is invoked by
-     * DataContext before committing a MODIFIED object to the database.
-     * 
-     * @since 1.1
-     */
-    public void validateForUpdate(ValidationResult validationResult);
-
-    /**
-     * Performs property validation of the DELETED object, appending any validation
-     * failures to the provided validationResult object. This method is invoked by
-     * DataContext before committing a DELETED object to the database.
-     * 
-     * @since 1.1
-     */
-    public void validateForDelete(ValidationResult validationResult);
 }

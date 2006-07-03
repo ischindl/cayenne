@@ -57,6 +57,7 @@ package org.objectstyle.cayenne;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import org.objectstyle.cayenne.event.EventManager;
@@ -68,6 +69,8 @@ import org.objectstyle.cayenne.property.ClassDescriptor;
 import org.objectstyle.cayenne.query.ObjectIdQuery;
 import org.objectstyle.cayenne.query.Query;
 import org.objectstyle.cayenne.util.EventUtil;
+import org.objectstyle.cayenne.validation.ValidationException;
+import org.objectstyle.cayenne.validation.ValidationResult;
 
 /**
  * A default generic implementation of ObjectContext suitable for accessing Cayenne from
@@ -217,21 +220,49 @@ public class CayenneContext implements ObjectContext {
      * service via an internal instance of CayenneConnector.
      */
     public void commitChanges() {
-        doCommitChanges();
+        doCommitChanges(true);
     }
 
-    GraphDiff doCommitChanges() {
+    GraphDiff doCommitChanges(boolean cascade) {
+
+        int syncType = cascade
+                ? DataChannel.FLUSH_CASCADE_SYNC
+                : DataChannel.FLUSH_NOCASCADE_SYNC;
+
         GraphDiff commitDiff = null;
 
         synchronized (graphManager) {
 
             if (graphManager.hasChanges()) {
 
+                ValidationResult result = new ValidationResult();
+                Iterator it = graphManager.dirtyNodes().iterator();
+                while (it.hasNext()) {
+                    Persistent p = (Persistent) it.next();
+                    if (p instanceof Validating) {
+                        switch (p.getPersistenceState()) {
+                            case PersistenceState.NEW:
+                                ((Validating) p).validateForInsert(result);
+                                break;
+                            case PersistenceState.MODIFIED:
+                                ((Validating) p).validateForUpdate(result);
+                                break;
+                            case PersistenceState.DELETED:
+                                ((Validating) p).validateForDelete(result);
+                                break;
+                        }
+                    }
+                }
+
+                if (result.hasFailures()) {
+                    throw new ValidationException(result);
+                }
+
                 graphManager.graphCommitStarted();
 
                 try {
                     commitDiff = channel.onSync(this, graphManager
-                            .getDiffsSinceLastFlush(), DataChannel.FLUSH_CASCADE_SYNC);
+                            .getDiffsSinceLastFlush(), syncType);
                 }
                 catch (Throwable th) {
                     graphManager.graphCommitAborted();
@@ -250,6 +281,10 @@ public class CayenneContext implements ObjectContext {
 
         return commitDiff;
     }
+    
+    public void commitChangesToParent() {
+        doCommitChanges(false);
+    }
 
     public void rollbackChanges() {
         synchronized (graphManager) {
@@ -259,16 +294,6 @@ public class CayenneContext implements ObjectContext {
                 graphManager.graphReverted();
 
                 channel.onSync(this, diff, DataChannel.ROLLBACK_CASCADE_SYNC);
-            }
-        }
-    }
-
-    public void commitChangesToParent() {
-        synchronized (graphManager) {
-            if (graphManager.hasChangesSinceLastFlush()) {
-                GraphDiff diff = graphManager.getDiffsSinceLastFlush();
-                graphManager.graphFlushed();
-                channel.onSync(this, diff, DataChannel.FLUSH_NOCASCADE_SYNC);
             }
         }
     }
