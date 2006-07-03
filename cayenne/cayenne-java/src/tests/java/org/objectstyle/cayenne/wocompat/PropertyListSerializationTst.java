@@ -97,6 +97,20 @@ public class PropertyListSerializationTst extends BasicTestCase {
         assertTrue(readMap instanceof Map);
         assertTrue(map.equals(readMap));
     }
+    
+    public void testEmptyString() throws Exception {
+        File plistFile = new File(super.getTestDir(), "test-empty-string.plist");
+        Map map = new HashMap();
+        map.put("a", "");
+
+        assertFalse(plistFile.exists());
+        PropertyListSerialization.propertyListToFile(plistFile, map);
+        assertTrue(plistFile.exists());
+
+        Object readMap = PropertyListSerialization.propertyListFromFile(plistFile);
+        assertTrue(readMap instanceof Map);
+        assertTrue(map.equals(readMap));
+    }
 
     public void testStringWithQuotes() throws Exception {
         File plistFile = new File(super.getTestDir(), "test-quotes.plist");

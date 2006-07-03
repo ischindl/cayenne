@@ -250,7 +250,10 @@ public class PropertyListSerialization {
 		String noQuoteExtras = "_$:./";
 		char[] chars = str.toCharArray();
 		int len = chars.length;
-		for (int i = 0; i < len; i++) {
+        if (len == 0) {
+            shouldQuote = true;
+        }
+		for (int i = 0; !shouldQuote && i < len; i++) {
             char c = chars[i];
             
             if ((c >= 'a' && c <= 'z')
@@ -259,10 +262,8 @@ public class PropertyListSerialization {
                     || noQuoteExtras.indexOf(c) >= 0) {
                 continue;
             }
-            else {
-                shouldQuote = true;
-                break;
-            }
+
+            shouldQuote = true;
         }
 
 		str = escapeString(str);
