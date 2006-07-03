@@ -289,19 +289,19 @@ public class EntityDescriptor extends BaseClassDescriptor {
     }
 
     /*
-     * Creates an accessor for the property. First tries FieldAccessor and then
-     * DataObjectAccessor.
+     * Creates an accessor for the property.
      */
     PropertyAccessor makeAccessor(String propertyName, Class propertyType)
             throws PropertyAccessException {
+
+        if (dataObject) {
+            return new DataObjectAccessor(propertyName);
+        }
+
         try {
             return new FieldAccessor(objectClass, propertyName, propertyType);
         }
         catch (Throwable th) {
-
-            if (dataObject) {
-                return new DataObjectAccessor(propertyName);
-            }
 
             throw new PropertyAccessException("Can't create accessor for property '"
                     + propertyName

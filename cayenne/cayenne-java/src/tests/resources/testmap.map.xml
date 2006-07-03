@@ -130,6 +130,16 @@
 		<db-attribute name="DESCR" type="VARCHAR" length="50"/>
 		<db-attribute name="PK_ATTRIBUTE" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
 	</db-entity>
+	<db-entity name="MIXED_PERSISTENCE_STRATEGY">
+		<db-attribute name="DESCRIPTION" type="VARCHAR" length="200"/>
+		<db-attribute name="ID" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
+		<db-attribute name="NAME" type="VARCHAR" length="200"/>
+	</db-entity>
+	<db-entity name="MIXED_PERSISTENCE_STRATEGY2">
+		<db-attribute name="ID" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
+		<db-attribute name="MASTER_ID" type="INTEGER"/>
+		<db-attribute name="NAME" type="VARCHAR" length="200"/>
+	</db-entity>
 	<db-entity name="NO_PK_TEST">
 		<db-attribute name="ATTRIBUTE1" type="INTEGER"/>
 	</db-entity>
@@ -277,6 +287,13 @@
 		<obj-attribute name="descr" type="java.lang.String" db-attribute-path="DESCR"/>
 		<obj-attribute name="pkAttribute" type="java.lang.Integer" db-attribute-path="PK_ATTRIBUTE"/>
 	</obj-entity>
+	<obj-entity name="MixedPersistenceStrategy" className="org.objectstyle.art.MixedPersistenceStrategy" dbEntityName="MIXED_PERSISTENCE_STRATEGY">
+		<obj-attribute name="description" type="java.lang.String" db-attribute-path="DESCRIPTION"/>
+		<obj-attribute name="name" type="java.lang.String" db-attribute-path="NAME"/>
+	</obj-entity>
+	<obj-entity name="MixedPersistenceStrategy2" className="org.objectstyle.art.MixedPersistenceStrategy2" dbEntityName="MIXED_PERSISTENCE_STRATEGY2">
+		<obj-attribute name="name" type="java.lang.String" db-attribute-path="NAME"/>
+	</obj-entity>
 	<obj-entity name="NoPkTest" className="org.objectstyle.art.NoPkTest" dbEntityName="NO_PK_TEST">
 		<obj-attribute name="attribute1" type="java.lang.Integer" db-attribute-path="ATTRIBUTE1"/>
 	</obj-entity>
@@ -398,6 +415,12 @@
 	<db-relationship name="meaningfulPKDepArray" source="MEANINGFUL_PK_TEST1" target="MEANINGFUL_PK_DEP" toMany="true">
 		<db-attribute-pair source="PK_ATTRIBUTE" target="MASTER_PK"/>
 	</db-relationship>
+	<db-relationship name="details" source="MIXED_PERSISTENCE_STRATEGY" target="MIXED_PERSISTENCE_STRATEGY2" toMany="true">
+		<db-attribute-pair source="ID" target="MASTER_ID"/>
+	</db-relationship>
+	<db-relationship name="master" source="MIXED_PERSISTENCE_STRATEGY2" target="MIXED_PERSISTENCE_STRATEGY" toMany="false">
+		<db-attribute-pair source="MASTER_ID" target="ID"/>
+	</db-relationship>
 	<db-relationship name="toArtist" source="PAINTING" target="ARTIST" toMany="false">
 		<db-attribute-pair source="ARTIST_ID" target="ARTIST_ID"/>
 	</db-relationship>
@@ -441,6 +464,8 @@
 	<obj-relationship name="toDep" source="GeneratedColumnTest" target="GeneratedColumnDep" db-relationship-path="toDep"/>
 	<obj-relationship name="toMeaningfulPK" source="MeaningfulPKDep" target="MeaningfulPKTest1" db-relationship-path="toMeaningfulPK"/>
 	<obj-relationship name="meaningfulPKDepArray" source="MeaningfulPKTest1" target="MeaningfulPKDep" db-relationship-path="meaningfulPKDepArray"/>
+	<obj-relationship name="details" source="MixedPersistenceStrategy" target="MixedPersistenceStrategy2" db-relationship-path="details"/>
+	<obj-relationship name="master" source="MixedPersistenceStrategy2" target="MixedPersistenceStrategy" db-relationship-path="master"/>
 	<obj-relationship name="toArtist" source="Painting" target="Artist" deleteRule="Nullify" db-relationship-path="toArtist"/>
 	<obj-relationship name="toGallery" source="Painting" target="Gallery" deleteRule="Nullify" db-relationship-path="toGallery"/>
 	<obj-relationship name="toPaintingInfo" source="Painting" target="PaintingInfo" deleteRule="Cascade" db-relationship-path="toPaintingInfo"/>
