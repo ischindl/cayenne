@@ -61,10 +61,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.objectstyle.cayenne.DataObject;
 import org.objectstyle.cayenne.ObjectId;
 import org.objectstyle.cayenne.PersistenceState;
 import org.objectstyle.cayenne.Persistent;
+import org.objectstyle.cayenne.Validating;
 import org.objectstyle.cayenne.graph.CompoundDiff;
 import org.objectstyle.cayenne.graph.GraphChangeHandler;
 import org.objectstyle.cayenne.graph.GraphDiff;
@@ -113,17 +113,20 @@ class ObjectStoreGraphDiff implements GraphDiff {
                 noop = false;
 
                 // accessing objectMap directly to avoid unneeded synchronization.
-                DataObject object = (DataObject) objectStore.getNodeNoSync(entry.getKey());
-                switch (object.getPersistenceState()) {
-                    case PersistenceState.NEW:
-                        object.validateForInsert(result);
-                        break;
-                    case PersistenceState.MODIFIED:
-                        object.validateForUpdate(result);
-                        break;
-                    case PersistenceState.DELETED:
-                        object.validateForDelete(result);
-                        break;
+                Persistent object = (Persistent) objectStore.getNodeNoSync(entry.getKey());
+                
+                if (object instanceof Validating) {
+                    switch (object.getPersistenceState()) {
+                        case PersistenceState.NEW:
+                            ((Validating) object).validateForInsert(result);
+                            break;
+                        case PersistenceState.MODIFIED:
+                            ((Validating) object).validateForUpdate(result);
+                            break;
+                        case PersistenceState.DELETED:
+                            ((Validating) object).validateForDelete(result);
+                            break;
+                    }
                 }
             }
         }

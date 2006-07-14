@@ -62,7 +62,7 @@ import org.objectstyle.cayenne.access.DataContext;
  * 
  * @author Andrei Adamchik
  */
-public interface DataObject extends Persistent, Validating {
+public interface DataObject extends Persistent {
 
     public static final long DEFAULT_VERSION = Long.MIN_VALUE;
 

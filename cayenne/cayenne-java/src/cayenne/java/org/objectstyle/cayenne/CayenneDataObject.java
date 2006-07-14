@@ -90,7 +90,7 @@ import org.objectstyle.cayenne.xml.XMLSerializable;
  * 
  * @author Andrei Adamchik
  */
-public class CayenneDataObject implements DataObject, XMLSerializable {
+public class CayenneDataObject implements DataObject, Validating, XMLSerializable {
 
     protected long snapshotVersion = DEFAULT_VERSION;
 

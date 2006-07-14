@@ -84,8 +84,6 @@ import org.objectstyle.cayenne.graph.NodeDiff;
 import org.objectstyle.cayenne.map.ObjEntity;
 import org.objectstyle.cayenne.map.ObjRelationship;
 import org.objectstyle.cayenne.query.ObjectIdQuery;
-import org.objectstyle.cayenne.validation.ValidationException;
-import org.objectstyle.cayenne.validation.ValidationResult;
 
 /**
  * ObjectStore stores objects using their ObjectId as a key. It works as a dedicated
@@ -847,83 +845,6 @@ public class ObjectStore implements Serializable, SnapshotEventListener, GraphMa
                 ? (ObjectContext) event.getPostedBy()
                 : null;
         context.fireDataChannelChanged(originatingContext, diff);
-    }
-
-    /**
-     * Performs validation of all uncommitted objects in the ObjectStore. If validation
-     * fails, a ValidationException is thrown, listing all encountered failures. This is a
-     * utility method for the users to call. Cayenne itself uses a different mechanism to
-     * validate objects on commit.
-     * 
-     * @since 1.1
-     * @throws ValidationException
-     * @deprecated since 1.2 - This method is no longer used in Cayenne internally.
-     */
-    public synchronized void validateUncommittedObjects() throws ValidationException {
-
-        // we must iterate over a copy of object list,
-        // as calling validateFor* on DataObjects can have a side effect
-        // of modifying this ObjectStore, and thus resulting in
-        // ConcurrentModificationExceptions in the Iterator
-
-        Collection deleted = null;
-        Collection inserted = null;
-        Collection updated = null;
-
-        Iterator allIt = getObjectIterator();
-        while (allIt.hasNext()) {
-            DataObject dataObject = (DataObject) allIt.next();
-            switch (dataObject.getPersistenceState()) {
-                case PersistenceState.NEW:
-                    if (inserted == null) {
-                        inserted = new ArrayList();
-                    }
-                    inserted.add(dataObject);
-                    break;
-                case PersistenceState.MODIFIED:
-                    if (updated == null) {
-                        updated = new ArrayList();
-                    }
-                    updated.add(dataObject);
-                    break;
-                case PersistenceState.DELETED:
-                    if (deleted == null) {
-                        deleted = new ArrayList();
-                    }
-                    deleted.add(dataObject);
-                    break;
-            }
-        }
-
-        ValidationResult validationResult = new ValidationResult();
-
-        if (deleted != null) {
-            Iterator it = deleted.iterator();
-            while (it.hasNext()) {
-                DataObject dataObject = (DataObject) it.next();
-                dataObject.validateForDelete(validationResult);
-            }
-        }
-
-        if (inserted != null) {
-            Iterator it = inserted.iterator();
-            while (it.hasNext()) {
-                DataObject dataObject = (DataObject) it.next();
-                dataObject.validateForInsert(validationResult);
-            }
-        }
-
-        if (updated != null) {
-            Iterator it = updated.iterator();
-            while (it.hasNext()) {
-                DataObject dataObject = (DataObject) it.next();
-                dataObject.validateForUpdate(validationResult);
-            }
-        }
-
-        if (validationResult.hasFailures()) {
-            throw new ValidationException(validationResult);
-        }
     }
 
     /**
