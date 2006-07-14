@@ -288,10 +288,12 @@ public class EntityDescriptor extends BaseClassDescriptor {
         }
     }
 
-    /*
-     * Creates an accessor for the property.
+    /**
+     * Creates an accessor for the property. By default uses uses
+     * {@link DataObjectAccessor} for DataObjects and {@link FieldAccessor} for all other
+     * classes.
      */
-    PropertyAccessor makeAccessor(String propertyName, Class propertyType)
+    protected PropertyAccessor makeAccessor(String propertyName, Class propertyType)
             throws PropertyAccessException {
 
         if (dataObject) {
