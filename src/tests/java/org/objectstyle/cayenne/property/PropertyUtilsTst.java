@@ -53,12 +53,12 @@
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
  */
-package org.objectstyle.cayenne.property;
+package org.apache.cayenne.property;
 
 import junit.framework.TestCase;
 
-import org.objectstyle.cayenne.access.types.MockEnum;
-import org.objectstyle.cayenne.access.types.MockEnumHolder;
+import org.apache.cayenne.access.types.MockEnum;
+import org.apache.cayenne.access.types.MockEnumHolder;
 
 public class PropertyUtilsTst extends TestCase {
 

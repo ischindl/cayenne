@@ -53,7 +53,7 @@
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
  */
-package org.objectstyle.cayenne.access.types;
+package org.apache.cayenne.access.types;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -62,9 +62,9 @@ import java.util.Map;
 
 import junit.framework.TestCase;
 
-import org.objectstyle.cayenne.map.EntityResolver;
-import org.objectstyle.cayenne.remote.hessian.service.HessianUtil;
-import org.objectstyle.cayenne.util.Util;
+import org.apache.cayenne.map.EntityResolver;
+import org.apache.cayenne.remote.hessian.service.HessianUtil;
+import org.apache.cayenne.util.Util;
 
 /**
  * A test case checking Cayenne handling of 1.5 Enums.

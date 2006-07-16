@@ -53,7 +53,7 @@
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
  */
-package org.objectstyle.cayenne.access.types;
+package org.apache.cayenne.access.types;
 
 public class InnerEnumHolder {
 
