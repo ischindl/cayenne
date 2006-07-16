@@ -53,7 +53,7 @@
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
  */
-package org.objectstyle.cayenne.property;
+package org.apache.cayenne.property;
 
 /**
  * JDK 15 friendly converter factory.

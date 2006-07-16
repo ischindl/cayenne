@@ -53,16 +53,16 @@
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
  */
-package org.objectstyle.cayenne.access.types;
+package org.apache.cayenne.access.types;
 
 import java.lang.reflect.Method;
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import org.objectstyle.cayenne.dba.TypesMapping;
-import org.objectstyle.cayenne.map.DbAttribute;
-import org.objectstyle.cayenne.validation.ValidationResult;
+import org.apache.cayenne.dba.TypesMapping;
+import org.apache.cayenne.map.DbAttribute;
+import org.apache.cayenne.validation.ValidationResult;
 
 /**
  * An ExtendedType that handles an enum class. If Enum is mapped to a character column,
