@@ -233,6 +233,30 @@ public class NestedDataContextReadTst extends CayenneTestCase {
         }
     }
 
+    public void testLocalObjectRelationship() throws Exception {
+        deleteTestData();
+
+        DataContext context = createDataContext();
+        DataContext childContext = context.createChildDataContext();
+
+        Artist _new = (Artist) context.createAndRegisterNewObject(Artist.class);
+        Painting _newP = (Painting) context.createAndRegisterNewObject(Painting.class);
+        _new.addToPaintingArray(_newP);
+
+        blockQueries();
+
+        try {
+
+            Painting painting = (Painting) childContext.localObject(_newP.getObjectId(), _newP);
+            assertEquals(PersistenceState.COMMITTED, painting.getPersistenceState());
+            assertNotNull(painting.getToArtist());
+            assertEquals(PersistenceState.COMMITTED, painting.getToArtist().getPersistenceState());
+        }
+        finally {
+            unblockQueries();
+        }
+    }
+
     public void testSelect() throws Exception {
         deleteTestData();
         createTestData("testArtists");

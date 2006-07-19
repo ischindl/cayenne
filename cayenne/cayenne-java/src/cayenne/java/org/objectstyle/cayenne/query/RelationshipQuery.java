@@ -112,11 +112,6 @@ public class RelationshipQuery extends IndirectQuery {
             throw new CayenneRuntimeException("Null objectID");
         }
 
-        if (objectID.isTemporary()) {
-            throw new CayenneRuntimeException(
-                    "Temporary id can't be used in RelationshipQuery: " + objectID);
-        }
-
         this.objectId = objectID;
         this.relationshipName = relationshipName;
         this.refreshing = refreshing;
