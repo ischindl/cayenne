@@ -64,7 +64,9 @@ import org.objectstyle.cayenne.CayenneRuntimeException;
 import org.objectstyle.cayenne.map.EntityResolver;
 
 /**
- * A Query decorator for a collection of other queries.
+ * A Query decorator for a collection of other queries. Note that QueryChain will always
+ * return DataRows (that is if it returns data), as it has no way of knowing how to
+ * convert the results to objects.
  * 
  * @since 1.2
  * @author Andrus Adamchik
@@ -156,7 +158,9 @@ public class QueryChain implements Query {
      * Returns default metadata.
      */
     public QueryMetadata getMetaData(EntityResolver resolver) {
-        return DefaultQueryMetadata.defaultMetadata;
+        QueryMetadataWrapper wrapper = new QueryMetadataWrapper(DefaultQueryMetadata.defaultMetadata);
+        wrapper.override(QueryMetadata.FETCHING_DATA_ROWS_PROPERTY, Boolean.TRUE);
+        return wrapper;
     }
 
     /**
