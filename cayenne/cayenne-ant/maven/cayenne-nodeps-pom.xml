@@ -3,7 +3,7 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.objectstyle.cayenne</groupId>
+	<groupId>org.apache.cayenne</groupId>
 	<artifactId>cayenne-nodeps</artifactId>
 	<name>Cayenne</name>
 	<packaging>jar</packaging>
@@ -25,24 +25,24 @@
 	</scm>
 	
 	<organization>
-		<name>ObjectStyle Group</name>
-		<url>http://www.objectstyle.org/</url>
+		<name>Apache Software Foundation</name>
+		<url>http://www.apache.org/</url>
 	</organization>
 	
 	<inceptionYear>2001</inceptionYear>
 	<description>Cayenne Object Persistence Framework</description>
-	<url>http://objectstyle.org/cayenne/</url>
+	<url>http://incubator.apache.org/cayenne/</url>
 	<issueManagement>
 		<system>JIRA</system>
-		<url>http://issues.apache.org/cayenne</url>
+		<url>http://issues.apache.org/cayenne/</url>
 	</issueManagement>
 	
 	<mailingLists>
 		<mailingList>
 			<name>Cayenne Users and Developers</name>
-			<subscribe> http://objectstyle.org/cayenne/lists.html</subscribe>
-			<unsubscribe> http://objectstyle.org/cayenne/lists.html</unsubscribe>
-			<archive>http://objectstyle.org/cayenne/lists.html</archive>
+			<subscribe>http://incubator.apache.org/cayenne/lists.html</subscribe>
+			<unsubscribe>http://incubator.apache.org/cayenne/lists.html</unsubscribe>
+			<archive>http://incubator.apache.org/cayenne/lists.html</archive>
 		</mailingList>
 	</mailingLists>
 	
