@@ -177,8 +177,9 @@
 			</filterset>
 		</copy>
 		
-		<copy file="${cayenne.other}/licenses/LICENSE.txt"
-			tofile="${stage}/LICENSE.txt"/>
+		<copy todir="${stage}">
+			<fileset dir="${cayenne.other}/licenses/top/"/>
+		</copy>
 		
 		<copy
 			file="${dist.base}/${project.name}-${project.version}/lib/modeler/${m2.artifactId}.jar"
