@@ -39,14 +39,6 @@
 			<param name="m2.artifactId" value="${project.name}-modeler"/>
 		</antcall>
 		
-<!-- Ignore Ashwood - it is deployed on ibiblio and never changes 
-		<antcall target="install">
-			<param name="stage-target" value="stage-lib"/>
-			<param name="m2.groupDir" value="${m2.repo}/org/apache/ashwood"/>
-			<param name="m2.artifactId" value="ashwood"/>
-			<param name="project.version" value="1.1"/>
-		</antcall>
--->
 	</target>
 	
 	<target name="bundle-all" depends="build-cayenne">
@@ -71,13 +63,6 @@
 			<param name="m2.artifactId" value="${project.name}-modeler"/>
 		</antcall>
 		
-<!-- Ignore Ashwood - it is deployed on ibiblio and never changes 
-		<antcall target="bundle">
-			<param name="stage-target" value="stage-lib"/>
-			<param name="m2.artifactId" value="ashwood"/>
-			<param name="project.version" value="1.1"/>
-		</antcall>
--->
 	</target>
 	
 	<!-- 
