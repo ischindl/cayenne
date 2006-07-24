@@ -97,9 +97,12 @@ public class SelectQueryPrefetchTab extends SelectQueryOrderingTab {
         }
 
         // check if such prefetch already exists
-        if (selectQuery.getPrefetchTree() != null
-                && selectQuery.getPrefetchTree().getNode(prefetch) != null) {
-            return;
+        if (selectQuery.getPrefetchTree() != null) {
+
+            PrefetchTreeNode node = selectQuery.getPrefetchTree().getNode(prefetch);
+            if (node != null && !node.isPhantom()) {
+                return;
+            }
         }
 
         selectQuery.addPrefetch(prefetch);
