@@ -1,0 +1,26 @@
+Apache Cayenne Release Notes
+==================================
+
+For the latest information visit project web site: 
+http://incubator.apache.org/cayenne/
+
+To browse individual bug reports check out project issue tracker:
+http://issues.apache.org/cayenne/
+
+
+----------------------------------
+Release: 3.0-incubating-SNAPSHOT
+Date:
+----------------------------------
+
+Changes/New Features: 
+- Removed all API deprecated in 1.2 and 2.0.
+CAY-576  Support for cached lists invalidation
+CAY-586  Implement commit validation hooks in CayenneContext
+CAY-598  JPA patches
+CAY-600  Add support for ordering property list serialization in a consistent way
+
+Bug Fixes since 1.2 final:
+CAY-601  Problem resolving relationships in nested DataContext
+CAY-603  QueryChain.isFetchingDataRows() incorrectly returns "false" - must be "true" all the time
+ 

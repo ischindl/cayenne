@@ -1,0 +1,252 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.apache.cayenne</groupId>
+	<artifactId>cayenne-jpa</artifactId>
+	<packaging>jar</packaging>
+	<version>3.0-incubating-SNAPSHOT</version>
+	<name>Cayenne JPA Implementation</name>
+	<url>http://incubator.apache.org/cayenne</url>
+	<organization>
+		<name>Apache Software Foundation (incubating)</name>
+	</organization>
+
+	<description>
+		This project is dedicated to making Cayenne a JPA provider.
+	</description>
+	<mailingLists>
+		<mailingList>
+			<name>Development List</name>
+			<subscribe>
+				cayenne-dev-subscribe@incubator.apache.org
+			</subscribe>
+			<unsubscribe>
+				cayenne-dev-unsubscribe@incubator.apache.org
+			</unsubscribe>
+			<post>cayenne-dev@incubator.apache.org</post>
+			<archive>
+				http://objectstyle.org/cayenne/lists/cayenne-user
+			</archive>
+		</mailingList>
+		<mailingList>
+			<name>User List</name>
+			<subscribe>
+				cayenne-user-subscribe@incubator.apache.org
+			</subscribe>
+			<unsubscribe>
+				cayenne-user-unsubscribe@incubator.apache.org
+			</unsubscribe>
+			<post>cayenne-user@incubator.apache.org</post>
+			<archive>
+				http://objectstyle.org/cayenne/lists/cayenne-user
+			</archive>
+		</mailingList>
+		<mailingList>
+			<name>Commits List</name>
+			<subscribe>
+				cayenne-commits-subscribe@incubator.apache.org
+			</subscribe>
+			<unsubscribe>
+				cayenne-commits-subscribe@incubator.apache.org
+			</unsubscribe>
+		</mailingList>
+	</mailingLists>
+	<developers>
+		<developer>
+			<id>andrus</id>
+			<name>Andrus Adamchik</name>
+			<email>andrus@objectstyle.org</email>
+			<organizationUrl>http://adamchik.org</organizationUrl>
+		</developer>
+		<developer>
+			<name>Cris Daniluk</name>
+		</developer>
+		<developer>
+			<name>Michael Gentry</name>
+		</developer>
+		<developer>
+			<name>Tore Halset</name>
+		</developer>
+		<developer>
+			<name>Mike Kienenberger</name>
+		</developer>
+		<developer>
+			<name>Kevin Menard</name>
+		</developer>
+	</developers>
+	<issueManagement>
+		<system>JIRA</system>
+		<url>
+			http://issues.apache.org/cayenne/secure/BrowseProject.jspa?id=10000
+		</url>
+	</issueManagement>
+	<scm>
+		<connection>
+			scm:svn:http://svn.apache.org/repos/asf/incubator/cayenne/
+		</connection>
+		<developerConnection>
+			scm:svn:https://username@svn.apache.org/repos/asf/incubator/cayenne/
+		</developerConnection>
+		<url>http://svn.apache.org/repos/asf/incubator/cayenne/</url>
+	</scm>
+	<repositories>
+		<repository>
+			<id>objectstyle</id>
+			<name>ObjectStyle Public Maven2 repo</name>
+			<url>http://objectstyle.org/maven2</url>
+		</repository>
+		<repository>
+            <id>apache-snapshots</id>
+            <name>Apache Snapshots Repository</name>
+            <url>http://people.apache.org/maven-snapshot-repository</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+                <checksumPolicy>ignore</checksumPolicy>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+	</repositories>
+
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>3.8.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.geronimo.specs</groupId>
+			<artifactId>geronimo-jpa_3.0_spec</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.cayenne</groupId>
+			<artifactId>cayenne-nodeps</artifactId>
+			<version>3.0-incubating-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>cglib</groupId>
+			<artifactId>cglib-nodep</artifactId>
+			<version>2.1_3</version>
+		</dependency>
+	</dependencies>
+
+
+	<distributionManagement>
+		<site>
+			<id>cayenne-website</id>
+			<name>Cayenne</name>
+			<url>file://${java.io.tmpdir}/foo</url>
+		</site>
+		<repository>
+			<id>local-maven2-repo</id>
+			<name>Local Maven 2 Cayenne Repository</name>
+			<url>file://${java.io.tmpdir}/cayenne-mvn-repo</url>
+		</repository>
+		<snapshotRepository>
+			<id>local-maven2-snapshot-repo</id>
+			<name>Local Maven 2 Snapshot Cayenne Repository</name>
+			<url>
+				file://${java.io.tmpdir}/cayenne-mvn-snapshot-repo
+			</url>
+		</snapshotRepository>
+	</distributionManagement>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.5</source>
+					<target>1.5</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>surefire-report-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<showProtected>true</showProtected>
+					<showPackage>false</showPackage>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifestFile>
+							src/main/resources/META-INF/MANIFEST.MF
+						</manifestFile>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>
+					maven-project-info-reports-plugin
+				</artifactId>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>project-team</report>
+							<report>mailing-list</report>
+							<report>cim</report>
+							<report>issue-tracking</report>
+							<report>license</report>
+							<report>scm</report>
+							<report>javadoc</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+		</plugins>
+	</reporting>
+
+	<profiles>
+		<profile>
+			<id>generate-assembly</id>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-javadoc</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<artifactId>maven-source-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-source</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+</project>
