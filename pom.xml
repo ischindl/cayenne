@@ -25,12 +25,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-      <groupId>org.apache.cayenne</groupId>
+      <groupId>org.apache.cayenne.core</groupId>
       <artifactId>cayenne-core-parent</artifactId>
       <version>3.0-incubating-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.apache.cayenne.core</groupId>
+    <description>Cayenne Java 1.5 Core</description>
     <artifactId>cayenne-jdk1.5-core</artifactId>
     <name>Cayenne Java 1.5 Core</name>
     <packaging>jar</packaging>
