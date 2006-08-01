@@ -121,6 +121,9 @@ public class RemoteSession implements Serializable {
         return new HashCodeBuilder(71, 5).append(sessionId).toHashCode();
     }
 
+    /**
+     * Returns server session id. This is often the same as HttpSession id.
+     */
     public String getSessionId() {
         return sessionId;
     }
@@ -160,7 +163,8 @@ public class RemoteSession implements Serializable {
                     ? eventBridgeParameters
                     : Collections.EMPTY_MAP;
 
-            return factory.createEventBridge(SUBJECTS, sessionId, parameters);
+            // must use "name", not the sessionId as an external subject for the event bridge
+            return factory.createEventBridge(SUBJECTS, name, parameters);
         }
         catch (Exception ex) {
             throw new CayenneRuntimeException("Error creating EventBridge.", ex);
