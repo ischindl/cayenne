@@ -56,7 +56,8 @@
 <li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>DataContext supports runtime customization via a DataContextDelegate interface. A user can assign a custom delegate instance to a DataContext by calling DataContext.setDelegate(..). Delegate is optional, and if it is not set, DataContext would go on with its default behavior. If a delegate is set, DataContext consults with it at some critical points in the normal flow execution. A delegate can modify the flow, abort an operation, modify objects participating in an operation, or perform any other tasks it deems necessary.</p>
+<div id="ConfluenceContent">
+<p>DataContext supports runtime customization via a DataContextDelegate interface. A user can assign a custom delegate instance to a DataContext by calling DataContext.setDelegate(..). Delegate is optional, and if it is not set, DataContext would go on with its default behavior. If a delegate is set, DataContext consults with it at some critical points in the normal flow execution. A delegate can modify the flow, abort an operation, modify objects participating in an operation, or perform any other tasks it deems necessary.</p>
 
 <p>DataContextDelegate currently has two groups of methods - method to filter select queries, and methods to react to external updates of the ObjectStore:</p>
 

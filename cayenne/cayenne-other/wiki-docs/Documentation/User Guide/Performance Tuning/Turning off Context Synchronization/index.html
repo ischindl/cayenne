@@ -55,7 +55,8 @@
 <li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>A big part of commit operation is updating peer DataContexts with the changes committed to the database. The conext synchronization operation has <tt>O(N)</tt> performance, where <tt>N</tt> is the number of peer DataContexts. In a web application <tt>N</tt> is often the number of concurrent sessions, which can be quite big. The throughout of high volume applications can be  improved by turning off peer synchronization. One possible way to do that is via a custom <a href="../../../../Documentation/User Guide/DataContext/DataContextFactory/index.html" title="DataContextFactory">DataContextFactory</a>:</p>
+<div id="ConfluenceContent">
+<p>A big part of commit operation is updating peer DataContexts with the changes committed to the database. The conext synchronization operation has <tt>O(N)</tt> performance, where <tt>N</tt> is the number of peer DataContexts. In a web application <tt>N</tt> is often the number of concurrent sessions, which can be quite big. The throughout of high volume applications can be  improved by turning off peer synchronization. One possible way to do that is via a custom <a href="../../../../Documentation/User Guide/DataContext/DataContextFactory/index.html" title="DataContextFactory">DataContextFactory</a>:</p>
 
 <div class="code"><div class="codeContent">
 <pre class="code-java"><span class="code-keyword">public</span> class IsolatedDataContextFactory <span class="code-keyword">implements</span> DataContextFactory {

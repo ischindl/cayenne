@@ -59,7 +59,7 @@
 <li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>Persistent classes in Cayenne implement a <a href="../../../../Documentation/User Guide/DataObjects/index.html" title="DataObjects">DataObject interface</a>. If you inspect any of classes <a href="../../../../Documentation/User Guide/Quick Start/Tutorial Generate Database and Java Classes/index.html" title="Tutorial Generate Database and Java Classes">generated earlier</a> in this tutorial (e.g. <tt>cayenne.tutorial.Artist</tt>), you'll see that it extends a class with the name that starts with underscore (<tt>cayenne.tutorial.auto._Artist</tt>), which in turn extends from <tt>org.objectstyle.cayenne.CayenneDataObject</tt>. Splitting each persistent class into user-customizable subclass (Xyz) and a generated superclass (_Xyz) is a useful technique to avoid overwriting of the custom code when refreshing classes from the mapping model.</p>
+<div id="ConfluenceContent"><p>Persistent classes in Cayenne implement a <a href="../../../../Documentation/User Guide/DataObjects/index.html" title="DataObjects">DataObject interface</a>. If you inspect any of classes <a href="../../../../Documentation/User Guide/Quick Start/Tutorial Generate Database and Java Classes/index.html" title="Tutorial Generate Database and Java Classes">generated earlier</a> in this tutorial (e.g. <tt>cayenne.tutorial.Artist</tt>), you'll see that it extends a class with the name that starts with underscore (<tt>cayenne.tutorial.auto._Artist</tt>), which in turn extends from <tt>org.apache.cayenne.CayenneDataObject</tt>. Splitting each persistent class into user-customizable subclass (Xyz) and a generated superclass (_Xyz) is a useful technique to avoid overwriting of the custom code when refreshing classes from the mapping model.</p>
 
 <p>Let's add a utility method to the Artist class that sets Artist date of birth, taking a string argument for the date:</p>
 <div class="code"><div class="codeHeader"><b>Artist.java</b></div><div class="codeContent">
@@ -152,7 +152,7 @@ INFO  QueryLogger: Opening connection: jdbc:derby:/Users/andrus/Desktop/testdb;c
 	Login: null
 	Password: *******
 INFO  QueryLogger: +++ Connecting: SUCCESS.
-INFO  QueryLogger: Detected and installed adapter: org.objectstyle.cayenne.dba.derby.DerbyAdapter
+INFO  QueryLogger: Detected and installed adapter: org.apache.cayenne.dba.derby.DerbyAdapter
 INFO  QueryLogger: SELECT NEXT_ID FROM AUTO_PK_SUPPORT WHERE TABLE_NAME = ? FOR UPDATE [bind: 'GALLERY']
 INFO  QueryLogger: --- transaction started.
 INFO  QueryLogger: SELECT NEXT_ID FROM AUTO_PK_SUPPORT WHERE TABLE_NAME = ? FOR UPDATE [bind: 'ARTIST']

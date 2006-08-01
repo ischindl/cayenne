@@ -61,7 +61,7 @@
 
 <h3><a name="CayenneContract-PersistentInterfaces"></a>Persistent Interfaces</h3>
 
-<p>Cayenne can persist Java objects that implement <tt>org.objectstyle.cayenne.Persistent</tt> interface. The interface requires for an object to provide getters and setters for three bean properties: <tt>objectId</tt>, <a href="../../../../Documentation/User Guide/Design/Persistent Object Lifecycle/index.html" title="Persistent Object Lifecycle"><tt>persistenceState</tt></a> and <tt>objectContext</tt>:</p>
+<p>Cayenne can persist Java objects that implement <tt>org.apache.cayenne.Persistent</tt> interface. The interface requires for an object to provide getters and setters for three bean properties: <tt>objectId</tt>, <a href="../../../../Documentation/User Guide/Design/Persistent Object Lifecycle/index.html" title="Persistent Object Lifecycle"><tt>persistenceState</tt></a> and <tt>objectContext</tt>:</p>
 
 <div class="code"><div class="codeHeader"><b>Persistent.java</b></div><div class="codeContent">
 <pre class="code-java"><span class="code-keyword">public</span> <span class="code-keyword">interface</span> Persistent <span class="code-keyword">extends</span> Serializable {
@@ -79,11 +79,11 @@
 }</pre>
 </div></div>
 
-<p>Furthermore the most commonly used implementation of <a href="../../../../Documentation/User Guide/Design/Runtime Components/ObjectContext/index.html" title="ObjectContext">ObjectContext</a> - <a href="../../../../Documentation/User Guide/DataContext/index.html" title="DataContext">DataContext</a> - requires a more complicated subinterface of Persistent - <tt>org.objectstyle.cayenne.DataObject</tt>, that specifies generic methods for property access. The easiest way to satisfy these requirements is by using class generation mechanism provided by Cayenne (using <a href="../../../../Documentation/User Guide/Ant Tasks/cgen/index.html" title="cgen">cgen</a> Ant task or <a href="../../../../Documentation/Modeler Guide/Common Modeling Tasks/Generate Java Classes/index.html" title="Generate Java Classes">CayenneModeler UI</a>). </p>
+<p>Furthermore the most commonly used implementation of <a href="../../../../Documentation/User Guide/Design/Runtime Components/ObjectContext/index.html" title="ObjectContext">ObjectContext</a> - <a href="../../../../Documentation/User Guide/DataContext/index.html" title="DataContext">DataContext</a> - requires a more complicated subinterface of Persistent - <tt>org.apache.cayenne.DataObject</tt>, that specifies generic methods for property access. The easiest way to satisfy these requirements is by using class generation mechanism provided by Cayenne (using <a href="../../../../Documentation/User Guide/Ant Tasks/cgen/index.html" title="cgen">cgen</a> Ant task or <a href="../../../../Documentation/Modeler Guide/Common Modeling Tasks/Generate Java Classes/index.html" title="Generate Java Classes">CayenneModeler UI</a>). </p>
 
 <p>It is worth noting that both requirements will likely become optional in the future releases, being substituted with reflection, bytecode enhancements and other such techniques. Still it is important to understand both benefits and shortcomings of the persistent interface requirement. </p>
 
-<p>The obvious (and only) shortcoming is that the users have to implement it, most often using a class generation template that relies on a framework superclass (such as <tt>org.objectstyle.cayenne.CayenneDataObject</tt>). This may somewhat limit the flexibility of the application design.</p>
+<p>The obvious (and only) shortcoming is that the users have to implement it, most often using a class generation template that relies on a framework superclass (such as <tt>org.apache.cayenne.CayenneDataObject</tt>). This may somewhat limit the flexibility of the application design.</p>
 
 <p>In returns users (and Cayenne framework internally) get extra capabilities:</p>
 

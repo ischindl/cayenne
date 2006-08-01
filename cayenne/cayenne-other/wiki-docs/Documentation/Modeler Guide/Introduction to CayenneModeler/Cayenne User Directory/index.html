@@ -49,7 +49,8 @@
 <li><a href="../../../../Documentation/Modeler Guide/Modeling Tips/index.html">Modeling Tips</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><h3><a name="CayenneUserDirectory-CayenneUserDirectory"></a>Cayenne User Directory</h3>
+<div id="ConfluenceContent">
+<h3><a name="CayenneUserDirectory-CayenneUserDirectory"></a>Cayenne User Directory</h3>
 
 <p>Cayenne has a notion of Cayenne User Directory - a file system directory, one per each user account on a given machine, where Cayenne-related information is stored. While Cayenne runtime knows how to locate and access this directory, it never uses it or relies on its presence. The reason is that Cayenne is often deployed in J2EE containers and should avoid any assumptions about the underlying filesystem layout. CayenneModeler on the other hand uses it to store a number of things, like log files, preferences, etc. While users shouldn't normally care about Cayenne User Directory, as its creation and use are transparent, sometimes it is helpful to know where it is located and what information is stored there. </p>
 

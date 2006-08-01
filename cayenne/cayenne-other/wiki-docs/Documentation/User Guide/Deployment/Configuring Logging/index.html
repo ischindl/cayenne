@@ -65,11 +65,11 @@ log4j.appender.A1.layout=org.apache.log4j.PatternLayout
 log4j.appender.A1.layout.ConversionPattern=cayenne %-5p [%t %d{MM-dd HH:mm:ss}] %c{1}: %m%n
 
 # indiv. packages configuration - turning on the packages that we care about
-#log4j.logger.org.objectstyle.cayenne = INFO
+#log4j.logger.org.apache.cayenne = INFO
 
 # This is the logger that controls SQL output
 # Setting the level to INFO or DEBUG will turn the logs on
-log4j.logger.org.objectstyle.cayenne.access.QueryLogger = INFO
+log4j.logger.org.apache.cayenne.access.QueryLogger = INFO
 </pre>
 </div></div>
 
@@ -78,14 +78,14 @@ log4j.logger.org.objectstyle.cayenne.access.QueryLogger = INFO
 <table cellpadding='5' width='85%' cellspacing='8px' class='tipMacro' border="0" align='center'><colgroup><col width='24'><col></colgroup><tr><td valign='top'><img src="../../../../images/emoticons/check.gif" width="16" height="16" align="absmiddle" alt="" border="0"></td><td><b class="strong">Log4J Users</b><br />If your application already uses Log4J, Cayenne will simply use your existing configuration.</td></tr></table>
 
 <h3><a name="ConfiguringLogging-EssentialLoggers"></a>Essential Loggers</h3>
-<p>SQL Tracing. Very important logging feature of Cayenne is tracing the execution of SQL statements. If configured appropriately, Cayenne will log opened connections, executed queries, and DDL statements. This is extremely important in understanding what is going on in the application, tracing bugs, etc. Logger that is responsible for SQL logging is "org.objectstyle.cayenne.access.QueryLogger". Its default logging level is INFO, so the following lines in the configuration file will turn it on or off:</p>
+<p>SQL Tracing. Very important logging feature of Cayenne is tracing the execution of SQL statements. If configured appropriately, Cayenne will log opened connections, executed queries, and DDL statements. This is extremely important in understanding what is going on in the application, tracing bugs, etc. Logger that is responsible for SQL logging is "org.apache.cayenne.access.QueryLogger". Its default logging level is INFO, so the following lines in the configuration file will turn it on or off:</p>
 
 <div class="preformatted"><div class="preformattedContent">
 <pre># Turn SQL tracing on
-log4j.logger.org.objectstyle.cayenne.access.QueryLogger = INFO
+log4j.logger.org.apache.cayenne.access.QueryLogger = INFO
 
 # Turn SQL tracing off, e.g. to increase performance
-log4j.logger.org.objectstyle.cayenne.access.QueryLogger = WARN
+log4j.logger.org.apache.cayenne.access.QueryLogger = WARN
 </pre>
 </div></div>
 
@@ -94,8 +94,8 @@ log4j.logger.org.objectstyle.cayenne.access.QueryLogger = WARN
 <p>Tracing Configuration Loading. Cayenne XML files may contain errors, or maybe missing or inaccessible by the application; there maybe lots of other reasons why Cayenne fails to startup, from missing JDBC drivers to misspelled database URLs. To trace configuration loading process, you will need to turn on the following loggers:</p>
 
 <div class="preformatted"><div class="preformattedContent">
-<pre>log4j.logger.org.objectstyle.cayenne.conf = DEBUG
-log4j.logger.org.objectstyle.cayenne.util = DEBUG
+<pre>log4j.logger.org.apache.cayenne.conf = DEBUG
+log4j.logger.org.apache.cayenne.util = DEBUG
 </pre>
 </div></div>
 
@@ -112,7 +112,7 @@ log4j.logger.org.objectstyle.cayenne.util = DEBUG
 
 <span class="code-comment">// configure cayenne logging
 </span><span class="code-comment">// note that URL can be <span class="code-keyword">null</span>, resulting in <span class="code-keyword">default</span> settings
-</span>org.objectstyle.cayenne.conf.Configuration.configureCommonLogging(url);</pre>
+</span>org.apache.cayenne.conf.Configuration.configureCommonLogging(url);</pre>
 </div></div>
 <p>It is important to execute this code before any calls to Cayenne are made in the application, or otherwise it will have no effect on logging.</p>
 

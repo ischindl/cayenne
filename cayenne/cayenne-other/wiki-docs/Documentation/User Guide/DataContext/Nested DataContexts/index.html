@@ -56,7 +56,8 @@
 <li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>One of the goals of the DataContext is to provide an isolated area where local object changes can be performed without affecting other similar areas or the underlying storage. At some point in time users would either commit changes to the underlying storage or undo them (roll them back). </p>
+<div id="ConfluenceContent">
+<p>One of the goals of the DataContext is to provide an isolated area where local object changes can be performed without affecting other similar areas or the underlying storage. At some point in time users would either commit changes to the underlying storage or undo them (roll them back). </p>
 
 <p>If a DataContext is directly attached to the DataDomain, a call to <tt>DataContext.commitChanges()</tt> results in changes written to the database. On the other hand if DataContext's direct parent in the access stack is not a DataDomain, but another DataContext, changes can be saved to the parent without saving them to the database. Such child context is often called "nested".</p>
 

@@ -59,7 +59,7 @@
 
 <p>To ensure that Cayenne uses the correct Configuration class, it must be initialized properly before any calls to Configuration are made:</p>
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.conf.Configuration
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.conf.Configuration
 ...
 <span class="code-object">Class</span> myConfigSubclass = my.<span class="code-keyword">package</span>.ConfigSubclass.class;
 Configuration.initializeSharedConfiguration(myConfigSubclass);</pre>
@@ -72,7 +72,7 @@ Configuration.initializeSharedConfiguration(myConfigSubclass);</pre>
 
 <p><tt>DefaultConfiguration</tt> uses the application's class path for locating configuration files; this works for both "expanded" class paths and JAR files. "Out of the box" only resources on the top level of the class path are found; very often it is convenient to have a subdirectory ('package') with configuration files. There are two ways to make Configuration find these files:</p>
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.conf.DefaultConfiguration;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.conf.DefaultConfiguration;
 ...
 DefaultConfiguration conf = <span class="code-keyword">new</span> DefaultConfiguration();			
 conf.addClassPath(<span class="code-quote">"my/<span class="code-keyword">package</span>/conf"</span>);
@@ -89,7 +89,7 @@ Configuration.initializeSharedConfiguration(<span class="code-keyword">new</span
 
 <p><tt>FileConfiguration</tt> uses the regular file system to load its files, and works very silimar to <tt>DefaultConfiguration</tt>:</p>
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.conf.FileConfiguration;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.conf.FileConfiguration;
 ...
 <span class="code-object">String</span> fileName = <span class="code-quote">"/some/path/to/my-cayenne.xml"</span>;
 FileConfiguration conf = <span class="code-keyword">new</span> FileConfiguration(<span class="code-keyword">new</span> File(fileName));
@@ -97,7 +97,7 @@ Configuration.initializeSharedConfiguration(conf);</pre>
 </div></div>
 <p>The fileName argument can be absolute or relative to the application's working directory, and is checked for accessibility. A more flexible lookup can be done by using the name without any path and adding search paths:</p>
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.conf.FileConfiguration;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.conf.FileConfiguration;
 ...
 FileConfiguration conf = <span class="code-keyword">new</span> FileConfiguration(<span class="code-quote">"my-cayenne.xml"</span>);
 conf.addFilesystemPath(<span class="code-quote">"a/relative/path"</span>);

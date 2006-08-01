@@ -99,7 +99,7 @@
     &lt;display-name&gt;Cayenne Tutorial&lt;/display-name&gt;
     &lt;filter&gt;
         &lt;filter-name&gt;CayenneFilter&lt;/filter-name&gt;
-        &lt;filter-class&gt;org.objectstyle.cayenne.conf.WebApplicationContextFilter&lt;/filter-class&gt;
+        &lt;filter-class&gt;org.apache.cayenne.conf.WebApplicationContextFilter&lt;/filter-class&gt;
     &lt;/filter&gt;
     &lt;filter-mapping&gt;
         &lt;filter-name&gt;CayenneFilter&lt;/filter-name&gt;
@@ -119,10 +119,10 @@
 <div class="code"><div class="codeHeader"><b>webapp/index.jsp</b></div><div class="codeContent">
 <pre class="code-java">&lt;%@ page language=<span class="code-quote">"java"</span> contentType=<span class="code-quote">"text/html"</span> %&gt;
 &lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"cayenne.tutorial.*"</span> %&gt;
-&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.objectstyle.cayenne.*"</span> %&gt;
-&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.objectstyle.cayenne.query.*"</span> %&gt;
-&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.objectstyle.cayenne.exp.*"</span> %&gt;
-&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.objectstyle.cayenne.access.*"</span> %&gt;
+&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.apache.cayenne.*"</span> %&gt;
+&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.apache.cayenne.query.*"</span> %&gt;
+&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.apache.cayenne.exp.*"</span> %&gt;
+&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.apache.cayenne.access.*"</span> %&gt;
 &lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"java.util.*"</span> %&gt;
 
 &lt;% 
@@ -164,8 +164,8 @@
 <div class="code"><div class="codeHeader"><b>webapp/detail.jsp</b></div><div class="codeContent">
 <pre class="code-java">&lt;%@ page language=<span class="code-quote">"java"</span> contentType=<span class="code-quote">"text/html"</span> %&gt;
 &lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"cayenne.tutorial.*"</span> %&gt;
-&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.objectstyle.cayenne.*"</span> %&gt;
-&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.objectstyle.cayenne.access.*"</span> %&gt;
+&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.apache.cayenne.*"</span> %&gt;
+&lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"org.apache.cayenne.access.*"</span> %&gt;
 &lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"java.util.*"</span> %&gt;
 &lt;%@ page <span class="code-keyword">import</span>=<span class="code-quote">"java.text.*"</span> %&gt;
 
@@ -254,7 +254,7 @@ INFO  QueryLogger: Opening connection: jdbc:derby:/Users/andrus/Desktop/testdb;c
 	Password: *******
 INFO  QueryLogger: +++ Connecting: SUCCESS.
 INFO  QueryLogger: --- transaction started.
-INFO  QueryLogger: Detected and installed adapter: org.objectstyle.cayenne.dba.derby.DerbyAdapter
+INFO  QueryLogger: Detected and installed adapter: org.apache.cayenne.dba.derby.DerbyAdapter
 INFO  QueryLogger: SELECT t0.DATE_OF_BIRTH, t0.NAME, t0.ID FROM ARTIST t0 ORDER BY t0.NAME - prepared in 32 ms.
 INFO  QueryLogger: === returned 0 rows. - took 461 ms.
 INFO  QueryLogger: +++ transaction committed.</pre>

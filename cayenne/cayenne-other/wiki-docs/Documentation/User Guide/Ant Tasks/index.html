@@ -62,10 +62,10 @@
 
 
 <h3><a name="AntTasks-ImportingCayenneTasksinbuild.xml"></a>Importing Cayenne Tasks in build.xml</h3>
-<p>Cayenne tasks above can be imported individually using Ant taskdef, as described in each task documentation page. However the users of Ant 1.6 and newer can take advantage of Antlib Ant feature. <span class="nobr"><a href="http://ant.apache.org/manual/CoreTypes/antlib.html" title="Visit page outside Confluence" rel="nofollow">Antlib<sup><img class="rendericon" src="../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span> allows 3rd party tasks and types to be defined easily. Cayenne has an embedded antlib.xml descriptor file in the package <tt>org.objectstyle.cayenne.tools</tt>. All of Cayenne's Ant tasks can be defined at once using the following definition in your Ant build file:</p>
+<p>Cayenne tasks above can be imported individually using Ant taskdef, as described in each task documentation page. However the users of Ant 1.6 and newer can take advantage of Antlib Ant feature. <span class="nobr"><a href="http://ant.apache.org/manual/CoreTypes/antlib.html" title="Visit page outside Confluence" rel="nofollow">Antlib<sup><img class="rendericon" src="../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span> allows 3rd party tasks and types to be defined easily. Cayenne has an embedded antlib.xml descriptor file in the package <tt>org.apache.cayenne.tools</tt>. All of Cayenne's Ant tasks can be defined at once using the following definition in your Ant build file:</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-xml"><span class="code-tag">&lt;typedef resource=<span class="code-quote">"org/objectstyle/cayenne/tools/antlib.xml"</span>&gt;</span> 
+<pre class="code-xml"><span class="code-tag">&lt;typedef resource=<span class="code-quote">"org/apache/cayenne/tools/antlib.xml"</span>&gt;</span> 
    <span class="code-tag">&lt;classpath refid=<span class="code-quote">"classpath"</span>/&gt;</span> 
 <span class="code-tag">&lt;/typedef&gt;</span></pre>
 </div></div>

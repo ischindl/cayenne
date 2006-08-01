@@ -58,7 +58,8 @@
 <li><a href="../../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><h2><a name="GeneratedColumns-WhatIsa%22Generated%22Column"></a>What Is a "Generated" Column</h2>
+<div id="ConfluenceContent">
+<h2><a name="GeneratedColumns-WhatIsa%22Generated%22Column"></a>What Is a "Generated" Column</h2>
 
 <p>Many databases allow users to define special columns with values that are automatically created by the the database to be unique for each inserted row. Main use if this feature is to generate a primary key. Such columns are often called <b>"autoincrement"</b> or <b>"identity"</b> columns. JDBC3 specification provides Java API to read values of such columns right after an insert is performed. JDBC calls such columns <b>"generated keys"</b>, and Cayenne follows JDBC in that. Namely DbAttribute has a <tt>"generated"</tt> boolean property to indicate that a given column value is provided by the database on insert.</p>
 

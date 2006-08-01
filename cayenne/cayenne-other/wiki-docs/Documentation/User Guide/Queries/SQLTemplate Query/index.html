@@ -69,7 +69,7 @@
 
 <p>SQLTemplates can be built using CayenneModeler. Here we demonstrate how to do the same thing via API. SQLTemplate consists of root and dynamic template string. Dynamic behavior of the template is discussed in subsequent chapters, for now it is sufficient to know that the template string is simply a valid SQL statement in the target database SQL dialect.</p>
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.query.SQLTemplate;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.query.SQLTemplate;
 ...
 <span class="code-comment">// create selecting SQLTemplate
 </span>SQLTemplate selectQuery = <span class="code-keyword">new</span> SQLTemplate(Artist.class, <span class="code-quote">"select * from ARTIST"</span>);
@@ -82,7 +82,7 @@
 
 <p>Selecting SQLTemplate is very similar to SelectQuery in many respects. It can be executed via <tt>DataContext.performQuery(..)</tt> and supports the same configuration parameters, such as fetch limit, pagination, etc. It can be configured to return DataObjects (default) or data rows.</p>
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.query.SQLTemplate;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.query.SQLTemplate;
 ...
 <span class="code-comment">// fetch all artists, but no more than 1000 objects...
 </span>SQLTemplate rawSelect = <span class="code-keyword">new</span> SQLTemplate(Artist.class, <span class="code-quote">"select * from ARTIST"</span>);
@@ -98,7 +98,7 @@ List artists = dataContext.performQuery(rawSelect);</pre>
 <table cellpadding='5' width='85%' cellspacing='8px' class='noteMacro' border="0" align='center'><colgroup><col width='24'><col></colgroup><tr><td valign='top'><img src="../../../../images/emoticons/warning.gif" width="16" height="16" align="absmiddle" alt="" border="0"></td><td>When changing or deleting data via SQLTemplate you must realize that such changes are done directly to the database, bypassing the context, and therefore may potentially leave object graph in an inconsistent state.</td></tr></table>
 
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.query.SQLTemplate;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.query.SQLTemplate;
 ...
 <span class="code-comment">// fetch all artists, but no more than 1000 objects...
 </span>SQLTemplate rawDelete = <span class="code-keyword">new</span> SQLTemplate(Artist.class, <span class="code-quote">"delete from ARTIST"</span>);

@@ -53,7 +53,8 @@
 </li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>Here we illustrate the discussion of DataViews with configuration samples and code snippets. Cayenne project DTD file supports references to data view configuration files. This information is loaded into the Cayenne Configuration instance along with the DataDomain, DataNode, and DataMap entries. Since the DataView functionality is optional and would not be very useful in some deployment scenarios (server-side applications) the DataView configiuration itself is not loaded at the time of initialization. Neither DataView instances are created by the configuration process. A DataView can be created in a Swing application with the code similar to the following:</p>
+<div id="ConfluenceContent">
+<p>Here we illustrate the discussion of DataViews with configuration samples and code snippets. Cayenne project DTD file supports references to data view configuration files. This information is loaded into the Cayenne Configuration instance along with the DataDomain, DataNode, and DataMap entries. Since the DataView functionality is optional and would not be very useful in some deployment scenarios (server-side applications) the DataView configiuration itself is not loaded at the time of initialization. Neither DataView instances are created by the configuration process. A DataView can be created in a Swing application with the code similar to the following:</p>
 <div class="code"><div class="codeContent">
 <pre class="code-java"><span class="code-comment">//Assume, <span class="code-keyword">this</span> is your Cayenne Configuration instance.
 </span>Configuration cayenneConfiguration = ...;

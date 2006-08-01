@@ -53,7 +53,8 @@
 <li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>Sometimes it is necessary to recreate a database, copying data from another existing database. For instance, recreating development database instance from production data, etc. While most RDBMS provide data import/export tools, they normally require advanced DBA skills to use and are most often not portable across database engines. Cayenne will provide a lightweight ant task to do data porting between the databases with identical schema, using DataMap information.</p>
+<div id="ConfluenceContent">
+<p>Sometimes it is necessary to recreate a database, copying data from another existing database. For instance, recreating development database instance from production data, etc. While most RDBMS provide data import/export tools, they normally require advanced DBA skills to use and are most often not portable across database engines. Cayenne will provide a lightweight ant task to do data porting between the databases with identical schema, using DataMap information.</p>
 
 <p><tt>cdataport</tt> is an Ant task that takes a Cayenne project (cayenne.xml) with at least one DataMap and two DataNodes and ports data from source DataNode to a destination DataNode. All DataMaps linked to either the source or the target DataNode will be considered for porting.</p>
 

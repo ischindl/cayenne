@@ -69,8 +69,8 @@
 <p>Building a prototype query using <tt>Expression.fromString(..)</tt>:</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.exp.Expression;
-<span class="code-keyword">import</span> org.objectstyle.cayenne.query.SelectQuery;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.exp.Expression;
+<span class="code-keyword">import</span> org.apache.cayenne.query.SelectQuery;
 ...
 <span class="code-comment">// create a qualifier with two named parameters: <span class="code-quote">"pname"</span> and <span class="code-quote">"aname"</span>
 </span>Expression qual = Expression.fromString(<span class="code-quote">"paintingTitle = $pname or toArtist.artistName = $aname"</span>);
@@ -84,10 +84,10 @@ proto.setDistinct(<span class="code-keyword">true</span>);</pre>
 
 <div class="code"><div class="codeContent">
 <pre class="code-java"><span class="code-keyword">import</span> java.util.*;
-<span class="code-keyword">import</span> org.objectstyle.cayenne.exp.Expression;
-<span class="code-keyword">import</span> org.objectstyle.cayenne.exp.ExpressionFactory;
-<span class="code-keyword">import</span> org.objectstyle.cayenne.exp.ExpressionParameter;
-<span class="code-keyword">import</span> org.objectstyle.cayenne.query.SelectQuery;
+<span class="code-keyword">import</span> org.apache.cayenne.exp.Expression;
+<span class="code-keyword">import</span> org.apache.cayenne.exp.ExpressionFactory;
+<span class="code-keyword">import</span> org.apache.cayenne.exp.ExpressionParameter;
+<span class="code-keyword">import</span> org.apache.cayenne.query.SelectQuery;
 ...
 <span class="code-comment">// create a qualifier with two named parameters: 
 </span><span class="code-comment">//  <span class="code-quote">"pname"</span> and <span class="code-quote">"aname"</span>
@@ -117,7 +117,7 @@ proto.setDistinct(<span class="code-keyword">true</span>);</pre>
 <div class="code"><div class="codeContent">
 <pre class="code-java"><span class="code-keyword">import</span> java.util.Map;
 <span class="code-keyword">import</span> java.util.HashMap;
-<span class="code-keyword">import</span> org.objectstyle.cayenne.query.SelectQuery;
+<span class="code-keyword">import</span> org.apache.cayenne.query.SelectQuery;
 ...
 SelectQuery proto = ... <span class="code-comment">// <span class="code-keyword">this</span> was built in the example above
 </span>

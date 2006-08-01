@@ -52,7 +52,8 @@
 <li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>If a stored procedure is known to return at least one result set, procedure queries can be executed just like normal select queries. Of course in addtion to returning data, such procedures can perform any other database operations.</p>
+<div id="ConfluenceContent">
+<p>If a stored procedure is known to return at least one result set, procedure queries can be executed just like normal select queries. Of course in addtion to returning data, such procedures can perform any other database operations.</p>
 
 <table cellpadding='5' width='85%' cellspacing='8px' class='infoMacro' border="0" align='center'><colgroup><col width='24'><col></colgroup><tr><td valign='top'><img src="../../../../images/emoticons/information.gif" width="16" height="16" align="absmiddle" alt="" border="0"></td><td>Currently all procedure queries will return data rows, not DataObjects. If the returned row (Map) contains all the attributes needed to recreate a DataObject, this can be done by calling <tt>DataContext.objectFromDataRow()</tt>.</td></tr></table>
 

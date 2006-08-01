@@ -100,7 +100,7 @@
 
 <p>SelectQuery provides constructors for all three types. For example:</p>
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.query.SelectQuery;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.query.SelectQuery;
 ...
 <span class="code-comment">// <span class="code-keyword">this</span> is a valid Cayenne query that would allow to fetch
 </span><span class="code-comment">// all records from the ARTIST table as Artist objects
@@ -112,8 +112,8 @@
 
 <p>As mentioned earlier, queries are executed via <tt>DataContext.performQuery()</tt>. For instance to fetch all Artists existing in the database the following code is used:</p>
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.query.SelectQuery;
-<span class="code-keyword">import</span> org.objectstyle.cayenne.access.DataContext;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.query.SelectQuery;
+<span class="code-keyword">import</span> org.apache.cayenne.access.DataContext;
 <span class="code-keyword">import</span> java.util.List;
 ...
 DataContext ctxt; <span class="code-comment">// assume <span class="code-keyword">this</span> exists

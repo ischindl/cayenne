@@ -58,7 +58,8 @@
 <li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>DataObject implements a set of methods to validate its state. DataContext calls these methods before performing a commit. If validation fails, commit is aborted with ValidationException. There are a few clear benefits of validating DataObjects at the application level before committing them to the database:</p>
+<div id="ConfluenceContent">
+<p>DataObject implements a set of methods to validate its state. DataContext calls these methods before performing a commit. If validation fails, commit is aborted with ValidationException. There are a few clear benefits of validating DataObjects at the application level before committing them to the database:</p>
 
 <ul>
 	<li>Cayenne can leverage ORM metadata (DataMap) to check for many standard error conditions.</li>

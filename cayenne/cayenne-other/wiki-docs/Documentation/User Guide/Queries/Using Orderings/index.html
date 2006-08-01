@@ -66,7 +66,7 @@
 <div id="ConfluenceContent"><p>To sort SelectQuery results, orderings are used. Orderings use path expressions discussed in the previous section to identify the attributes that must be used in sorting. For example to order results by artist name, the following code can be used:</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.query.SelectQuery;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.query.SelectQuery;
 ...
 SelectQuery query = <span class="code-keyword">new</span> SelectQuery(<span class="code-quote">"Artist"</span>);
 
@@ -77,7 +77,7 @@ SelectQuery query = <span class="code-keyword">new</span> SelectQuery(<span clas
 <p>Orderings also support in-memory sorting of lists of Java Beans (all DataObjects are normally Java Beans, since they has set/get method pairs for all the properties). For instance to sort with a single ordering, the following code might be used:</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.query.Ordering;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.query.Ordering;
 ...
 <span class="code-comment">// assume <span class="code-keyword">this</span> is a properly initialized list of Artists
 </span>List list = ...; 
@@ -92,7 +92,7 @@ SelectQuery query = <span class="code-keyword">new</span> SelectQuery(<span clas
 <p>If there is a need to sort on more than one object property, multiple Orderings can be passed as a List to a static method <tt>orderList(List, List)</tt>. The cost of adding new Orderings decreases, as the list of objects ends up being sorted by the first Ordering, then, if any two objects are equal for first Ordering, by the second, and so on.</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.query.Ordering;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.query.Ordering;
 ...
 <span class="code-comment">// assume <span class="code-keyword">this</span> is a properly initialized list of Paintings
 </span>List list = ...; 

@@ -60,7 +60,7 @@
 <p>In a standalone Java application, DefaultConfiguration is used to locate and load configuration files. This approach does not require any additional setup. Shared configuration instance can simply be obtained by calling <tt>getSharedConfiguration()</tt>:</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.conf.Configuration;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.conf.Configuration;
 ...           
 Configuration conf = Configuration.getSharedConfiguration();</pre>
 </div></div>
@@ -74,7 +74,7 @@ Configuration conf = Configuration.getSharedConfiguration();</pre>
 <p>In a setup that relies on shared Configuration a DataContext can be created by calling <tt>DataContext.createDataContext()</tt> static method that internally uses shared configuration:</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.access.DataContext;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.access.DataContext;
 ...
 DataContext context = DataContext.createDataContext();</pre>
 </div></div>
@@ -82,7 +82,7 @@ DataContext context = DataContext.createDataContext();</pre>
 <p>Later a DataContext can be passed around in the code explicitly, or it can be bound to an execution thread, making it accessible to all code being run within this thread (e.g. this can be a Swing event thread):</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.access.DataContext;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.access.DataContext;
 ...
 DataContext context = DataContext.createDataContext();
 DataContext.bindThreadDataContext(context);</pre>

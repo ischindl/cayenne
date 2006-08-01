@@ -93,14 +93,14 @@
 <div class="preformatted"><div class="preformattedContent">
 <pre>&lt;servlet&gt;
    &lt;servlet-name&gt;cayenne&lt;/servlet-name&gt;
-   &lt;servlet-class&gt;org.objectstyle.cayenne.remote.hessian.service.HessianServlet&lt;/servlet-class&gt;
+   &lt;servlet-class&gt;org.apache.cayenne.remote.hessian.service.HessianServlet&lt;/servlet-class&gt;
 		
 
    &lt;!-- optional - XMPPBridge setup for peer-to-peer notifications --&gt;
    &lt;!-- 
    &lt;init-param&gt;
       &lt;param-name&gt;cayenne.RemoteService.EventBridge.factory&lt;/param-name&gt;
-      &lt;param-value&gt;org.objectstyle.cayenne.event.XMPPBridgeFactory&lt;/param-value&gt;
+      &lt;param-value&gt;org.apache.cayenne.event.XMPPBridgeFactory&lt;/param-value&gt;
    &lt;/init-param&gt;
    &lt;init-param&gt;
       &lt;param-name&gt;cayenne.XMPPBridge.xmppHost&lt;/param-name&gt;

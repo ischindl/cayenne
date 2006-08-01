@@ -53,7 +53,8 @@
 </li>
 </ul>
 </div>
-<div id="ConfluenceContent"><h3><a name="DataViewConcepts-DataViewHierarchy"></a>DataView Hierarchy</h3>
+<div id="ConfluenceContent">
+<h3><a name="DataViewConcepts-DataViewHierarchy"></a>DataView Hierarchy</h3>
 
 <p>The class diagram on the figure below captures the structure of Data Views and how they rely on the classes in the Cayenne subpackages. Single DataView object is the root of the hierarchy. It serves as a container for ObjEntityViews from one or more DataView configuration files. Just like entities in the DataMaps, ObjEntityViews can freely refer to each other whether they are defined in the same configuration file or different ones. The recommended practice is to store closely related ObjEntityViews in the same XML "module" and define several "modules" based on the criterion of such closeness. When you load the list of XML files into the DataView, all the relationships are resolved automatically and the ObjEntityViews share the same namespace (so they must have different names even if they are located in different XML files).</p>
 

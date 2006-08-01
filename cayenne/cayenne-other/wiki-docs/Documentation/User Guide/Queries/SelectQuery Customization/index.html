@@ -63,7 +63,8 @@
 <li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p><span class="nobr"><a href="http://objectstyle.org/cayenne/api/cayenne/org/objectstyle/cayenne/query/SelectQuery.html" title="Visit page outside Confluence" rel="nofollow">SelectQueries<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span> allow to fine tune the behavior of the fetch using the following API:</p>
+<div id="ConfluenceContent">
+<p><span class="nobr"><a href="http://objectstyle.org/cayenne/api/cayenne/org/objectstyle/cayenne/query/SelectQuery.html" title="Visit page outside Confluence" rel="nofollow">SelectQueries<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span> allow to fine tune the behavior of the fetch using the following API:</p>
 <ul>
 	<li>public void <b>setFetchLimit</b>(int fetchLimit)<br/>
  If set to a value greater than zero, tells Cayenne that query should never retrieve more than X objects (X == fetchLimit) from the database. If a result set contains more rows, they are simply ignored and never read. This is a "safety" feature that can be used to prevent the application from crashing when an unexpectedly high number of records exists for a given query.</li>
