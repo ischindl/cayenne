@@ -129,6 +129,7 @@
 				<pathelement path="${cayenne.java}/lib/${jms.jar}"/>
 				<pathelement path="${cayenne.java}/lib/${smack.jar}"/>
 				<pathelement path="${cayenne.java}/lib/${jgroups.jar}"/>
+				<pathelement path="${cayenne.java}/lib/${oscache.jar}"/>
 			</classpath>
 		</java>
 	</target>
