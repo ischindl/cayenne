@@ -37,7 +37,6 @@ import org.apache.cayenne.access.trans.QueryAssembler;
 import org.apache.cayenne.access.types.ExtendedTypeMap;
 import org.apache.cayenne.dba.db2.DB2Sniffer;
 import org.apache.cayenne.dba.derby.DerbySniffer;
-import org.apache.cayenne.dba.firebird.FirebirdSniffer;
 import org.apache.cayenne.dba.frontbase.FrontBaseSniffer;
 import org.apache.cayenne.dba.hsqldb.HSQLDBSniffer;
 import org.apache.cayenne.dba.ingres.IngresSniffer;
@@ -69,7 +68,7 @@ public class AutoAdapter implements DbAdapter {
             new MySQLSniffer(), new PostgresSniffer(), new OracleSniffer(),
             new SQLServerSniffer(), new HSQLDBSniffer(), new DB2Sniffer(),
             new SybaseSniffer(), new DerbySniffer(), new OpenBaseSniffer(),
-            new FirebirdSniffer(), new FrontBaseSniffer(), new IngresSniffer()
+            new FrontBaseSniffer(), new IngresSniffer()
     };
 
     /**

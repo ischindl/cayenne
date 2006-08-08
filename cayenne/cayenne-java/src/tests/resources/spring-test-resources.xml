@@ -8,7 +8,6 @@
 	<bean id="OracleAdapter" class="org.apache.cayenne.dba.oracle.OracleAdapter"/>
 	<bean id="Oracle8Adapter" class="org.apache.cayenne.dba.oracle.Oracle8Adapter"/>
 	<bean id="SybaseAdapter" class="org.apache.cayenne.dba.sybase.SybaseAdapter"/>
-	<bean id="FirebirdAdapter" class="org.apache.cayenne.dba.firebird.FirebirdAdapter"/>
 	<bean id="MySQLAdapter" class="org.apache.cayenne.dba.mysql.MySQLAdapter"/>
 	<bean id="PostgresAdapter" class="org.apache.cayenne.dba.postgres.PostgresAdapter"/>
 	<bean id="OpenBaseAdapter" class="org.apache.cayenne.dba.openbase.OpenBaseAdapter"/>
@@ -30,9 +29,6 @@
 	</bean>
 	<bean id="SybaseStackAdapter" class="org.apache.cayenne.unit.SybaseStackAdapter">
 		<constructor-arg><ref bean="SybaseAdapter"/></constructor-arg>
-	</bean>
-	<bean id="FirebirdStackAdapter" class="org.apache.cayenne.unit.FirebirdStackAdapter">
-		<constructor-arg><ref bean="FirebirdAdapter"/></constructor-arg>
 	</bean>
 	<bean id="MySQLStackAdapter" class="org.apache.cayenne.unit.MySQLStackAdapter">
 		<constructor-arg><ref bean="MySQLAdapter"/></constructor-arg>
@@ -173,7 +169,6 @@
 				<entry key="org.apache.cayenne.dba.oracle.OracleAdapter"><ref bean="OracleStackAdapter"/></entry>
 				<entry key="org.apache.cayenne.dba.oracle.Oracle8Adapter"><ref bean="Oracle8StackAdapter"/></entry>
 				<entry key="org.apache.cayenne.dba.sybase.SybaseAdapter"><ref bean="SybaseStackAdapter"/></entry>
-				<entry key="org.apache.cayenne.dba.firebird.FirebirdAdapter"><ref bean="FirebirdStackAdapter"/></entry>
 				<entry key="org.apache.cayenne.dba.mysql.MySQLAdapter"><ref bean="MySQLStackAdapter"/></entry>
 				<entry key="org.apache.cayenne.dba.postgres.PostgresAdapter"><ref bean="PostgresStackAdapter"/></entry>
 				<entry key="org.apache.cayenne.dba.openbase.OpenBaseAdapter"><ref bean="OpenBaseStackAdapter"/></entry>

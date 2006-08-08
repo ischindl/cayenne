@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.apache.cayenne.dba.db2.DB2Adapter;
 import org.apache.cayenne.dba.derby.DerbyAdapter;
-import org.apache.cayenne.dba.firebird.FirebirdAdapter;
 import org.apache.cayenne.dba.frontbase.FrontBaseAdapter;
 import org.apache.cayenne.dba.hsqldb.HSQLDBAdapter;
 import org.apache.cayenne.dba.ingres.IngresAdapter;
@@ -72,8 +71,6 @@ public class AdapterMapping {
                 .put("org.hsqldb.jdbcDriver", HSQLDBAdapter.class.getName());
         jdbcDriverToAdapterMap.put("org.postgresql.Driver", PostgresAdapter.class
                 .getName());
-        jdbcDriverToAdapterMap.put("org.firebirdsql.jdbc.FBDriver", FirebirdAdapter.class
-                .getName());
         jdbcDriverToAdapterMap.put("com.openbase.jdbc.ObDriver", OpenBaseAdapter.class
                 .getName());
         jdbcDriverToAdapterMap.put(
@@ -106,9 +103,6 @@ public class AdapterMapping {
         adapterToJDBCURLMap.put(
                 PostgresAdapter.class.getName(),
                 "jdbc:postgresql://localhost:5432/database");
-        adapterToJDBCURLMap.put(
-                FirebirdAdapter.class.getName(),
-                "jdbc:firebirdsql:localhost/port:/path/to/file.gdb");
         adapterToJDBCURLMap.put(
                 OpenBaseAdapter.class.getName(),
                 "jdbc:openbase://localhost/database");
@@ -145,9 +139,6 @@ public class AdapterMapping {
         adapterToJDBCDriverMap.put(
                 PostgresAdapter.class.getName(),
                 "org.postgresql.Driver");
-        adapterToJDBCDriverMap.put(
-                FirebirdAdapter.class.getName(),
-                "org.firebirdsql.jdbc.FBDriver");
         adapterToJDBCDriverMap.put(
                 OpenBaseAdapter.class.getName(),
                 "com.openbase.jdbc.ObDriver");

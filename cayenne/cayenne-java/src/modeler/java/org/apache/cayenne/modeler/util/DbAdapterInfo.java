@@ -31,7 +31,6 @@ import javax.swing.ListCellRenderer;
 import org.apache.cayenne.dba.JdbcAdapter;
 import org.apache.cayenne.dba.db2.DB2Adapter;
 import org.apache.cayenne.dba.derby.DerbyAdapter;
-import org.apache.cayenne.dba.firebird.FirebirdAdapter;
 import org.apache.cayenne.dba.frontbase.FrontBaseAdapter;
 import org.apache.cayenne.dba.hsqldb.HSQLDBAdapter;
 import org.apache.cayenne.dba.ingres.IngresAdapter;
@@ -54,8 +53,7 @@ public final class DbAdapterInfo {
             PostgresAdapter.class.getName(), HSQLDBAdapter.class.getName(),
             DB2Adapter.class.getName(), SQLServerAdapter.class.getName(),
             FrontBaseAdapter.class.getName(), OpenBaseAdapter.class.getName(),
-            DerbyAdapter.class.getName(), FirebirdAdapter.class.getName(),
-            IngresAdapter.class.getName()
+            DerbyAdapter.class.getName(), IngresAdapter.class.getName()
     };
 
     private static final Map IMMUTABLE_LABELS = Collections
@@ -76,7 +74,6 @@ public final class DbAdapterInfo {
         DEFAULT_ADAPTER_LABELS.put(OpenBaseAdapter.class.getName(), "OpenBase Adapter");
         DEFAULT_ADAPTER_LABELS.put(DerbyAdapter.class.getName(), "Derby Adapter");
         DEFAULT_ADAPTER_LABELS.put(IngresAdapter.class.getName(), "Ingres Adapter");
-        DEFAULT_ADAPTER_LABELS.put(FirebirdAdapter.class.getName(), "FireBird Adapter");
     }
 
     public static Map getStandardAdapterLabels() {

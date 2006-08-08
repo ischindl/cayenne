@@ -17,3 +17,6 @@ Bug Fixes:
 
  CAY-601  	 Problem resolving relationships in nested DataContext
  CAY-603  	 QueryChain.isFetchingDataRows() incorrectly returns "false" - must be "true" all the time
+ 
+Changes: 
+ CAY-623  Removing broken FireBird adapter
