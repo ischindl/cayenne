@@ -16,53 +16,44 @@
  *  specific language governing permissions and limitations
  *  under the License.
  ****************************************************************/
-
 package org.apache.cayenne.wocompat;
 
 import org.apache.cayenne.map.ObjAttribute;
 import org.apache.cayenne.map.ObjEntity;
 
 /**
- * An EOObjAttribute is a mapping descriptor of a Java class property with added
- * fields for WebObjects EOModel.
- *
- * @author Dario Bagatto
+ * An ObjAttribute extension that accomodates EOModel attributes.
+ * 
+ * @author Andrus Adamchik
  */
 public class EOObjAttribute extends ObjAttribute {
 
-    // flag whether this attribute is read only.
     protected boolean readOnly;
 
-
     public EOObjAttribute() {
-        super();
-    }
 
+    }
 
     public EOObjAttribute(String name) {
         super(name);
     }
 
-
-    public EOObjAttribute(String name, String type, ObjEntity entity) {
-        super(name, type, entity);
-    }
-
-
-    /**
-     * Sets the read only state of this attribute.
-     * @param readOnly
-     */
-    public void setReadOnly(boolean readOnly) {
-        this.readOnly = readOnly;
+    public EOObjAttribute(String name, String type, ObjEntity parent) {
+        super(name, type, parent);
     }
 
     /**
-     * Get the read only state of this attribute
-     * @return read only state of this attribute
+     * @deprecated since 2.0 use isReadOnly().
      */
     public boolean getReadOnly() {
+        return isReadOnly();
+    }
+
+    public boolean isReadOnly() {
         return readOnly;
     }
 
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+    }
 }

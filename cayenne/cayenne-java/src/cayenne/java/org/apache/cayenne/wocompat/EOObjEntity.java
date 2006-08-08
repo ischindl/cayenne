@@ -27,114 +27,74 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
-import org.apache.commons.collections.Transformer;
 import org.apache.cayenne.CayenneRuntimeException;
 import org.apache.cayenne.exp.Expression;
 import org.apache.cayenne.exp.ExpressionFactory;
 import org.apache.cayenne.map.Entity;
 import org.apache.cayenne.map.ObjEntity;
 import org.apache.cayenne.query.Query;
+import org.apache.commons.collections.Transformer;
 
 /**
- * An EOObjEntity is a mapping descriptor of a Java class property with added fields for
- * WebObjects EOModel. It is an informal "decorator" of Cayenne ObjEntity to provide
- * access to the extra information of WebObjects EOEntity.
+ * An extension of ObjEntity used to accomodate extra EOModel entity properties.
  * 
- * @author Dario Bagatto
+ * @author Andrus Adamchik
  */
 public class EOObjEntity extends ObjEntity {
 
-    // flag that indicates whether this Entity represents a client java class
-    protected boolean isClientEntity;
-    // flag that indicates whether this Entity has a superclass set in the eonmodel
-    protected boolean hasSuperClass;
-    // flag that indicates whether this Entity is set as abstract in the eomodel
-    protected boolean isAbstractEntity;
+    protected boolean subclass;
+    protected boolean abstractEntity;
 
     private Collection filteredQueries;
     private Map eoMap;
 
     public EOObjEntity() {
-        super();
     }
 
-    public EOObjEntity(String s) {
-        super(s);
+    public EOObjEntity(String name) {
+        super(name);
     }
 
     /**
-     * Sets the the superclass state.
-     * 
-     * @param value
+     * @deprecated since 2.0 use setSubclass()
      */
     public void setHasSuperClass(boolean value) {
-        hasSuperClass = value;
+        setSubclass(value);
     }
 
     /**
-     * Returns the superclass state.
-     * 
-     * @return true when there is a superclass defined in the eomodel.
+     * @deprecated since 2.0 use isSubclass()
      */
     public boolean getHasSuperClass() {
-        return hasSuperClass;
+        return isSubclass();
     }
 
     /**
-     * Sets the client entity state.
-     * 
-     * @param value
+     * @deprecated since 2.0 use setServerOnly()
      */
     public void setIsClientEntity(boolean value) {
-        isClientEntity = value;
+        setServerOnly(!value);
     }
 
     /**
-     * Returns the client entity flag
-     * 
-     * @return true when this entity object represents a client java class.
+     * @deprecated since 2.0 use !isServerOnly()
      */
     public boolean getIsClientEntity() {
-        return isClientEntity;
+        return !isServerOnly();
     }
 
     /**
-     * Sets the abstract entity flag.
-     * 
-     * @param value
+     * @deprecated since 2.0 use setAbstractEntity()
      */
     public void setIsAbstractEntity(boolean value) {
-        isAbstractEntity = value;
+        setAbstractEntity(value);
     }
 
     /**
-     * Returns the abstract Entity state
-     * 
-     * @return true if this entity is set as abstract int the eomodel.
+     * @deprecated since 2.0 use isAbstractEntity()
      */
     public boolean getIsAbstractEntity() {
-        return isAbstractEntity;
-    }
-
-    /**
-     * Translates query name local to the ObjEntity to the global name. This translation
-     * is needed since EOModels store queries by entity, while Cayenne DataMaps store them
-     * globally.
-     * 
-     * @since 1.1
-     */
-    public String qualifiedQueryName(String queryName) {
-        return getName() + "_" + queryName;
-    }
-
-    /**
-     * @since 1.1
-     */
-    public String localQueryName(String qualifiedQueryName) {
-        return (qualifiedQueryName != null && qualifiedQueryName.startsWith(getName()
-                + "_"))
-                ? qualifiedQueryName.substring(getName().length() + 1)
-                : qualifiedQueryName;
+        return isAbstractEntity();
     }
 
     /**
@@ -149,30 +109,6 @@ public class EOObjEntity extends ObjEntity {
         }
 
         return null;
-    }
-
-    /**
-     * Returns a collection of queries for this entity.
-     * 
-     * @since 1.1
-     */
-    public Collection getEOQueries() {
-        if (filteredQueries == null) {
-            Collection queries = getDataMap().getQueries();
-            if (queries.isEmpty()) {
-                filteredQueries = Collections.EMPTY_LIST;
-            }
-            else {
-                Map params = Collections.singletonMap("root", EOObjEntity.this);
-                Expression filter = Expression
-                        .fromString("root = $root")
-                        .expWithParameters(params);
-
-                filteredQueries = filter.filter(queries, new ArrayList());
-            }
-        }
-
-        return filteredQueries;
     }
 
     /**
@@ -214,6 +150,67 @@ public class EOObjEntity extends ObjEntity {
     // initialization code from EOModelProcessor to this class, kind of like EOQuery does.
     void setEoMap(Map eoMap) {
         this.eoMap = eoMap;
+    }
+
+    /**
+     * Returns a collection of queries for this entity.
+     * 
+     * @since 1.1
+     */
+    public Collection getEOQueries() {
+        if (filteredQueries == null) {
+            Collection queries = getDataMap().getQueries();
+            if (queries.isEmpty()) {
+                filteredQueries = Collections.EMPTY_LIST;
+            }
+            else {
+                Map params = Collections.singletonMap("root", EOObjEntity.this);
+                Expression filter = Expression
+                        .fromString("root = $root")
+                        .expWithParameters(params);
+
+                filteredQueries = filter.filter(queries, new ArrayList());
+            }
+        }
+
+        return filteredQueries;
+    }
+
+    public boolean isAbstractEntity() {
+        return abstractEntity;
+    }
+
+    public void setAbstractEntity(boolean abstractEntity) {
+        this.abstractEntity = abstractEntity;
+    }
+
+    public boolean isSubclass() {
+        return subclass;
+    }
+
+    public void setSubclass(boolean subclass) {
+        this.subclass = subclass;
+    }
+
+    /**
+     * Translates query name local to the ObjEntity to the global name. This translation
+     * is needed since EOModels store queries by entity, while Cayenne DataMaps store them
+     * globally.
+     * 
+     * @since 1.1
+     */
+    public String qualifiedQueryName(String queryName) {
+        return getName() + "_" + queryName;
+    }
+
+    /**
+     * @since 1.1
+     */
+    public String localQueryName(String qualifiedQueryName) {
+        return (qualifiedQueryName != null && qualifiedQueryName.startsWith(getName()
+                + "_"))
+                ? qualifiedQueryName.substring(getName().length() + 1)
+                : qualifiedQueryName;
     }
 
     final class DBPathConverter implements Transformer {

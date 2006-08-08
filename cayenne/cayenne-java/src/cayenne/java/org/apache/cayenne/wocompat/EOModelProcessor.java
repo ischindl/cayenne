@@ -257,17 +257,17 @@ public class EOModelProcessor {
         // create ObjEntity
         EOObjEntity objEntity = new EOObjEntity(name);
         objEntity.setEoMap(entityPlist);
-        objEntity.setIsClientEntity(generateClientClass);
+        objEntity.setServerOnly(!generateClientClass);
         String parent = (String) entityPlist.get("parent");
         objEntity.setClassName(helper.entityClass(name, generateClientClass));
 
         if (parent != null) {
-            objEntity.setHasSuperClass(true);
+            objEntity.setSubclass(true);
             objEntity.setSuperClassName(helper.entityClass(parent, generateClientClass));
         }
 
         // add flag whether this entity is set as abstract in the model
-        objEntity.setIsAbstractEntity("Y".equals(entityPlist.get("isAbstractEntity")));
+        objEntity.setAbstractEntity("Y".equals(entityPlist.get("isAbstractEntity")));
 
         // create DbEntity...since EOF allows the same table to be
         // associated with multiple EOEntities, check for name duplicates
@@ -330,11 +330,11 @@ public class EOModelProcessor {
         List primaryKeys = (List) entityPlistMap.get("primaryKeyAttributes");
 
         List classProperties;
-        if (objEntity.getIsClientEntity()) {
-            classProperties = (List) entityPlistMap.get("clientClassProperties");
+        if (objEntity.isServerOnly()) {
+            classProperties = (List) entityPlistMap.get("classProperties");
         }
         else {
-            classProperties = (List) entityPlistMap.get("classProperties");
+            classProperties = (List) entityPlistMap.get("clientClassProperties");
         }
 
         List attributes = (List) entityPlistMap.get("attributes");
