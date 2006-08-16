@@ -387,10 +387,26 @@ public class ToManyList implements List, Serializable, ValueHolder {
             removedFromUnresolved = new LinkedList();
         }
 
-        removedFromUnresolved.addLast(object);
+        // No point in adding a new or transient object -- these will never be fetched from the database.
+        boolean shouldAddToRemovedFromUnresolvedList = true;
+        if (object instanceof DataObject) {
+            DataObject dataObject = (DataObject) object;
+            if ( (dataObject.getPersistenceState() == PersistenceState.TRANSIENT)
+              || (dataObject.getPersistenceState() == PersistenceState.NEW) ) {
+                shouldAddToRemovedFromUnresolvedList = false;
+            }
+        }
+
+        if (shouldAddToRemovedFromUnresolvedList) {
+            removedFromUnresolved.addLast(object);
+        }
 
         // this is really meaningless, since we don't know
         // if an object was present in the list
         return true;
+    }
+    
+    public String toString() {
+        return getClass().getName() + "@" + System.identityHashCode(this);
     }
 }

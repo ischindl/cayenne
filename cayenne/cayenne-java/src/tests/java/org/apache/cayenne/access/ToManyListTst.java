@@ -90,7 +90,6 @@ public class ToManyListTst extends CayenneTestCase {
         assertTrue("List must be unresolved when removing an object...", list
                 .isFault());
         assertFalse(list.addedToUnresolved.contains(p1));
-        assertTrue(list.removedFromUnresolved.contains(p1));
 
         // now resolve
         int size = list.size();
