@@ -56,6 +56,7 @@
 package org.objectstyle.cayenne.xml;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,6 +71,16 @@ import org.objectstyle.cayenne.unit.CayenneTestResources;
 public class XMLEncoderTst extends TestCase {
 
     static final String XML_DATA_DIR = "xmlcoding/";
+    static final boolean windows;
+    
+    static {
+        if (System.getProperty("os.name").toUpperCase().indexOf("WINDOWS") >= 0) {
+            windows = true;
+        }
+        else {
+            windows = false;
+        }
+    }
 
     public void testObjectWithNullProperties() throws Exception {
         XMLEncoder encoder = new XMLEncoder();
@@ -90,14 +101,25 @@ public class XMLEncoderTst extends TestCase {
         encoder.encodeProperty("children", test.getChildren());
         String result = encoder.nodeToString(encoder.getRootNode(false));
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(CayenneTestResources
-                .getResource(XML_DATA_DIR + "encoded-simple-collection.xml")));
-        StringBuffer comp = new StringBuffer();
-        while (in.ready()) {
-            comp.append(in.readLine()).append("\n");
-        }
+        String comp = loadTestFileAsString("encoded-simple-collection.xml");
 
         assertEquals(comp.toString(), result);
+    }
+
+    private String loadTestFileAsString(String filename) throws IOException {
+        BufferedReader in = new BufferedReader(new InputStreamReader(CayenneTestResources
+                .getResource(XML_DATA_DIR + filename)));
+        StringBuffer comp = new StringBuffer();
+        while (in.ready()) {
+            comp.append(in.readLine());
+            if (windows) {
+                comp.append("\r");
+            }
+            comp.append("\n");
+        }
+        in.close();
+        
+        return comp.toString();
     }
 
     public void testEncodeComplexCollection() throws Exception {
@@ -114,23 +136,12 @@ public class XMLEncoderTst extends TestCase {
 
         String result = encoder.encode("TestObjects", obj1);
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(CayenneTestResources
-                .getResource(XML_DATA_DIR + "encoded-complex-collection.xml")));
-        StringBuffer comp = new StringBuffer();
-        while (in.ready()) {
-            comp.append(in.readLine()).append("\n");
-        }
-
+        String comp = loadTestFileAsString("encoded-complex-collection.xml");
         // there are differences in attribute order encoding, so there can be more than
         // one valid output depending on the parser used...
 
         if (!comp.toString().equals(result)) {
-            in = new BufferedReader(new InputStreamReader(CayenneTestResources
-                    .getResource(XML_DATA_DIR + "encoded-complex-collection-alt1.xml")));
-            comp = new StringBuffer();
-            while (in.ready()) {
-                comp.append(in.readLine()).append("\n");
-            }
+            comp = loadTestFileAsString("encoded-complex-collection-alt1.xml");
         }
         assertEquals(comp.toString(), result);
     }
@@ -145,12 +156,8 @@ public class XMLEncoderTst extends TestCase {
 
         String result = encoder.encode(test);
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(CayenneTestResources
-                .getResource(XML_DATA_DIR + "simple-mapped.xml")));
-        StringBuffer comp = new StringBuffer();
-        while (in.ready()) {
-            comp.append(in.readLine()).append("\n");
-        }
+        String comp = loadTestFileAsString("simple-mapped.xml");
+        
         assertEquals(comp.toString(), result);
     }
 
@@ -167,12 +174,7 @@ public class XMLEncoderTst extends TestCase {
 
         String result = encoder.encode(george);
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(CayenneTestResources
-                .getResource(XML_DATA_DIR + "collection-mapped.xml")));
-        StringBuffer comp = new StringBuffer();
-        while (in.ready()) {
-            comp.append(in.readLine()).append("\n");
-        }
+        String comp = loadTestFileAsString("collection-mapped.xml");
 
         assertEquals(comp.toString(), result);
     }
@@ -186,13 +188,8 @@ public class XMLEncoderTst extends TestCase {
 
         String xml = new XMLEncoder().encode("EncodedTestList", dataObjects);
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(CayenneTestResources
-                .getResource(XML_DATA_DIR + "data-objects-encoded.xml")));
-        StringBuffer comp = new StringBuffer();
-        while (in.ready()) {
-            comp.append(in.readLine()).append("\n");
-        }
-
+        String comp = loadTestFileAsString("data-objects-encoded.xml");
+        
         assertEquals(comp.toString(), xml);
     }
 
@@ -208,12 +205,7 @@ public class XMLEncoderTst extends TestCase {
                 "EncodedTestList",
                 dataObjects);
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(CayenneTestResources
-                .getResource(XML_DATA_DIR + "data-objects-mapped.xml")));
-        StringBuffer comp = new StringBuffer();
-        while (in.ready()) {
-            comp.append(in.readLine()).append("\n");
-        }
+        String comp = loadTestFileAsString("data-objects-mapped.xml");
 
         assertEquals(comp.toString(), xml);
     }
