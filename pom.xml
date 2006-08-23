@@ -28,7 +28,7 @@
 	</parent>
 
 	<description>Cayenne Java 1.5 Core</description>
-	<artifactId>cayenne-jdk1.5-core</artifactId>
+	<artifactId>cayenne-jdk1.5</artifactId>
 	<name>Cayenne Java 1.5 Core</name>
 	<packaging>jar</packaging>
 
@@ -136,7 +136,7 @@
 
 		<dependency>
 			<groupId>org.apache.cayenne.core</groupId>
-			<artifactId>cayenne-jdk1.4-core</artifactId>
+			<artifactId>cayenne-jdk1.4</artifactId>
 			<version>${version}</version>
 		</dependency>
 
