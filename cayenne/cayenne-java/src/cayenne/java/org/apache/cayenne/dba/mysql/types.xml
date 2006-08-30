@@ -27,6 +27,9 @@ MySQL types mapping
    <jdbc-type name="ARRAY"/>
    <jdbc-type name="BIGINT">
        <db-type name="BIGINT"/>
+       <db-type name="INT UNSIGNED"/>
+       <db-type name="INTEGER UNSIGNED"/>
+       <db-type name="MEDIUMINT UNSIGNED"/>
    </jdbc-type>
    <jdbc-type name="BINARY">
        <db-type name="BINARY"/>
