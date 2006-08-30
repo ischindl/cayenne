@@ -142,33 +142,49 @@ public class MySQLAdapter extends JdbcAdapter {
             int precision,
             boolean allowNulls) {
 
+        if (typeName != null) {
+            typeName = typeName.toLowerCase();
+        }
+
         // all LOB types are returned by the driver as OTHER... must remap them manually
         // (at least on MySQL 3.23)
         if (type == Types.OTHER) {
-            if ("longblob".equalsIgnoreCase(typeName)) {
+            if ("longblob".equals(typeName)) {
                 type = Types.BLOB;
             }
-            else if ("mediumblob".equalsIgnoreCase(typeName)) {
+            else if ("mediumblob".equals(typeName)) {
                 type = Types.BLOB;
             }
-            else if ("blob".equalsIgnoreCase(typeName)) {
+            else if ("blob".equals(typeName)) {
                 type = Types.BLOB;
             }
-            else if ("tinyblob".equalsIgnoreCase(typeName)) {
+            else if ("tinyblob".equals(typeName)) {
                 type = Types.VARBINARY;
             }
-            else if ("longtext".equalsIgnoreCase(typeName)) {
+            else if ("longtext".equals(typeName)) {
                 type = Types.CLOB;
             }
-            else if ("mediumtext".equalsIgnoreCase(typeName)) {
+            else if ("mediumtext".equals(typeName)) {
                 type = Types.CLOB;
             }
-            else if ("text".equalsIgnoreCase(typeName)) {
+            else if ("text".equals(typeName)) {
                 type = Types.CLOB;
             }
-            else if ("tinytext".equalsIgnoreCase(typeName)) {
+            else if ("tinytext".equals(typeName)) {
                 type = Types.VARCHAR;
             }
+        }
+        // types like "int unsigned" map to Long
+        else if (typeName != null && typeName.endsWith(" unsigned")) {
+            // per
+            // http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-type-conversions.html
+            if (typeName.equals("int unsigned")
+                    || typeName.equals("integer unsigned")
+                    || typeName.equals("mediumint unsigned")) {
+                type = Types.BIGINT;
+            }
+            // BIGINT UNSIGNED maps to BigInteger according to MySQL docs, but there is no
+            // JDBC mapping for BigInteger
         }
 
         return super.buildAttribute(name, typeName, type, size, precision, allowNulls);
