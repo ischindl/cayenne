@@ -184,7 +184,7 @@ public class DB2PkGenerator extends JdbcPkGenerator {
     protected String sequenceName(DbEntity entity) {
 
         String entName = entity.getName();
-        String seqName = _SEQUENCE_PREFIX + entName.toLowerCase();
+        String seqName = _SEQUENCE_PREFIX + entName;
 
         if (entity.getSchema() != null && entity.getSchema().length() > 0) {
             seqName = entity.getSchema() + "." + seqName;
