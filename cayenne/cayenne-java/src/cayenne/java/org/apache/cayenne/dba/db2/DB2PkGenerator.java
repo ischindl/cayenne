@@ -16,8 +16,6 @@
  *  specific language governing permissions and limitations
  *  under the License.
  ****************************************************************/
-
-
 package org.apache.cayenne.dba.db2;
 
 import java.sql.Connection;
@@ -25,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -36,167 +35,185 @@ import org.apache.cayenne.dba.JdbcPkGenerator;
 import org.apache.cayenne.map.DbEntity;
 
 /**
- * PK Generator for IBM DB2 using sequences.
+ * A sequence-based PK generator used by {@link DB2Adapter}.
  * 
- * @author Mario Linke, Holger Hoffstaette
+ * @author Andrus Adamchik
  */
 public class DB2PkGenerator extends JdbcPkGenerator {
 
-	public static final String SEQUENCE_PREFIX = "S_";
+    private static final String _SEQUENCE_PREFIX = "S_";
 
-	public void createAutoPk(DataNode node, List dbEntities) throws Exception {
-		List sequences = this.getExistingSequences(node);
-		Iterator it = dbEntities.iterator();
+    /**
+     * @deprecated since 2.0 - other generators do not expose the default prefix.
+     */
+    public static final String SEQUENCE_PREFIX = "S_";
 
-		while (it.hasNext()) {
-			DbEntity ent = (DbEntity) it.next();
-			if (!sequences.contains(sequenceName(ent))) {
-				this.runUpdate(node, this.createSequenceString(ent));
-			}
-		}
-	}
+    protected int pkFromDatabase(DataNode node, DbEntity ent) throws Exception {
 
-	public List createAutoPkStatements(List dbEntities) {
-		List list = new ArrayList();
-		Iterator it = dbEntities.iterator();
+        String pkGeneratingSequenceName = sequenceName(ent);
 
-		while (it.hasNext()) {
-			DbEntity ent = (DbEntity) it.next();
-			list.add(this.createSequenceString(ent));
-		}
+        Connection con = node.getDataSource().getConnection();
+        try {
+            Statement st = con.createStatement();
+            try {
+                String sql = "SELECT NEXTVAL FOR "
+                        + pkGeneratingSequenceName
+                        + " FROM SYSIBM.SYSDUMMY1";
+                QueryLogger.logQuery(sql, Collections.EMPTY_LIST);
+                ResultSet rs = st.executeQuery(sql);
+                try {
+                    // Object pk = null;
+                    if (!rs.next()) {
+                        throw new CayenneRuntimeException(
+                                "Error generating pk for DbEntity " + ent.getName());
+                    }
+                    return rs.getInt(1);
+                }
+                finally {
+                    rs.close();
+                }
+            }
+            finally {
+                st.close();
+            }
+        }
+        finally {
+            con.close();
+        }
+    }
 
-		return list;
-	}
-	
-	public void dropAutoPk(DataNode node, List dbEntities) throws Exception {
-		List sequences = this.getExistingSequences(node);
-		
-		Iterator it = dbEntities.iterator();
-		while (it.hasNext()) {
-			DbEntity ent = (DbEntity) it.next();
-			if (sequences.contains(this.sequenceName(ent))) {
-				this.runUpdate(node, this.dropSequenceString(ent));
-			}
-		}
-	}
+    public void createAutoPk(DataNode node, List dbEntities) throws Exception {
+        Collection sequences = getExistingSequences(node);
+        Iterator it = dbEntities.iterator();
 
-	public List dropAutoPkStatements(List dbEntities) {
-		 List list = new ArrayList();
-		 Iterator it = dbEntities.iterator();
+        while (it.hasNext()) {
+            DbEntity entity = (DbEntity) it.next();
+            if (!sequences.contains(sequenceName(entity))) {
+                this.runUpdate(node, createSequenceString(entity));
+            }
+        }
+    }
 
-		 while (it.hasNext()) {
-			 DbEntity ent = (DbEntity) it.next();
-			 list.add(this.dropSequenceString(ent));
-		 }
+    /**
+     * Creates a list of CREATE SEQUENCE statements for the list of DbEntities.
+     */
+    public List createAutoPkStatements(List dbEntities) {
+        List list = new ArrayList(dbEntities.size());
+        Iterator it = dbEntities.iterator();
 
-		 return list;
-	 }	
-	
-	/**
-	 * Returns the sequence name for a given table name.
-	 */
-	protected String sequenceName(DbEntity ent) {
-		String seqName = SEQUENCE_PREFIX + ent.getName();
+        while (it.hasNext()) {
+            DbEntity ent = (DbEntity) it.next();
+            list.add(createSequenceString(ent));
+        }
 
-		if (ent.getSchema() != null && ent.getSchema().length() > 0) {
-			seqName = ent.getSchema() + "." + seqName;
-		}
+        return list;
+    }
 
-		return seqName;
-	}	
-	
-	
-	/**
-	 * Creates SQL needed for creating a sequence.
-	 */
-	protected String createSequenceString(DbEntity ent) {
-		StringBuffer buf = new StringBuffer();
-		buf.append("CREATE SEQUENCE ")
-			.append(this.sequenceName(ent))
-			.append(" START WITH 200")
-			.append(" INCREMENT BY ").append(getPkCacheSize())
-			.append(" NO MAXVALUE ")
-			.append(" NO CYCLE ")
-			.append(" CACHE ").append(getPkCacheSize());
-		return buf.toString();
-	}	
-	
-	/**
-	 * Creates SQL needed for dropping a sequence.
-	 */
-	protected String dropSequenceString(DbEntity ent) {
-		return "DROP SEQUENCE " + this.sequenceName(ent) + " RESTRICT ";
-	}
-	
-	/**
-	 * Creates a new PK from a sequence returned by
-	 * <code>
-	 * SELECT NEXTVAL FOR sequence_name FROM SYSIBM.SYSDUMMY1 
-	 * </code>
-	 * SYSIBM.SYSDUMMY1 corresponds to DUAL in Oracle.
-	 */
-	protected int pkFromDatabase(DataNode node, DbEntity ent) throws Exception {
+    /**
+     * Drops PK sequences for all specified DbEntities.
+     */
+    public void dropAutoPk(DataNode node, List dbEntities) throws Exception {
+        Collection sequences = getExistingSequences(node);
 
-		String seq_name = sequenceName (ent);
-		Connection con = node.getDataSource().getConnection();
-		try {
-		  Statement st = con.createStatement();
-		  try {
-		  	String pkQueryString = "SELECT NEXTVAL FOR "
-		  							+ seq_name
-		  							+ " FROM SYSIBM.SYSDUMMY1";
-			QueryLogger.logQuery(pkQueryString, Collections.EMPTY_LIST);
-			ResultSet rs = st.executeQuery(pkQueryString);
-			try {
-			  if (!rs.next()) {
-				throw new CayenneRuntimeException(
-					"Error in pkFromDatabase() for table "
-					+ ent.getName()
-					+ " / sequence "
-					+ seq_name);
-			  }
-			  return rs.getInt(1);
-			} finally {
-			  rs.close();
-			}
-		  } finally {
-			st.close();
-		  }
-		} finally {
-		  con.close();
-		}
-	}	
-	
-	
-	/**
-	 * Returns a List of all existing, accessible sequences.
-	 */
-	protected List getExistingSequences(DataNode node) throws SQLException {
-		Connection con = node.getDataSource().getConnection();
-		try {
-			Statement sel = con.createStatement();
-			try {
-				StringBuffer q = new StringBuffer();
-				q.append("SELECT SEQNAME FROM SYSCAT.SEQUENCES WHERE SEQNAME")
-					.append(" LIKE '")
-					.append(SEQUENCE_PREFIX)
-					.append("%'");
+        Iterator it = dbEntities.iterator();
+        while (it.hasNext()) {
+            DbEntity ent = (DbEntity) it.next();
+            if (sequences.contains(sequenceName(ent))) {
+                runUpdate(node, dropSequenceString(ent));
+            }
+        }
+    }
 
-				ResultSet rs = sel.executeQuery(q.toString());
-				try {
-					List sequenceList = new ArrayList(32);
-					while (rs.next()) {
-						sequenceList.add(rs.getString(1));
-					}
-					return sequenceList;
-				} finally {
-					rs.close();
-				}
-			} finally {
-				sel.close();
-			}
-		} finally {
-			con.close();
-		}
-	}	
+    /**
+     * Creates a list of DROP SEQUENCE statements for the list of DbEntities.
+     */
+    public List dropAutoPkStatements(List dbEntities) {
+
+        List list = new ArrayList(dbEntities.size());
+        Iterator it = dbEntities.iterator();
+
+        while (it.hasNext()) {
+            DbEntity entity = (DbEntity) it.next();
+            list.add(dropSequenceString(entity));
+        }
+
+        return list;
+    }
+
+    /**
+     * Fetches a list of existing sequences that might match Cayenne generated ones.
+     */
+    protected List getExistingSequences(DataNode node) throws SQLException {
+
+        // check existing sequences
+        Connection con = node.getDataSource().getConnection();
+
+        try {
+            Statement sel = con.createStatement();
+            try {
+                StringBuffer buffer = new StringBuffer();
+                buffer.append("SELECT SEQNAME FROM SYSCAT.SEQUENCES ").append(
+                        "WHERE SEQNAME LIKE '").append(_SEQUENCE_PREFIX).append("%'");
+
+                String sql = buffer.toString();
+                QueryLogger.logQuery(sql, Collections.EMPTY_LIST);
+                ResultSet rs = sel.executeQuery(sql);
+                try {
+                    List sequenceList = new ArrayList();
+                    while (rs.next()) {
+                        sequenceList.add(rs.getString(1));
+                    }
+                    return sequenceList;
+                }
+                finally {
+                    rs.close();
+                }
+            }
+            finally {
+                sel.close();
+            }
+        }
+        finally {
+            con.close();
+        }
+    }
+
+    /**
+     * Returns default sequence name for DbEntity.
+     */
+    protected String sequenceName(DbEntity entity) {
+
+        String entName = entity.getName();
+        String seqName = _SEQUENCE_PREFIX + entName.toLowerCase();
+
+        if (entity.getSchema() != null && entity.getSchema().length() > 0) {
+            seqName = entity.getSchema() + "." + seqName;
+        }
+        return seqName;
+    }
+
+    /**
+     * Returns DROP SEQUENCE statement.
+     */
+    protected String dropSequenceString(DbEntity entity) {
+        return "DROP SEQUENCE " + sequenceName(entity) + " RESTRICT ";
+    }
+
+    /**
+     * Returns CREATE SEQUENCE statement for entity.
+     */
+    protected String createSequenceString(DbEntity entity) {
+        StringBuffer buf = new StringBuffer();
+        buf
+                .append("CREATE SEQUENCE ")
+                .append(sequenceName(entity))
+                .append(" START WITH 200")
+                .append(" INCREMENT BY ")
+                .append(getPkCacheSize())
+                .append(" NO MAXVALUE ")
+                .append(" NO CYCLE ")
+                .append(" CACHE ")
+                .append(getPkCacheSize());
+        return buf.toString();
+    }
 }
