@@ -28,26 +28,6 @@
 	<property name="build.win" value="${build}/win"/>
 	
 	<target name="prepare">
-		<condition property="win-path-ref" value="classpath-win-onlinux">
-			<and>
-				<os family="unix"/>
-				<not>
-					<os family="mac"/>
-				</not>
-			</and>
-		</condition>
-		
-		<condition property="win-path-ref" value="classpath-win-onmac">
-			<os family="mac"/>
-		</condition>
-		
-		<condition property="win-path-ref" value="classpath-win-onwindows">
-			<os family="windows"/>
-		</condition>
-		
-		<taskdef name="launch4j" classpathref="${win-path-ref}"
-			classname="net.sf.launch4j.ant.Launch4jTask"/>
-		
 		<mkdir dir="${dist.win}"/>
 	</target>
 	
@@ -65,8 +45,8 @@
 			<patternset excludes="**/bin/*.sh"/>
 		</untar>
 		
-		<copy todir="${dist.win}/${project.name}-${project.version}/bin"
-			file="${build.win}/CayenneModeler.exe"/>
+		<move todir="${dist.win}/${project.name}-${project.version}/bin"
+			file="${build.win}/nsis/CayenneModeler.exe"/>
 		
 		<zip destfile="${dist.base}/${project.name}-${project.version}-win.zip">
 			<fileset dir="${dist.win}"
@@ -93,18 +73,14 @@
 			</manifest>
 		</jar>
 		
-		<copy todir="${build.win}"
-			file="${cayenne.other}/platform-win32/launch4j-config.xml">
-			<filterset>
-				<filter token="ICON"
-					value="${basedir}/${cayenne.other}/platform-win32/CayenneModeler.ico"/>
-				<filter token="JAR" value="${build.win}/cayenne-modeler-all.jar"/>
-				<filter token="EXE" value="${build.win}/CayenneModeler.exe"/>
-				<filter token="PROJECT-VERSION" value="${project.version}"/>
-			</filterset>
+		<mkdir dir="${build.win}/nsis"/>
+		<copy todir="${build.win}/nsis">
+			<fileset dir="${cayenne.other}/platform-win32"/>
 		</copy>
 		
-		<launch4j configFile="${build.win}/launch4j-config.xml"/>
+		<exec dir="${build.win}/nsis" executable="${nsis.home}/makensis" failonerror="true">
+			<arg line="cayenne-modeler.nsi"/>
+		</exec>
 	</target>
 
 </project>

@@ -149,16 +149,4 @@
 		<fileset dir="lib" includes="*.jar"/>
 		<path refid="classpath-cayenne-lib-tools"/>
 	</path>
-	
-	<path id="classpath-win-onmac">
-		<fileset dir="lib/mac" includes="launch4j*/**.jar"/>
-	</path>
-	
-	<path id="classpath-win-onlinux">
-		<fileset dir="lib/linux" includes="launch4j*/**.jar"/>
-	</path>
-
-	<path id="classpath-win-onwindows">
-		<fileset dir="lib/windows" includes="launch4j*/**.jar"/>
-	</path>
 </project>
