@@ -28,8 +28,8 @@
 	<property name="build.mac" value="${build}/macosx"/>
 	
 	<target name="prepare">
-		<taskdef name="jarbundler" classpathref="classpath-macosx"
-			classname="com.loomcom.ant.tasks.jarbundler.JarBundler"/>
+		<taskdef name="japplication" classpathref="classpath-macosx"
+			classname="org.objectstyle.woproject.ant.JApplication"/>
 		
 		<mkdir dir="${dist.mac}"/>
 		<mkdir dir="${build.mac}/lib"/>
@@ -86,20 +86,17 @@
 		
 		<delete dir="${dist.mac}/CayenneModeler.app"/>
 		
-		<jarbundler dir="${dist.mac}" verbose="true" name="CayenneModeler"
-			mainclass="org.apache.cayenne.modeler.MacOSXMain"
+		<japplication destDir="${dist.mac}" name="CayenneModeler"
+			mainClass="org.apache.cayenne.modeler.MacOSXMain"
 			icon="${cayenne.other}/platform-macosx/src/resources/CayenneModeler.icns"
-			bundleid="org.apache.cayenne.modeler.CayenneModeler"
 			version="${project.version}"
-			infostring="CayenneModeler ${project.version}"
-			aboutmenuname="CayenneModeler" jvmversion="1.4+" signature="CAYM"
-			type="APPL" vmoptions="-Xmx500m" smalltabs="true"
-			antialiasedgraphics="true" antialiasedtext="true" liveresize="true"
-			growboxintrudes="false" screenmenu="true">
+			longName="CayenneModeler ${project.version}"
+			jvm="1.4+"
+			jvmOptions="-Xmx500m" os="mac">
 			
-			<jarfileset dir="${dist}/lib" includes="cayenne.jar"/>
-			<jarfileset dir="${dist}/lib/modeler" includes="*.jar"/>
-			<jarfileset dir="${build.mac}/lib" includes="*.jar"/>
-		</jarbundler>
+			<lib dir="${dist}/lib" includes="cayenne.jar"/>
+			<lib dir="${dist}/lib/modeler" includes="*.jar"/>
+			<lib dir="${build.mac}/lib" includes="*.jar"/>
+		</japplication>
 	</target>
 </project>

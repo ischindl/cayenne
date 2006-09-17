@@ -29,6 +29,9 @@
 	
 	<target name="prepare">
 		<mkdir dir="${dist.win}"/>
+		
+		<taskdef name="japplication" classpathref="classpath-macosx"
+			classname="org.objectstyle.woproject.ant.JApplication"/>
 	</target>
 	
 	<target name="zip" depends="prepare,exe">		
@@ -58,7 +61,19 @@
 		
 		<delete file="${build.win}/CayenneModeler.exe"/>
 		
-		<!-- assemble a single jar -->
+		<japplication destDir="${dist.mac}" name="CayenneModeler"
+			mainClass="org.apache.cayenne.modeler.MacOSXMain"
+			icon="${cayenne.other}/platform-macosx/src/resources/CayenneModeler.icns"
+			version="${project.version}"
+			longName="CayenneModeler ${project.version}"
+			jvm="1.4+"
+			jvmOptions="-Xmx500m" os="windows">
+			
+			<lib dir="${dist}/lib" includes="cayenne.jar"/>
+			<lib dir="${dist}/lib/modeler" includes="*.jar"/>
+			<lib dir="${build.mac}/lib" includes="*.jar"/>
+		</japplication>
+		
 		<mkdir dir="${build.win}/classes"/>
 		<unjar dest="${build.win}/classes">
 			<fileset dir="${dist}/lib" includes="cayenne.jar,modeler/*.jar"/>
