@@ -17,7 +17,6 @@
  *  under the License.
  ****************************************************************/
 
-
 package org.apache.cayenne.conf;
 
 import java.io.IOException;
@@ -31,121 +30,70 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
-import org.apache.log4j.Logger;
 import org.apache.cayenne.access.DataContext;
 
 /**
- * <p>
- * <code>WebApplicationContextFilter</code> is another helper class to help integrate
- * Cayenne with web applications. The implementation is similar to
- * <code>org.apache.cayenne.conf.WebApplicationContextProvider</code> however it
- * allows for integration with containers that support version 2.3 of the servlet
- * specification for example Tomcat 4.x. via the usage of filers.
- * </p>
- * <p>
- * Whenever this filter is processed it attempts bind a <code>DataContext</code> to the
- * thread. It retrieves the <code>DataContext</code> via the
- * <code>BasicServletConfiguration.getDefaultDataContext()</code> and binds it to the
- * thread using <code>DataContext.bindThreadDataContext()</code> method. If the session
- * has not been created this filter will also create a new session.
- * </p>
- * <p>
- * During initialization (init() method) this filter initializes the
- * <code>BasicServletConfiguration</code> with the servlet context via the
- * initializeConfiguration() method
- * </p>
- * <p>
- * This filter can be installed in the web container as a &quot;filter&quot; as follows:
+ * A Servlet Filter that binds session DataContext to the current request thread. During
+ * the request application code without any knowledge of the servlet environment can
+ * access DataContext via {@link DataContext#getThreadDataContext()} method. <p/> To
+ * enable the filter add XML similar to this in the <code>web.xml</code> descriptor of a
+ * web application:
  * 
  * <pre>
- *          &lt;filter&gt;
- *              &lt;filter-name&gt;WebApplicationContextFilter&lt;/filter-name&gt;
- *              &lt;filter-class&gt;org.apache.cayenne.conf.WebApplicationContextFilter&lt;/filter-class&gt;
- *         &lt;/filter&gt;
+ *  &lt;filter&gt;
+ *   &lt;filter-name&gt;CayenneFilter&lt;/filter-name&gt;
+ *   &lt;filter-class&gt;org.apache.cayenne.conf.WebApplicationContextFilter&lt;/filter-class&gt;
+ *   &lt;/filter&gt;
+ *   &lt;filter-mapping&gt;
+ *   &lt;filter-name&gt;CayenneFilter&lt;/filter-name&gt;
+ *   &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+ *   &lt;/filter-mapping&gt;
  * </pre>
  * 
- * Then the mapping needs to be created to direct all or some requests to be processed by
- * the filter as follows:
- * 
- * <pre>
- *         &lt;filter-mapping&gt;
- *              &lt;filter-name&gt;WebApplicationContextFilter&lt;/filter-name&gt;
- *              &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
- *          &lt;/filter-mapping&gt;
- * </pre>
- * 
- * The above example the filter would be applied to all the servlets and static content
- * pages in the Web application, because every request URI matches the '/*' URL pattern.
- * The problem with this mapping however is the fact that this filter will run for every
- * request made, whether for images and/or static content and dynamic content request.
- * This maybe detrimental to performance. Hence the mapping url patter should be set
- * accordingly.
- * </p>
- * 
- * @author Gary Jarrel
+ * @author Andrus Adamchik
+ * @since 1.2
  */
 public class WebApplicationContextFilter implements Filter {
 
-    private static Logger logger = Logger.getLogger(WebApplicationContextFilter.class);
+    public void init(FilterConfig filterConfig) throws ServletException {
+        ServletUtil.initializeSharedConfiguration(filterConfig.getServletContext());
+    }
 
     /**
-     * Does nothing. As per the servlet specification, gets called by the container when
-     * the filter is taken out of service.
+     * Cleanup callback method that does nothing, as the filter doesn't store any state.
      */
+    // TODO: andrus 9/17/2006 - should we shut down Cayenne stack? I.e. should it be
+    // complimentary to "init"?
     public void destroy() {
-        // empty
+        // noop
     }
 
     /**
-     * Initializes the <code>BasicServletConfiguration</code> via the
-     * initializeConfiguration() method. Also saves the FilterConfing to a private local
-     * variable for possible later access. This method is part of the <code>Filter</code>
-     * interface and is called by the container when the filter is placed into service.
-     */
-    public synchronized void init(FilterConfig config) throws ServletException {
-        ServletUtil.initializeSharedConfiguration(config.getServletContext());
-    }
-
-    /**
-     * Retrieves the <code>DataContext</code> bound to the <code>HttpSession</code>
-     * via <code>BasicServletConfiguration.
-
-     * getDefaultContext()</code>, and binds it to
-     * the current thread.
+     * The main worker method that binds a DataContext to the current thread on entry and
+     * unbinds it on exit (regardless of whether any exceptions occured in the request).
      */
     public void doFilter(
             ServletRequest request,
             ServletResponse response,
             FilterChain chain) throws IOException, ServletException {
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("start WebApplicationContextFilter.doFilter. URL - "
-                    + ((HttpServletRequest) request).getRequestURL());
-        }
+        boolean reset = false;
 
         if (request instanceof HttpServletRequest) {
+            reset = true;
+
             HttpSession session = ((HttpServletRequest) request).getSession(true);
-            DataContext dataContext = ServletUtil.getSessionContext(session);
-
-            if (dataContext == null) {
-                logger.debug("DataContext was null. Throwing Exception");
-
-                throw new ServletException("DataContext was null and could "
-                        + "not be bound to thread.");
-            }
-
-            DataContext.bindThreadDataContext(dataContext);
-            logger.debug("DataContext bound, continuing in chain");
-        }
-        else {
-            logger.debug("requests that are not HttpServletRequest are not supported..");
+            DataContext context = ServletUtil.getSessionContext(session);
+            DataContext.bindThreadDataContext(context);
         }
 
         try {
             chain.doFilter(request, response);
         }
         finally {
-            DataContext.bindThreadDataContext(null);
+            if (reset) {
+                DataContext.bindThreadDataContext(null);
+            }
         }
     }
 }
