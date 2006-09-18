@@ -59,6 +59,7 @@
 </ul>
 </div>
 <div id="ConfluenceContent">
+
 <p>"Inheritance" is an Object Oriented concept absent in traditional RDBMS. Cayenne however allows to map a hierarchical class tree to a single base table (so called "single table inheritance"). Such mapping is described in detail in the <a href="../../../../Documentation/Modeler Guide/Modeling Object Layer/Modeling Inheritance/index.html" title="Modeling Inheritance">Modeler Guide</a>. The idea of single table inheritance is that a "class" of a database row is determined from the values in one or more columns of the base table. These columns are called "class designator columns".</p>
 
 <table cellpadding='5' width='85%' cellspacing='8px' class='infoMacro' border="0" align='center'><colgroup><col width='24'><col></colgroup><tr><td valign='top'><img src="../../../../images/emoticons/information.gif" width="16" height="16" align="absmiddle" alt="" border="0"></td><td><b class="strong">Initial Values of the Classs Designator Columns</b><br />Assigning correct values to the "class designator columns" mentioned above is one task that is not yet automated in Cayenne and requires user code in the DataObject, as discussed in the next subsection. In the future versions this will likely be handled in the mapping and completely outside of the Java classes, so the advise below will become obsolete.</td></tr></table>

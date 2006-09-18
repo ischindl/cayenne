@@ -54,7 +54,7 @@
 <div id="ConfluenceContent">
 <h3><a name="ModelingObjEntities-ModelingObjEntities"></a>Modeling ObjEntities</h3>
 
-<p>Java object layer in Cayenne is modeled as a set of ObjEntities with relationships between them. Each <span class="nobr"><a href="http://objectstyle.org/cayenne/api/cayenne/org/objectstyle/cayenne/map/ObjEntity.html" title="Visit page outside Confluence" rel="nofollow">ObjEntity<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span> consists of a reference to a <span class="nobr"><a href="http://objectstyle.org/cayenne/api/cayenne/org/objectstyle/cayenne/map/DbEntity.html" title="Visit page outside Confluence" rel="nofollow">DbEntity<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span> (table). It also specifies the Java class for a business object and a set of attributes of this class.</p>
+<p>Java object layer in Cayenne is modeled as a set of ObjEntities with relationships between them. Each <tt>org.apache.cayenne.map.ObjEntity</tt> consists of a reference to a <tt>org.apache.cayenne.map.DbEntity</tt> (table). It also specifies the Java class for a business object and a set of attributes of this class.</p>
 
 <p>A default set of ObjEntities is created during reverse engineering the database. It can be modified manually. E.g. certain entities may be excluded, certain attributes deleted if they are not a part of object layer. Some relationships can be "flattened" as described later in this chapter.</p>
 
@@ -69,7 +69,7 @@
 
 <h4><a name="ModelingObjEntities-ObjEntityQualifier"></a>ObjEntity Qualifier</h4>
 
-<p>ObjEntities can hold a qualifier expression that is automatically appended to all SelectQueries rooted in a given ObjEntity. Entity qualifier can be viewed as a global data filter for a given entity. One area where this feature is used is <a href="../../../../Documentation/Modeler Guide/Modeling Object Layer/Modeling Inheritance/index.html" title="Modeling Inheritance">inheritance mapping</a>, however by itself it has nothing to do with inheritance as such and can be used standalone. To set an entity qualifier, type a Cayenne expression into the "Qualifier" field of the ObjEntity editor panel. Valid expressions grammar is described <span class="nobr"><a href="http://www.objectstyle.org/cayenne/grammar/ExpressionParser.html" title="Visit page outside Confluence" rel="nofollow">here<sup><img class="rendericon" src="../../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span>.</p></div>
+<p>ObjEntities can hold a qualifier expression that is automatically appended to all SelectQueries rooted in a given ObjEntity. Entity qualifier can be viewed as a global data filter for a given entity. One area where this feature is used is <a href="../../../../Documentation/Modeler Guide/Modeling Object Layer/Modeling Inheritance/index.html" title="Modeling Inheritance">inheritance mapping</a>, however by itself it has nothing to do with inheritance as such and can be used standalone. To set an entity qualifier, type a Cayenne expression into the "Qualifier" field of the ObjEntity editor panel.</p></div>
 </div>
   <div class="clearer">.</div>
   <div style="height: 12px; background-image: url('../../../../images/border_bottom.gif'); background-repeat: repeat-x;"></div>

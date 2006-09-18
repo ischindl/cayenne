@@ -70,7 +70,7 @@
 </tr>
 <tr>
 <td class='confluenceTd'>adapter</td>
-<td class='confluenceTd'>Java class implementing org.objectstyle.cayenne.dba.DbAdapter. While this attribute is optional (a generic JdbcAdapter is used if not set), it is highly recommended to specify correct target adapter.</td>
+<td class='confluenceTd'>Java class implementing <tt>org.apache.cayenne.dba.DbAdapter</tt>. While this attribute is optional (a generic JdbcAdapter is used if not set), it is highly recommended to specify correct target adapter.</td>
 <td class='confluenceTd'>No (but strongly recommended)</td>
 </tr>
 <tr>
@@ -123,15 +123,19 @@
 <table cellpadding='5' width='85%' cellspacing='8px' class='noteMacro' border="0" align='center'><colgroup><col width='24'><col></colgroup><tr><td valign='top'><img src="../../../../images/emoticons/warning.gif" width="16" height="16" align="absmiddle" alt="" border="0"></td><td><b class="strong">Driver Classpath</b><br />Support for "classpath" or "classpathref" attributes is pending. To work around this limitation, JDBC driver (and custom DbAdapter) classpath can be appended to the classpath used to load the task via "taskdef".</td></tr></table>
 
 <h3><a name="cdbgen-Example"></a>Example</h3>
+
+<p>Load the Ant task <em>(note: if you already loaded all Cayenne tasks via an antlib taskdef <a href="../../../../Documentation/User Guide/Ant Tasks/index.html" title="Ant Tasks">described before</a>, this step is not needed)</em>: </p>
+<div class="code"><div class="codeContent">
+<pre class="code-xml"><span class="code-tag">&lt;taskdef name=<span class="code-quote">"cdbgen"</span> classname=<span class="code-quote">"org.apache.cayenne.tools.DbGeneratorTask"</span>&gt;</span>
+    <span class="code-tag">&lt;classpath refid=<span class="code-quote">"classpath"</span>/&gt;</span>
+<span class="code-tag">&lt;/taskdef&gt;</span></pre>
+</div></div>
+
 <p>Here is an example of using <tt>cdbgen</tt> to create DB schema objects on a local HSQLDB.</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-xml"><span class="code-tag">&lt;taskdef name=<span class="code-quote">"cdbgen"</span> classname=<span class="code-quote">"org.objectstyle.cayenne.tools.DbGeneratorTask"</span>&gt;</span>
-    <span class="code-tag">&lt;classpath refid=<span class="code-quote">"classpath"</span>/&gt;</span>
-<span class="code-tag">&lt;/taskdef&gt;</span>
-
-&lt;cdbgen map=<span class="code-quote">"${context.dir}/WEB-INF/DefaultMap.map.xml"</span> 
-    adapter=<span class="code-quote">"org.objectstyle.cayenne.dba.hsqldb.HSQLDBAdapter"</span>
+<pre class="code-xml">&lt;cdbgen map=<span class="code-quote">"${context.dir}/WEB-INF/DefaultMap.map.xml"</span> 
+    adapter=<span class="code-quote">"org.apache.cayenne.dba.hsqldb.HSQLDBAdapter"</span>
     driver=<span class="code-quote">"org.hsqldb.jdbcDriver"</span> 
     url=<span class="code-quote">"jdbc:hsqldb:hsql://localhost/bookmarker"</span> 
     username=<span class="code-quote">"sa"</span>/&gt;</pre>

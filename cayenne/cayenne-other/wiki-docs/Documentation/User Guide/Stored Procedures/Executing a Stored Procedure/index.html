@@ -53,6 +53,7 @@
 </ul>
 </div>
 <div id="ConfluenceContent">
+
 <h3><a name="ExecutingaStoredProcedure-UsingQueryResponsetoProcessComplexResults"></a>Using QueryResponse to Process Complex Results</h3>
 
 <p>Previous chapter showed how to select a single set of data rows using a ProcedureQuery. In a more general case stored procedures can return multiple sets of data, either as ResultSets or via OUT parameters, execute update/delete/insert queries, etc. To collect the results of execution of such stored procedure, you need to run a query using context's <tt>"performGenericQuery"</tt> method and inspect returned QueryResponse.</p>

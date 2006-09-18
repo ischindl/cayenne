@@ -43,6 +43,7 @@
 <li><a href="../../../Documentation/User Guide/Deployment/Standalone Applications/index.html">Standalone Applications</a></li>
 <li><a href="../../../Documentation/User Guide/Deployment/Web Applications/index.html">Web Applications</a></li>
 <li><a href="../../../Documentation/User Guide/Deployment/Customizing Configuration/index.html">Customizing Configuration</a></li>
+<li><a href="../../../Documentation/User Guide/Deployment/DBCPDataSourceFactory/index.html">DBCPDataSourceFactory</a></li>
 <li><a href="../../../Documentation/User Guide/Deployment/Using JNDI/index.html">Using JNDI</a></li>
 <li><a href="../../../Documentation/User Guide/Deployment/Deployment with Ant/index.html">Deployment with Ant</a></li>
 <li><a href="../../../Documentation/User Guide/Deployment/Configuring Logging/index.html">Configuring Logging</a></li>
@@ -53,7 +54,8 @@
 <li><a href="../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>Cayenne application deployment is about configuring the application so that at runtime it can find a main project file (cayenne.xml) and associated resources, such as DataMap and DataNode XML files.</p>
+<div id="ConfluenceContent">
+<p>Cayenne application deployment is about configuring the application so that at runtime it can find a main project file (cayenne.xml) and associated resources, such as DataMap and DataNode XML files.</p>
 
 <p>The central point in Cayenne deployment is the <span class="nobr"><a href="http://incubator.apache.org/cayenne/2_0/api/cayenne/org/apache/cayenne/conf/Configuration.html" title="Visit page outside Confluence" rel="nofollow">Configuration<sup><img class="rendericon" src="../../../images/linkext7.gif" height="7" width="7" align="absmiddle" alt="" border="0"/></sup></a></span> class. It locates and loads all the mapping and configuration information required for Cayenne at runtime. By default Configuration uses a singleton model, i.e. normally there is only one instance of Configuration (or a subclass) that exists in the application. This shared instance can be accessed in the following way:</p>
 <div class="code"><div class="codeContent">

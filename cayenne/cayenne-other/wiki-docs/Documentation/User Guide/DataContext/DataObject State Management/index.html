@@ -72,7 +72,7 @@
 <p>Whenever a selecting query is executed by a DataContext, all fetched objects are automatically registered with this DataContext. On the other hand, newly created objects must be registered explicitly:</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.access.DataContext;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.access.DataContext;
 ...
 DataContext context; <span class="code-comment">// assume <span class="code-keyword">this</span> exists
 </span>
@@ -86,7 +86,7 @@ context.registerNewObject(artist);
 <p>This code can be simplified - object creation and registrations steps can be combined in one method call:</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.access.DataContext;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.access.DataContext;
 ...
 DataContext context; <span class="code-comment">// assume <span class="code-keyword">this</span> exists
 </span>
@@ -102,7 +102,7 @@ Artist artist = (Artist) context.newObject(Artist.class);</pre>
 <p>When a new object is inserted to the DataContext as described above, it becomes "NEW":</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-java"><span class="code-keyword">import</span> org.objectstyle.cayenne.access.DataContext;
+<pre class="code-java"><span class="code-keyword">import</span> org.apache.cayenne.access.DataContext;
 ...
 DataContext context; <span class="code-comment">// assume <span class="code-keyword">this</span> exists
 </span>

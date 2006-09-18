@@ -45,6 +45,7 @@
 <li><a href="../../../../Documentation/User Guide/Deployment/Customizing Configuration/index.html">Customizing Configuration</a><ul>
 </ul>
 </li>
+<li><a href="../../../../Documentation/User Guide/Deployment/DBCPDataSourceFactory/index.html">DBCPDataSourceFactory</a></li>
 <li><a href="../../../../Documentation/User Guide/Deployment/Using JNDI/index.html">Using JNDI</a></li>
 <li><a href="../../../../Documentation/User Guide/Deployment/Deployment with Ant/index.html">Deployment with Ant</a></li>
 <li><a href="../../../../Documentation/User Guide/Deployment/Configuring Logging/index.html">Configuring Logging</a></li>
@@ -55,7 +56,8 @@
 <li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>A user can create her own subclass of Configuration and use it instead of the classes provided by Cayenne. Custom subclasses are usually created to load configuration files from non-standard locations, to automatically configure Cayenne during certain events that happen in deployment containers, etc. Cayenne provides a few implementations of Configuration discussed later in this chapter.</p>
+<div id="ConfluenceContent">
+<p>A user can create her own subclass of Configuration and use it instead of the classes provided by Cayenne. Custom subclasses are usually created to load configuration files from non-standard locations, to automatically configure Cayenne during certain events that happen in deployment containers, etc. Cayenne provides a few implementations of Configuration discussed later in this chapter.</p>
 
 <p>To ensure that Cayenne uses the correct Configuration class, it must be initialized properly before any calls to Configuration are made:</p>
 <div class="code"><div class="codeContent">

@@ -81,6 +81,25 @@
 </ul>
 
 
+<h3><a name="Upgrade-Upgradingto2.0"></a>Upgrading to 2.0</h3>
+
+<p>2.0 is a mirror of 1.2 (third digit in release number is a patch level that matches 1.2 version, e.g. "2.0.1" has the same patch level as "1.2.1"). The main change is that all packages were renamed from "org.objectstyle.&#42;" to "org.apache.&#42;". This affects user API and also mapping XML files (as they sometimes reference Cayenne classes by name).</p>
+
+<ul>
+	<li>First you need to upgrade the mapping files as described in general upgrade instructions above.</li>
+</ul>
+
+
+<ul>
+	<li>Upgrading the code: Replace "org.objectstyle." with "org.apache." everywhere in imports and do a clean recompile.</li>
+</ul>
+
+
+<ul>
+	<li>Upgrading logging configuration: If you are using custom logging configuration file, make sure that all the Cayenne loggers are changed from "org.objectstyle" to "org.apache".</li>
+</ul>
+
+
 
 <h3><a name="Upgrade-Upgradingto1.2"></a>Upgrading to 1.2</h3>
 

@@ -122,11 +122,15 @@ Nested node Parameters:</p>
 
 <h3><a name="cdeploy-Examples"></a>Examples</h3>
 
+<p>Load the Ant task <em>(note: if you already loaded all Cayenne tasks via an antlib taskdef <a href="../../../../Documentation/User Guide/Ant Tasks/index.html" title="Ant Tasks">described before</a>, this step is not needed)</em>: </p>
+<div class="code"><div class="codeContent">
+<pre class="code-xml"><span class="code-tag">&lt;taskdef name=<span class="code-quote">"cdeploy"</span> classname=<span class="code-quote">"org.apache.cayenne.tools.DeploymentConfigurator"</span>/&gt;</span></pre>
+</div></div>
+
 <p>Here is an example of using <tt>cdeploy</tt> to regenerate a jar file called "business.jar" with connection info located in "alt.driver.xml":</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-xml"><span class="code-tag">&lt;taskdef name=<span class="code-quote">"cdeploy"</span> classname=<span class="code-quote">"org.objectstyle.cayenne.tools.DeploymentConfigurator"</span>/&gt;</span>
-<span class="code-tag">&lt;cdeploy src=<span class="code-quote">"business.jar"</span>&gt;</span>
+<pre class="code-xml"><span class="code-tag">&lt;cdeploy src=<span class="code-quote">"business.jar"</span>&gt;</span>
     <span class="code-tag">&lt;node name=<span class="code-quote">"main-node"</span> driverFile=<span class="code-quote">"alt.driver.xml"</span>/&gt;</span>
 <span class="code-tag">&lt;/cdeploy&gt;</span></pre>
 </div></div>
@@ -134,8 +138,7 @@ Nested node Parameters:</p>
 <p>An example of using <tt>cdeploy</tt> to redeploy a 3rd party library that contains DataMaps, but may not contain cayenne.xml:</p>
 
 <div class="code"><div class="codeContent">
-<pre class="code-xml"><span class="code-tag">&lt;taskdef name=<span class="code-quote">"cdeploy"</span> classname=<span class="code-quote">"org.objectstyle.cayenne.tools.DeploymentConfigurator"</span>/&gt;</span>
-<span class="code-tag">&lt;cdeploy src=<span class="code-quote">"business.jar"</span> altProjectFile=<span class="code-quote">"my-cayenne.xml"</span>/&gt;</span></pre>
+<pre class="code-xml"><span class="code-tag">&lt;cdeploy src=<span class="code-quote">"business.jar"</span> altProjectFile=<span class="code-quote">"my-cayenne.xml"</span>/&gt;</span></pre>
 </div></div></div>
 </div>
   <div class="clearer">.</div>

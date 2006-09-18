@@ -58,7 +58,8 @@
 <li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>As discussed in <a href="../../../../Documentation/User Guide/DataObjects/index.html" title="DataObjects">DataContext</a> chapter, any changes made to the DataObjects via "set*" methods are synchronized with the database by calling <tt>DataContext.commitChanges</tt>. Here is an example showing how the <tt>Painting</tt> object is fetched, modified and saved back. The following modifications are performed: the price of the first retrieved painting is doubled, a new painting is added that belongs to the same artist as the painting fetched before:</p>
+<div id="ConfluenceContent">
+<p>As discussed in <a href="../../../../Documentation/User Guide/DataObjects/index.html" title="DataObjects">DataContext</a> chapter, any changes made to the DataObjects via "set*" methods are synchronized with the database by calling <tt>DataContext.commitChanges</tt>. Here is an example showing how the <tt>Painting</tt> object is fetched, modified and saved back. The following modifications are performed: the price of the first retrieved painting is doubled, a new painting is added that belongs to the same artist as the painting fetched before:</p>
 <div class="code"><div class="codeContent">
 <pre class="code-java"><span class="code-keyword">import</span> java.math.BigDecimal;
 <span class="code-keyword">import</span> java.util.List;

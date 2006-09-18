@@ -63,7 +63,8 @@
 <li><a href="../../../../Documentation/User Guide/DataViews/index.html">DataViews</a></li>
 </ul>
 </div>
-<div id="ConfluenceContent"><p>Any object that implements <tt>org.apache.cayenne.query.Query</tt> interface can be executed with a DataContext. </p>
+<div id="ConfluenceContent">
+<p>Any object that implements <tt>org.apache.cayenne.query.Query</tt> interface can be executed with a DataContext. </p>
 
 <h3><a name="CustomizingQueries-UnderstandingQueryInterface"></a>Understanding Query Interface</h3>
 
@@ -104,7 +105,7 @@
 
 <h3><a name="CustomizingQueries-IndirectQueries"></a>Indirect Queries</h3>
 
-<p>One customization strategy is an "indirect" query that encapsulates some user-defined operation and in runtime resolves to one or more standard Cayenne queries. Indirect queries can be created from scratch or by extending <tt>org.objectstyle.cayenne.query.IndirectQuery</tt>. As an example lets implement a "CountQuery" query that returns a number of rows in a given table:</p>
+<p>One customization strategy is an "indirect" query that encapsulates some user-defined operation and in runtime resolves to one or more standard Cayenne queries. Indirect queries can be created from scratch or by extending <tt>org.apache.cayenne.query.IndirectQuery</tt>. As an example lets implement a "CountQuery" query that returns a number of rows in a given table:</p>
 
 <div class="code"><div class="codeContent">
 <pre class="code-java"><span class="code-keyword">public</span> class CountQuery <span class="code-keyword">extends</span> IndirectQuery {
