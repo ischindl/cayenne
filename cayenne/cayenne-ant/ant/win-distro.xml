@@ -44,12 +44,12 @@
 			<!-- 
 			exclude UNIX scripts and Modeler jars, as master modeler jar will be placed to bin
 			-->
-			<patternset excludes="**/bin/*.sh,**/bin/modeler.bat,**/lib/modeler/**,**/lib/modeler"/>
+			<patternset excludes="**/bin/*.sh,**/bin/*.bat,**/lib/modeler/**,**/lib/modeler,**/lib/dvmodeler/**,**/lib/dvmodeler"/>
 		</untar>
 		
 		<!-- move both runnable jar and exe -->
 		<move todir="${dist.win}/${project.name}-${project.version}/bin">
-			<fileset dir="${build.win}" includes="CayenneModeler.*"/>
+			<fileset dir="${build.win}" includes="*.jar,*.exe"/>
 		</move>
 		
 		<zip destfile="${dist.base}/${project.name}-${project.version}-win.zip">
@@ -72,6 +72,18 @@
 			
 			<lib dir="${dist}/lib" includes="cayenne.jar"/>
 			<lib dir="${dist}/lib/modeler" includes="*.jar"/>
+		</japplication>
+		
+		<japplication destDir="${build.win}" name="DVModeler"
+			mainClass="org.apache.cayenne.dataview.dvmodeler.Main"
+			icon="${cayenne.other}/platform-win32/CayenneModeler.ico"
+			version="${project.version}"
+			longName="DVModeler ${project.version}"
+			jvm="1.4+"
+			jvmOptions="-Xmx500m" os="windows">
+			
+			<lib dir="${dist}/lib" includes="cayenne.jar"/>
+			<lib dir="${dist}/lib/dvmodeler" includes="*.jar"/>
 		</japplication>
 	</target>
 
