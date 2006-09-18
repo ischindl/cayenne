@@ -37,7 +37,10 @@
 	</target>
 	
 	<target name="diskimage" depends="prepare,app">
-		<copy todir="${dist.mac}" file="${cayenne.other}/platform-macosx/src/resources/README.txt"/>
+		<copy todir="${dist.mac}">
+			<fileset dir="${cayenne.other}/platform-macosx/src/resources" includes="README.txt"/>
+			<fileset dir="${cayenne.other}/licenses/top" includes="**"/>
+		</copy>
 		
 		<!-- unzip platform-neutral distro to make sure mac version is identical -->
 		<untar dest="${dist.mac}"
