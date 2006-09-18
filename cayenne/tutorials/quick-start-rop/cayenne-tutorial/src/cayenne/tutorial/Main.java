@@ -25,13 +25,13 @@ import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.List;
 
-import org.objectstyle.cayenne.DataObjectUtils;
-import org.objectstyle.cayenne.access.DataContext;
-import org.objectstyle.cayenne.exp.Expression;
-import org.objectstyle.cayenne.exp.ExpressionFactory;
-import org.objectstyle.cayenne.query.NamedQuery;
-import org.objectstyle.cayenne.query.QueryChain;
-import org.objectstyle.cayenne.query.SelectQuery;
+import org.apache.cayenne.DataObjectUtils;
+import org.apache.cayenne.access.DataContext;
+import org.apache.cayenne.exp.Expression;
+import org.apache.cayenne.exp.ExpressionFactory;
+import org.apache.cayenne.query.NamedQuery;
+import org.apache.cayenne.query.QueryChain;
+import org.apache.cayenne.query.SelectQuery;
 
 public class Main {
 

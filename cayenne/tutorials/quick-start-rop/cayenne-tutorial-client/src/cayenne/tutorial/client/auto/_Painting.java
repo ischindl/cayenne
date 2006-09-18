@@ -1,7 +1,7 @@
 package cayenne.tutorial.client.auto;
 
-import org.objectstyle.cayenne.PersistentObject;
-import org.objectstyle.cayenne.ValueHolder;
+import org.apache.cayenne.PersistentObject;
+import org.apache.cayenne.ValueHolder;
 
 import cayenne.tutorial.client.Artist;
 import cayenne.tutorial.client.Gallery;

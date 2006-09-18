@@ -7,7 +7,7 @@ import java.util.List;
   * since it may be overwritten next time code is regenerated. 
   * If you need to make any customizations, please use subclass. 
   */
-public class _Artist extends org.objectstyle.cayenne.CayenneDataObject {
+public class _Artist extends org.apache.cayenne.CayenneDataObject {
 
     public static final String DATE_OF_BIRTH_PROPERTY = "dateOfBirth";
     public static final String NAME_PROPERTY = "name";

@@ -19,10 +19,10 @@
 
 <%@ page language="java" contentType="text/html" %>
 <%@ page import="cayenne.tutorial.*" %>
-<%@ page import="org.objectstyle.cayenne.*" %>
-<%@ page import="org.objectstyle.cayenne.query.*" %>
-<%@ page import="org.objectstyle.cayenne.exp.*" %>
-<%@ page import="org.objectstyle.cayenne.access.*" %>
+<%@ page import="org.apache.cayenne.*" %>
+<%@ page import="org.apache.cayenne.query.*" %>
+<%@ page import="org.apache.cayenne.exp.*" %>
+<%@ page import="org.apache.cayenne.access.*" %>
 <%@ page import="java.util.*" %>
 
 <% 

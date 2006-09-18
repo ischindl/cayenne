@@ -19,8 +19,8 @@
 
 <%@ page language="java" contentType="text/html" %>
 <%@ page import="cayenne.tutorial.*" %>
-<%@ page import="org.objectstyle.cayenne.*" %>
-<%@ page import="org.objectstyle.cayenne.access.*" %>
+<%@ page import="org.apache.cayenne.*" %>
+<%@ page import="org.apache.cayenne.access.*" %>
 <%@ page import="java.util.*" %>
 <%@ page import="java.text.*" %>
 

@@ -42,7 +42,7 @@
 	<obj-relationship name="paintings" source="Gallery" target="Painting" deleteRule="Cascade" db-relationship-path="paintings"/>
 	<obj-relationship name="artist" source="Painting" target="Artist" deleteRule="Nullify" db-relationship-path="artist"/>
 	<obj-relationship name="gallery" source="Painting" target="Gallery" deleteRule="Nullify" db-relationship-path="gallery"/>
-	<query name="DeleteAll" factory="org.objectstyle.cayenne.map.SQLTemplateBuilder" root="data-map" root-name="UntitledDomainMap">
+	<query name="DeleteAll" factory="org.apache.cayenne.map.SQLTemplateBuilder" root="data-map" root-name="UntitledDomainMap">
 		<property name="cayenne.GenericSelectQuery.fetchingDataRows" value="true"/>
 		<sql><![CDATA[delete from $table]]></sql>
 	</query>

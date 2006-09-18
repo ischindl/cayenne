@@ -3,7 +3,7 @@ package cayenne.tutorial.client.auto;
 import java.util.Date;
 import java.util.List;
 
-import org.objectstyle.cayenne.PersistentObject;
+import org.apache.cayenne.PersistentObject;
 
 import cayenne.tutorial.client.Painting;
 

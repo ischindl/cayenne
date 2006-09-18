@@ -5,7 +5,7 @@
 
 	<node name="UntitledDomainNode"
 		 datasource="UntitledDomainNode.driver.xml"
-		 factory="org.objectstyle.cayenne.conf.DriverDataSourceFactory">
+		 factory="org.apache.cayenne.conf.DriverDataSourceFactory">
 			<map-ref name="UntitledDomainMap"/>
 	 </node>
 </domain>

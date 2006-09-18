@@ -25,18 +25,18 @@ import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.List;
 
-import org.objectstyle.cayenne.CayenneContext;
-import org.objectstyle.cayenne.DataChannel;
-import org.objectstyle.cayenne.DataObjectUtils;
-import org.objectstyle.cayenne.ObjectContext;
-import org.objectstyle.cayenne.exp.Expression;
-import org.objectstyle.cayenne.exp.ExpressionFactory;
-import org.objectstyle.cayenne.query.NamedQuery;
-import org.objectstyle.cayenne.query.QueryChain;
-import org.objectstyle.cayenne.query.SelectQuery;
-import org.objectstyle.cayenne.remote.ClientChannel;
-import org.objectstyle.cayenne.remote.ClientConnection;
-import org.objectstyle.cayenne.remote.hessian.HessianConnection;
+import org.apache.cayenne.CayenneContext;
+import org.apache.cayenne.DataChannel;
+import org.apache.cayenne.DataObjectUtils;
+import org.apache.cayenne.ObjectContext;
+import org.apache.cayenne.exp.Expression;
+import org.apache.cayenne.exp.ExpressionFactory;
+import org.apache.cayenne.query.NamedQuery;
+import org.apache.cayenne.query.QueryChain;
+import org.apache.cayenne.query.SelectQuery;
+import org.apache.cayenne.remote.ClientChannel;
+import org.apache.cayenne.remote.ClientConnection;
+import org.apache.cayenne.remote.hessian.HessianConnection;
 
 public class Main {
 

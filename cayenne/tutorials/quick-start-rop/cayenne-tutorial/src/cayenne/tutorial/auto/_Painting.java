@@ -5,7 +5,7 @@ package cayenne.tutorial.auto;
   * since it may be overwritten next time code is regenerated. 
   * If you need to make any customizations, please use subclass. 
   */
-public class _Painting extends org.objectstyle.cayenne.CayenneDataObject {
+public class _Painting extends org.apache.cayenne.CayenneDataObject {
 
     public static final String NAME_PROPERTY = "name";
     public static final String ARTIST_PROPERTY = "artist";
