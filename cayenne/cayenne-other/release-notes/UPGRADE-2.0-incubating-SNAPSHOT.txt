@@ -24,7 +24,7 @@ dialog. Once you confirm the upgrade
 Replace "org.objectstyle." with "org.apache." everywhere in imports and do a clean 
 recompile.
 
-* Upgrading logging configuiration
+* Upgrading logging configuration
 
 If you are using custom logging configuration file, make sure that all the 
 Cayenne loggers are changed from "org.objectstyle" to "org.apache".
