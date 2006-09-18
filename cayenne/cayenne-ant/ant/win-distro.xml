@@ -42,14 +42,15 @@
 			overwrite="false" compression="gzip">
 			
 			<!-- 
-				exclude UNIX scripts, but keep modeler.jar and its deps, as it is needed 
-				for local JNDI work
+			exclude UNIX scripts and Modeler jars, as master modeler jar will be placed to bin
 			-->
-			<patternset excludes="**/bin/*.sh"/>
+			<patternset excludes="**/bin/*.sh,**/bin/modeler.bat,**/lib/modeler/**,**/lib/modeler"/>
 		</untar>
 		
-		<move todir="${dist.win}/${project.name}-${project.version}/bin"
-			file="${build.win}/nsis/CayenneModeler.exe"/>
+		<!-- move both runnable jar and exe -->
+		<move todir="${dist.win}/${project.name}-${project.version}/bin">
+			<fileset dir="${build.win}" includes="CayenneModeler.*"/>
+		</move>
 		
 		<zip destfile="${dist.base}/${project.name}-${project.version}-win.zip">
 			<fileset dir="${dist.win}"
@@ -61,9 +62,9 @@
 		
 		<delete file="${build.win}/CayenneModeler.exe"/>
 		
-		<japplication destDir="${dist.mac}" name="CayenneModeler"
-			mainClass="org.apache.cayenne.modeler.MacOSXMain"
-			icon="${cayenne.other}/platform-macosx/src/resources/CayenneModeler.icns"
+		<japplication destDir="${build.win}" name="CayenneModeler"
+			mainClass="org.apache.cayenne.modeler.Main"
+			icon="${cayenne.other}/platform-win32/CayenneModeler.ico"
 			version="${project.version}"
 			longName="CayenneModeler ${project.version}"
 			jvm="1.4+"
@@ -71,31 +72,7 @@
 			
 			<lib dir="${dist}/lib" includes="cayenne.jar"/>
 			<lib dir="${dist}/lib/modeler" includes="*.jar"/>
-			<lib dir="${build.mac}/lib" includes="*.jar"/>
 		</japplication>
-		
-		<mkdir dir="${build.win}/classes"/>
-		<unjar dest="${build.win}/classes">
-			<fileset dir="${dist}/lib" includes="cayenne.jar,modeler/*.jar"/>
-		</unjar>
-		<delete dir="${build.win}/classes/META-INF"/>
-		
-		<jar destfile="${build.win}/cayenne-modeler-all.jar"
-			basedir="${build.win}/classes">
-			<manifest>
-				<attribute name="Main-Class"
-					value="org.apache.cayenne.modeler.Main"/>
-			</manifest>
-		</jar>
-		
-		<mkdir dir="${build.win}/nsis"/>
-		<copy todir="${build.win}/nsis">
-			<fileset dir="${cayenne.other}/platform-win32"/>
-		</copy>
-		
-		<exec dir="${build.win}/nsis" executable="${nsis.home}/makensis" failonerror="true">
-			<arg line="cayenne-modeler.nsi"/>
-		</exec>
 	</target>
 
 </project>
