@@ -39,6 +39,8 @@ import com.atlassian.confluence.rpc.soap.beans.RemotePageSummary;
 public class DocGenerator {
 
     private static final String DEFAULT_TEMPLATE = "doctemplates/default.vm";
+    private static final String ENDPOINT_SUFFIX = "/rpc/soap-axis/confluenceservice-v1";
+    private String baseUrl;
     private String spaceKey;
     private String docBase;
     private String startPage;
@@ -53,17 +55,41 @@ public class DocGenerator {
 
     private DocPageRenderer parser;
 
-    public DocGenerator(String spaceKey, String docBase, String startPage,
-            String username, String password, String template) {
+    public DocGenerator(String baseUrl, String spaceKey, String docBase,
+            String startPage, String username, String password, String template) {
+
+        ConfluenceSoapServiceProxy service = new ConfluenceSoapServiceProxy();
+
+        // derive service URL from base URL
+        if (baseUrl != null) {
+            if (baseUrl.endsWith("/")) {
+                baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+            }
+
+            String endpoint = baseUrl + ENDPOINT_SUFFIX;
+            service.setEndpoint(endpoint);
+        }
+        // service base URL from service default URL
+        else if (service.getEndpoint().endsWith(ENDPOINT_SUFFIX)) {
+            String endpoint = service.getEndpoint();
+            baseUrl = endpoint.substring(0, endpoint.length() - ENDPOINT_SUFFIX.length());
+        }
+        else {
+            throw new IllegalArgumentException("Null base url and invalid service URL");
+        }
+
+        this.baseUrl = baseUrl;
+        this.service = service;
         this.spaceKey = spaceKey;
         this.docBase = docBase;
         this.startPage = startPage;
         this.username = username;
         this.password = password;
-        
+
         if (template == null) {
             this.template = DEFAULT_TEMPLATE;
-        } else {
+        }
+        else {
             this.template = template;
         }
     }
@@ -72,6 +98,10 @@ public class DocGenerator {
 
         login();
 
+        	// only works for adminstrators
+        //String url = service.exportSite(token, true);
+
+        	//URL foo = new URL(url);
         createPath(docBase);
 
         // Build a page hierarchy first..
@@ -90,7 +120,6 @@ public class DocGenerator {
         for (int i = 0; i < children.length; i++) {
 
             DocPage child = getPage(parent, children[i].getTitle());
-
             parent.addChild(child);
             iterateChildren(child);
 
@@ -106,7 +135,7 @@ public class DocGenerator {
         FileWriter fw = new FileWriter(currentPath + "/index.html");
         parser.render(page, fw);
         fw.close();
-        
+
         writeAttachments(currentPath, page);
 
         for (Iterator childIter = page.getChildren().iterator(); childIter.hasNext();) {
@@ -144,9 +173,8 @@ public class DocGenerator {
     }
 
     protected void login() throws Exception {
-        service = new ConfluenceSoapServiceProxy();
         token = service.login(username, password);
-        parser = new DocPageRenderer(service, token, spaceKey, template);
+        parser = new DocPageRenderer(service, baseUrl, token, spaceKey, template);
     }
 
     protected DocPage getPage(DocPage parentPage, String pageTitle) throws Exception {
@@ -157,6 +185,10 @@ public class DocGenerator {
     protected void createPath(String path) {
         new File(path).mkdirs();
 
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
     }
 
 }

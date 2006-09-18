@@ -55,7 +55,8 @@ public class DocPage {
         return (DocPage) titleMap.get(title);
     }
 
-    public DocPage(DocPage parentRef, String title, long id, String rawContent) {
+    @SuppressWarnings("unchecked")
+	public DocPage(DocPage parentRef, String title, long id, String rawContent) {
         this.parentRef = parentRef;
         this.title = title;
         this.id = id;
@@ -82,7 +83,8 @@ public class DocPage {
         children = new ArrayList();
     }
 
-    public void addChild(DocPage child) {
+    @SuppressWarnings("unchecked")
+	public void addChild(DocPage child) {
         child.depth = depth + 1;
         children.add(child);
     }

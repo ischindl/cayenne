@@ -47,7 +47,8 @@
 		</delete>
 		
 		<!-- Build HTML documentation from Confluence -->
-		<docgen spaceKey="CAYDOC" docBase="${cayenne.other}/wiki-docs" startPage="Documentation" 
+		<docgen spaceKey="CAYDOC20" docBase="${cayenne.other}/wiki-docs" baseUrl="http://cwiki.apache.org/confluence/" 
+			startPage="Documentation" 
 			username="${cayenne.confluence.user}" password="${cayenne.confluence.password}" />
 	</target>
 	

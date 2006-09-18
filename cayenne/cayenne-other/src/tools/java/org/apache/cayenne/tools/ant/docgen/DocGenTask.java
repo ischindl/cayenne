@@ -30,6 +30,7 @@ import org.apache.tools.ant.Task;
  */
 public class DocGenTask extends Task {
 
+    private String baseUrl;
     private String spaceKey;
     private String docBase;
     private String startPage;
@@ -41,10 +42,19 @@ public class DocGenTask extends Task {
 
     public void execute() {
         log("Exporting space '" + spaceKey + "' to " + docBase);
-        
+
         try {
-            new DocGenerator(spaceKey, docBase, startPage, username, password, template)
-                    .generateDocs();
+            DocGenerator generator = new DocGenerator(
+                    baseUrl,
+                    spaceKey,
+                    docBase,
+                    startPage,
+                    username,
+                    password,
+                    template);
+
+            log("Confluence base URL '" + generator.getBaseUrl() + "'");
+            generator.generateDocs();
         }
         catch (Exception e) {
             throw new BuildException(e);
@@ -97,5 +107,17 @@ public class DocGenTask extends Task {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    /**
+     * Sets a root URL of a confluence instance. SOAP service URL is derived from it
+     * internally.
+     */
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
     }
 }
