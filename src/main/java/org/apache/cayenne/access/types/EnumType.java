@@ -66,6 +66,9 @@ public class EnumType implements ExtendedType {
         return enumClass.getName();
     }
 
+    /**
+     * @deprecated since 3.0 as validation should not be done at the DataNode level.
+     */
     public boolean validateProperty(
             Object source,
             String property,
