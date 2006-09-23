@@ -5,337 +5,35 @@ This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
 
 
-           
-Third-party licenses summary (the licenses for each included package are attached below).
-
 RUNTIME FRAMEWORK
 
-1. This software is derived from Cayenne Framework, originally developed
-at The ObjectStyle Group and donated to the ASF by its authors.
+1. ObjectStyle Cayenne Notice: This software is derived from Cayenne Framework, 
+originally developed at The ObjectStyle Group and donated to the ASF by its authors
+(http://objectstyle.org)
 
-2. This product includes software developed by the Caucho Technology (_HessianServlet.java).
+2. Caucho Notice: This product includes _HessianServlet.java developed by the Caucho 
+Technology (http://caucho.com/).
 
-3. This software includes Ashwood library developed by Andriy Shapochka.
+3. This software includes Ashwood graph library developed by Andriy Shapochka.
+(http://objectstyle.org/ashwood/)
+
 
 GUI TOOLS
 
-4. This software includes JDOM library developed by Jason Hunter & Brett McLaughlin.
+4. DVModeler includes JDOM library developed by Jason Hunter & Brett McLaughlin.
+(http://www.jdom.org/)
 
-5. This software includes JGoodies library developed by Karsten Lentzsch.
+5. CayenneModeler and DVModeler includes JGoodies library developed by Karsten Lentzsch.
+(http://www.jgoodies.com/)
 
-6. This software includes the Scope library developed by The Scope team
+6. CayenneModeler includes the Scope library developed by The Scope team.
+(http://scope.sourceforge.net/)
 
-7. This software includes OGNL library developed by Drew Davidson and Luke Blanshard
+7. CayenneModeler includes OGNL library developed by Drew Davidson and Luke Blanshard
+(http://www.ognl.org/)
 
-8. This software includes HSQLDB library developed by The HSQL Development Group.
+8. CayenneModeler includes HSQLDB library developed by The HSQL Development Group.
+(http://www.hsqldb.org/)
 
-
-
-
-==========================================
-1. OBJECTSTYLE LICENSE
-
-The ObjectStyle Group Software License, version 1.1
-ObjectStyle Group - http://objectstyle.org/
-
-Copyright (c) 2002-2006, Andrei (Andrus) Adamchik and individual authors
-of the software. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in
-   the documentation and/or other materials provided with the
-   distribution.
-
-3. The end-user documentation included with the redistribution, if any,
-   must include the following acknowlegement:
-   "This product includes software developed by independent contributors
-   and hosted on ObjectStyle Group web site (http://objectstyle.org/)."
-   Alternately, this acknowlegement may appear in the software itself,
-   if and wherever such third-party acknowlegements normally appear.
-
-4. The names "ObjectStyle Group" and "Cayenne" must not be used to endorse
-   or promote products derived from this software without prior written
-   permission. For written permission, email
-   "andrus at objectstyle dot org".
-
-5. Products derived from this software may not be called "ObjectStyle"
-   or "Cayenne", nor may "ObjectStyle" or "Cayenne" appear in their
-   names without prior written permission.
-
-THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
-WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED.  IN NO EVENT SHALL THE OBJECTSTYLE GROUP OR
-ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-SUCH DAMAGE.
-====================================================================
-
-This software consists of voluntary contributions made by many
-individuals and hosted on ObjectStyle Group web site.  For more
-information on the ObjectStyle Group, please see
-<http://objectstyle.org/>.
-
-
-2. CAUCHO LICENSE
-
- Copyright (c) 2001-2004 Caucho Technology, Inc.  All rights reserved.
-
- The Apache Software License, Version 1.1
-
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions
- are met:
-
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-
- 2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in
-    the documentation and/or other materials provided with the
-    distribution.
-
- 3. The end-user documentation included with the redistribution, if
-    any, must include the following acknowlegement:
-       "This product includes software developed by the
-        Caucho Technology (http://www.caucho.com/)."
-    Alternately, this acknowlegement may appear in the software itself,
-    if and wherever such third-party acknowlegements normally appear.
-
- 4. The names "Hessian", "Resin", and "Caucho" must not be used to
-    endorse or promote products derived from this software without prior
-    written permission. For written permission, please contact
-    info@caucho.com.
-
- 5. Products derived from this software may not be called "Resin"
-    nor may "Resin" appear in their names without prior written
-    permission of Caucho Technology.
-
- THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
- WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED.  IN NO EVENT SHALL CAUCHO TECHNOLOGY OR ITS CONTRIBUTORS
- BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
- OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
- OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- 
- 
-3. ASHWOOD LICENSE	
-
-/* ====================================================================
- *
- * Copyright(c) 2003, Andriy Shapochka
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above
- *    copyright notice, this list of conditions and the following
- *    disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above
- *    copyright notice, this list of conditions and the following
- *    disclaimer in the documentation and/or other materials
- *    provided with the distribution.
- *
- * 3. Neither the name of the ASHWOOD nor the
- *    names of its contributors may be used to endorse or
- *    promote products derived from this software without
- *    specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * ====================================================================
- *
- * This software consists of voluntary contributions made by
- * individuals on behalf of the ASHWOOD Project and was originally
- * created by Andriy Shapochka.
- */
-
-4. JDOM LICENSE 
-
- $Id: LICENSE.jdom.txt 423600 2006-07-19 20:56:12Z aadamchik $
-
- Copyright (C) 2000-2003 Jason Hunter & Brett McLaughlin.
- All rights reserved.
- 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions
- are met:
- 
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions, and the following disclaimer.
- 
- 2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions, and the disclaimer that follows 
-    these conditions in the documentation and/or other materials 
-    provided with the distribution.
-
- 3. The name "JDOM" must not be used to endorse or promote products
-    derived from this software without prior written permission.  For
-    written permission, please contact <license AT jdom DOT org>.
- 
- 4. Products derived from this software may not be called "JDOM", nor
-    may "JDOM" appear in their name, without prior written permission
-    from the JDOM Project Management <pm AT jdom DOT org>.
- 
- In addition, we request (but do not require) that you include in the 
- end-user documentation provided with the redistribution and/or in the 
- software itself an acknowledgement equivalent to the following:
-     "This product includes software developed by the
-      JDOM Project (http://www.jdom.org/)."
- Alternatively, the acknowledgment may be graphical using the logos 
- available at http://www.jdom.org/images/logos.
-
- THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
- WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED.  IN NO EVENT SHALL THE JDOM AUTHORS OR THE PROJECT
- CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
- OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- SUCH DAMAGE.
-
- This software consists of voluntary contributions made by many 
- individuals on behalf of the JDOM Project and was originally 
- created by Jason Hunter <jhunter AT jdom DOT org> and
- Brett McLaughlin <brett AT jdom DOT org>.  For more information on
- the JDOM Project, please see <http://www.jdom.org/>.
-
-
-5. JGOODIES LICENSE
-
-              The BSD License for the JGoodies Forms
-              ======================================
-
-Copyright (c) 2003 JGoodies Karsten Lentzsch. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without 
-modification, are permitted provided that the following conditions are met:
-
- o Redistributions of source code must retain the above copyright notice, 
-   this list of conditions and the following disclaimer. 
-    
- o Redistributions in binary form must reproduce the above copyright notice, 
-   this list of conditions and the following disclaimer in the documentation 
-   and/or other materials provided with the distribution. 
-    
- o Neither the name of JGoodies Karsten Lentzsch nor the names of 
-   its contributors may be used to endorse or promote products derived 
-   from this software without specific prior written permission. 
-    
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
-PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR 
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
-OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
-OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-6. SCOPE LICENSE
-
-Scope: a generic MVC framework.
-Copyright (c) 2000-2002, The Scope team
-All rights reserved.
-
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-
-Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-Neither the name "Scope" nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-7. OGNL LICENSE
-
-//--------------------------------------------------------------------------
-//	Copyright (c) 1998-2004, Drew Davidson and Luke Blanshard
-//  All rights reserved.
-//
-//	Redistribution and use in source and binary forms, with or without
-//  modification, are permitted provided that the following conditions are
-//  met:
-//
-//	Redistributions of source code must retain the above copyright notice,
-//  this list of conditions and the following disclaimer.
-//	Redistributions in binary form must reproduce the above copyright
-//  notice, this list of conditions and the following disclaimer in the
-//  documentation and/or other materials provided with the distribution.
-//	Neither the name of the Drew Davidson nor the names of its contributors
-//  may be used to endorse or promote products derived from this software
-//  without specific prior written permission.
-//
-//	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-//  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-//  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-//  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-//  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-//  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
-//  OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-//  AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-//  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-//  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-//  DAMAGE.
-//--------------------------------------------------------------------------
-
-8. HSQLDB LICENSE
-
-ORIGINAL LICENSE (a.k.a. "hypersonic_lic.txt")For content, code, and products originally developed by Thomas Mueller and the Hypersonic SQL Group:Copyright (c) 1995-2000 by the Hypersonic SQL Group.All rights reserved.Redistribution and use in source and binary forms, with or withoutmodification, are permitted provided that the following conditions are met:Redistributions of source code must retain the above copyright notice, thislist of conditions and the following disclaimer.Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.Neither the name of the Hypersonic SQL Group nor the names of itscontributors may be used to endorse or promote products derived from thissoftware without specific prior written permission.THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THEIMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSEARE DISCLAIMED. IN NO EVENT SHALL THE HYPERSONIC SQL GROUP,OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED ANDON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THISSOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.This software consists of voluntary contributions made by many individuals on behalf of theHypersonic SQL Group.For work added by the HSQL Development Group (a.k.a. hsqldb_lic.txt):Copyright (c) 2001-2005, The HSQL Development GroupAll rights reserved.Redistribution and use in source and binary forms, with or withoutmodification, are permitted provided that the following conditions are met:Redistributions of source code must retain the above copyright notice, thislist of conditions and the following disclaimer.Redistributions in binary form must reproduce the above copyright notice,this list of conditions and the following disclaimer in the documentationand/or other materials provided with the distribution.Neither the name of the HSQL Development Group nor the names of itscontributors may be used to endorse or promote products derived from thissoftware without specific prior written permission.THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THEIMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSEARE DISCLAIMED. IN NO EVENT SHALL HSQL DEVELOPMENT GROUP, HSQLDB.ORG,OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED ANDON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THISSOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+9. CayenneModeler includes GIF binary images developed by Eclipse Foundation. 
+(http://www.eclipse.org/).

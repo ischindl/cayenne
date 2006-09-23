@@ -104,6 +104,8 @@ ENVIRONMENT:
 				<include name="${project.name}-${project.version}/**/*.sh"/>
 			</tarfileset>
 		</tar>
+		
+		<sign releaseFile="${dist.base}/${project.name}-${project.version}.tar.gz"/>
     </target>
 	
 	<!-- ============================================= -->

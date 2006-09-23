@@ -18,7 +18,7 @@
    specific language governing permissions and limitations
    under the License.
 -->
-
+	
 <!-- ================================================= -->
 <!--         Cayenne documentation buildfile.          -->
 <!-- ================================================= -->
@@ -75,11 +75,6 @@
 		<mkdir dir="${dist}/doc/dtd"/>
 		<copy todir="${dist}/doc/dtd">
 			<fileset dir="${cayenne.java}/src/cayenne/dtd" includes="**/*.dtd"/>
-		</copy>
-		
-		<!-- copy all licenses & release notes -->
-		<copy todir="${dist}/doc/licenses">
-			<fileset dir="${license.dir}/third-party"/>
 		</copy>
 	</target>
 	

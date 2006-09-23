@@ -74,6 +74,8 @@
 			<arg
 				value="${dist.base}/${project.name}-${project.version}-macosx.dmg"/>
 		</exec>
+		
+		<sign releaseFile="${dist.base}/${project.name}-${project.version}-macosx.dmg"/>
 	</target>
 	
 	<target name="build-ext" depends="prepare">

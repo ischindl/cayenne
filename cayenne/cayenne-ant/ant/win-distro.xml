@@ -56,6 +56,8 @@
 			<fileset dir="${dist.win}"
 				includes="${project.name}-${project.version}/**"/>
 		</zip>
+		
+		<sign releaseFile="${dist.base}/${project.name}-${project.version}-win.zip"/>
 	</target>
 	
 	<target name="exe" depends="prepare">

@@ -23,6 +23,13 @@
 <!-- Reusable Macros                                   -->
 <!-- ================================================= -->
 <project>
+	<macrodef name="sign">
+		<attribute name="releaseFile"/>
+		
+		<sequential>
+			<checksum file="@{releaseFile}" fileext=".md5"/>
+		</sequential>
+	</macrodef>
 	
 	<!-- ============================================= -->
 	<!-- *** API documentation macro. ***              -->
