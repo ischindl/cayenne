@@ -89,6 +89,9 @@ ENVIRONMENT:
     	<copy tofile="${dist}/UPGRADE.txt">
 			<fileset dir="${notes.dir}" includes="UPGRADE*"/>
 		</copy>
+		<copy tofile="${dist}/KEYS">
+			<fileset dir="${notes.dir}" includes="KEYS"/>
+		</copy>
     	<copy todir="${dist}">
     		<fileset dir="${license.dir}/top"/>
     	</copy>
