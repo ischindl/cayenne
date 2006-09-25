@@ -170,22 +170,6 @@ class DataDomainQueryAction implements QueryRouter, OperationObserver {
                 if (oidQuery.isFetchAllowed()) {
 
                     runQueryInTransaction();
-
-                    List result = response.firstList();
-                    if (result != null && !result.isEmpty()) {
-
-                        if (result.size() > 1) {
-                            throw new CayenneRuntimeException(
-                                    "More than 1 row found for ObjectId "
-                                            + oidQuery.getObjectId()
-                                            + ". Fetch matched "
-                                            + result.size()
-                                            + " rows.");
-                        }
-
-                        // cache for future use
-                        cache.snapshots.put(oidQuery.getObjectId(), result.get(0));
-                    }
                 }
                 else {
                     response = new ListResponse();
