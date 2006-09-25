@@ -10,4 +10,5 @@ http://issues.apache.org/cayenne/
 
 Bug Fixes:
 
-CAY-562 Exception with Tomcat's session restore capability
+CAY-652 Exception with Tomcat's session restore capability
+CAY-653 overriding setPersistentState() in unreliable in three tier environment with CayenneContext
