@@ -450,14 +450,14 @@ public class DataRowStore implements Serializable {
     /**
      * Registers a list of snapshots with internal cache, using a String key.
      */
-    public void cacheSnapshots(String key, List snapshots) {
+    public synchronized void cacheSnapshots(String key, List snapshots) {
         snapshotLists.put(key, snapshots);
     }
 
     /**
      * Returns a list of previously cached snapshots.
      */
-    public List getCachedSnapshots(String key) {
+    public synchronized List getCachedSnapshots(String key) {
         if (key == null) {
             return null;
         }
