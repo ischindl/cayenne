@@ -468,9 +468,11 @@ public class CayenneContext implements ObjectContext {
 
         Persistent object = (Persistent) descriptor.createObject();
 
-        object.setPersistenceState(PersistenceState.NEW);
-        object.setObjectContext(this);
+        // must follow this exact order of property initialization per CAY-653, i.e. have
+        // the id and the context in place BEFORE setPersistence is called
         object.setObjectId(id);
+        object.setObjectContext(this);
+        object.setPersistenceState(PersistenceState.NEW);
 
         descriptor.injectValueHolders(object);
         graphManager.registerNode(object.getObjectId(), object);
