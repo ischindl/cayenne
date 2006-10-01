@@ -1,1 +1,0 @@
-This folder contains source files for documentation images. This includes Photoshop sources, OmniGraffle files, etc.
