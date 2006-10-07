@@ -94,9 +94,7 @@ class ObjectResolver {
      */
     List synchronizedObjectsFromDataRows(List rows) {
         synchronized (context.getObjectStore()) {
-            synchronized (context.getObjectStore().getDataRowCache()) {
-                return objectsFromDataRows(rows);
-            }
+            return objectsFromDataRows(rows);
         }
     }
 

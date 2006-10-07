@@ -233,53 +233,55 @@ public class DataRowStore implements Serializable {
         Map modified = null;
         Object eventPostedBy = null;
 
-        for (int i = 0; i < size; i++) {
-            Persistent object = (Persistent) objects.get(i);
+        synchronized (this) {
+            for (int i = 0; i < size; i++) {
+                Persistent object = (Persistent) objects.get(i);
 
-            // skip HOLLOW objects as they likely were created from partial snapshots
-            if (object.getPersistenceState() == PersistenceState.HOLLOW) {
-                continue;
-            }
-
-            ObjectId oid = object.getObjectId();
-
-            // add snapshots if refresh is forced, or if a snapshot is
-            // missing
-
-            DataRow cachedSnapshot = (DataRow) this.snapshots.get(oid);
-            if (refresh || cachedSnapshot == null) {
-
-                DataRow newSnapshot = (DataRow) snapshots.get(i);
-
-                if (cachedSnapshot != null) {
-                    // use old snapshot if no changes occurred
-                    if (object instanceof DataObject
-                            && cachedSnapshot.equals(newSnapshot)) {
-                        ((DataObject) object).setSnapshotVersion(cachedSnapshot
-                                .getVersion());
-                        continue;
-                    }
-                    else {
-                        newSnapshot.setReplacesVersion(cachedSnapshot.getVersion());
-                    }
+                // skip HOLLOW objects as they likely were created from partial snapshots
+                if (object.getPersistenceState() == PersistenceState.HOLLOW) {
+                    continue;
                 }
 
-                if (modified == null) {
-                    modified = new HashMap();
-                    eventPostedBy = object.getObjectContext().getGraphManager();
+                ObjectId oid = object.getObjectId();
+
+                // add snapshots if refresh is forced, or if a snapshot is
+                // missing
+
+                DataRow cachedSnapshot = (DataRow) this.snapshots.get(oid);
+                if (refresh || cachedSnapshot == null) {
+
+                    DataRow newSnapshot = (DataRow) snapshots.get(i);
+
+                    if (cachedSnapshot != null) {
+                        // use old snapshot if no changes occurred
+                        if (object instanceof DataObject
+                                && cachedSnapshot.equals(newSnapshot)) {
+                            ((DataObject) object).setSnapshotVersion(cachedSnapshot
+                                    .getVersion());
+                            continue;
+                        }
+                        else {
+                            newSnapshot.setReplacesVersion(cachedSnapshot.getVersion());
+                        }
+                    }
+
+                    if (modified == null) {
+                        modified = new HashMap();
+                        eventPostedBy = object.getObjectContext().getGraphManager();
+                    }
+
+                    modified.put(oid, newSnapshot);
                 }
-
-                modified.put(oid, newSnapshot);
             }
-        }
 
-        if (modified != null) {
-            processSnapshotChanges(
-                    eventPostedBy,
-                    modified,
-                    Collections.EMPTY_LIST,
-                    Collections.EMPTY_LIST,
-                    Collections.EMPTY_LIST);
+            if (modified != null) {
+                processSnapshotChanges(
+                        eventPostedBy,
+                        modified,
+                        Collections.EMPTY_LIST,
+                        Collections.EMPTY_LIST,
+                        Collections.EMPTY_LIST);
+            }
         }
     }
 
@@ -412,14 +414,14 @@ public class DataRowStore implements Serializable {
     /**
      * Registers a list of snapshots with internal cache, using a String key.
      */
-    public void cacheSnapshots(String key, List snapshots) {
+    public synchronized void cacheSnapshots(String key, List snapshots) {
         snapshotLists.put(key, snapshots);
     }
 
     /**
      * Returns a list of previously cached snapshots.
      */
-    public List getCachedSnapshots(String key) {
+    public synchronized List getCachedSnapshots(String key) {
         if (key == null) {
             return null;
         }

@@ -36,6 +36,10 @@ public class DataContextSerializationTst extends CayenneTestCase {
 
     private static Logger logObj = Logger.getLogger(DataContextSerializationTst.class);
 
+    protected void setUp() throws Exception {
+        fixSharedConfiguration();
+    }
+
     protected void fixSharedConfiguration() {
         // for context to deserialize properly,
         // Configuration singleton must have the right default domain
@@ -49,7 +53,6 @@ public class DataContextSerializationTst extends CayenneTestCase {
     }
 
     public void testSerializeResolver() throws Exception {
-        fixSharedConfiguration();
 
         DataContext context = createDataContextWithSharedCache();
 
@@ -60,8 +63,18 @@ public class DataContextSerializationTst extends CayenneTestCase {
         assertSame(context.getEntityResolver(), deserializedContext.getEntityResolver());
     }
 
+    public void testSerializeChannel() throws Exception {
+
+        DataContext context = createDataContextWithSharedCache();
+
+        DataContext deserializedContext = (DataContext) Util
+                .cloneViaSerialization(context);
+
+        assertNotNull(deserializedContext.getChannel());
+        assertSame(context.getChannel(), deserializedContext.getChannel());
+    }
+
     public void testSerializeWithSharedCache() throws Exception {
-        fixSharedConfiguration();
 
         DataContext context = createDataContextWithSharedCache();
 
@@ -84,7 +97,6 @@ public class DataContextSerializationTst extends CayenneTestCase {
     }
 
     public void testSerializeWithLocalCache() throws Exception {
-        fixSharedConfiguration();
 
         DataContext context = createDataContextWithLocalCache();
 
@@ -109,7 +121,6 @@ public class DataContextSerializationTst extends CayenneTestCase {
     }
 
     public void testSerializeNew() throws Exception {
-        fixSharedConfiguration();
 
         DataContext context = createDataContextWithSharedCache();
 
@@ -136,7 +147,6 @@ public class DataContextSerializationTst extends CayenneTestCase {
     }
 
     public void testSerializeCommitted() throws Exception {
-        fixSharedConfiguration();
 
         DataContext context = createDataContextWithSharedCache();
 
@@ -178,7 +188,6 @@ public class DataContextSerializationTst extends CayenneTestCase {
     }
 
     public void testSerializeModified() throws Exception {
-        fixSharedConfiguration();
 
         DataContext context = createDataContextWithSharedCache();
 

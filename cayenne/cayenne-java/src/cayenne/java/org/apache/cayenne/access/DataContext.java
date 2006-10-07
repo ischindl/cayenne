@@ -382,6 +382,7 @@ public class DataContext implements ObjectContext, DataChannel, QueryEngine, Ser
      * @since 1.2
      */
     public DataChannel getChannel() {
+        awakeFromDeserialization();
         return channel;
     }
 
