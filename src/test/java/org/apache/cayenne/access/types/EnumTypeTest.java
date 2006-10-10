@@ -25,7 +25,7 @@ import com.mockrunner.mock.jdbc.MockResultSet;
 
 import junit.framework.TestCase;
 
-public class EnumTypeTst extends TestCase {
+public class EnumTypeTest extends TestCase {
 
     public void testConstructor() throws Exception {
         EnumType type = new EnumType(MockEnum.class);

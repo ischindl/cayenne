@@ -21,7 +21,7 @@ package org.apache.cayenne.access.types;
 
 import junit.framework.TestCase;
 
-public class ExtendedTypeMapEnumsTst extends TestCase {
+public class ExtendedTypeMapEnumsTest extends TestCase {
 
     public void testCreateType1_5() {
         ExtendedTypeMap map = new ExtendedTypeMap();

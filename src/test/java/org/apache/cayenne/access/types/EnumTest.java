@@ -35,7 +35,7 @@ import org.apache.cayenne.util.Util;
  * 
  * @author Andrus Adamchik
  */
-public class EnumTst extends TestCase {
+public class EnumTest extends TestCase {
 
     public void testSerializabilityWithHessianStandalone() throws Exception {
         MockEnum before = MockEnum.a;

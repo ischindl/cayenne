@@ -16,25 +16,14 @@
  *  specific language governing permissions and limitations
  *  under the License.
  ****************************************************************/
-
-package org.apache.cayenne.property;
+package org.apache.cayenne.access.types;
 
 import junit.framework.TestCase;
 
-import org.apache.cayenne.access.types.MockEnum;
-import org.apache.cayenne.access.types.MockEnumHolder;
+public class EnumTypeFactoryTest extends TestCase {
 
-public class PropertyUtilsTst extends TestCase {
-
-    public void testSetConverted() {
-        MockEnumHolder o1 = new MockEnumHolder();
-
-        // String to Enum
-        PropertyUtils.setProperty(o1, "mockEnum", "b");
-        assertSame(MockEnum.b, o1.getMockEnum());
-        
-        // check that regular converters still work
-        PropertyUtils.setProperty(o1, "number", "445");
-        assertEquals(445, o1.getNumber());
+    public void testSupportsEnums() {
+        EnumTypeFactory map = new EnumTypeFactory();
+        assertNotNull(map.getType(MockEnum.class));
     }
 }
