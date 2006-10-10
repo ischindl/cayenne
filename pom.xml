@@ -45,16 +45,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-core</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-beans</artifactId>
-		</dependency>
-
-		<dependency>
 			<groupId>com.caucho</groupId>
 			<artifactId>hessian</artifactId>
 		</dependency>
@@ -90,48 +80,8 @@
 		</dependency>
 
 		<dependency>
-			<groupId>commons-dbcp</groupId>
-			<artifactId>commons-dbcp</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>commons-pool</groupId>
-			<artifactId>commons-pool</artifactId>
-		</dependency>
-
-		<dependency>
 			<groupId>velocity</groupId>
 			<artifactId>velocity</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.objectstyle.ashwood</groupId>
-			<artifactId>ashwood</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.geronimo.specs</groupId>
-			<artifactId>geronimo-jms_1.1_spec</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>jivesoftware</groupId>
-			<artifactId>smack</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>jivesoftware</groupId>
-			<artifactId>smackx</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>foundrylogic.vpp</groupId>
-			<artifactId>vpp</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>jdom</groupId>
-			<artifactId>jdom</artifactId>
 		</dependency>
 
 		<dependency>
