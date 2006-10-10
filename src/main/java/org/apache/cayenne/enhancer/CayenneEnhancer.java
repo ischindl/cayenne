@@ -21,10 +21,14 @@ package org.apache.cayenne.enhancer;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.cayenne.Persistent;
+import org.apache.cayenne.map.EntityResolver;
+import org.apache.cayenne.map.ObjEntity;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -39,10 +43,33 @@ import org.objectweb.asm.ClassWriter;
  */
 public class CayenneEnhancer implements ClassFileTransformer {
 
-    protected Map<String, Collection<String>> persistentPropertiesByClass;
+    protected Log logger = LogFactory.getLog(CayenneEnhancer.class);
+    protected EntityResolver entityResolver;
+    protected Map<String, ObjEntity> entitiesByClass;
 
-    public CayenneEnhancer(Map<String, Collection<String>> persistentPropertiesByClass) {
-        this.persistentPropertiesByClass = persistentPropertiesByClass;
+    public CayenneEnhancer(EntityResolver entityResolver) {
+        indexEntities(entityResolver);
+    }
+
+    private void indexEntities(EntityResolver entityResolver) {
+        // EntityResolver doesn't have an index by class name, (let alone using
+        // "internal" class names with slashes as keys), so we have to build it
+        // manually
+
+        this.entitiesByClass = new HashMap<String, ObjEntity>();
+        for (Object object : entityResolver.getObjEntities()) {
+            ObjEntity entity = (ObjEntity) object;
+
+            // transform method must use internal class names (a/b/c), however for some
+            // reason in some invironments (e.g. Mac, Eclipse) it uses a.b.c. Handle both
+            // cases here...
+            entitiesByClass.put(entity.getClassName(), entity);
+            entitiesByClass.put(entity.getClassName().replace('.', '/'), entity);
+        }
+    }
+
+    public ObjEntity getEntity(String className) {
+        return entitiesByClass.get(className);
     }
 
     public byte[] transform(
@@ -57,10 +84,11 @@ public class CayenneEnhancer implements ClassFileTransformer {
 
         ClassVisitor visitor = createVisitor(className, writer);
         if (visitor == null) {
-            // per JPA spec if no transformation occured, we must return null
+            // per instrumentation docs, if no transformation occured, we must return null
             return null;
         }
 
+        logger.info("enhancing class " + className);
         reader.accept(visitor, true);
         return writer.toByteArray();
     }
@@ -69,11 +97,12 @@ public class CayenneEnhancer implements ClassFileTransformer {
      * Builds a chain of ASM visitors.
      */
     protected ClassVisitor createVisitor(String className, ClassWriter writer) {
-        Collection<String> properties = persistentPropertiesByClass.get(className);
-        if (properties == null || properties.isEmpty()) {
+        ObjEntity entity = getEntity(className);
+        if (entity == null) {
             return null;
         }
 
-        return new PersistentClassVisitor(writer, properties);
+        return new PersistentClassVisitor(writer, entity);
     }
+
 }

@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,6 +34,10 @@ import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.ObjectId;
 import org.apache.cayenne.PersistenceState;
 import org.apache.cayenne.Persistent;
+import org.apache.cayenne.map.DataMap;
+import org.apache.cayenne.map.EntityResolver;
+import org.apache.cayenne.map.ObjAttribute;
+import org.apache.cayenne.map.ObjEntity;
 
 public class CayenneEnhancerTest extends TestCase {
 
@@ -50,8 +55,16 @@ public class CayenneEnhancerTest extends TestCase {
         Collection<String> c1 = new HashSet<String>();
         c1.add("attribute1");
         enhancedPropertyMap.put(C1, c1);
+        
+        ObjAttribute a1 = new ObjAttribute("attribute1");
+        ObjEntity e = new ObjEntity("E1");
+        e.addAttribute(a1);
+        e.setClassName(C1);
+        DataMap map = new DataMap("x");
+        map.addObjEntity(e);
 
-        loader = new EnhancingClassLoader(new CayenneEnhancer(enhancedPropertyMap));
+        loader = new EnhancingClassLoader(new CayenneEnhancer(new EntityResolver(
+                Collections.singleton(map))));
     }
 
     public void testPersistentInterfaceInjected() throws Exception {

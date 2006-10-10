@@ -18,11 +18,10 @@
  ****************************************************************/
 package org.apache.cayenne.enhancer;
 
-import java.util.Collection;
-
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.ObjectId;
 import org.apache.cayenne.Persistent;
+import org.apache.cayenne.map.ObjEntity;
 import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -35,12 +34,12 @@ import org.objectweb.asm.MethodVisitor;
  */
 class PersistentClassVisitor extends ClassAdapter {
 
-    private Collection<String> enhancedProperties;
+    private ObjEntity entity;
     private ClassVisitorHelper helper;
 
-    PersistentClassVisitor(ClassVisitor visitor, Collection<String> enhancedProperties) {
+    PersistentClassVisitor(ClassVisitor visitor, ObjEntity entity) {
         super(visitor);
-        this.enhancedProperties = enhancedProperties;
+        this.entity = entity;
         this.helper = new ClassVisitorHelper(this);
     }
 
@@ -83,13 +82,16 @@ class PersistentClassVisitor extends ClassAdapter {
         // the name is not enough
 
         String getProperty = EnhancerUtil.propertyNameForGetter(name);
-        if (getProperty != null && enhancedProperties.contains(getProperty)) {
-            return new PersistentGetterVisitor(mv, helper, getProperty);
+        if (getProperty != null) {
+            if (entity.getAttribute(getProperty) != null) {
+                return new PersistentGetterVisitor(mv, helper, getProperty);
+            }
         }
-
-        String setProperty = EnhancerUtil.propertyNameForSetter(name);
-        if (setProperty != null && enhancedProperties.contains(setProperty)) {
-            return new PersistentSetterVisitor(mv, helper, setProperty);
+        else {
+            String setProperty = EnhancerUtil.propertyNameForSetter(name);
+            if (setProperty != null && entity.getAttribute(setProperty) != null) {
+                return new PersistentSetterVisitor(mv, helper, setProperty);
+            }
         }
 
         return mv;
