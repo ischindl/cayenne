@@ -18,7 +18,11 @@
  ****************************************************************/
 package org.apache.cayenne.instrument;
 
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
+
+import org.apache.cayenne.CayenneRuntimeException;
 
 /**
  * Instrumentation utilities.
@@ -29,22 +33,49 @@ import java.lang.reflect.Method;
 public class InstrumentUtil {
 
     /**
+     * Registers class transformer with the instrumentation agent. Throws an exception if
+     * the application wasn't started with CayenneAgent.
+     */
+    public static void addTransformer(ClassFileTransformer transformer) {
+        Instrumentation instrumentation;
+        try {
+            instrumentation = getInstrumentation();
+        }
+        catch (Throwable th) {
+            throw new CayenneRuntimeException("CayenneAgent is not started", th);
+        }
+
+        if (instrumentation == null) {
+            throw new CayenneRuntimeException("CayenneAgent is not started");
+        }
+
+        instrumentation.addTransformer(transformer);
+    }
+
+    /**
      * Checks whether the JVM was started with CayenneAgent.
      */
     public static boolean isAgentLoaded() {
 
         // check whether CayenneAgent class is initialized and instrumentation is set.
         try {
-            Class agent = Class.forName(
-                    "org.apache.cayenne.instrument.CayenneAgent",
-                    false,
-                    Thread.currentThread().getContextClassLoader());
-
-            Method getInstrumentation = agent.getDeclaredMethod("getInstrumentation");
-            return getInstrumentation.invoke(null) != null;
+            return getInstrumentation() != null;
         }
         catch (Throwable th) {
             return false;
         }
+    }
+
+    /**
+     * Returns CayenneAgent instrumentation.
+     */
+    static Instrumentation getInstrumentation() throws Exception {
+        Class agent = Class.forName(
+                "org.apache.cayenne.instrument.CayenneAgent",
+                false,
+                Thread.currentThread().getContextClassLoader());
+
+        Method getInstrumentation = agent.getDeclaredMethod("getInstrumentation");
+        return (Instrumentation) getInstrumentation.invoke(null);
     }
 }
