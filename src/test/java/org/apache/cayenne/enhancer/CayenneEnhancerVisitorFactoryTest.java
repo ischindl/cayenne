@@ -39,7 +39,7 @@ import org.apache.cayenne.map.EntityResolver;
 import org.apache.cayenne.map.ObjAttribute;
 import org.apache.cayenne.map.ObjEntity;
 
-public class CayenneTransformerTest extends TestCase {
+public class CayenneEnhancerVisitorFactoryTest extends TestCase {
 
     public static final String C1 = "org.apache.cayenne.enhancer.MockPojo1";
 
