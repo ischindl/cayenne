@@ -44,7 +44,6 @@ import org.objectweb.asm.ClassWriter;
 public class CayenneEnhancer implements ClassFileTransformer {
 
     protected Log logger = LogFactory.getLog(CayenneEnhancer.class);
-    protected EntityResolver entityResolver;
     protected Map<String, ObjEntity> entitiesByClass;
 
     public CayenneEnhancer(EntityResolver entityResolver) {
