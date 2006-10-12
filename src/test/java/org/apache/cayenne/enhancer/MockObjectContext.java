@@ -49,7 +49,7 @@ public class MockObjectContext implements ObjectContext {
     public void commitChangesToParent() {
     }
 
-    public void deleteObject(Persistent object) throws DeleteDenyException {
+    public void deleteObject(Object object) throws DeleteDenyException {
     }
 
     public Collection deletedObjects() {
@@ -68,7 +68,7 @@ public class MockObjectContext implements ObjectContext {
         return null;
     }
 
-    public Persistent localObject(ObjectId id, Persistent prototype) {
+    public Persistent localObject(ObjectId id, Object prototype) {
         return null;
     }
 
@@ -92,7 +92,7 @@ public class MockObjectContext implements ObjectContext {
         return null;
     }
 
-    public void registerNewObject(Persistent object) {
+    public void registerNewObject(Object object) {
     }
 
     public void rollbackChanges() {
