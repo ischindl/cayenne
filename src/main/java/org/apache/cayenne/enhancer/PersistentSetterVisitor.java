@@ -31,10 +31,10 @@ import org.objectweb.asm.Type;
  */
 class PersistentSetterVisitor extends MethodAdapter {
 
-    private ClassVisitorHelper helper;
+    private EnhancerHelper helper;
     private String propertyName;
 
-    PersistentSetterVisitor(MethodVisitor mv, ClassVisitorHelper helper,
+    PersistentSetterVisitor(MethodVisitor mv, EnhancerHelper helper,
             String propertyName) {
         super(mv);
         this.helper = helper;

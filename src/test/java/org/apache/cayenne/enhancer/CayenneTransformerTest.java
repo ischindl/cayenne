@@ -39,7 +39,7 @@ import org.apache.cayenne.map.EntityResolver;
 import org.apache.cayenne.map.ObjAttribute;
 import org.apache.cayenne.map.ObjEntity;
 
-public class CayenneEnhancerTest extends TestCase {
+public class CayenneTransformerTest extends TestCase {
 
     public static final String C1 = "org.apache.cayenne.enhancer.MockPojo1";
 
@@ -63,7 +63,7 @@ public class CayenneEnhancerTest extends TestCase {
         DataMap map = new DataMap("x");
         map.addObjEntity(e);
 
-        loader = new EnhancingClassLoader(new CayenneEnhancer(new EntityResolver(
+        loader = new EnhancingClassLoader(new CayenneTransformer(new EntityResolver(
                 Collections.singleton(map))));
     }
 

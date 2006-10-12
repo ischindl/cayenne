@@ -21,21 +21,25 @@ package org.apache.cayenne.enhancer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * A helper for converting method names to property names.
- * 
- * @author Andrus Adamchik
- * @since 3.0
- */
-// duplicated from JpaClassDescriptor.
-class EnhancerUtil {
+import org.objectweb.asm.ClassAdapter;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
 
+/**
+ * An enhancer that adds interceptor code to the getters and setters.
+ * 
+ * @since 3.0
+ * @author Andrus Adamchik
+ */
+public abstract class AccessorEnhancer extends ClassAdapter {
+
+    // duplicated from JpaClassDescriptor.
     private static final Pattern GETTER_PATTERN = Pattern
             .compile("^(is|get)([A-Z])(.*)$");
 
     private static final Pattern SETTER_PATTERN = Pattern.compile("^set([A-Z])(.*)$");
 
-    static String propertyNameForGetter(String getterName) {
+    public static String propertyNameForGetter(String getterName) {
         Matcher getMatch = GETTER_PATTERN.matcher(getterName);
         if (getMatch.matches()) {
             return getMatch.group(2).toLowerCase() + getMatch.group(3);
@@ -44,7 +48,7 @@ class EnhancerUtil {
         return null;
     }
 
-    static String propertyNameForSetter(String setterName) {
+    public static String propertyNameForSetter(String setterName) {
         Matcher setMatch = SETTER_PATTERN.matcher(setterName);
 
         if (setMatch.matches()) {
@@ -52,5 +56,43 @@ class EnhancerUtil {
         }
 
         return null;
+    }
+
+    public AccessorEnhancer(ClassVisitor cw) {
+        super(cw);
+    }
+
+    protected MethodVisitor visitGetter(MethodVisitor mv, String property) {
+        return mv;
+    }
+
+    protected MethodVisitor visitSetter(MethodVisitor mv, String property) {
+        return mv;
+    }
+
+    @Override
+    public MethodVisitor visitMethod(
+            int access,
+            String name,
+            String desc,
+            String signature,
+            String[] exceptions) {
+
+        MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
+
+        // TODO: andrus, 10/8/2006 - check method sig for real... just checking
+        // the name is not enough
+
+        String getProperty = AccessorEnhancer.propertyNameForGetter(name);
+        if (getProperty != null) {
+            return visitGetter(mv, getProperty);
+        }
+
+        String setProperty = AccessorEnhancer.propertyNameForSetter(name);
+        if (setProperty != null) {
+            return visitSetter(mv, setProperty);
+        }
+
+        return mv;
     }
 }

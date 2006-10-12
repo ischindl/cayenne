@@ -18,35 +18,28 @@
  ****************************************************************/
 package org.apache.cayenne.enhancer;
 
-import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.IllegalClassFormatException;
-import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.cayenne.Persistent;
 import org.apache.cayenne.map.EntityResolver;
 import org.apache.cayenne.map.ObjEntity;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
 
 /**
- * A ClassFileTransformer that enhances a POJO into a persistent object that can be used
- * with Cayenne. More specifically, it ensures that the object implements
- * {@link Persistent} interface and invokes callbacks from the accessor methods.
+ * A ClassFileTransformer that performs enhancement based on the metadata from Cayenne
+ * DataMap. POJOs are enhanced into persistent objects that can be used with Cayenne. More
+ * specifically, CayenneEnhancer ensures that the object implements {@link Persistent}
+ * interface and invokes callbacks from the accessor methods.
  * 
  * @since 3.0
  * @author Andrus Adamchik
  */
-public class CayenneEnhancer implements ClassFileTransformer {
+public class CayenneTransformer extends ASMTransformer {
 
-    protected Log logger = LogFactory.getLog(CayenneEnhancer.class);
     protected Map<String, ObjEntity> entitiesByClass;
 
-    public CayenneEnhancer(EntityResolver entityResolver) {
+    public CayenneTransformer(EntityResolver entityResolver) {
         indexEntities(entityResolver);
     }
 
@@ -67,41 +60,15 @@ public class CayenneEnhancer implements ClassFileTransformer {
         }
     }
 
-    public ObjEntity getEntity(String className) {
-        return entitiesByClass.get(className);
-    }
-
-    public byte[] transform(
-            ClassLoader loader,
-            String className,
-            Class<?> classBeingRedefined,
-            ProtectionDomain protectionDomain,
-            byte[] classfileBuffer) throws IllegalClassFormatException {
-
-        ClassReader reader = new ClassReader(classfileBuffer);
-        ClassWriter writer = new ClassWriter(reader, true);
-
-        ClassVisitor visitor = createVisitor(className, writer);
-        if (visitor == null) {
-            // per instrumentation docs, if no transformation occured, we must return null
-            return null;
-        }
-
-        logger.info("enhancing class " + className);
-        reader.accept(visitor, true);
-        return writer.toByteArray();
-    }
-
-    /**
-     * Builds a chain of ASM visitors.
-     */
-    protected ClassVisitor createVisitor(String className, ClassWriter writer) {
-        ObjEntity entity = getEntity(className);
+    protected ClassVisitor createVisitor(String className, ClassVisitor out) {
+        ObjEntity entity = entitiesByClass.get(className);
         if (entity == null) {
             return null;
         }
 
-        return new PersistentClassVisitor(writer, entity);
+        // create enhancer chain
+        PersistentInterfaceEnhancer e1 = new PersistentInterfaceEnhancer(out);
+        PersistentAccessorEnhancer e2 = new PersistentAccessorEnhancer(e1, entity);
+        return e2;
     }
-
 }

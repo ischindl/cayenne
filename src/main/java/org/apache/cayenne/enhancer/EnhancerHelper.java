@@ -32,30 +32,30 @@ import org.objectweb.asm.Type;
  * @since 3.0
  * @author Andrus Adamchik
  */
-class ClassVisitorHelper {
+public class EnhancerHelper {
 
     private String fieldPrefix = "$cay_";
     private ClassVisitor classVisitor;
     private Type currentClass;
 
-    ClassVisitorHelper(ClassVisitor classVisitor) {
+    public EnhancerHelper(ClassVisitor classVisitor) {
         this.classVisitor = classVisitor;
     }
 
-    Type getCurrentClass() {
+    public Type getCurrentClass() {
         return currentClass;
     }
 
-    String getPropertyField(String propertyName) {
+    public String getPropertyField(String propertyName) {
         return fieldPrefix + propertyName;
     }
 
-    void reset(String className) {
+    public void reset(String className) {
         // assuming no primitives or arrays
         this.currentClass = Type.getType("L" + className + ";");
     }
 
-    String[] addInterface(String[] interfaces, Class newInterface) {
+    public String[] addInterface(String[] interfaces, Class newInterface) {
 
         String name = Type.getInternalName(newInterface);
         if (interfaces == null || interfaces.length == 0) {
@@ -71,11 +71,11 @@ class ClassVisitorHelper {
         return expandedInterfaces;
     }
 
-    void createProperty(Class type, String name) {
+    public void createProperty(Class type, String name) {
         createProperty(type, name, false);
     }
 
-    void createProperty(Class type, String name, boolean isTransient) {
+    public void createProperty(Class type, String name, boolean isTransient) {
         Type asmType = Type.getType(type);
 
         int access = Opcodes.ACC_PROTECTED;

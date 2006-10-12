@@ -21,26 +21,23 @@ package org.apache.cayenne.enhancer;
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.ObjectId;
 import org.apache.cayenne.Persistent;
-import org.apache.cayenne.map.ObjEntity;
 import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
 
 /**
- * ASM-based visitor that turns a pojo class into enahnced persistent object.
+ * Enhances classes passed through the visitor to add {@link Persistent} interface to
+ * them, and fields and methods to support its implementation.
  * 
- * @author Andrus Adamchik
  * @since 3.0
+ * @author Andrus Adamchik
  */
-class PersistentClassVisitor extends ClassAdapter {
+public class PersistentInterfaceEnhancer extends ClassAdapter {
 
-    private ObjEntity entity;
-    private ClassVisitorHelper helper;
+    protected EnhancerHelper helper;
 
-    PersistentClassVisitor(ClassVisitor visitor, ObjEntity entity) {
+    public PersistentInterfaceEnhancer(ClassVisitor visitor) {
         super(visitor);
-        this.entity = entity;
-        this.helper = new ClassVisitorHelper(this);
+        this.helper = new EnhancerHelper(this);
     }
 
     /**
@@ -63,37 +60,5 @@ class PersistentClassVisitor extends ClassAdapter {
         helper.createProperty(ObjectId.class, "objectId");
         helper.createProperty(ObjectContext.class, "objectContext", true);
         helper.createProperty(Integer.TYPE, "persistenceState");
-    }
-
-    /**
-     * Handles getter and setter enhancements.
-     */
-    @Override
-    public MethodVisitor visitMethod(
-            int access,
-            String name,
-            String desc,
-            String signature,
-            String[] exceptions) {
-
-        MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
-
-        // TODO: andrus, 10/8/2006 - check method sig for real... just checking
-        // the name is not enough
-
-        String getProperty = EnhancerUtil.propertyNameForGetter(name);
-        if (getProperty != null) {
-            if (entity.getAttribute(getProperty) != null) {
-                return new PersistentGetterVisitor(mv, helper, getProperty);
-            }
-        }
-        else {
-            String setProperty = EnhancerUtil.propertyNameForSetter(name);
-            if (setProperty != null && entity.getAttribute(setProperty) != null) {
-                return new PersistentSetterVisitor(mv, helper, setProperty);
-            }
-        }
-
-        return mv;
     }
 }
