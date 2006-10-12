@@ -35,15 +35,15 @@ import org.objectweb.asm.ClassVisitor;
  * @since 3.0
  * @author Andrus Adamchik
  */
-public class CayenneTransformer extends ASMTransformer {
+public class CayenneEnhancerVisitorFactory implements EnhancerVisitorFactory {
 
     protected Map<String, ObjEntity> entitiesByClass;
 
-    public CayenneTransformer(EntityResolver entityResolver) {
+    public CayenneEnhancerVisitorFactory(EntityResolver entityResolver) {
         indexEntities(entityResolver);
     }
 
-    private void indexEntities(EntityResolver entityResolver) {
+    protected void indexEntities(EntityResolver entityResolver) {
         // EntityResolver doesn't have an index by class name, (let alone using
         // "internal" class names with slashes as keys), so we have to build it
         // manually
@@ -60,15 +60,15 @@ public class CayenneTransformer extends ASMTransformer {
         }
     }
 
-    protected ClassVisitor createVisitor(String className, ClassVisitor out) {
+    public ClassVisitor createVisitor(String className, ClassVisitor out) {
         ObjEntity entity = entitiesByClass.get(className);
         if (entity == null) {
             return null;
         }
 
         // create enhancer chain
-        PersistentInterfaceEnhancer e1 = new PersistentInterfaceEnhancer(out);
-        PersistentAccessorEnhancer e2 = new PersistentAccessorEnhancer(e1, entity);
+        PersistentInterfaceVisitor e1 = new PersistentInterfaceVisitor(out);
+        PersistentAccessorVisitor e2 = new PersistentAccessorVisitor(e1, entity);
         return e2;
     }
 }

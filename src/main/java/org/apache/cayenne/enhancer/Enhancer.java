@@ -34,21 +34,15 @@ import org.objectweb.asm.ClassWriter;
  * @since 3.0
  * @author Andrus Adamchik
  */
-public abstract class ASMTransformer implements ClassFileTransformer {
+public class Enhancer implements ClassFileTransformer {
 
     protected Log logger;
+    protected EnhancerVisitorFactory visitorFactory;
 
-    public ASMTransformer() {
+    public Enhancer(EnhancerVisitorFactory visitorFactory) {
         logger = LogFactory.getLog(getClass());
+        this.visitorFactory = visitorFactory;
     }
-
-    /**
-     * Creates and returns an ASM ClassVisitor for enhancing a class. Returned visitor is
-     * either null, if no enhancement of this class is needed, or a wrapper around
-     * provided "out" ClassVisitor. Often it is a chain of visitors, each doing its own
-     * enhancement.
-     */
-    protected abstract ClassVisitor createVisitor(String className, ClassVisitor out);
 
     public byte[] transform(
             ClassLoader loader,
@@ -60,7 +54,7 @@ public abstract class ASMTransformer implements ClassFileTransformer {
         ClassReader reader = new ClassReader(classfileBuffer);
         ClassWriter writer = new ClassWriter(reader, true);
 
-        ClassVisitor visitor = createVisitor(className, writer);
+        ClassVisitor visitor = visitorFactory.createVisitor(className, writer);
         if (visitor == null) {
             // per instrumentation docs, if no transformation occured, we must return null
             return null;

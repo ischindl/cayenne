@@ -31,7 +31,7 @@ import org.objectweb.asm.MethodVisitor;
  * @since 3.0
  * @author Andrus Adamchik
  */
-public abstract class AccessorEnhancer extends ClassAdapter {
+public abstract class AccessorVisitor extends ClassAdapter {
 
     // duplicated from JpaClassDescriptor.
     private static final Pattern GETTER_PATTERN = Pattern
@@ -58,7 +58,7 @@ public abstract class AccessorEnhancer extends ClassAdapter {
         return null;
     }
 
-    public AccessorEnhancer(ClassVisitor cw) {
+    public AccessorVisitor(ClassVisitor cw) {
         super(cw);
     }
 
@@ -83,12 +83,12 @@ public abstract class AccessorEnhancer extends ClassAdapter {
         // TODO: andrus, 10/8/2006 - check method sig for real... just checking
         // the name is not enough
 
-        String getProperty = AccessorEnhancer.propertyNameForGetter(name);
+        String getProperty = AccessorVisitor.propertyNameForGetter(name);
         if (getProperty != null) {
             return visitGetter(mv, getProperty);
         }
 
-        String setProperty = AccessorEnhancer.propertyNameForSetter(name);
+        String setProperty = AccessorVisitor.propertyNameForSetter(name);
         if (setProperty != null) {
             return visitSetter(mv, setProperty);
         }

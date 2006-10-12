@@ -29,12 +29,12 @@ import org.objectweb.asm.Type;
  * @since 3.0
  * @author Andrus Adamchik
  */
-class PersistentSetterVisitor extends MethodAdapter {
+public class SetterVisitor extends MethodAdapter {
 
-    private EnhancerHelper helper;
+    private EnhancementHelper helper;
     private String propertyName;
 
-    PersistentSetterVisitor(MethodVisitor mv, EnhancerHelper helper,
+    public SetterVisitor(MethodVisitor mv, EnhancementHelper helper,
             String propertyName) {
         super(mv);
         this.helper = helper;
@@ -78,6 +78,5 @@ class PersistentSetterVisitor extends MethodAdapter {
                         "propertyChanged",
                         "(Lorg/apache/cayenne/Persistent;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V");
         mv.visitLabel(l1);
-
     }
 }

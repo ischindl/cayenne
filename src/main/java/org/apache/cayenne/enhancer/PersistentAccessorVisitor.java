@@ -28,15 +28,15 @@ import org.objectweb.asm.MethodVisitor;
  * @author Andrus Adamchik
  * @since 3.0
  */
-public class PersistentAccessorEnhancer extends AccessorEnhancer {
+public class PersistentAccessorVisitor extends AccessorVisitor {
 
     private ObjEntity entity;
-    private EnhancerHelper helper;
+    private EnhancementHelper helper;
 
-    public PersistentAccessorEnhancer(ClassVisitor visitor, ObjEntity entity) {
+    public PersistentAccessorVisitor(ClassVisitor visitor, ObjEntity entity) {
         super(visitor);
         this.entity = entity;
-        this.helper = new EnhancerHelper(this);
+        this.helper = new EnhancementHelper(this);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class PersistentAccessorEnhancer extends AccessorEnhancer {
 
     @Override
     protected MethodVisitor visitGetter(MethodVisitor mv, String property) {
-        return (entity.getAttribute(property) != null) ? new PersistentGetterVisitor(
+        return (entity.getAttribute(property) != null) ? new GetterVisitor(
                 mv,
                 helper,
                 property) : mv;
@@ -62,7 +62,7 @@ public class PersistentAccessorEnhancer extends AccessorEnhancer {
 
     @Override
     protected MethodVisitor visitSetter(MethodVisitor mv, String property) {
-        return (entity.getAttribute(property) != null) ? new PersistentSetterVisitor(
+        return (entity.getAttribute(property) != null) ? new SetterVisitor(
                 mv,
                 helper,
                 property) : mv;

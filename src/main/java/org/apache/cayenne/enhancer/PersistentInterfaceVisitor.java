@@ -31,13 +31,13 @@ import org.objectweb.asm.ClassVisitor;
  * @since 3.0
  * @author Andrus Adamchik
  */
-public class PersistentInterfaceEnhancer extends ClassAdapter {
+public class PersistentInterfaceVisitor extends ClassAdapter {
 
-    protected EnhancerHelper helper;
+    protected EnhancementHelper helper;
 
-    public PersistentInterfaceEnhancer(ClassVisitor visitor) {
+    public PersistentInterfaceVisitor(ClassVisitor visitor) {
         super(visitor);
-        this.helper = new EnhancerHelper(this);
+        this.helper = new EnhancementHelper(this);
     }
 
     /**

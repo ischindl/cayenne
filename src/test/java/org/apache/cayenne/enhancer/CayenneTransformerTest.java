@@ -55,7 +55,7 @@ public class CayenneTransformerTest extends TestCase {
         Collection<String> c1 = new HashSet<String>();
         c1.add("attribute1");
         enhancedPropertyMap.put(C1, c1);
-        
+
         ObjAttribute a1 = new ObjAttribute("attribute1");
         ObjEntity e = new ObjEntity("E1");
         e.addAttribute(a1);
@@ -63,8 +63,9 @@ public class CayenneTransformerTest extends TestCase {
         DataMap map = new DataMap("x");
         map.addObjEntity(e);
 
-        loader = new EnhancingClassLoader(new CayenneTransformer(new EntityResolver(
-                Collections.singleton(map))));
+        EnhancerVisitorFactory factory = new CayenneEnhancerVisitorFactory(
+                new EntityResolver(Collections.singleton(map)));
+        loader = new EnhancingClassLoader(new Enhancer(factory));
     }
 
     public void testPersistentInterfaceInjected() throws Exception {

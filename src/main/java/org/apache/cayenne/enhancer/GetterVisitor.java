@@ -29,12 +29,12 @@ import org.objectweb.asm.Type;
  * @since 3.0
  * @author Andrus Adamchik
  */
-class PersistentGetterVisitor extends MethodAdapter {
+public class GetterVisitor extends MethodAdapter {
 
-    private EnhancerHelper helper;
+    private EnhancementHelper helper;
     private String propertyName;
 
-    PersistentGetterVisitor(MethodVisitor mv, EnhancerHelper helper,
+    public GetterVisitor(MethodVisitor mv, EnhancementHelper helper,
             String propertyName) {
         super(mv);
         this.helper = helper;

@@ -32,13 +32,13 @@ import org.objectweb.asm.Type;
  * @since 3.0
  * @author Andrus Adamchik
  */
-public class EnhancerHelper {
+public class EnhancementHelper {
 
     private String fieldPrefix = "$cay_";
     private ClassVisitor classVisitor;
     private Type currentClass;
 
-    public EnhancerHelper(ClassVisitor classVisitor) {
+    public EnhancementHelper(ClassVisitor classVisitor) {
         this.classVisitor = classVisitor;
     }
 
