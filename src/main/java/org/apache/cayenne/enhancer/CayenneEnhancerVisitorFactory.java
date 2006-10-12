@@ -51,17 +51,12 @@ public class CayenneEnhancerVisitorFactory implements EnhancerVisitorFactory {
         this.entitiesByClass = new HashMap<String, ObjEntity>();
         for (Object object : entityResolver.getObjEntities()) {
             ObjEntity entity = (ObjEntity) object;
-
-            // transform method must use internal class names (a/b/c), however for some
-            // reason in some invironments (e.g. Mac, Eclipse) it uses a.b.c. Handle both
-            // cases here...
             entitiesByClass.put(entity.getClassName(), entity);
-            entitiesByClass.put(entity.getClassName().replace('.', '/'), entity);
         }
     }
 
     public ClassVisitor createVisitor(String className, ClassVisitor out) {
-        ObjEntity entity = entitiesByClass.get(className);
+        ObjEntity entity = entitiesByClass.get(className.replace('/', '.'));
         if (entity == null) {
             return null;
         }
