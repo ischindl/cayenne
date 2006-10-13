@@ -88,6 +88,19 @@ public class SetterVisitor extends MethodAdapter {
                     "valueOf",
                     "(I)Ljava/lang/Integer;");
         }
+        else if ("D".equals(propertyDescriptor)) {
+            mv.visitMethodInsn(
+                    Opcodes.INVOKESTATIC,
+                    "java/lang/Double",
+                    "valueOf",
+                    "(D)Ljava/lang/Double;");
+            mv.visitVarInsn(Opcodes.DLOAD, 1);
+            mv.visitMethodInsn(
+                    Opcodes.INVOKESTATIC,
+                    "java/lang/Double",
+                    "valueOf",
+                    "(D)Ljava/lang/Double;");
+        }
         else {
             mv.visitVarInsn(Opcodes.ALOAD, 1);
         }
