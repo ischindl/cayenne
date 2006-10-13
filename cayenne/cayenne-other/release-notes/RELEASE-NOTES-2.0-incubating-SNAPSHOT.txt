@@ -7,10 +7,22 @@ http://incubator.apache.org/cayenne/
 To browse individual bug reports check out project issue tracker:
 http://issues.apache.org/cayenne/
 
+----------------------------------
+Release: 2.0.2-incubating
+Date: 
+----------------------------------
+
+Bug Fixes:
+
+CAY-565 LRUMap NPE
+CAY-652 Exception with Tomcat's session restore capability
+CAY-653 overriding setPersistentState() in unreliable in three tier environment with CayenneContext
+CAY-690 Exception in the Modeler when changing schema on derived entities
+
 
 ----------------------------------
-Release: 2.0-incubating-SNAPSHOT
-Date:
+Release: 2.0.1-incubating
+Date: 10/7/2006
 ----------------------------------
 
 Bug Fixes:
