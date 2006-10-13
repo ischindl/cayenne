@@ -39,7 +39,38 @@ public class MockEnhancedPojo implements Persistent {
     protected String attribute1;
     protected int attribute2;
     protected double attribute3;
-    protected byte[] attribute4;
+    protected short attribute5;
+    protected char attribute6;
+    protected byte attribute7;
+    protected boolean attribute8;
+    protected long attribute9;
+    protected float attribute10;
+
+    protected byte[] byteArrayAttribute;
+
+    public int getPersistenceState() {
+        return $cay_persistenceState;
+    }
+
+    public void setPersistenceState(int persistenceState) {
+        this.$cay_persistenceState = persistenceState;
+    }
+
+    public ObjectContext getObjectContext() {
+        return $cay_objectContext;
+    }
+
+    public void setObjectContext(ObjectContext objectContext) {
+        this.$cay_objectContext = objectContext;
+    }
+
+    public ObjectId getObjectId() {
+        return $cay_objectId;
+    }
+
+    public void setObjectId(ObjectId objectId) {
+        this.$cay_objectId = objectId;
+    }
 
     public String getAttribute1() {
         if ($cay_objectContext != null) {
@@ -69,13 +100,10 @@ public class MockEnhancedPojo implements Persistent {
 
     public void setAttribute2(int attribute2) {
         if ($cay_objectContext != null) {
-            $cay_objectContext.propertyChanged(
-                    this,
-                    "attribute2",
-                    Integer.valueOf(this.attribute2),
-                    Integer.valueOf(attribute2));
+            $cay_objectContext.propertyChanged(this, "attribute2", Integer
+                    .valueOf(this.attribute2), Integer.valueOf(attribute2));
         }
-        
+
         this.attribute2 = attribute2;
     }
 
@@ -88,56 +116,151 @@ public class MockEnhancedPojo implements Persistent {
 
     public void setAttribute3(double attribute3) {
         if ($cay_objectContext != null) {
-            $cay_objectContext.propertyChanged(
-                    this,
-                    "attribute3",
-                    Double.valueOf(this.attribute3),
-                    Double.valueOf(attribute3));
+            $cay_objectContext.propertyChanged(this, "attribute3", Double
+                    .valueOf(this.attribute3), Double.valueOf(attribute3));
         }
-        
+
         this.attribute3 = attribute3;
     }
 
-    public byte[] getAttribute4() {
+    public byte[] getByteArrayAttribute() {
         if ($cay_objectContext != null) {
             $cay_objectContext.prepareForAccess(this, "attribute4");
         }
-        return attribute4;
+        return byteArrayAttribute;
     }
 
-    public void setAttribute4(byte[] attribute4) {
+    public void setByteArrayAttribute(byte[] attribute4) {
         if ($cay_objectContext != null) {
             $cay_objectContext.propertyChanged(
                     this,
                     "attribute4",
-                    this.attribute4,
+                    this.byteArrayAttribute,
                     attribute4);
         }
+
+        this.byteArrayAttribute = attribute4;
+    }
+
+    public short getAttribute5() {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.prepareForAccess(this, "attribute5");
+        }
+
+        return attribute5;
+    }
+
+    public void setAttribute5(short attribute5) {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.propertyChanged(
+                    this,
+                    "attribute5",
+                    this.attribute5,
+                    attribute5);
+        }
+
+        this.attribute5 = attribute5;
+    }
+
+    public char getAttribute6() {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.prepareForAccess(this, "attribute6");
+        }
+
+        return attribute6;
+    }
+
+    public void setAttribute6(char attribute6) {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.propertyChanged(
+                    this,
+                    "attribute6",
+                    this.attribute6,
+                    attribute6);
+        }
+
+        this.attribute6 = attribute6;
+    }
+
+    public byte getAttribute7() {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.prepareForAccess(this, "attribute7");
+        }
+
+        return attribute7;
+    }
+
+    public void setAttribute7(byte attribute7) {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.propertyChanged(
+                    this,
+                    "attribute7",
+                    this.attribute7,
+                    attribute7);
+        }
         
-        this.attribute4 = attribute4;
+        this.attribute7 = attribute7;
     }
 
-    public int getPersistenceState() {
-        return $cay_persistenceState;
+    public boolean isAttribute8() {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.prepareForAccess(this, "attribute8");
+        }
+
+        return attribute8;
     }
 
-    public void setPersistenceState(int persistenceState) {
-        this.$cay_persistenceState = persistenceState;
+    public void setAttribute8(boolean attribute8) {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.propertyChanged(
+                    this,
+                    "attribute8",
+                    this.attribute8,
+                    attribute8);
+        }
+        
+        this.attribute8 = attribute8;
     }
 
-    public ObjectContext getObjectContext() {
-        return $cay_objectContext;
+    public long getAttribute9() {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.prepareForAccess(this, "attribute9");
+        }
+
+        return attribute9;
     }
 
-    public void setObjectContext(ObjectContext objectContext) {
-        this.$cay_objectContext = objectContext;
+    public void setAttribute9(long attribute9) {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.propertyChanged(
+                    this,
+                    "attribute9",
+                    this.attribute9,
+                    attribute9);
+        }
+        
+        this.attribute9 = attribute9;
     }
 
-    public ObjectId getObjectId() {
-        return $cay_objectId;
+    
+    public float getAttribute10() {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.prepareForAccess(this, "attribute10");
+        }
+        
+        return attribute10;
     }
 
-    public void setObjectId(ObjectId objectId) {
-        this.$cay_objectId = objectId;
+    
+    public void setAttribute10(float attribute10) {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.propertyChanged(
+                    this,
+                    "attribute10",
+                    this.attribute10,
+                    attribute10);
+        }
+        
+        this.attribute10 = attribute10;
     }
 }

@@ -75,33 +75,7 @@ public class SetterVisitor extends MethodAdapter {
                 propertyName,
                 propertyDescriptor);
 
-        if ("I".equals(propertyDescriptor)) {
-            mv.visitMethodInsn(
-                    Opcodes.INVOKESTATIC,
-                    "java/lang/Integer",
-                    "valueOf",
-                    "(I)Ljava/lang/Integer;");
-            mv.visitVarInsn(Opcodes.ILOAD, 1);
-            mv.visitMethodInsn(
-                    Opcodes.INVOKESTATIC,
-                    "java/lang/Integer",
-                    "valueOf",
-                    "(I)Ljava/lang/Integer;");
-        }
-        else if ("D".equals(propertyDescriptor)) {
-            mv.visitMethodInsn(
-                    Opcodes.INVOKESTATIC,
-                    "java/lang/Double",
-                    "valueOf",
-                    "(D)Ljava/lang/Double;");
-            mv.visitVarInsn(Opcodes.DLOAD, 1);
-            mv.visitMethodInsn(
-                    Opcodes.INVOKESTATIC,
-                    "java/lang/Double",
-                    "valueOf",
-                    "(D)Ljava/lang/Double;");
-        }
-        else {
+        if (!visitPrimitiveConversion(propertyDescriptor)) {
             mv.visitVarInsn(Opcodes.ALOAD, 1);
         }
 
@@ -112,5 +86,120 @@ public class SetterVisitor extends MethodAdapter {
                         "propertyChanged",
                         "(Lorg/apache/cayenne/Persistent;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V");
         mv.visitLabel(l1);
+    }
+
+    protected boolean visitPrimitiveConversion(String propertyDescriptor) {
+        if (propertyDescriptor.length() != 1) {
+            return false;
+        }
+
+        switch (propertyDescriptor.charAt(0)) {
+            case 'I':
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Integer",
+                        "valueOf",
+                        "(I)Ljava/lang/Integer;");
+                mv.visitVarInsn(Opcodes.ILOAD, 1);
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Integer",
+                        "valueOf",
+                        "(I)Ljava/lang/Integer;");
+                return true;
+            case 'D':
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Double",
+                        "valueOf",
+                        "(D)Ljava/lang/Double;");
+                mv.visitVarInsn(Opcodes.DLOAD, 1);
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Double",
+                        "valueOf",
+                        "(D)Ljava/lang/Double;");
+                return true;
+            case 'F':
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Float",
+                        "valueOf",
+                        "(F)Ljava/lang/Float;");
+                mv.visitVarInsn(Opcodes.FLOAD, 1);
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Float",
+                        "valueOf",
+                        "(F)Ljava/lang/Float;");
+                return true;
+            case 'Z':
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Boolean",
+                        "valueOf",
+                        "(Z)Ljava/lang/Boolean;");
+                mv.visitVarInsn(Opcodes.ILOAD, 1);
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Boolean",
+                        "valueOf",
+                        "(Z)Ljava/lang/Boolean;");
+                return true;
+            case 'J':
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Long",
+                        "valueOf",
+                        "(J)Ljava/lang/Long;");
+                mv.visitVarInsn(Opcodes.LLOAD, 1);
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Long",
+                        "valueOf",
+                        "(J)Ljava/lang/Long;");
+                return true;
+            case 'B':
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Byte",
+                        "valueOf",
+                        "(B)Ljava/lang/Byte;");
+                mv.visitVarInsn(Opcodes.ILOAD, 1);
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Byte",
+                        "valueOf",
+                        "(B)Ljava/lang/Byte;");
+                return true;
+            case 'C':
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Character",
+                        "valueOf",
+                        "(C)Ljava/lang/Character;");
+                mv.visitVarInsn(Opcodes.ILOAD, 1);
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Character",
+                        "valueOf",
+                        "(C)Ljava/lang/Character;");
+                return true;
+            case 'S':
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Short",
+                        "valueOf",
+                        "(S)Ljava/lang/Short;");
+                mv.visitVarInsn(Opcodes.ILOAD, 1);
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Short",
+                        "valueOf",
+                        "(S)Ljava/lang/Short;");
+                return true;
+            default:
+                return false;
+        }
     }
 }

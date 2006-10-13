@@ -23,7 +23,14 @@ public class MockPojo1 {
     protected String attribute1;
     protected int attribute2;
     protected double attribute3;
-    protected byte[] attribute4;
+    protected short attribute5;
+    protected char attribute6;
+    protected byte attribute7;
+    protected boolean attribute8;
+    protected long attribute9;
+    protected float attribute10;
+
+    protected byte[] byteArrayAttribute;
 
     public String getAttribute1() {
         return attribute1;
@@ -49,11 +56,61 @@ public class MockPojo1 {
         this.attribute3 = attribute3;
     }
 
-    public byte[] getAttribute4() {
-        return attribute4;
+    public byte[] getByteArrayAttribute() {
+        return byteArrayAttribute;
     }
 
-    public void setAttribute4(byte[] attribute4) {
-        this.attribute4 = attribute4;
+    public void setByteArrayAttribute(byte[] attribute4) {
+        this.byteArrayAttribute = attribute4;
+    }
+
+    public short getAttribute5() {
+        return attribute5;
+    }
+
+    public void setAttribute5(short attribute5) {
+        this.attribute5 = attribute5;
+    }
+
+    public char getAttribute6() {
+        return attribute6;
+    }
+
+    public void setAttribute6(char attribute6) {
+        this.attribute6 = attribute6;
+    }
+
+    public byte getAttribute7() {
+        return attribute7;
+    }
+
+    public void setAttribute7(byte attribute7) {
+        this.attribute7 = attribute7;
+    }
+
+    public boolean isAttribute8() {
+        return attribute8;
+    }
+
+    public void setAttribute8(boolean attribute8) {
+        this.attribute8 = attribute8;
+    }
+
+    public long getAttribute9() {
+        return attribute9;
+    }
+
+    public void setAttribute9(long attribute9) {
+        this.attribute9 = attribute9;
+    }
+
+    
+    public float getAttribute10() {
+        return attribute10;
+    }
+
+    
+    public void setAttribute10(float attribute10) {
+        this.attribute10 = attribute10;
     }
 }
