@@ -154,7 +154,7 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
         assertEquals(PersistenceState.DELETED, state);
     }
 
-    public void testGetterIntercepted() throws Exception {
+    public void testStringGetterIntercepted() throws Exception {
 
         Class e1Class = Class.forName(C1, true, loader);
         assertNotNull(e1Class);
@@ -250,6 +250,42 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
         assertEquals("y", change[3]);
     }
 
+    public void testIntGetterIntercepted() throws Exception {
+
+        Class e1Class = Class.forName(C1, true, loader);
+        Object o = e1Class.newInstance();
+
+        // attempt calling on detached object - must not fail
+        Method getAttribute2 = e1Class.getDeclaredMethod("getAttribute2", (Class[]) null);
+        assertEquals(new Integer(0), getAttribute2.invoke(o, (Object[]) null));
+
+        // now call on attached object
+
+        final Object[] prepared = new Object[2];
+        ObjectContext context = new MockObjectContext() {
+
+            @Override
+            public void prepareForAccess(Persistent object, String property) {
+                prepared[0] = object;
+                prepared[1] = property;
+            }
+        };
+
+        Method setObjectContext = e1Class.getDeclaredMethod(
+                "setObjectContext",
+                new Class[] {
+                    ObjectContext.class
+                });
+
+        setObjectContext.invoke(o, new Object[] {
+            context
+        });
+
+        assertEquals(new Integer(0), getAttribute2.invoke(o, (Object[]) null));
+        assertSame(o, prepared[0]);
+        assertEquals("attribute2", prepared[1]);
+    }
+
     public void testIntSetterIntercepted() throws Exception {
 
         Class e1Class = Class.forName(C1, true, loader);
@@ -305,6 +341,42 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
         assertEquals(new Integer(4), change[3]);
     }
     
+    public void testDoubleGetterIntercepted() throws Exception {
+
+        Class e1Class = Class.forName(C1, true, loader);
+        Object o = e1Class.newInstance();
+
+        // attempt calling on detached object - must not fail
+        Method getAttribute3 = e1Class.getDeclaredMethod("getAttribute3", (Class[]) null);
+        assertEquals(new Double(0d), getAttribute3.invoke(o, (Object[]) null));
+
+        // now call on attached object
+
+        final Object[] prepared = new Object[2];
+        ObjectContext context = new MockObjectContext() {
+
+            @Override
+            public void prepareForAccess(Persistent object, String property) {
+                prepared[0] = object;
+                prepared[1] = property;
+            }
+        };
+
+        Method setObjectContext = e1Class.getDeclaredMethod(
+                "setObjectContext",
+                new Class[] {
+                    ObjectContext.class
+                });
+
+        setObjectContext.invoke(o, new Object[] {
+            context
+        });
+
+        assertEquals(new Double(0d), getAttribute3.invoke(o, (Object[]) null));
+        assertSame(o, prepared[0]);
+        assertEquals("attribute3", prepared[1]);
+    }
+
     public void testDoubleSetterIntercepted() throws Exception {
 
         Class e1Class = Class.forName(C1, true, loader);
