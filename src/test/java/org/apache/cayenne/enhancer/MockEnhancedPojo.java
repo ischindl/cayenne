@@ -37,6 +37,9 @@ public class MockEnhancedPojo implements Persistent {
     protected transient ObjectContext $cay_objectContext;
 
     protected String attribute1;
+    protected int attribute2;
+    protected double attribute3;
+    protected byte[] attribute4;
 
     public String getAttribute1() {
         if ($cay_objectContext != null) {
@@ -55,6 +58,63 @@ public class MockEnhancedPojo implements Persistent {
         }
 
         this.attribute1 = attribute1;
+    }
+
+    public int getAttribute2() {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.prepareForAccess(this, "attribute2");
+        }
+        return attribute2;
+    }
+
+    public void setAttribute2(int attribute2) {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.propertyChanged(
+                    this,
+                    "attribute2",
+                    Integer.valueOf(this.attribute2),
+                    Integer.valueOf(attribute2));
+        }
+        
+        this.attribute2 = attribute2;
+    }
+
+    public double getAttribute3() {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.prepareForAccess(this, "attribute3");
+        }
+        return attribute3;
+    }
+
+    public void setAttribute3(double attribute3) {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.propertyChanged(
+                    this,
+                    "attribute3",
+                    Double.valueOf(this.attribute3),
+                    Double.valueOf(attribute3));
+        }
+        
+        this.attribute3 = attribute3;
+    }
+
+    public byte[] getAttribute4() {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.prepareForAccess(this, "attribute4");
+        }
+        return attribute4;
+    }
+
+    public void setAttribute4(byte[] attribute4) {
+        if ($cay_objectContext != null) {
+            $cay_objectContext.propertyChanged(
+                    this,
+                    "attribute4",
+                    this.attribute4,
+                    attribute4);
+        }
+        
+        this.attribute4 = attribute4;
     }
 
     public int getPersistenceState() {

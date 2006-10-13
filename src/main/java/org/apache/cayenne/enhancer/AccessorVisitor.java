@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 
 /**
  * An enhancer that adds interceptor code to the getters and setters.
@@ -62,11 +63,17 @@ public abstract class AccessorVisitor extends ClassAdapter {
         super(cw);
     }
 
-    protected MethodVisitor visitGetter(MethodVisitor mv, String property) {
+    protected MethodVisitor visitGetter(
+            MethodVisitor mv,
+            String property,
+            Type propertyType) {
         return mv;
     }
 
-    protected MethodVisitor visitSetter(MethodVisitor mv, String property) {
+    protected MethodVisitor visitSetter(
+            MethodVisitor mv,
+            String property,
+            Type propertyType) {
         return mv;
     }
 
@@ -80,17 +87,26 @@ public abstract class AccessorVisitor extends ClassAdapter {
 
         MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
 
-        // TODO: andrus, 10/8/2006 - check method sig for real... just checking
-        // the name is not enough
+        // TODO: andrus, 10/8/2006 - what other signature checks do we need to do?
 
-        String getProperty = AccessorVisitor.propertyNameForGetter(name);
-        if (getProperty != null) {
-            return visitGetter(mv, getProperty);
+        Type returnType = Type.getReturnType(desc);
+        Type[] args = Type.getArgumentTypes(desc);
+
+        // possible setter
+        if ("V".equals(returnType.getDescriptor())) {
+            if (args.length == 1) {
+                String setProperty = AccessorVisitor.propertyNameForSetter(name);
+                if (setProperty != null) {
+                    return visitSetter(mv, setProperty, args[0]);
+                }
+            }
         }
-
-        String setProperty = AccessorVisitor.propertyNameForSetter(name);
-        if (setProperty != null) {
-            return visitSetter(mv, setProperty);
+        // possible getter
+        else if (args.length == 0) {
+            String getProperty = AccessorVisitor.propertyNameForGetter(name);
+            if (getProperty != null) {
+                return visitGetter(mv, getProperty, returnType);
+            }
         }
 
         return mv;

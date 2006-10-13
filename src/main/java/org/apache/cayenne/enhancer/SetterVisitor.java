@@ -33,12 +33,14 @@ public class SetterVisitor extends MethodAdapter {
 
     private EnhancementHelper helper;
     private String propertyName;
+    private Type propertyType;
 
-    public SetterVisitor(MethodVisitor mv, EnhancementHelper helper,
-            String propertyName) {
+    public SetterVisitor(MethodVisitor mv, EnhancementHelper helper, String propertyName,
+            Type propertyType) {
         super(mv);
         this.helper = helper;
         this.propertyName = propertyName;
+        this.propertyType = propertyType;
     }
 
     @Override
@@ -47,6 +49,7 @@ public class SetterVisitor extends MethodAdapter {
 
         String field = helper.getPropertyField("objectContext");
         Type objectContextType = Type.getType(ObjectContext.class);
+        String propertyDescriptor = propertyType.getDescriptor();
 
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitFieldInsn(
@@ -63,14 +66,32 @@ public class SetterVisitor extends MethodAdapter {
                 field,
                 objectContextType.getDescriptor());
         mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitLdcInsn("attribute1");
+        mv.visitLdcInsn(propertyName);
         mv.visitVarInsn(Opcodes.ALOAD, 0);
+
         mv.visitFieldInsn(
                 Opcodes.GETFIELD,
                 helper.getCurrentClass().getInternalName(),
                 propertyName,
-                "Ljava/lang/String;");
-        mv.visitVarInsn(Opcodes.ALOAD, 1);
+                propertyDescriptor);
+
+        if ("I".equals(propertyDescriptor)) {
+            mv.visitMethodInsn(
+                    Opcodes.INVOKESTATIC,
+                    "java/lang/Integer",
+                    "valueOf",
+                    "(I)Ljava/lang/Integer;");
+            mv.visitVarInsn(Opcodes.ILOAD, 1);
+            mv.visitMethodInsn(
+                    Opcodes.INVOKESTATIC,
+                    "java/lang/Integer",
+                    "valueOf",
+                    "(I)Ljava/lang/Integer;");
+        }
+        else {
+            mv.visitVarInsn(Opcodes.ALOAD, 1);
+        }
+
         mv
                 .visitMethodInsn(
                         Opcodes.INVOKEINTERFACE,

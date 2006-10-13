@@ -21,6 +21,9 @@ package org.apache.cayenne.enhancer;
 public class MockPojo1 {
 
     protected String attribute1;
+    protected int attribute2;
+    protected double attribute3;
+    protected byte[] attribute4;
 
     public String getAttribute1() {
         return attribute1;
@@ -28,5 +31,29 @@ public class MockPojo1 {
 
     public void setAttribute1(String attribute1) {
         this.attribute1 = attribute1;
+    }
+
+    public int getAttribute2() {
+        return attribute2;
+    }
+
+    public void setAttribute2(int attribute2) {
+        this.attribute2 = attribute2;
+    }
+
+    public double getAttribute3() {
+        return attribute3;
+    }
+
+    public void setAttribute3(double attribute3) {
+        this.attribute3 = attribute3;
+    }
+
+    public byte[] getAttribute4() {
+        return attribute4;
+    }
+
+    public void setAttribute4(byte[] attribute4) {
+        this.attribute4 = attribute4;
     }
 }

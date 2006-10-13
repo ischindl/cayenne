@@ -57,8 +57,10 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
         enhancedPropertyMap.put(C1, c1);
 
         ObjAttribute a1 = new ObjAttribute("attribute1");
+        ObjAttribute a2 = new ObjAttribute("attribute2");
         ObjEntity e = new ObjEntity("E1");
         e.addAttribute(a1);
+        e.addAttribute(a2);
         e.setClassName(C1);
         DataMap map = new DataMap("x");
         map.addObjEntity(e);
@@ -189,7 +191,7 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
         assertEquals("attribute1", prepared[1]);
     }
 
-    public void testSetterIntercepted() throws Exception {
+    public void testStringSetterIntercepted() throws Exception {
 
         Class e1Class = Class.forName(C1, true, loader);
         assertNotNull(e1Class);
@@ -244,5 +246,60 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
         assertEquals("attribute1", change[1]);
         assertEquals("x", change[2]);
         assertEquals("y", change[3]);
+    }
+
+    public void testIntSetterIntercepted() throws Exception {
+
+        Class e1Class = Class.forName(C1, true, loader);
+
+        Object o = e1Class.newInstance();
+
+        // attempt calling on detached object - must not fail
+        Method getAttribute2 = e1Class.getDeclaredMethod("getAttribute2", (Class[]) null);
+        Method setAttribute2 = e1Class.getDeclaredMethod("setAttribute2", new Class[] {
+            Integer.TYPE
+        });
+
+        assertEquals(new Integer(0), getAttribute2.invoke(o, (Object[]) null));
+        setAttribute2.invoke(o, new Object[] {
+            new Integer(3)
+        });
+        assertEquals(new Integer(3), getAttribute2.invoke(o, (Object[]) null));
+
+        // now call on attached object
+        final Object[] change = new Object[4];
+        ObjectContext context = new MockObjectContext() {
+
+            @Override
+            public void propertyChanged(
+                    Persistent object,
+                    String property,
+                    Object oldValue,
+                    Object newValue) {
+                change[0] = object;
+                change[1] = property;
+                change[2] = oldValue;
+                change[3] = newValue;
+            }
+        };
+
+        Method setObjectContext = e1Class.getDeclaredMethod(
+                "setObjectContext",
+                new Class[] {
+                    ObjectContext.class
+                });
+
+        setObjectContext.invoke(o, new Object[] {
+            context
+        });
+
+        setAttribute2.invoke(o, new Object[] {
+            new Integer(4)
+        });
+        assertEquals(new Integer(4), getAttribute2.invoke(o, (Object[]) null));
+        assertSame(o, change[0]);
+        assertEquals("attribute2", change[1]);
+        assertEquals(new Integer(3), change[2]);
+        assertEquals(new Integer(4), change[3]);
     }
 }

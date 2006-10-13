@@ -21,6 +21,7 @@ package org.apache.cayenne.enhancer;
 import org.apache.cayenne.map.ObjEntity;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 
 /**
  * Accessor enhancer that enhances getters and setters mapped in a given {@link ObjEntity}.
@@ -47,24 +48,34 @@ public class PersistentAccessorVisitor extends AccessorVisitor {
             String signature,
             String superName,
             String[] interfaces) {
-        
+
         helper.reset(name);
         super.visit(version, access, name, signature, superName, interfaces);
     }
 
     @Override
-    protected MethodVisitor visitGetter(MethodVisitor mv, String property) {
-        return (entity.getAttribute(property) != null) ? new GetterVisitor(
-                mv,
-                helper,
-                property) : mv;
+    protected MethodVisitor visitGetter(
+            MethodVisitor mv,
+            String property,
+            Type propertyType) {
+
+        if (entity.getAttribute(property) != null) {
+            return new GetterVisitor(mv, helper, property);
+        }
+
+        return mv;
     }
 
     @Override
-    protected MethodVisitor visitSetter(MethodVisitor mv, String property) {
-        return (entity.getAttribute(property) != null) ? new SetterVisitor(
-                mv,
-                helper,
-                property) : mv;
+    protected MethodVisitor visitSetter(
+            MethodVisitor mv,
+            String property,
+            Type propertyType) {
+
+        if (entity.getAttribute(property) != null) {
+            return new SetterVisitor(mv, helper, property, propertyType);
+        }
+
+        return mv;
     }
 }
