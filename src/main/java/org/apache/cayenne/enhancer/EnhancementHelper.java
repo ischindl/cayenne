@@ -71,12 +71,34 @@ public class EnhancementHelper {
         return expandedInterfaces;
     }
 
-    public void createProperty(Class type, String name) {
-        createProperty(type, name, false);
+    /**
+     * Creates a new protected field in the current class. Field name will be
+     * automatically prefixed by "$cay_".
+     */
+    public void createField(Class fieldType, String name) {
+        createField(fieldType, name, false);
     }
 
-    public void createProperty(Class type, String name, boolean isTransient) {
-        Type asmType = Type.getType(type);
+    /**
+     * Creates a new protected field in the current class. Field name will be
+     * automatically prefixed by "$cay_".
+     */
+    public void createField(Class fieldType, String name, boolean isTransient) {
+        Type asmType = Type.getType(fieldType);
+        int access = Opcodes.ACC_PROTECTED;
+        if (isTransient) {
+            access += Opcodes.ACC_TRANSIENT;
+        }
+
+        createField(name, asmType, access);
+    }
+
+    public void createProperty(Class propertyType, String name) {
+        createProperty(propertyType, name, false);
+    }
+
+    public void createProperty(Class propertyType, String name, boolean isTransient) {
+        Type asmType = Type.getType(propertyType);
 
         int access = Opcodes.ACC_PROTECTED;
         if (isTransient) {

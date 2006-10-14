@@ -19,6 +19,7 @@
 package org.apache.cayenne.enhancer;
 
 import org.apache.cayenne.map.ObjEntity;
+import org.apache.cayenne.map.Relationship;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -60,6 +61,13 @@ public class PersistentAccessorVisitor extends AccessorVisitor {
             Type propertyType) {
 
         if (entity.getAttribute(property) != null) {
+            return new GetterVisitor(mv, helper, property);
+        }
+
+        Relationship r = entity.getRelationship(property);
+        if (r != null && !r.isToMany()) {
+            // inject fault flag field
+            helper.createField(Boolean.TYPE, "faultResolved_" + property, true);
             return new GetterVisitor(mv, helper, property);
         }
 

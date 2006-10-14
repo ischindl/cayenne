@@ -29,7 +29,8 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
 /**
- * An abstract ClassFileTransformer for handling class enhancement.
+ * A ClassFileTransformer that delegates class enhancement to a chain of ASM transformers
+ * provided by the {@link EnhancerVisitorFactory}.
  * 
  * @since 3.0
  * @author Andrus Adamchik

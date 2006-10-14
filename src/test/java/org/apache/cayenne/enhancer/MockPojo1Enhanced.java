@@ -30,7 +30,7 @@ import org.apache.cayenne.Persistent;
  * 
  * @author Andrus Adamchik
  */
-public class MockEnhancedPojo implements Persistent {
+public class MockPojo1Enhanced implements Persistent {
 
     protected ObjectId $cay_objectId;
     protected int $cay_persistenceState = PersistenceState.TRANSIENT;
