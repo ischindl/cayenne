@@ -168,13 +168,14 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
 
         // now call on attached object
 
-        final Object[] prepared = new Object[2];
+        final Object[] prepared = new Object[3];
         ObjectContext context = new MockObjectContext() {
 
             @Override
-            public void prepareForAccess(Persistent object, String property) {
+            public void prepareForAccess(Persistent object, String property, boolean lazyFaulting) {
                 prepared[0] = object;
                 prepared[1] = property;
+                prepared[2] = (lazyFaulting) ? Boolean.TRUE : Boolean.FALSE;
             }
         };
 
@@ -191,6 +192,7 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
         assertEquals(null, getAttribute1.invoke(o, (Object[]) null));
         assertSame(o, prepared[0]);
         assertEquals("attribute1", prepared[1]);
+        assertSame(Boolean.FALSE, prepared[2]);
     }
 
     public void testStringSetterIntercepted() throws Exception {
@@ -261,13 +263,14 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
 
         // now call on attached object
 
-        final Object[] prepared = new Object[2];
+        final Object[] prepared = new Object[3];
         ObjectContext context = new MockObjectContext() {
 
             @Override
-            public void prepareForAccess(Persistent object, String property) {
+            public void prepareForAccess(Persistent object, String property, boolean lazyFaulting) {
                 prepared[0] = object;
                 prepared[1] = property;
+                prepared[2] = (lazyFaulting) ? Boolean.TRUE : Boolean.FALSE;
             }
         };
 
@@ -284,6 +287,7 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
         assertEquals(new Integer(0), getAttribute2.invoke(o, (Object[]) null));
         assertSame(o, prepared[0]);
         assertEquals("attribute2", prepared[1]);
+        assertSame(Boolean.FALSE, prepared[2]);
     }
 
     public void testIntSetterIntercepted() throws Exception {
@@ -352,13 +356,14 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
 
         // now call on attached object
 
-        final Object[] prepared = new Object[2];
+        final Object[] prepared = new Object[3];
         ObjectContext context = new MockObjectContext() {
 
             @Override
-            public void prepareForAccess(Persistent object, String property) {
+            public void prepareForAccess(Persistent object, String property, boolean lazyFaulting) {
                 prepared[0] = object;
                 prepared[1] = property;
+                prepared[2] = (lazyFaulting) ? Boolean.TRUE : Boolean.FALSE;
             }
         };
 
@@ -375,6 +380,7 @@ public class CayenneEnhancerVisitorFactoryTest extends TestCase {
         assertEquals(new Double(0d), getAttribute3.invoke(o, (Object[]) null));
         assertSame(o, prepared[0]);
         assertEquals("attribute3", prepared[1]);
+        assertSame(Boolean.FALSE, prepared[2]);
     }
 
     public void testDoubleSetterIntercepted() throws Exception {

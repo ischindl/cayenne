@@ -33,6 +33,12 @@ import org.apache.cayenne.query.Query;
 
 public class MockObjectContext implements ObjectContext {
 
+    public void prepareForAccess(Persistent object, String property, boolean lazyFaulting) {
+    }
+    
+    /**
+     * @deprecated since 3.0
+     */
     public void prepareForAccess(Persistent object, String property) {
     }
 

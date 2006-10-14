@@ -59,7 +59,7 @@ public class MockPojo2Enhanced implements Persistent {
 
     public MockPojo3 getToOne() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "toOne");
+            $cay_objectContext.prepareForAccess(this, "toOne", true);
         }
 
         return toOne;

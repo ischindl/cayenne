@@ -61,14 +61,14 @@ public class PersistentAccessorVisitor extends AccessorVisitor {
             Type propertyType) {
 
         if (entity.getAttribute(property) != null) {
-            return new GetterVisitor(mv, helper, property);
+            return new GetterVisitor(mv, helper, property, false);
         }
 
         Relationship r = entity.getRelationship(property);
         if (r != null && !r.isToMany()) {
             // inject fault flag field
             helper.createField(Boolean.TYPE, "faultResolved_" + property, true);
-            return new GetterVisitor(mv, helper, property);
+            return new GetterVisitor(mv, helper, property, true);
         }
 
         return mv;

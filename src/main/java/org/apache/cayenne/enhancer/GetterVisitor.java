@@ -33,12 +33,14 @@ public class GetterVisitor extends MethodAdapter {
 
     private EnhancementHelper helper;
     private String propertyName;
+    private boolean lazyFaulting;
 
-    public GetterVisitor(MethodVisitor mv, EnhancementHelper helper,
-            String propertyName) {
+    public GetterVisitor(MethodVisitor mv, EnhancementHelper helper, String propertyName,
+            boolean lazyFaulting) {
         super(mv);
         this.helper = helper;
         this.propertyName = propertyName;
+        this.lazyFaulting = lazyFaulting;
     }
 
     @Override
@@ -56,9 +58,6 @@ public class GetterVisitor extends MethodAdapter {
                 objectContextType.getDescriptor());
         Label l1 = new Label();
         mv.visitJumpInsn(Opcodes.IFNULL, l1);
-        Label l2 = new Label();
-        mv.visitLabel(l2);
-        mv.visitLineNumber(42, l2);
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitFieldInsn(
                 Opcodes.GETFIELD,
@@ -67,11 +66,12 @@ public class GetterVisitor extends MethodAdapter {
                 objectContextType.getDescriptor());
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitLdcInsn(propertyName);
+        mv.visitInsn(lazyFaulting ? Opcodes.ICONST_1 : Opcodes.ICONST_0);
         mv.visitMethodInsn(
                 Opcodes.INVOKEINTERFACE,
                 objectContextType.getInternalName(),
                 "prepareForAccess",
-                "(Lorg/apache/cayenne/Persistent;Ljava/lang/String;)V");
+                "(Lorg/apache/cayenne/Persistent;Ljava/lang/String;Z)V");
         mv.visitLabel(l1);
     }
 }

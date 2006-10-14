@@ -74,7 +74,7 @@ public class MockPojo1Enhanced implements Persistent {
 
     public String getAttribute1() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "attribute1");
+            $cay_objectContext.prepareForAccess(this, "attribute1", false);
         }
         return attribute1;
     }
@@ -93,7 +93,7 @@ public class MockPojo1Enhanced implements Persistent {
 
     public int getAttribute2() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "attribute2");
+            $cay_objectContext.prepareForAccess(this, "attribute2", false);
         }
         return attribute2;
     }
@@ -109,7 +109,7 @@ public class MockPojo1Enhanced implements Persistent {
 
     public double getAttribute3() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "attribute3");
+            $cay_objectContext.prepareForAccess(this, "attribute3", false);
         }
         return attribute3;
     }
@@ -125,7 +125,7 @@ public class MockPojo1Enhanced implements Persistent {
 
     public byte[] getByteArrayAttribute() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "attribute4");
+            $cay_objectContext.prepareForAccess(this, "attribute4", false);
         }
         return byteArrayAttribute;
     }
@@ -144,7 +144,7 @@ public class MockPojo1Enhanced implements Persistent {
 
     public short getAttribute5() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "attribute5");
+            $cay_objectContext.prepareForAccess(this, "attribute5", false);
         }
 
         return attribute5;
@@ -164,7 +164,7 @@ public class MockPojo1Enhanced implements Persistent {
 
     public char getAttribute6() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "attribute6");
+            $cay_objectContext.prepareForAccess(this, "attribute6", false);
         }
 
         return attribute6;
@@ -184,7 +184,7 @@ public class MockPojo1Enhanced implements Persistent {
 
     public byte getAttribute7() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "attribute7");
+            $cay_objectContext.prepareForAccess(this, "attribute7", false);
         }
 
         return attribute7;
@@ -204,7 +204,7 @@ public class MockPojo1Enhanced implements Persistent {
 
     public boolean isAttribute8() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "attribute8");
+            $cay_objectContext.prepareForAccess(this, "attribute8", false);
         }
 
         return attribute8;
@@ -224,7 +224,7 @@ public class MockPojo1Enhanced implements Persistent {
 
     public long getAttribute9() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "attribute9");
+            $cay_objectContext.prepareForAccess(this, "attribute9", false);
         }
 
         return attribute9;
@@ -245,7 +245,7 @@ public class MockPojo1Enhanced implements Persistent {
     
     public float getAttribute10() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "attribute10");
+            $cay_objectContext.prepareForAccess(this, "attribute10", false);
         }
         
         return attribute10;
