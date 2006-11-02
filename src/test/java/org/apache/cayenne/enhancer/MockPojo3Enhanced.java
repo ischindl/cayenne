@@ -18,20 +18,20 @@
  ****************************************************************/
 package org.apache.cayenne.enhancer;
 
+import java.util.List;
+
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.ObjectId;
 import org.apache.cayenne.PersistenceState;
 import org.apache.cayenne.Persistent;
 
-public class MockPojo2Enhanced implements Persistent {
-    
-    protected transient boolean $cay_fault_toOne;
-
-    protected MockPojo3 toOne;
+public class MockPojo3Enhanced implements Persistent {
 
     protected ObjectId $cay_objectId;
     protected int $cay_persistenceState = PersistenceState.TRANSIENT;
     protected transient ObjectContext $cay_objectContext;
+
+    protected List<MockPojo2> toMany;
 
     public int getPersistenceState() {
         return $cay_persistenceState;
@@ -57,19 +57,15 @@ public class MockPojo2Enhanced implements Persistent {
         this.$cay_objectId = objectId;
     }
 
-    public MockPojo3 getToOne() {
+    public List<MockPojo2> getToMany() {
         if ($cay_objectContext != null) {
-            $cay_objectContext.prepareForAccess(this, "toOne", true);
+            $cay_objectContext.prepareForAccess(this, "toMany", true);
         }
-
-        return toOne;
+        
+        return toMany;
     }
 
-    public void setToOne(MockPojo3 toOne) {
-        if ($cay_objectContext != null) {
-            $cay_objectContext.propertyChanged(this, "toOne", this.toOne, toOne);
-        }
-
-        this.toOne = toOne;
+    public void setToMany(List<MockPojo2> toMany) {
+        this.toMany = toMany;
     }
 }
