@@ -25,7 +25,7 @@ import org.apache.cayenne.Persistent;
 
 public class MockPojo2Enhanced implements Persistent {
     
-    protected transient boolean $cay_fault_toOne;
+    protected transient boolean $cay_faultResolved_toOne;
 
     protected MockPojo3 toOne;
 
