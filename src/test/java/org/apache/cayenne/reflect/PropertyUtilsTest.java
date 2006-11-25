@@ -17,29 +17,24 @@
  *  under the License.
  ****************************************************************/
 
-package org.apache.cayenne.property;
+package org.apache.cayenne.reflect;
 
-/**
- * JDK 15 friendly converter factory.
- * 
- * @since 1.2
- * @author Andrus Adamchik
- */
-class ConverterFactory15 extends ConverterFactory {
+import junit.framework.TestCase;
 
-    private EnumConverter enumConveter = new EnumConverter();
+import org.apache.cayenne.access.types.MockEnum;
+import org.apache.cayenne.access.types.MockEnumHolder;
 
-    @Override
-    Converter getConverter(Class type) {
-        if (type == null) {
-            throw new IllegalArgumentException("Null type");
-        }
+public class PropertyUtilsTest extends TestCase {
+
+    public void testSetConverted() {
+        MockEnumHolder o1 = new MockEnumHolder();
+
+        // String to Enum
+        PropertyUtils.setProperty(o1, "mockEnum", "b");
+        assertSame(MockEnum.b, o1.getMockEnum());
         
-        // check for enum BEFORE super call, as it will return a noop converter
-        if (type.isEnum()) {
-            return enumConveter;
-        }
-
-        return super.getConverter(type);
+        // check that regular converters still work
+        PropertyUtils.setProperty(o1, "number", "445");
+        assertEquals(445, o1.getNumber());
     }
 }

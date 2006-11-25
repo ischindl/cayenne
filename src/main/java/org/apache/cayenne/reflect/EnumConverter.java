@@ -17,24 +17,21 @@
  *  under the License.
  ****************************************************************/
 
-package org.apache.cayenne.property;
+package org.apache.cayenne.reflect;
 
-import junit.framework.TestCase;
+/**
+ * @since 1.2
+ * @author Andrus Adamchik
+ */
+class EnumConverter extends Converter {
 
-import org.apache.cayenne.access.types.MockEnum;
-import org.apache.cayenne.access.types.MockEnumHolder;
+    @Override
+    Object convert(Object object, Class type) {
 
-public class PropertyUtilsTest extends TestCase {
+        if (object == null) {
+            return null;
+        }
 
-    public void testSetConverted() {
-        MockEnumHolder o1 = new MockEnumHolder();
-
-        // String to Enum
-        PropertyUtils.setProperty(o1, "mockEnum", "b");
-        assertSame(MockEnum.b, o1.getMockEnum());
-        
-        // check that regular converters still work
-        PropertyUtils.setProperty(o1, "number", "445");
-        assertEquals(445, o1.getNumber());
+        return Enum.valueOf(type, object.toString());
     }
 }

@@ -37,7 +37,7 @@ import org.apache.cayenne.map.DataMap;
 import org.apache.cayenne.map.EntityResolver;
 import org.apache.cayenne.map.ObjAttribute;
 import org.apache.cayenne.map.ObjEntity;
-import org.apache.cayenne.property.PropertyUtils;
+import org.apache.cayenne.reflect.PropertyUtils;
 
 public class PojoSerializationTest extends TestCase {
 

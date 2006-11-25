@@ -17,21 +17,29 @@
  *  under the License.
  ****************************************************************/
 
-package org.apache.cayenne.property;
+package org.apache.cayenne.reflect;
 
 /**
+ * JDK 15 friendly converter factory.
+ * 
  * @since 1.2
  * @author Andrus Adamchik
  */
-class EnumConverter extends Converter {
+class ConverterFactory15 extends ConverterFactory {
+
+    private EnumConverter enumConveter = new EnumConverter();
 
     @Override
-    Object convert(Object object, Class type) {
-
-        if (object == null) {
-            return null;
+    Converter getConverter(Class type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Null type");
+        }
+        
+        // check for enum BEFORE super call, as it will return a noop converter
+        if (type.isEnum()) {
+            return enumConveter;
         }
 
-        return Enum.valueOf(type, object.toString());
+        return super.getConverter(type);
     }
 }
