@@ -47,6 +47,7 @@ public class PojoSerializationTest extends TestCase {
     protected void setUp() throws Exception {
         Collection<String> managedClasses = new ArrayList<String>();
         managedClasses.add(MockSerializablePojo1.class.getName());
+        managedClasses.add(MockSerializablePojo2.class.getName());
 
         Map<String, Collection<String>> enhancedPropertyMap = new HashMap<String, Collection<String>>();
 
@@ -58,8 +59,15 @@ public class PojoSerializationTest extends TestCase {
         ObjEntity e = new ObjEntity("E1");
         e.addAttribute(a1);
         e.setClassName(MockSerializablePojo1.class.getName());
+
+        ObjAttribute a2 = new ObjAttribute("attribute1");
+        ObjEntity e2 = new ObjEntity("E2");
+        e2.addAttribute(a2);
+        e2.setClassName(MockSerializablePojo2.class.getName());
+
         DataMap map = new DataMap("x");
         map.addObjEntity(e);
+        map.addObjEntity(e2);
 
         EnhancerVisitorFactory factory = new CayenneEnhancerVisitorFactory(
                 new EntityResolver(Collections.singleton(map)));
@@ -70,6 +78,51 @@ public class PojoSerializationTest extends TestCase {
 
         Class enhanced = Class.forName(
                 MockSerializablePojo1.class.getName(),
+                true,
+                loader);
+        assertTrue(Persistent.class.isAssignableFrom(enhanced));
+        try {
+            enhanced.getDeclaredField("$cay_persistenceState");
+        }
+        catch (NoSuchFieldException e) {
+            fail("Enhancer fields are not present");
+        }
+
+        Class unenhanced = Class.forName(CayenneEnhancerVisitorFactoryTest.C1);
+        assertFalse(Persistent.class.isAssignableFrom(unenhanced));
+        try {
+            unenhanced.getDeclaredField("$cay_persistenceState");
+            fail("Enhancer fields are present");
+        }
+        catch (NoSuchFieldException e) {
+            // expected
+        }
+
+        Object eo = enhanced.newInstance();
+        PropertyUtils.setProperty(eo, "attribute1", "XXX");
+        PropertyUtils.setProperty(eo, "persistenceState", new Integer(
+                PersistenceState.MODIFIED));
+        assertTrue(eo instanceof Persistent);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ObjectOutputStream oout = new ObjectOutputStream(out);
+        oout.writeObject(eo);
+        oout.close();
+
+        ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+        ObjectInputStream oin = new ObjectInputStream(in);
+
+        Object ueo = oin.readObject();
+        assertNotNull(ueo);
+        assertFalse(ueo instanceof Persistent);
+        assertEquals("XXX", PropertyUtils.getProperty(ueo, "attribute1"));
+
+    }
+
+    public void testEnhancedToRegularNoSerialVersionId() throws Exception {
+
+        Class enhanced = Class.forName(
+                MockSerializablePojo2.class.getName(),
                 true,
                 loader);
         assertTrue(Persistent.class.isAssignableFrom(enhanced));

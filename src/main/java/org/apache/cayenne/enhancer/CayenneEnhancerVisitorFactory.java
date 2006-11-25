@@ -21,16 +21,13 @@ package org.apache.cayenne.enhancer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.cayenne.Persistent;
 import org.apache.cayenne.map.EntityResolver;
 import org.apache.cayenne.map.ObjEntity;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.commons.SerialVersionUIDAdder;
 
 /**
- * A ClassFileTransformer that performs enhancement based on the metadata from Cayenne
- * DataMap. POJOs are enhanced into persistent objects that can be used with Cayenne. More
- * specifically, CayenneEnhancer ensures that the object implements {@link Persistent}
- * interface and invokes callbacks from the accessor methods.
+ * A factory of enhacing visitors.
  * 
  * @since 3.0
  * @author Andrus Adamchik
@@ -62,8 +59,13 @@ public class CayenneEnhancerVisitorFactory implements EnhancerVisitorFactory {
         }
 
         // create enhancer chain
+
         PersistentInterfaceVisitor e1 = new PersistentInterfaceVisitor(out);
         PersistentAccessorVisitor e2 = new PersistentAccessorVisitor(e1, entity);
-        return e2;
+
+        // this ensures that enhanced and original class have compatible serialized format
+        // even if no serialVersionUID is defined by the user
+        SerialVersionUIDAdder e3 = new SerialVersionUIDAdder(e2);
+        return e3;
     }
 }
