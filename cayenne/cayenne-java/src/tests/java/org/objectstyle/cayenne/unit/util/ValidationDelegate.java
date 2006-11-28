@@ -1,5 +1,5 @@
 /* ====================================================================
- *
+ * 
  * The ObjectStyle Group Software License, version 1.1
  * ObjectStyle Group - http://objectstyle.org/
  * 
@@ -53,77 +53,11 @@
  * information on the ObjectStyle Group, please see
  * <http://objectstyle.org/>.
  */
+package org.objectstyle.cayenne.unit.util;
 
-package org.objectstyle.cayenne.access;
-
-import org.objectstyle.art.Artist;
-import org.objectstyle.art.Painting;
-import org.objectstyle.cayenne.query.SelectQuery;
-import org.objectstyle.cayenne.unit.CayenneTestCase;
-import org.objectstyle.cayenne.unit.util.ValidationDelegate;
 import org.objectstyle.cayenne.validation.ValidationResult;
 
-/**
- * @author Andrus Adamchik
- */
-public class DataContextValidationTst extends CayenneTestCase {
+public interface ValidationDelegate {
 
-    public void testValidatingObjectsOnCommitProperty() throws Exception {
-        DataContext context = createDataContext();
-
-        context.setValidatingObjectsOnCommit(true);
-        assertTrue(context.isValidatingObjectsOnCommit());
-
-        context.setValidatingObjectsOnCommit(false);
-        assertFalse(context.isValidatingObjectsOnCommit());
-    }
-
-    public void testValidatingObjectsOnCommit() throws Exception {
-        DataContext context = createDataContext();
-
-        // test that validation is called properly
-
-        context.setValidatingObjectsOnCommit(true);
-        Artist a1 = (Artist) context.createAndRegisterNewObject(Artist.class);
-        a1.setArtistName("a1");
-        context.commitChanges();
-        assertTrue(a1.isValidateForSaveCalled());
-
-        context.setValidatingObjectsOnCommit(false);
-        Artist a2 = (Artist) context.createAndRegisterNewObject(Artist.class);
-        a2.setArtistName("a2");
-        context.commitChanges();
-        assertFalse(a2.isValidateForSaveCalled());
-    }
-
-    public void testValidationModifyingContext() throws Exception {
-        deleteTestData();
-
-        ValidationDelegate delegate = new ValidationDelegate() {
-
-            public void validateForSave(Object object, ValidationResult validationResult) {
-
-                Artist a = (Artist) object;
-                Painting p = (Painting) a.getObjectContext().newObject(Painting.class);
-                p.setPaintingTitle("XXX");
-                p.setToArtist(a);
-            }
-        };
-
-        DataContext context = createDataContext();
-
-        context.setValidatingObjectsOnCommit(true);
-        Artist a1 = (Artist) context.newObject(Artist.class);
-        a1.setValidationDelegate(delegate);
-        a1.setArtistName("a1");
-
-        // add another artist to ensure that modifying context works when more than one
-        // object is committed
-        Artist a2 = (Artist) context.newObject(Artist.class);
-        a2.setValidationDelegate(delegate);
-        a2.setArtistName("a2");
-        context.commitChanges();
-
-        assertEquals(2, context.performQuery(new SelectQuery(Painting.class)).size());
-    }
+    void validateForSave(Object object, ValidationResult validationResult);
 }
