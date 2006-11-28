@@ -20,6 +20,7 @@
 package org.apache.cayenne.access;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -67,6 +68,11 @@ class ObjectStoreGraphDiff implements GraphDiff {
         ValidationResult result = new ValidationResult();
         boolean noop = true;
 
+        // build a new collection for validation as validation methods may result in
+        // ObjectStore modifications
+
+        Collection objectsToValidate = null;
+
         Iterator it = getChangesByObjectId().entrySet().iterator();
         while (it.hasNext()) {
 
@@ -74,10 +80,21 @@ class ObjectStoreGraphDiff implements GraphDiff {
 
             if (!((ObjectDiff) entry.getValue()).isNoop()) {
 
-                noop = false;
+                if (noop) {
+                    noop = false;
+                    objectsToValidate = new ArrayList();
+                }
 
                 // accessing objectMap directly to avoid unneeded synchronization.
-                DataObject object = (DataObject) objectStore.getNodeNoSync(entry.getKey());
+                objectsToValidate.add(objectStore.getNodeNoSync(entry.getKey()));
+            }
+        }
+
+        if (objectsToValidate != null) {
+            Iterator validationIt = objectsToValidate.iterator();
+            while (validationIt.hasNext()) {
+                DataObject object = (DataObject) validationIt.next();
+
                 switch (object.getPersistenceState()) {
                     case PersistenceState.NEW:
                         object.validateForInsert(result);
@@ -90,10 +107,10 @@ class ObjectStoreGraphDiff implements GraphDiff {
                         break;
                 }
             }
-        }
-
-        if (result.hasFailures()) {
-            throw new ValidationException(result);
+            
+            if (result.hasFailures()) {
+                throw new ValidationException(result);
+            }
         }
 
         return noop;

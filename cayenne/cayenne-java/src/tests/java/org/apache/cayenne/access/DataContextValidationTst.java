@@ -17,11 +17,14 @@
  *  under the License.
  ****************************************************************/
 
-
 package org.apache.cayenne.access;
 
 import org.apache.art.Artist;
+import org.apache.art.Painting;
+import org.apache.cayenne.query.SelectQuery;
 import org.apache.cayenne.unit.CayenneTestCase;
+import org.apache.cayenne.unit.util.ValidationDelegate;
+import org.apache.cayenne.validation.ValidationResult;
 
 /**
  * @author Andrus Adamchik
@@ -54,5 +57,36 @@ public class DataContextValidationTst extends CayenneTestCase {
         a2.setArtistName("a2");
         context.commitChanges();
         assertFalse(a2.isValidateForSaveCalled());
+    }
+
+    public void testValidationModifyingContext() throws Exception {
+        deleteTestData();
+
+        ValidationDelegate delegate = new ValidationDelegate() {
+
+            public void validateForSave(Object object, ValidationResult validationResult) {
+
+                Artist a = (Artist) object;
+                Painting p = (Painting) a.getObjectContext().newObject(Painting.class);
+                p.setPaintingTitle("XXX");
+                p.setToArtist(a);
+            }
+        };
+
+        DataContext context = createDataContext();
+
+        context.setValidatingObjectsOnCommit(true);
+        Artist a1 = (Artist) context.newObject(Artist.class);
+        a1.setValidationDelegate(delegate);
+        a1.setArtistName("a1");
+
+        // add another artist to ensure that modifying context works when more than one
+        // object is committed
+        Artist a2 = (Artist) context.newObject(Artist.class);
+        a2.setValidationDelegate(delegate);
+        a2.setArtistName("a2");
+        context.commitChanges();
+
+        assertEquals(2, context.performQuery(new SelectQuery(Painting.class)).size());
     }
 }
