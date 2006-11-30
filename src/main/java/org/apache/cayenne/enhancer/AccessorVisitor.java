@@ -40,6 +40,8 @@ public abstract class AccessorVisitor extends ClassAdapter {
 
     private static final Pattern SETTER_PATTERN = Pattern.compile("^set([A-Z])(.*)$");
 
+    private EnhancementHelper helper;
+
     public static String propertyNameForGetter(String getterName) {
         Matcher getMatch = GETTER_PATTERN.matcher(getterName);
         if (getMatch.matches()) {
@@ -61,12 +63,42 @@ public abstract class AccessorVisitor extends ClassAdapter {
 
     public AccessorVisitor(ClassVisitor cw) {
         super(cw);
+        this.helper = new EnhancementHelper(this);
+    }
+
+    protected abstract boolean isEnhancedProperty(String property);
+
+    protected abstract boolean isLazyFaulted(String property);
+
+    @Override
+    public void visit(
+            int version,
+            int access,
+            String name,
+            String signature,
+            String superName,
+            String[] interfaces) {
+
+        helper.reset(name);
+        super.visit(version, access, name, signature, superName, interfaces);
     }
 
     protected MethodVisitor visitGetter(
             MethodVisitor mv,
             String property,
             Type propertyType) {
+
+        if (isEnhancedProperty(property)) {
+            if (isLazyFaulted(property)) {
+                // inject fault flag field
+                helper.createField(Boolean.TYPE, "faultResolved_" + property, true);
+                return new GetterVisitor(mv, helper, property, true);
+            }
+            else {
+                return new GetterVisitor(mv, helper, property, false);
+            }
+        }
+
         return mv;
     }
 
@@ -74,6 +106,11 @@ public abstract class AccessorVisitor extends ClassAdapter {
             MethodVisitor mv,
             String property,
             Type propertyType) {
+
+        if (isEnhancedProperty(property)) {
+            return new SetterVisitor(mv, helper, property, propertyType);
+        }
+
         return mv;
     }
 

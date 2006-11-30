@@ -20,8 +20,6 @@ package org.apache.cayenne.enhancer;
 
 import org.apache.cayenne.map.ObjEntity;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
 
 /**
  * Accessor enhancer that enhances getters and setters mapped in a given {@link ObjEntity}.
@@ -32,56 +30,20 @@ import org.objectweb.asm.Type;
 public class PersistentAccessorVisitor extends AccessorVisitor {
 
     private ObjEntity entity;
-    private EnhancementHelper helper;
 
     public PersistentAccessorVisitor(ClassVisitor visitor, ObjEntity entity) {
         super(visitor);
         this.entity = entity;
-        this.helper = new EnhancementHelper(this);
     }
 
     @Override
-    public void visit(
-            int version,
-            int access,
-            String name,
-            String signature,
-            String superName,
-            String[] interfaces) {
-
-        helper.reset(name);
-        super.visit(version, access, name, signature, superName, interfaces);
+    protected boolean isEnhancedProperty(String property) {
+        return entity.getAttribute(property) != null
+                || entity.getRelationship(property) != null;
     }
 
     @Override
-    protected MethodVisitor visitGetter(
-            MethodVisitor mv,
-            String property,
-            Type propertyType) {
-
-        if (entity.getAttribute(property) != null) {
-            return new GetterVisitor(mv, helper, property, false);
-        }
-
-        if (entity.getRelationship(property) != null) {
-            // inject fault flag field
-            helper.createField(Boolean.TYPE, "faultResolved_" + property, true);
-            return new GetterVisitor(mv, helper, property, true);
-        }
-
-        return mv;
-    }
-
-    @Override
-    protected MethodVisitor visitSetter(
-            MethodVisitor mv,
-            String property,
-            Type propertyType) {
-
-        if (entity.getAttribute(property) != null) {
-            return new SetterVisitor(mv, helper, property, propertyType);
-        }
-
-        return mv;
+    protected boolean isLazyFaulted(String property) {
+        return entity.getRelationship(property) != null;
     }
 }

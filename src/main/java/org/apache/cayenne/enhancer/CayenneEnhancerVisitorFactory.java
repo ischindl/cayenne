@@ -59,12 +59,11 @@ public class CayenneEnhancerVisitorFactory implements EnhancerVisitorFactory {
         }
 
         // create enhancer chain
-
         PersistentInterfaceVisitor e1 = new PersistentInterfaceVisitor(out);
         PersistentAccessorVisitor e2 = new PersistentAccessorVisitor(e1, entity);
 
-        // this ensures that enhanced and original class have compatible serialized format
-        // even if no serialVersionUID is defined by the user
+        // this ensures that both enhanced and original classes have compatible serialized
+        // format even if no serialVersionUID is defined by the user
         SerialVersionUIDAdder e3 = new SerialVersionUIDAdder(e2);
         return e3;
     }
