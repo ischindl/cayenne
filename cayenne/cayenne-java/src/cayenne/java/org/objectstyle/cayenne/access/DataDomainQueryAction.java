@@ -108,6 +108,7 @@ class DataDomainQueryAction implements QueryRouter, OperationObserver {
     Map prefetchResultsByPath;
     Map queriesByNode;
     Map queriesByExecutedQueries;
+    boolean noObjectConversion;
 
     /*
      * A constructor for the "new" way of performing a query via 'execute' with
@@ -147,8 +148,9 @@ class DataDomainQueryAction implements QueryRouter, OperationObserver {
             }
         }
 
-        // turn results to objects
-        interceptObjectConversion();
+        if (!noObjectConversion) {
+            interceptObjectConversion();
+        }
 
         return response;
     }
@@ -227,25 +229,21 @@ class DataDomainQueryAction implements QueryRouter, OperationObserver {
 
             DataRow targetRow = cache.getCachedSnapshot(targetId);
 
-            DataRow resultRow;
-
             if (targetRow != null) {
-                resultRow = targetRow;
+                this.response = new GenericResponse(Collections.singletonList(targetRow));
+                return DONE;
             }
-            // if no inheritance involved, we can return a valid partial row made from
-            // the target Id alone...
-            else if (domain.getEntityResolver().lookupInheritanceTree(
-                    (ObjEntity) relationship.getTargetEntity()) == null) {
+            // a hack to prevent passing partial snapshots to ObjectResolver ... See
+            // CAY-724 for details.
+            else if (context != null
+                    && domain.getEntityResolver().lookupInheritanceTree(
+                            (ObjEntity) relationship.getTargetEntity()) == null) {
 
-                resultRow = new DataRow(targetId.getIdSnapshot());
+                this.noObjectConversion = true;
+                Object object = context.localObject(targetId, null);
+                this.response = new GenericResponse(Collections.singletonList(object));
+                return DONE;
             }
-            else {
-                // can't guess the right target...
-                return !DONE;
-            }
-
-            this.response = new GenericResponse(Collections.singletonList(resultRow));
-            return DONE;
         }
 
         return !DONE;
