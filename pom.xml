@@ -24,7 +24,7 @@
 	<parent>
 		<groupId>org.apache.cayenne.core</groupId>
 		<artifactId>cayenne-core-parent</artifactId>
-		<version>3.0-incubating-SNAPSHOT</version>
+		<version>3.0-SNAPSHOT</version>
 	</parent>
 
 	<description>Cayenne Java 1.5 Core</description>
