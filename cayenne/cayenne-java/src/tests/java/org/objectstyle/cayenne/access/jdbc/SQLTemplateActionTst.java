@@ -365,10 +365,6 @@ public class SQLTemplateActionTst extends CayenneTestCase {
                 template,
                 getAccessStackAdapter().getAdapter());
 
-        action.setRemovingLineBreaks(false);
-        assertEquals("A\nBC", action.extractTemplateString());
-
-        action.setRemovingLineBreaks(true);
         assertEquals("A BC", action.extractTemplateString());
     }
 

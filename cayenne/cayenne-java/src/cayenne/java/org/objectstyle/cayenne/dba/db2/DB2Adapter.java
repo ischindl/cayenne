@@ -73,8 +73,6 @@ import org.objectstyle.cayenne.dba.TypesMapping;
 import org.objectstyle.cayenne.map.DbAttribute;
 import org.objectstyle.cayenne.map.DbEntity;
 import org.objectstyle.cayenne.map.DerivedDbEntity;
-import org.objectstyle.cayenne.query.Query;
-import org.objectstyle.cayenne.query.SQLAction;
 
 /**
  * DbAdapter implementation for the <a href="http://www.ibm.com/db2/"> DB2 RDBMS </a>.
@@ -83,27 +81,18 @@ import org.objectstyle.cayenne.query.SQLAction;
  * use with DB2 are shown below:
  * 
  * <pre>
- * 
- *      test-db2.cayenne.adapter = org.objectstyle.cayenne.dba.db2.DB2Adapter
- *      test-db2.jdbc.username = test
- *      test-db2.jdbc.password = secret
- *      test-db2.jdbc.url = jdbc:db2://servername:50000/databasename
- *      test-db2.jdbc.driver = com.ibm.db2.jcc.DB2Driver
  *  
+ *       test-db2.cayenne.adapter = org.objectstyle.cayenne.dba.db2.DB2Adapter
+ *       test-db2.jdbc.username = test
+ *       test-db2.jdbc.password = secret
+ *       test-db2.jdbc.url = jdbc:db2://servername:50000/databasename
+ *       test-db2.jdbc.driver = com.ibm.db2.jcc.DB2Driver
+ *   
  * </pre>
  * 
  * @author Holger Hoffstaette
  */
 public class DB2Adapter extends JdbcAdapter {
-
-    /**
-     * Uses DB2ActionBuilder to create the right action.
-     * 
-     * @since 1.2
-     */
-    public SQLAction getAction(Query query, DataNode node) {
-        return query.createSQLAction(new DB2ActionBuilder(this, node.getEntityResolver()));
-    }
 
     /**
      * Creates a DB2 specific PK Generator.
@@ -120,7 +109,7 @@ public class DB2Adapter extends JdbcAdapter {
 
         // configure boolean type to work with numeric columns
         map.registerType(new DB2BooleanType());
-        
+
         map.registerType(new ByteArrayType(false, false));
     }
 

@@ -88,7 +88,6 @@ import org.objectstyle.cayenne.util.Util;
 public class SQLTemplateAction implements SQLAction {
 
     protected DbAdapter adapter;
-    protected boolean removingLineBreaks;
     protected SQLTemplate query;
 
     public SQLTemplateAction(SQLTemplate query, DbAdapter adapter) {
@@ -273,7 +272,10 @@ public class SQLTemplateAction implements SQLAction {
      */
     protected String extractTemplateString() {
         String sql = query.getTemplate(getAdapter().getClass().getName());
-        return isRemovingLineBreaks() ? Util.stripLineBreaks(sql, " ") : sql;
+
+        // note that we MUST convert line breaks to spaces. On some databases (DB2)
+        // queries with breaks simply won't run; the rest are affected by CAY-726.
+        return Util.stripLineBreaks(sql, " ");
     }
 
     /**
@@ -296,15 +298,19 @@ public class SQLTemplateAction implements SQLAction {
     }
 
     /**
-     * Returns whether line breaks are removed when the query is executed. Some databases
-     * (like DB2) can't handle multiline queries.
+     * Always returns true.
+     * 
+     * @deprecated since 3.0
      */
     public boolean isRemovingLineBreaks() {
-        return removingLineBreaks;
+        return true;
     }
 
+    /**
+     * @deprecated since 3.0 - does nothing
+     */
     public void setRemovingLineBreaks(boolean removingLineBreaks) {
-        this.removingLineBreaks = removingLineBreaks;
+
     }
 
     /**
