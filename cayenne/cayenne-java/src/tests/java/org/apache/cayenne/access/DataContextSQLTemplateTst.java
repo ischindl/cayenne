@@ -159,4 +159,21 @@ public class DataContextSQLTemplateTst extends CayenneTestCase {
             it.close();
         }
     }
+
+    public void testQueryWithLineBreakAfterMacroCAY726() throws Exception {
+        getAccessStack().createTestData(DataContextTestBase.class, "testArtists", null);
+
+        // see CAY-726 for details
+        String template = "SELECT #result('count(*)' 'int' 'X')"
+                + System.getProperty("line.separator")
+                + "FROM ARTIST";
+        SQLTemplate query = getSQLTemplateBuilder().createSQLTemplate(
+                Artist.class,
+                template);
+        query.setFetchingDataRows(true);
+
+        List result = context.performQuery(query);
+
+        assertEquals(new Integer(25), ((Map) result.get(0)).get("X"));
+    }
 }

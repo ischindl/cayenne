@@ -20,6 +20,7 @@ CAY-653 overriding setPersistentState() in unreliable in three tier environment 
 CAY-690 Exception in the Modeler when changing schema on derived entities
 CAY-712 Allow modifying objects in validate* methods
 CAY-724 - applying 3.0 fix to 1.2 branch
+CAY-726 SQLTemplate parsing bug when macros appear at the end of line
 
 
 ----------------------------------
