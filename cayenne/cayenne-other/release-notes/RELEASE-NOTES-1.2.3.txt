@@ -1,4 +1,4 @@
-Cayenne Release Notes 1.2.2
+Cayenne Release Notes 1.2.3
 Date: 
 ============================================
 
@@ -10,10 +10,3 @@ http://issues.apache.org/cayenne/
 
 Bug Fixes:
 
-CAY-565 LRUMap NPE
-CAY-652 Exception with Tomcat's session restore capability
-CAY-653 overriding setPersistentState() in unreliable in three tier environment with CayenneContext
-CAY-690 Exception in the Modeler when changing schema on derived entities
-CAY-712 Allow modifying objects in validate* methods
-CAY-724 Bogus FaultFailureExceptions
-CAY-726 SQLTemplate parsing bug when macros appear at the end of line
