@@ -10,3 +10,4 @@ http://issues.apache.org/cayenne/
 
 Bug Fixes:
 
+CAY-750 Stored procedures without parameters fail on Postgres 8
