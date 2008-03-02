@@ -58,12 +58,20 @@ public class EnhancementHelper {
         return fieldPrefix + propertyName;
     }
 
+    /**
+     * Resets helper to process a given class. Must be called repeatedly before each class
+     * is processed.
+     */
     public void reset(String className) {
         // assuming no primitives or arrays
         this.currentClass = Type.getType("L" + className + ";");
     }
 
-    public String[] addInterface(String[] interfaces, Class newInterface) {
+    /**
+     * Appends an interface to a String array of interfaces, returning the resulting
+     * expanded array.
+     */
+    public String[] addInterface(String[] interfaces, Class<?> newInterface) {
 
         String name = Type.getInternalName(newInterface);
         if (interfaces == null || interfaces.length == 0) {
@@ -83,7 +91,7 @@ public class EnhancementHelper {
      * Creates a new protected field in the current class. Field name will be
      * automatically prefixed by "$cay_".
      */
-    public void createField(Class fieldType, String name) {
+    public void createField(Class<?> fieldType, String name) {
         createField(fieldType, name, false);
     }
 
@@ -91,7 +99,7 @@ public class EnhancementHelper {
      * Creates a new protected field in the current class. Field name will be
      * automatically prefixed by "$cay_".
      */
-    public void createField(Class fieldType, String name, boolean isTransient) {
+    public void createField(Class<?> fieldType, String name, boolean isTransient) {
         Type asmType = Type.getType(fieldType);
         int access = Opcodes.ACC_PROTECTED;
         if (isTransient) {
@@ -101,11 +109,11 @@ public class EnhancementHelper {
         createField(name, asmType, access);
     }
 
-    public void createProperty(Class propertyType, String name) {
+    public void createProperty(Class<?> propertyType, String name) {
         createProperty(propertyType, name, false);
     }
 
-    public void createProperty(Class propertyType, String name, boolean isTransient) {
+    public void createProperty(Class<?> propertyType, String name, boolean isTransient) {
         Type asmType = Type.getType(propertyType);
 
         int access = Opcodes.ACC_PROTECTED;
