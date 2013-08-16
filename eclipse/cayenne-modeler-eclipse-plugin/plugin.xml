@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+
+    <extension point="org.eclipse.core.contenttype.contentTypes">
+        <content-type base-type="org.eclipse.core.runtime.xml"
+                      file-extensions="xml"
+                      id="org.apache.cayenne.extensions.modeler.projectFile"
+                      name="Project File"
+                      priority="normal">
+            <describer class="org.eclipse.core.runtime.content.XMLRootElementContentDescriber">
+                <parameter name="element" value="domain"/>
+            </describer>
+        </content-type>
+         <!-- Load other xml files -->
+        <content-type base-type="org.eclipse.core.runtime.xml"
+                      file-extensions="xml"
+                      id="org.apache.cayenne.extensions.modeler.datamapFile"
+                      name="Datamap File"
+                      priority="normal">
+            <describer class="org.eclipse.core.runtime.content.XMLRootElementContentDescriber">
+                <parameter name="element" value="data-map"/>
+            </describer>
+        </content-type>
+    </extension>  
+    
+
+    <extension point="org.eclipse.ui.editors">
+        <editor name="Cayenne Modeler Eclipse Plugin" icon="icons/cayenne.png"
+                launcher="org.apache.cayenne.modeler.eclipse.launcher.EditorLauncher"
+                id="org.apache.cayenne.launcher.EditorLauncher">           
+            <contentTypeBinding contentTypeId="org.apache.cayenne.extensions.modeler.projectFile"/>
+        </editor>
+         <!-- -Load other cayenne files-->   
+     	 <editor name="Cayenne XML files" icon="icons/cayenne.png"
+                launcher = "org.apache.cayenne.modeler.eclipse.launcher.InternalEditorLauncher"
+                id="org.apache.cayenne.launcher.InternalEditorLauncher">                  
+            <contentTypeBinding contentTypeId="org.apache.cayenne.extensions.modeler.datamapFile"/>
+        </editor> 
+    </extension> 
+    
+    <extension point="org.eclipse.ui.actionSets">
+    	<actionSet 
+    		id="org.apache.cayenne.extensions.actionset"
+    		label="Cayenne Actions"
+    		visible="true">
+    		<action
+            class="org.apache.cayenne.modeler.eclipse.extensions.actions.ModelerToolbarAction"
+            icon="icons/cayenne.png"
+            id="org.apache.cayenne.extensions.actions.ModelerFocuse"
+            label="CayenneModeler"
+            style="push"
+            toolbarPath="Normal/cayenneGroup"
+            tooltip="CayenneModeler">
+    		</action>
+    	</actionSet>
+    </extension>
+    
+    <extension point="org.eclipse.ui.views">
+    	  <category
+    	  	id="org.apache.cayenne"
+    	  	name="Cayenne">
+    	  </category>
+          <view
+          	id="org.apache.cayenne.extensions.views.CayenneView"
+          	class="org.apache.cayenne.modeler.eclipse.extensions.views.CayenneView"
+          	category="org.apache.cayenne"
+          	label="Cayenne"
+          	name="Cayenne"
+          	relationship="top"
+          	restorable="true"
+          	icon="icons/cayenne.png">
+          </view>
+    </extension>
+    
+    <extension point="org.eclipse.ui.perspectiveExtensions">
+    	<perspectiveExtension
+    		targetID="*">
+    		<view
+    			id="org.apache.cayenne.extensions.views.CayenneView"
+    			relationship="top"
+    			ratio="0.95f"
+    			relative="org.eclipse.ui.editorss"
+    			minimized="false">
+    		</view>
+    	</perspectiveExtension>
+    </extension>
+</plugin>

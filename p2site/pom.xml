@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001 XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.apache.cayenne.parents</groupId>
+	<artifactId>cayenne-p2site</artifactId>
+	<version>3.2M1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<repositories>
+		<repository>
+			<id>reficio</id>
+			<url>http://repo.reficio.org/maven</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>cayenne-deps</id>
+			<url>http://maven.objectstyle.org/nexus/content/groups/cayenne-deps/</url>
+		</repository>
+	</repositories>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.reficio</groupId>
+				<artifactId>p2-maven-plugin</artifactId>
+				<version>1.0.0-SNAPSHOT</version>
+				<executions>
+					<execution>
+						<id>default-cli</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>site</goal>
+						</goals>
+						<configuration>
+							<artifacts>
+								<artifact>
+									<id>org.apache.cayenne:cayenne-server:3.2M1-SNAPSHOT</id>
+									<transitive>false</transitive>
+									<!--  <override>true</override>-->
+									<instructions>
+										<Bundle-Version>3.2.0.M1-qualifier</Bundle-Version>
+										<Eclipse-BuddyPolicy>registered</Eclipse-BuddyPolicy>
+										<Eclipse-ExtensibleAPI>true</Eclipse-ExtensibleAPI>
+										<Bundle-SymbolicName>org.apache.cayenne.server; singleton:=true</Bundle-SymbolicName>
+										<Bundle-Name>Apache cayenne-server</Bundle-Name>
+										<Export-Package>org.apache.cayenne, org.apache.cayenne.*</Export-Package>
+									</instructions>
+								</artifact>
+								<artifact>
+									<id>org.apache.cayenne:cayenne-tools:3.2M1-SNAPSHOT</id>
+									<transitive>false</transitive>
+									<!--  <override>true</override>-->
+									<instructions>
+										<Bundle-Version>3.2.0.M1-qualifier</Bundle-Version>
+										<Eclipse-ExtensibleAPI>true</Eclipse-ExtensibleAPI>
+										<Bundle-SymbolicName>org.apache.cayenne.tools</Bundle-SymbolicName>
+										<Bundle-Name>Apache cayenne-tools</Bundle-Name>
+										<Export-Package>org.apache.cayenne.*</Export-Package>
+									</instructions>
+								</artifact>
+								<artifact>
+									<id>org.apache.cayenne:cayenne-modeler:3.2M1-SNAPSHOT</id>
+									<transitive>false</transitive>
+									<!--  <override>true</override>-->
+									<instructions>
+										<Bundle-Version>3.2.0.M1-qualifier</Bundle-Version>
+										<Eclipse-ExtensibleAPI>true</Eclipse-ExtensibleAPI>
+										<Bundle-SymbolicName>org.apache.cayenne.modeler</Bundle-SymbolicName>
+										<Bundle-Name>Apache cayenne-modeler</Bundle-Name>
+										<Export-Package>org.apache.cayenne.*</Export-Package>
+									</instructions>
+								</artifact>
+								<artifact>
+									<id>org.apache.cayenne:cayenne-project:3.2M1-SNAPSHOT</id>
+									<transitive>false</transitive>
+									<!--  <override>true</override>-->
+									<instructions>
+										<Bundle-Version>3.2.0.M1-qualifier</Bundle-Version>
+										<Eclipse-BuddyPolicy>registered</Eclipse-BuddyPolicy>
+										<Eclipse-ExtensibleAPI>true</Eclipse-ExtensibleAPI>
+										<Bundle-SymbolicName>org.apache.cayenne.project</Bundle-SymbolicName>
+										<Bundle-Name>Apache cayenne-project</Bundle-Name>
+										<Export-Package>org.apache.cayenne.*</Export-Package>
+									</instructions>
+								</artifact>
+								<artifact>
+									<id>org.objectstyle.ashwood:ashwood:2.0</id>
+								</artifact>
+								<artifact>
+									<id>opensymphony:webwork:2.2.5</id>
+								</artifact>
+								<artifact>
+									<id>org.apache.velocity:velocity:1.7</id>
+								</artifact>
+								<artifact>
+									<id>commons-beanutils:commons-beanutils:1.8.3</id>
+								</artifact>
+								<artifact>
+									<id>commons-collections:commons-collections:3.2.1</id>
+								</artifact>
+								<artifact>
+									<id>commons-digester:commons-digester:2.1</id>
+								</artifact>
+								<artifact>
+									<id>commons-codec:commons-codec:1.7</id>
+								</artifact>
+								<artifact>
+									<id>commons-lang:commons-lang:2.6</id>
+								</artifact>
+								<artifact>
+									<id>commons-pool:commons-pool:1.6</id>
+								</artifact>
+								<artifact>
+									<id>commons-dbcp:commons-dbcp:1.4</id>
+								</artifact>
+								<artifact>
+									<id>org.jdom:jdom:1.1.3</id>
+								</artifact>
+								<artifact>
+									<id>org.scopemvc:scopemvc:1.0.1</id>
+								</artifact>
+								<artifact>
+									<id>net.sf.jedit-syntax:jedit-syntax:2.2.2</id>
+								</artifact>
+								<!-- <artifact> <id>com.caucho:resin-hessian</id> </artifact> -->
+								<artifact>
+									<id>opensymphony:oscache:2.4.1</id>
+									<transitive>false</transitive>
+								</artifact>
+								<artifact>
+									<id>jgroups:jgroups-all:2.4.1</id>
+									<transitive>false</transitive>
+								</artifact>
+								<artifact>
+									<id>jgoodies:looks:1.2.2</id>
+									<transitive>false</transitive>
+								</artifact>
+								<artifact>
+									<id>jgoodies:forms:1.0.5</id>
+									<transitive>false</transitive>
+								</artifact>
+								<artifact>
+									<id>jivesoftware:smack:3.1.0</id>
+									<transitive>false</transitive>
+								</artifact>
+								<artifact>
+									<id>jivesoftware:smackx:3.1.0</id>
+									<transitive>false</transitive>
+								</artifact>
+								<artifact>
+									<id>hsqldb:hsqldb:1.8.0.10</id>
+									<transitive>false</transitive>
+								</artifact>
+								<artifact>
+									<id>jgraph:jgraph:5.13.0.0</id>
+									<transitive>false</transitive>
+								</artifact>
+								<!-- <artifact> <id>foundrylogic.vpp:vpp</id> <transitive>false</transitive>
+									</artifact> -->
+								<artifact>
+									<id>net.java.dev.inflector:inflector:0.7.0</id>
+									<transitive>false</transitive>
+								</artifact>
+								<artifact>
+									<id>org.apache.servicemix.bundles:org.apache.servicemix.bundles.javassist:3.12.1.ga_1</id>
+									<transitive>false</transitive>
+								</artifact>
+							</artifacts>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.mortbay.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>8.1.5.v20120716</version>
+				<configuration>
+					<scanIntervalSeconds>10</scanIntervalSeconds>
+					<webAppSourceDirectory>${basedir}/target/repository/</webAppSourceDirectory>
+					<webApp>
+						<contextPath>/site</contextPath>
+					</webApp>
+				</configuration>
+			</plugin>
+
+		</plugins>
+	</build>
+</project>

@@ -1,0 +1,31 @@
+***************************************************************************************
+***********************CAYENNE MODELER ECLIPSE INTEGRATION*****************************
+***************************************************************************************
+
+This is project is for Cayenne modeler Eclipse integration.
+=============
+Environment --
+=============
+	* JDK 1.6 
+	* Apache Maven 2 or later
+	
+=============
+Installation --
+=============
+	1). Run mvn clean install 
+	2). Copy the cayenne-modeler-eclipse-plugin-3.1-SNAPSHOT.jar file from the target folder 
+		and paste it to your Eclipse-Installation-Directory/Plugins folder.
+	
+	Now the Plugin has been successfully installed.
+	Note : To generate java docs run : mvn javadoc:javadoc
+		   Before running mvn clean install, make sure, that META-INF/MANIFEST.MF is empty as it is supposed to be regenerated
+
+==========================
+The usage of the Plugin --
+==========================	 
+	1). Import or create the java project which has the cayenne configuration xml files.
+	2). You can see the cayenne configuration xml files with the cayenne icon.
+	3). To launch the Cayenne modeler double click on such a file or open it with "cayenne modeler 
+		eclipse plugin" editor.
+	4). Then you can perform any modifications in opened Modeler and once you have done with the modifications, 
+		click on save button and it will update the java classes and in the Eclipse workspace.
