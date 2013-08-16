@@ -8,7 +8,6 @@
   <parent>
   	<groupId>org.apache.cayenne</groupId>
   	<artifactId>cayenne-modeler-eclipse-parent</artifactId>
-  	<version>3.2M1-SNAPSHOT</version>
+  	<version>3.2M2-SNAPSHOT</version>
   </parent>
-  <version>3.2.0.M1</version>
 </project>

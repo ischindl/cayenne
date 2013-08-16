@@ -13,7 +13,7 @@ Bundle-Name: Cayenne Modeler Plugin for Eclipse
 Created-By: Apache Maven Bundle Plugin
 Bundle-Vendor: Apache Cayenne
 Build-Jdk: 1.6.0_31
-Bundle-Version: 3.2.0.M1-qualifier
+Bundle-Version: 3.2.2.qualifier
 Bnd-LastModified: 1316501641847
 Bundle-Activator: org.apache.cayenne.modeler.eclipse.Activator
 Bundle-ManifestVersion: 2

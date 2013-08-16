@@ -2,7 +2,7 @@
 <feature
       id="org.apache.cayenne.modeler.eclipse.feature"
       label="Cayenne Modeler Plugin for Eclipse"
-      version="3.2.0.M1-qualifier"
+      version="3.2.2.qualifier"
       provider-name="Apache Cayenne">
 
    <description url="http://cayenne.apache.org">
