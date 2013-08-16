@@ -108,7 +108,10 @@ public class PostgresAdapter extends JdbcAdapter {
         else if ("text".equalsIgnoreCase(typeName)) {
             type = Types.CLOB;
         }
-
+        // somehow the driver reverse-engineers "text" as VARCHAR, must be CLOB
+        else if ("xml".equalsIgnoreCase(typeName)) {
+            type = Types.SQLXML;
+        }
         return super.buildAttribute(name, typeName, type, size, scale, allowNulls);
     }
 

@@ -19,7 +19,11 @@
 package org.apache.cayenne.configuration;
 
 import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,6 +55,46 @@ public class DataChannelDescriptor implements ConfigurationNode, Serializable,
         dataMaps = new ArrayList<DataMap>(5);
         nodeDescriptors = new ArrayList<DataNodeDescriptor>(3);
     }
+
+	public String relativize(URI base, URI child) {
+		if (base.getHost() != null && child.getHost() != null
+				&& !base.getHost().equalsIgnoreCase(child.getHost())) {
+			return child.toString();
+		}
+		// Normalize paths to remove . and .. segments
+		base = base.normalize();
+		child = child.normalize();
+
+		// Split paths into segments
+		String[] bParts = base.getPath().split("\\/");
+		String[] cParts = child.getPath().split("\\/");
+
+		// Discard trailing segment of base path
+		if (bParts.length > 0 && !base.getPath().endsWith("/")) {
+			bParts = Arrays.copyOf(bParts, bParts.length - 1);
+		}
+
+		// Remove common prefix segments
+		int i = 0;
+		while (i < bParts.length && i < cParts.length
+				&& bParts[i].equals(cParts[i])) {
+			i++;
+		}
+
+		// Construct the relative path
+		StringBuilder sb = new StringBuilder();
+		for (int j = 0; j < (bParts.length - i); j++) {
+			sb.append("../");
+		}
+		for (int j = i; j < cParts.length; j++) {
+			if (j != i) {
+				sb.append("/");
+			}
+			sb.append(cParts[j]);
+		}
+
+		return sb.toString();
+	}
 
     public void encodeAsXML(XMLEncoder encoder) {
 
@@ -87,6 +131,17 @@ public class DataChannelDescriptor implements ConfigurationNode, Serializable,
 
                 encoder.print("<map");
                 encoder.printAttribute("name", dataMap.getName().trim());
+				if (getConfigurationSource() != null
+						&& dataMap.getConfigurationSource() != null)
+					try {
+						URL s = getConfigurationSource().getURL();
+						URL s1 = dataMap.getConfigurationSource().getURL();
+						String x = relativize(s.toURI(), s1.toURI());
+						encoder.printAttribute("path", x);
+					} catch (URISyntaxException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
                 encoder.println("/>");
             }
         }

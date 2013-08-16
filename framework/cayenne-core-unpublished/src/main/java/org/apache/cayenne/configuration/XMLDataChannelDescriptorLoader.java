@@ -222,9 +222,12 @@ public class XMLDataChannelDescriptorLoader implements DataChannelDescriptorLoad
             else if (localName.equals(MAP_TAG)) {
 
                 String dataMapName = attributes.getValue("", "name");
+                String dataMapLocation = attributes.getValue("", "path");
+
                 Resource baseResource = descriptor.getConfigurationSource();
 
-                String dataMapLocation = nameMapper.configurationLocation(
+                if(dataMapLocation== null || dataMapLocation.trim().length()==0)
+                  dataMapLocation = nameMapper.configurationLocation(
                         DataMap.class,
                         dataMapName);
 

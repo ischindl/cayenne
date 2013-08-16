@@ -24,6 +24,7 @@ import java.awt.Color;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EventObject;
 import java.util.LinkedList;
@@ -488,8 +489,12 @@ public class ObjEntityTab extends JPanel implements ObjEntityDisplayListener,
             }
         };
 
+        List<ObjEntity> entities = new ArrayList<ObjEntity>();
+        for(DataMap map1 : ((DataChannelDescriptor) mediator.getProject().getRootNode()).getDataMaps() ){
+        	entities.addAll(map1.getObjEntities());
+        }
         Object[] objEntities = CollectionUtils.select(
-                map.getObjEntities(),
+                entities,
                 inheritanceFilter).toArray();
         Arrays.sort(objEntities, Comparators.getDataMapChildrenComparator());
         Object[] finalObjEntities = new Object[objEntities.length + 1];

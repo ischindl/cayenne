@@ -32,6 +32,7 @@ import javax.swing.JTextField;
 
 import org.apache.cayenne.gen.ArtifactsGenerationMode;
 import org.apache.cayenne.gen.ClassGenerationAction;
+import org.apache.cayenne.map.DataMap;
 import org.apache.cayenne.map.Embeddable;
 import org.apache.cayenne.map.EmbeddableAttribute;
 import org.apache.cayenne.map.EmbeddedAttribute;
@@ -70,6 +71,13 @@ public abstract class GeneratorController extends CayenneController {
     }
 
     public String getOutputPath() {
+		DataMap map = getParentController().getDataMap();
+		String loc = map.getConfigurationSource().getURL().getPath();
+		if (loc != null && loc.length() > 0){
+			File f = new File(loc);
+			return f.getAbsoluteFile().getParent();
+			//return loc.replaceAll(map.getName() + "\\.map\\.xml", "");
+		}
         return preferences.getOutputPath();
     }
 

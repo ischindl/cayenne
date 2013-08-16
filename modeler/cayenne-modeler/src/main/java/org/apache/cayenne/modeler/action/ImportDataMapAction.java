@@ -36,6 +36,7 @@ import org.apache.cayenne.modeler.Application;
 import org.apache.cayenne.modeler.pref.FSPath;
 import org.apache.cayenne.modeler.util.CayenneAction;
 import org.apache.cayenne.modeler.util.FileFilters;
+import org.apache.cayenne.resource.URLResource;
 import org.apache.cayenne.util.NamedObjectFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -80,6 +81,7 @@ public class ImportDataMapAction extends CayenneAction {
                 InputSource inSrc = new InputSource(in);
                 inSrc.setSystemId(dataMapFile.getAbsolutePath());
                 newMap = new MapLoader().loadDataMap(inSrc);
+                newMap.setConfigurationSource(new URLResource(url));
             }
             finally {
                 try {
