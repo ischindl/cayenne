@@ -19,12 +19,12 @@
 
 package org.apache.cayenne.modeler.eclipse.extensions.modeler;
 
-import java.util.List;
 import java.awt.Frame;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import javax.swing.JOptionPane;
 
@@ -34,7 +34,7 @@ import org.apache.cayenne.map.DataMap;
 import org.apache.cayenne.modeler.Application;
 import org.apache.cayenne.modeler.CayenneModelerController;
 import org.apache.cayenne.modeler.ProjectController;
-import org.apache.cayenne.modeler.ProjectWatchdog;
+import org.apache.cayenne.modeler.ProjectFileChangeTracker;
 import org.apache.cayenne.modeler.action.OpenProjectAction;
 import org.apache.cayenne.modeler.dialog.ErrorDebugDialog;
 import org.apache.cayenne.modeler.dialog.codegen.CodeGeneratorController;
@@ -58,7 +58,7 @@ import org.eclipse.core.runtime.Path;
  * responsible for tracking changes in cayenne.xml and other Cayenne project
  * files.
  */
-public class PluginProjectWatchdog extends ProjectWatchdog {
+public class PluginProjectWatchdog extends ProjectFileChangeTracker {
 
 	private static Log logger = LogFactory.getLog(PluginProjectWatchdog.class);
 
@@ -72,7 +72,7 @@ public class PluginProjectWatchdog extends ProjectWatchdog {
 	 * modeler
 	 */
 	@Override
-	protected void doOnChange(FileInfo fileInfo) {
+	protected void doOnChange() {
 		// Currently we are reloading all project on a change
 		if (mediator.getProject() != null) {
 
@@ -91,7 +91,7 @@ public class PluginProjectWatchdog extends ProjectWatchdog {
 	/**
 	 * If the external modifications (from Eclipse IDE) are valid returns true
 	 * otherwise returns false.
-	 * 
+	 *
 	 * @param file
 	 *            XML files related to the cayenne project.
 	 */

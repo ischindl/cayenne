@@ -50,7 +50,7 @@ import org.apache.cayenne.query.SQLAction;
  * DbAdapter implementation for <a href="http://www.postgresql.org">PostgreSQL
  * RDBMS </a>. Sample connection settings to use with PostgreSQL are shown
  * below:
- * 
+ *
  * <pre>
  *      postgres.jdbc.username = test
  *      postgres.jdbc.password = secret
@@ -70,7 +70,7 @@ public class PostgresAdapter extends JdbcAdapter {
 
     /**
      * Uses PostgresActionBuilder to create the right action.
-     * 
+     *
      * @since 1.2
      */
     @Override
@@ -108,9 +108,9 @@ public class PostgresAdapter extends JdbcAdapter {
         else if ("text".equalsIgnoreCase(typeName)) {
             type = Types.CLOB;
         }
-        // somehow the driver reverse-engineers "text" as VARCHAR, must be CLOB
+        // somehow the driver reverse-engineers "xml" as VARCHAR, must be CLOB
         else if ("xml".equalsIgnoreCase(typeName)) {
-            type = Types.SQLXML;
+           type = Types.SQLXML;
         }
         return super.buildAttribute(name, typeName, type, size, scale, allowNulls);
     }
@@ -119,7 +119,7 @@ public class PostgresAdapter extends JdbcAdapter {
      * Customizes table creating procedure for PostgreSQL. One difference with
      * generic implementation is that "bytea" type has no explicit length unlike
      * similar binary types in other databases.
-     * 
+     *
      * @since 1.0.2
      */
     @Override

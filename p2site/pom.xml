@@ -5,7 +5,7 @@
 
 	<groupId>org.apache.cayenne.parents</groupId>
 	<artifactId>cayenne-p2site</artifactId>
-	<version>3.2M1-SNAPSHOT</version>
+	<version>3.2M2-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<repositories>
@@ -27,7 +27,7 @@
 			<plugin>
 				<groupId>org.reficio</groupId>
 				<artifactId>p2-maven-plugin</artifactId>
-				<version>1.0.0-SNAPSHOT</version>
+				<version>1.0.1</version>
 				<executions>
 					<execution>
 						<id>default-cli</id>
@@ -38,11 +38,11 @@
 						<configuration>
 							<artifacts>
 								<artifact>
-									<id>org.apache.cayenne:cayenne-server:3.2M1-SNAPSHOT</id>
+									<id>org.apache.cayenne:cayenne-server:3.2M2-SNAPSHOT</id>
 									<transitive>false</transitive>
 									<!--  <override>true</override>-->
 									<instructions>
-										<Bundle-Version>3.2.0.M1-qualifier</Bundle-Version>
+										<Bundle-Version>3.2.2.SNAPSHOT</Bundle-Version>
 										<Eclipse-BuddyPolicy>registered</Eclipse-BuddyPolicy>
 										<Eclipse-ExtensibleAPI>true</Eclipse-ExtensibleAPI>
 										<Bundle-SymbolicName>org.apache.cayenne.server; singleton:=true</Bundle-SymbolicName>
@@ -51,11 +51,11 @@
 									</instructions>
 								</artifact>
 								<artifact>
-									<id>org.apache.cayenne:cayenne-tools:3.2M1-SNAPSHOT</id>
+									<id>org.apache.cayenne:cayenne-tools:3.2M2-SNAPSHOT</id>
 									<transitive>false</transitive>
 									<!--  <override>true</override>-->
 									<instructions>
-										<Bundle-Version>3.2.0.M1-qualifier</Bundle-Version>
+										<Bundle-Version>3.2.2.SNAPSHOT</Bundle-Version>
 										<Eclipse-ExtensibleAPI>true</Eclipse-ExtensibleAPI>
 										<Bundle-SymbolicName>org.apache.cayenne.tools</Bundle-SymbolicName>
 										<Bundle-Name>Apache cayenne-tools</Bundle-Name>
@@ -63,11 +63,11 @@
 									</instructions>
 								</artifact>
 								<artifact>
-									<id>org.apache.cayenne:cayenne-modeler:3.2M1-SNAPSHOT</id>
+									<id>org.apache.cayenne:cayenne-modeler:3.2M2-SNAPSHOT</id>
 									<transitive>false</transitive>
 									<!--  <override>true</override>-->
 									<instructions>
-										<Bundle-Version>3.2.0.M1-qualifier</Bundle-Version>
+										<Bundle-Version>3.2.2.SNAPSHOT</Bundle-Version>
 										<Eclipse-ExtensibleAPI>true</Eclipse-ExtensibleAPI>
 										<Bundle-SymbolicName>org.apache.cayenne.modeler</Bundle-SymbolicName>
 										<Bundle-Name>Apache cayenne-modeler</Bundle-Name>
@@ -75,11 +75,11 @@
 									</instructions>
 								</artifact>
 								<artifact>
-									<id>org.apache.cayenne:cayenne-project:3.2M1-SNAPSHOT</id>
+									<id>org.apache.cayenne:cayenne-project:3.2M2-SNAPSHOT</id>
 									<transitive>false</transitive>
 									<!--  <override>true</override>-->
 									<instructions>
-										<Bundle-Version>3.2.0.M1-qualifier</Bundle-Version>
+										<Bundle-Version>3.2.2.SNAPSHOT</Bundle-Version>
 										<Eclipse-BuddyPolicy>registered</Eclipse-BuddyPolicy>
 										<Eclipse-ExtensibleAPI>true</Eclipse-ExtensibleAPI>
 										<Bundle-SymbolicName>org.apache.cayenne.project</Bundle-SymbolicName>
@@ -190,4 +190,11 @@
 
 		</plugins>
 	</build>
+
+	<pluginRepositories>
+        <pluginRepository>
+            <id>reficio</id>
+            <url>http://repo.reficio.org/maven/</url>
+        </pluginRepository>
+    </pluginRepositories>
 </project>

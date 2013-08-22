@@ -75,6 +75,7 @@ public class TypesMapping {
     public static final String SQL_VARCHAR = "VARCHAR";
     public static final String SQL_OTHER = "OTHER";
     public static final String SQL_NULL = "NULL";
+    public static final String SQL_XML = "XML";
 
     // char constants for Java data types
     public static final String JAVA_LONG = "java.lang.Long";
@@ -139,6 +140,7 @@ public class TypesMapping {
         sqlStringType.put(SQL_VARCHAR, Integer.valueOf(Types.VARCHAR));
         sqlStringType.put(SQL_OTHER, Integer.valueOf(Types.OTHER));
         sqlStringType.put(SQL_NULL, Integer.valueOf(Types.NULL));
+        sqlStringType.put(SQL_XML, Integer.valueOf(Types.SQLXML));
 
         sqlEnumType.put(Integer.valueOf(Types.ARRAY), SQL_ARRAY);
         sqlEnumType.put(Integer.valueOf(Types.BIGINT), SQL_BIGINT);
@@ -165,6 +167,7 @@ public class TypesMapping {
         sqlEnumType.put(Integer.valueOf(Types.VARCHAR), SQL_VARCHAR);
         sqlEnumType.put(Integer.valueOf(Types.OTHER), SQL_OTHER);
         sqlEnumType.put(Integer.valueOf(Types.NULL), SQL_NULL);
+        sqlEnumType.put(Integer.valueOf(Types.SQLXML), SQL_XML);
 
         sqlEnumJava.put(Integer.valueOf(Types.BIGINT), JAVA_LONG);
         sqlEnumJava.put(Integer.valueOf(Types.BINARY), JAVA_BYTES);
@@ -188,6 +191,7 @@ public class TypesMapping {
         sqlEnumJava.put(Integer.valueOf(Types.TIMESTAMP), JAVA_UTILDATE);
         sqlEnumJava.put(Integer.valueOf(Types.VARBINARY), JAVA_BYTES);
         sqlEnumJava.put(Integer.valueOf(Types.VARCHAR), JAVA_STRING);
+        sqlEnumJava.put(Integer.valueOf(Types.SQLXML), JAVA_STRING);
 
         javaSqlEnum.put(JAVA_LONG, Integer.valueOf(Types.BIGINT));
         javaSqlEnum.put(JAVA_BYTES, Integer.valueOf(Types.BINARY));
@@ -346,7 +350,7 @@ public class TypesMapping {
 
     /**
      * Returns default java.sql.Types type by the Java type name.
-     * 
+     *
      * @param className Fully qualified Java Class name.
      * @return The SQL type or NOT_DEFINED if no type found.
      */
@@ -375,7 +379,7 @@ public class TypesMapping {
 
     /**
      * Guesses a default JDBC type for the Java class.
-     * 
+     *
      * @since 1.1
      */
     public static int getSqlTypeByJava(Class<?> javaClass) {
@@ -438,14 +442,14 @@ public class TypesMapping {
      * method should be used as a last resort, with explicit mapping provided by user used
      * as a first choice, as it can only guess how to map certain types, such as NUMERIC,
      * etc.
-     * 
+     *
      * @return Fully qualified Java type name or null if not found.
      */
     public static String getJavaBySqlType(int type) {
         return sqlEnumJava.get(Integer.valueOf(type));
     }
 
- 
+
     protected Map<Integer, List<TypeInfo>> databaseTypes = new HashMap<Integer, List<TypeInfo>>();
 
     public TypesMapping(DatabaseMetaData metaData) throws SQLException {

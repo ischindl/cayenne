@@ -38,6 +38,7 @@
 		<module>modeler</module>
 		<module>tutorials</module>
 		<module>docs</module>
+		<module>p2site</module>
 	</modules>
 	<issueManagement>
 		<system>jira</system>

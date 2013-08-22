@@ -26,7 +26,7 @@ import org.apache.cayenne.map.DataMap;
 import org.apache.cayenne.map.EntityResolver;
 import org.apache.cayenne.modeler.CayenneModelerController;
 import org.apache.cayenne.modeler.ProjectController;
-import org.apache.cayenne.modeler.ProjectWatchdog;
+import org.apache.cayenne.modeler.ProjectFileChangeTracker;
 import org.apache.cayenne.project.Project;
 
 /**
@@ -41,7 +41,7 @@ public class PluginProjectController extends ProjectController {
 
 	/**
 	 * Constructor of <code>PluginProjectController</code>
-	 * 
+	 *
 	 * @param parent
 	 *            controller for the plugin application frame.
 	 */
@@ -57,7 +57,7 @@ public class PluginProjectController extends ProjectController {
 	 * returns instance of PluginProjectWatchdog class is responsible for
 	 * tracking changes in cayenne.xml and other Cayenne project files
 	 */
-	public ProjectWatchdog getProjectWatcher() {
+	 public ProjectFileChangeTracker getFileChangeTracker() {
 		return watchdog;
 	}
 

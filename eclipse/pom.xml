@@ -5,7 +5,7 @@
 	<name>Cayenne Modeler Plugin for Eclipse</name>
 	<groupId>org.apache.cayenne</groupId>
 	<artifactId>cayenne-modeler-eclipse-parent</artifactId>
-	<version>3.2M2-SNAPSHOT</version>
+	<version>3.2.M2-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
@@ -32,7 +32,7 @@
 				<enabled>true</enabled>
 				<updatePolicy>always</updatePolicy>
 			</snapshots>
-			<url>http://www.progis.sk/p2site</url>
+			<url>file://${basedir}/../../p2site/target/repository</url>
 		</repository>
 		<repository>
 			<id>eclipse-platform</id>
