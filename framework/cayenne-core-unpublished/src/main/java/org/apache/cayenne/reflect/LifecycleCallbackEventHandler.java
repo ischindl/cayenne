@@ -30,160 +30,162 @@ import org.apache.cayenne.map.ObjEntity;
 
 /**
  * A runtime callback processor for a single kind of lifecycle events.
- * 
+ *
  * @since 3.0
  */
 class LifecycleCallbackEventHandler {
 
-    private EntityResolver resolver;
-    private Map<String, Collection<AbstractCallback>> listeners;
-    private Collection<AbstractCallback> defaultListeners;
+	private EntityResolver resolver;
+	private Map<String, Collection<AbstractCallback>> listeners;
+	private Collection<AbstractCallback> defaultListeners;
 
-    LifecycleCallbackEventHandler(EntityResolver resolver) {
-        this.resolver = resolver;
-        this.listeners = new HashMap<String, Collection<AbstractCallback>>();
-        this.defaultListeners = new ArrayList<AbstractCallback>();
-    }
+	LifecycleCallbackEventHandler(EntityResolver resolver) {
+		this.resolver = resolver;
+		this.listeners = new HashMap<String, Collection<AbstractCallback>>();
+		this.defaultListeners = new ArrayList<AbstractCallback>();
+	}
 
-    private boolean excludingDefaultListeners(String entityName) {
-        ObjEntity entity = resolver.getObjEntity(entityName);
-        return entity != null && entity.isExcludingDefaultListeners();
-    }
+	private boolean excludingDefaultListeners(String entityName) {
+		ObjEntity entity = resolver.getObjEntity(entityName);
+		return entity != null && entity.isExcludingDefaultListeners();
+	}
 
-    private boolean excludingSuperclassListeners(String entityName) {
-        ObjEntity entity = resolver.getObjEntity(entityName);
-        return entity != null && entity.isExcludingSuperclassListeners();
-    }
+	private boolean excludingSuperclassListeners(String entityName) {
+		ObjEntity entity = resolver.getObjEntity(entityName);
+		return entity != null && entity.isExcludingSuperclassListeners();
+	}
 
-    boolean isEmpty() {
-        return listeners.isEmpty() && defaultListeners.isEmpty();
-    }
+	boolean isEmpty() {
+		return listeners.isEmpty() && defaultListeners.isEmpty();
+	}
 
-    /**
-     * Removes all listeners.
-     */
-    void clear() {
-        listeners.clear();
-        defaultListeners.clear();
-    }
-    
-    int defaultListenersSize() {
-        return defaultListeners.size();
-    }
-    
-    int listenersSize() {
-        return listeners.size();
-    }
+	/**
+	 * Removes all listeners.
+	 */
+	void clear() {
+		listeners.clear();
+		defaultListeners.clear();
+	}
 
-    /**
-     * Registers a callback method to be invoked on a provided non-entity object when a
-     * lifecycle event occurs on any entity that does not suppress default callbacks.
-     */
-    void addDefaultListener(Object listener, String methodName) {
-        CallbackOnListener callback = new CallbackOnListener(listener, methodName);
-        addDefaultCallback(callback);
-    }
+	int defaultListenersSize() {
+		return defaultListeners.size();
+	}
 
-    /**
-     * Registers a callback object to be invoked when a lifecycle event occurs.
-     */
-    private void addDefaultCallback(AbstractCallback callback) {
-        defaultListeners.add(callback);
-    }
+	int listenersSize() {
+		return listeners.size();
+	}
 
-    /**
-     * Registers a callback method to be invoked on an entity class instances when a
-     * lifecycle event occurs.
-     */
-    void addListener(Class<?> entityClass, String methodName) {
-        addCallback(entityClass, new CallbackOnEntity(entityClass, methodName));
-    }
+	/**
+	 * Registers a callback method to be invoked on a provided non-entity object
+	 * when a lifecycle event occurs on any entity that does not suppress
+	 * default callbacks.
+	 */
+	void addDefaultListener(Object listener, String methodName) {
+		CallbackOnListener callback = new CallbackOnListener(listener,
+				methodName);
+		addDefaultCallback(callback);
+	}
 
-    /**
-     * Registers callback method to be invoked on a provided non-entity object when a
-     * lifecycle event occurs.
-     */
-    void addListener(Class<?> entityClass, Object listener, String methodName) {
-        CallbackOnListener callback = new CallbackOnListener(
-                listener,
-                methodName,
-                entityClass);
-        addCallback(entityClass, callback);
-    }
+	/**
+	 * Registers a callback object to be invoked when a lifecycle event occurs.
+	 */
+	private void addDefaultCallback(AbstractCallback callback) {
+		defaultListeners.add(callback);
+	}
 
-    void addListener(Class<?> entityClass, Object listener, Method method) {
-        CallbackOnListener callback = new CallbackOnListener(
-                listener,
-                method,
-                entityClass);
-        addCallback(entityClass, callback);
-    }
+	/**
+	 * Registers a callback method to be invoked on an entity class instances
+	 * when a lifecycle event occurs.
+	 */
+	void addListener(Class<?> entityClass, String methodName) {
+		addCallback(entityClass, new CallbackOnEntity(entityClass, methodName));
+	}
 
-    /**
-     * Registers a callback object to be invoked when a lifecycle event occurs.
-     */
-    private void addCallback(Class<?> entityClass, AbstractCallback callback) {
-        Collection<AbstractCallback> entityListeners = listeners.get(entityClass
-                .getName());
+	/**
+	 * Registers callback method to be invoked on a provided non-entity object
+	 * when a lifecycle event occurs.
+	 */
+	void addListener(Class<?> entityClass, Object listener, String methodName) {
+		CallbackOnListener callback = new CallbackOnListener(listener,
+				methodName, entityClass);
+		addCallback(entityClass, callback);
+	}
 
-        if (entityListeners == null) {
-            entityListeners = new ArrayList<AbstractCallback>(3);
-            listeners.put(entityClass.getName(), entityListeners);
-        }
+	void addListener(Class<?> entityClass, Object listener, Method method) {
+		CallbackOnListener callback = new CallbackOnListener(listener, method,
+				entityClass);
+		addCallback(entityClass, callback);
+	}
 
-        entityListeners.add(callback);
-    }
+	/**
+	 * Registers a callback object to be invoked when a lifecycle event occurs.
+	 */
+	private void addCallback(Class<?> entityClass, AbstractCallback callback) {
+		Collection<AbstractCallback> entityListeners = listeners
+				.get(entityClass.getName());
 
-    /**
-     * Invokes callbacks for a given entity object.
-     */
-    void performCallbacks(Persistent object) {
+		if (entityListeners == null) {
+			entityListeners = new ArrayList<AbstractCallback>(3);
+			listeners.put(entityClass.getName(), entityListeners);
+		}
 
-        // default listeners are invoked first
-        if (!defaultListeners.isEmpty()
-                && !excludingDefaultListeners(object.getObjectId().getEntityName())) {
-            for (final AbstractCallback listener : defaultListeners) {
-                listener.performCallback(object);
-            }
-        }
+		entityListeners.add(callback);
+	}
 
-        // apply per-entity listeners
-        performCallbacks(object, object.getClass());
-    }
+	/**
+	 * Invokes callbacks for a given entity object.
+	 */
+	void performCallbacks(Persistent object) {
+		if (object != null) {
+			// default listeners are invoked first
+			if (!defaultListeners.isEmpty()
+					&& !excludingDefaultListeners(object.getObjectId()
+							.getEntityName())) {
+				for (final AbstractCallback listener : defaultListeners) {
+					listener.performCallback(object);
+				}
+			}
 
-    /**
-     * Invokes callbacks for a collection of entity objects.
-     */
-    void performCallbacks(Collection<?> objects) {
-        for (Object object : objects) {
-            performCallbacks((Persistent) object);
-        }
-    }
+			// apply per-entity listeners
+			performCallbacks(object, object.getClass());
+		}
+	}
 
-    /**
-     * Invokes callbacks for the class hierarchy, starting from the most generic
-     * superclass.
-     */
-    private void performCallbacks(Persistent object, Class<?> callbackEntityClass) {
+	/**
+	 * Invokes callbacks for a collection of entity objects.
+	 */
+	void performCallbacks(Collection<?> objects) {
+		for (Object object : objects) {
+			performCallbacks((Persistent) object);
+		}
+	}
 
-        if (callbackEntityClass == null || Object.class.equals(callbackEntityClass)) {
-            return;
-        }
+	/**
+	 * Invokes callbacks for the class hierarchy, starting from the most generic
+	 * superclass.
+	 */
+	private void performCallbacks(Persistent object,
+			Class<?> callbackEntityClass) {
 
-        // recursively perform super callbacks first
-        if (!excludingSuperclassListeners(object.getObjectId().getEntityName())) {
-            performCallbacks(object, callbackEntityClass.getSuperclass());
-        }
+		if (callbackEntityClass == null
+				|| Object.class.equals(callbackEntityClass)) {
+			return;
+		}
 
-        // perform callbacks on provided class
-        String key = callbackEntityClass.getName();
-        Collection<AbstractCallback> entityListeners = listeners.get(key);
+		// recursively perform super callbacks first
+		if (!excludingSuperclassListeners(object.getObjectId().getEntityName())) {
+			performCallbacks(object, callbackEntityClass.getSuperclass());
+		}
 
-        if (entityListeners != null) {
-            for (final AbstractCallback listener : entityListeners) {
-                listener.performCallback(object);
-            }
-        }
-    }
+		// perform callbacks on provided class
+		String key = callbackEntityClass.getName();
+		Collection<AbstractCallback> entityListeners = listeners.get(key);
+
+		if (entityListeners != null) {
+			for (final AbstractCallback listener : entityListeners) {
+				listener.performCallback(object);
+			}
+		}
+	}
 
 }
